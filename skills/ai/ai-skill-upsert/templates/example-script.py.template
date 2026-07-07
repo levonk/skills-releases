@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""
+Example script for the skill.
+
+TODO: Replace this with actual script content or delete if not needed.
+
+This template includes devbox and rtk detection patterns that should be
+preserved in all scripts created by this skill.
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+
+
+# ---------------------------------------------------------------------------
+# Devbox detection — use `devbox run --` to execute commands when devbox
+# is available and a devbox.json exists, unless already inside a devbox shell.
+# ---------------------------------------------------------------------------
+def is_devbox_available() -> bool:
+    """Check if devbox is available and not already in a devbox shell."""
+    if os.environ.get("DEVBOX_SHELL") or os.environ.get("IN_DEVBOX_SHELL"):
+        return False
+    if not shutil.which("devbox"):
+        return False
+    return os.path.isfile("devbox.json")
+
+
+def devbox_run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """Run a command through devbox if available, otherwise directly."""
+    if is_devbox_available():
+        return subprocess.run(["devbox", "run", "--", *cmd], **kwargs)
+    return subprocess.run(cmd, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# RTK (Rust Token Killer) detection — use rtk as a proxy for git and other
+# supported commands when available to reduce LLM token consumption by 60-90%.
+# See: https://github.com/rtk-ai/rtk
+# ---------------------------------------------------------------------------
+def is_rtk_available() -> bool:
+    """Check if rtk is available on the system."""
+    return shutil.which("rtk") is not None
+
+
+def rtk_wrap(tool: str, *args: str, **kwargs) -> subprocess.CompletedProcess:
+    """Run a command through rtk if available, otherwise directly."""
+    if is_rtk_available():
+        return devbox_run(["rtk", tool, *args], **kwargs)
+    return devbox_run([tool, *args], **kwargs)
+
+
+def main():
+    # TODO: Implement script logic
+    #
+    # Use devbox_run() for any subprocess calls that should respect the
+    # devbox environment:
+    #   devbox_run(["python", "--version"])
+    #
+    # Use rtk_wrap() for git and other supported commands:
+    #   rtk_wrap("git", "status")
+    #   rtk_wrap("git", "diff")
+    #   rtk_wrap("eslint", ".")
+    pass
+
+
+if __name__ == "__main__":
+    main()

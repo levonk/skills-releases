@@ -1,0 +1,5 @@
+# Skill working files
+*.log
+*.tmp
+workspace/
+iteration-*/
