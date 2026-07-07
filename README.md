@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `49897a4b2934901efd78c0a7affff521e1b194d1` · Branch: `main` · Generated: 2026-07-07T12:58:15Z
+> Commit: `550a5db5dff8e9f3a27a9156109e07a3c4f28539` · Branch: `main` · Generated: 2026-07-07T22:59:26Z
 
 ## Overview
 
@@ -13,85 +13,85 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 ### ai
 
-| Skill | Description |
-|-------|-------------|
-| [agent-file-upsert](skills/ai/agent-file-upsert/SKILL.md) | Generate hierarchical AGENTS.md documentation for AI agents working in codebases. Use when onboarding an AI agent to ... |
-| [ai-guidance-improver](skills/ai/ai-guidance-improver/SKILL.md) | Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) and interactive prompt... |
-| [ai-skill-upsert](skills/ai/ai-skill-upsert/SKILL.md) | Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a... |
-| [ai-workflow-upsert](skills/ai/ai-workflow-upsert/SKILL.md) | Create new workflows, modify and improve existing workflows, and convert between workflow and skill formats. Use when... |
-| [handoff](skills/ai/handoff/SKILL.md) | Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to prese... |
-| [knowledge-bundle-lifecycle](skills/ai/knowledge-bundle-lifecycle/SKILL.md) | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when users want to add new so... |
-| [readme-upsert](skills/ai/readme-upsert/SKILL.md) | Generate or update a project's README.md for human developers. Use when onboarding a human to an existing codebase, c... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| agent-file-upsert | Generate hierarchical AGENTS.md documentation for AI agents working in codebases. Use when onboar... | [Synopsis](ai-agent-file-upsert.md) |
+| ai-guidance-improver | Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) an... | [Synopsis](ai-ai-guidance-improver.md) |
+| ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Use when us... | [Synopsis](ai-ai-skill-upsert.md) |
+| ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
+| handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
+| knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
+| readme-upsert | Generate or update a project's README.md for human developers. Use when onboarding a human to an ... | [Synopsis](ai-readme-upsert.md) |
 
 ### business
 
-| Skill | Description |
-|-------|-------------|
-| [org-development](skills/business/org-development/SKILL.md) | Comprehensive organizational design, restructuring, and role management for Agent Org framework. Use when designing o... |
-| [task-triage](skills/business/task-triage/SKILL.md) | Apply the Agent Organization 26-tier prioritization framework to triage tasks, requests, and work items. Use when use... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| org-development | Comprehensive organizational design, restructuring, and role management for Agent Org framework. ... | [Synopsis](business-org-development.md) |
+| task-triage | Apply the Agent Organization 26-tier prioritization framework to triage tasks, requests, and work... | [Synopsis](business-task-triage.md) |
 
 ### cad
 
-| Skill | Description |
-|-------|-------------|
-| [3d-modeling](skills/cad/3d-modeling/SKILL.md) | Architectural 3D modeling skill for rooms, cabinets, closets, and building elements using build123d. Creates parametr... |
-| [build123d-tool](skills/cad/build123d-tool/SKILL.md) | Core build123d CAD tool setup and Python environment for 3D modeling. Provides the foundation for architectural model... |
-| [room-planner](skills/cad/room-planner/SKILL.md) | Furniture layout and move planning skill using build123d. Optimizes room arrangements, creates furniture libraries, a... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| 3d-modeling | Architectural 3D modeling skill for rooms, cabinets, closets, and building elements using build12... | [Synopsis](cad-3d-modeling.md) |
+| build123d-tool | Core build123d CAD tool setup and Python environment for 3D modeling. Provides the foundation for... | [Synopsis](cad-build123d-tool.md) |
+| room-planner | Furniture layout and move planning skill using build123d. Optimizes room arrangements, creates fu... | [Synopsis](cad-room-planner.md) |
 
 ### commerce
 
-| Skill | Description |
-|-------|-------------|
-| [shopping-acquisition](skills/commerce/shopping-acquisition/SKILL.md) | > |
-| [shopping-deal-intelligence](skills/commerce/shopping-deal-intelligence/SKILL.md) | > |
-| [shopping-needs-discovery](skills/commerce/shopping-needs-discovery/SKILL.md) | > |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| shopping-acquisition | Execute the final purchase of a product or hiring of a service after research is complete. Use wh... | [Synopsis](commerce-acquisition.md) |
+| shopping-deal-intelligence | Research pricing, sourcing channels, and optimal purchase timing for products and services. Use a... | [Synopsis](commerce-deal-intelligence.md) |
+| shopping-needs-discovery | Discover and refine purchasing requirements through structured interviewing. Use when a user need... | [Synopsis](commerce-needs-discovery.md) |
 
 ### content
 
-| Skill | Description |
-|-------|-------------|
-| [youtube-content-analysis](skills/content/youtube-content-analysis/SKILL.md) | Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video transcripts (with or with... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| youtube-content-analysis | Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video trans... | [Synopsis](content-youtube.md) |
 
 ### execution
 
-| Skill | Description |
-|-------|-------------|
-| [briefingmemo](skills/execution/briefingmemo/SKILL.md) | >- |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| briefingmemo | >- | [Synopsis](execution-briefingmemo.md) |
 
 ### general
 
-| Skill | Description |
-|-------|-------------|
-| [peer-review](skills/general/peer-review/SKILL.md) | >- |
-| [think-assist](skills/general/think-assist/SKILL.md) | >- |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| peer-review | >- | [Synopsis](general-peer-review.md) |
+| think-assist | >- | [Synopsis](general-think-assist.md) |
 
 ### gov-contract
 
-| Skill | Description |
-|-------|-------------|
-| [gov-contract-past](skills/gov-contract/gov-contract-past/SKILL.md) | Research past government contract vendors, pricing, and contract structures for a specific service at a specific loca... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| gov-contract-past | Research past government contract vendors, pricing, and contract structures for a specific servic... | [Synopsis](gov-contract-gov-contract-past.md) |
 
 ### software-dev
 
-| Skill | Description |
-|-------|-------------|
-| [ai-development-loop](skills/software-dev/ai-development-loop/SKILL.md) | Systematic development workflow for AI agents with ticket management, reflection, and continuous improvement. Use whe... |
-| [code-quality-validation](skills/software-dev/code-quality-validation/SKILL.md) | Comprehensive code quality validation supporting multiple languages with linting, formatting, testing, and security s... |
-| [codebase-tutorial](skills/software-dev/codebase-tutorial/SKILL.md) | Generate beginner-friendly tutorials from codebases. Use when asked to analyze a repository, explain a codebase, crea... |
-| [git-repository-management](skills/software-dev/git-repository-management/SKILL.md) | Comprehensive git repository workflow for status analysis, change organization, and commit management with secret sca... |
-| [monorepo-extractor](skills/software-dev/monorepo-extractor/SKILL.md) | Safely extract projects from monorepos while preserving git history and ensuring team coordination. Use when needing ... |
-| [nixify](skills/software-dev/nixify/SKILL.md) | Add Nix flake support to a project so it can be installed via nix run github:... or nix profile install github:.... U... |
-| [project-adopter](skills/software-dev/project-adopter/SKILL.md) | Adopt and establish best practices for projects by overwriting existing preferences with standardized developer UX fl... |
-| [project-configuration](skills/software-dev/project-configuration/SKILL.md) | Configure existing projects with compatible preferences without overwriting established workflows. Use when adding mi... |
-| [project-detection](skills/software-dev/project-detection/SKILL.md) | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. Use when needing to a... |
-| [repository-health-review](skills/software-dev/repository-health-review/SKILL.md) | Comprehensive repository health analysis for outdated information, conflicting rules, undocumented standards, lessons... |
-| [surgical-config](skills/software-dev/surgical-config/SKILL.md) | Deterministic, non-destructive configuration file modifications using a tiered tool hierarchy. Use when modifying con... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
+| code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](software-dev-code-quality-validation.md) |
+| codebase-tutorial | Generate beginner-friendly tutorials from codebases. Use when asked to analyze a repository, expl... | [Synopsis](software-dev-codebase-tutorial.md) |
+| git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](software-dev-git-repository-management.md) |
+| monorepo-extractor | Safely extract projects from monorepos while preserving git history and ensuring team coordinatio... | [Synopsis](software-dev-monorepo-extractor.md) |
+| nixify | Add Nix flake support to a project so it can be installed via nix run github:... or nix profile i... | [Synopsis](software-dev-nixify.md) |
+| project-adopter | Adopt and establish best practices for projects by overwriting existing preferences with standard... | [Synopsis](software-dev-project-adopter.md) |
+| project-configuration | Configure existing projects with compatible preferences without overwriting established workflows... | [Synopsis](software-dev-project-configuration.md) |
+| project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
+| repository-health-review | Comprehensive repository health analysis for outdated information, conflicting rules, undocumente... | [Synopsis](software-dev-repository-health-review.md) |
+| surgical-config | Deterministic, non-destructive configuration file modifications using a tiered tool hierarchy. Us... | [Synopsis](software-dev-surgical-config.md) |
 
 ### tech-maturity
 
-| Skill | Description |
-|-------|-------------|
-| [tech-maturity](skills/tech-maturity/tech-maturity/SKILL.md) | Quantify, audit, and visualize a project's technical maturity using the Tech Maturity rubric from techmaturity.github... |
+| Skill | Description | Details |
+|-------|-------------|---------|
+| tech-maturity | Quantify, audit, and visualize a project's technical maturity using the Tech Maturity rubric from... | [Synopsis](tech-maturity-tech-maturity.md) |
 
 
 
@@ -104,6 +104,11 @@ npx skills add levonk/skills-releases
 ```
 
 Or browse individual skill directories under `skills/<category>/<skill-name>/`.
+
+## Detailed Skill Docs
+
+Per-skill synopsis pages are in [`docs/`](docs/) — each covers metadata, key sections,
+usage examples, and related skills. The table above links to each synopsis.
 
 ## Categories
 

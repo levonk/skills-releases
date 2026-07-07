@@ -1,0 +1,129 @@
+<!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
+<!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
+
+# Room Planner
+
+> Category: **cad** · Status: ready · Version: 1.0.0
+
+Furniture layout and move planning skill using build123d. Optimizes room arrangements, creates furniture libraries, and generates move plans. Use when planning furniture placement, designing room layouts, optimizing furniture arrangements, generating move plans, creating furniture inventories, estimating furniture weights, planning move logistics, generating move checklists, or arranging living room/bedroom/office furniture — even if the user only mentions "plan a room" or "organize a move.
+
+## Metadata
+
+| Field | Value |
+|-------|-------|
+| Name | `room-planner` |
+| Category | `cad` |
+| Version | `1.0.0` |
+| Status | `ready` |
+| Owner | https://github.com/levonk |
+
+## Tags
+- `ai/skill`
+- `computer-aided-design`
+- `furniture-design`
+- `layout`
+- `move-planning`
+- `build123d`
+- `room-design`
+
+## Quick Start
+
+Planning furniture layouts:
+
+```python
+from build123d import *
+
+# Create a room layout
+room = create_room(5000, 4000, 2400)
+
+# Add furniture
+layout = create_furniture_layout(room, [
+    ("sofa", (1000, 2000), (500, 1000)),
+    ("dining_table", (1600, 900), (2500, 2000)),
+    ("bed", (2000, 1800), (1000, 3000))
+])
+```
+
+## Instructions
+
+### Dependencies
+
+This skill requires:
+
+- **build123d-tool** skill for core CAD functionality
+- **3d-modeling** skill for architectural components
+
+```python
+from build123d import *
+from ocp_vscode import show_object
+```
+
+### Furniture Library
+
+#### Living Room and Office Furniture
+
+Create sofas, armchairs, coffee tables, dining tables, office desks, and ergonomic office chairs. All furniture is parametric with configurable dimensions and style variants (straight legs, tapered legs, pedestal bases).
+
+→ See [references/living-room-furniture.md](references/living-room-furniture.md) for `create_sofa`, `create_armchair`, `create_coffee_table`, `create_dining_table`, `create_desk`, and `create_office_chair` implementations.
+
+#### Bedroom Furniture
+
+Create beds with mattresses and headboards, nightstands with drawers, dressers with multiple drawers and pulls, and wardrobes with configurable compartments (hanging space, shelves, or mixed).
+
+→ See [references/bedroom-furniture.md](references/bedroom-furniture.md) for `create_bed`, `create_nightstand`, `create_dresser`, and `create_wardrobe` implementations.
+
+### Layout Planning System
+
+#### Room Layout Generator
+
+Place furniture items in a room with clearance checking. The `create_furniture_layout` function handles placement, and `create_furniture_item` is a factory that routes to the appropriate furniture creator.
+
+#### Space Planning Algorithms
+
+Optimize furniture placement using heuristic scoring (traffic flow, functional zones, aesthetics) with boundary and overlap validation.
+
+→ See [references/layout-optimization.md](references/layout-optimization.md) for `create_furniture_layout`, `create_furniture_item`, `optimize_furniture_layout`, `is_valid_layout`, and `evaluate_layout` implementations.
+
+### Move Planning System
+
+#### Inventory Management
+
+Create furniture inventories with weight estimation, fragility assessment, and disassembly requirements. Weight is estimated from volume and furniture-type-specific factors.
+
+#### Move Logistics
+
+Plan optimal move sequences (large/heavy items first, fragile items last) and generate comprehensive move checklists (disassembly, packing, protection, tools).
+
+→ See [references/layout-optimization.md](references/layout-optimization.md) for `create_furniture_inventory`, `estimate_weight`, `assess_fragility`, `plan_move_sequence`, and `generate_move_checklist` implementations.
+
+## Examples
+
+### Living Room Layout
+
+A complete living room with sofa, coffee table, armchair, TV stand, and bookshelf.
+
+→ See [references/layout-optimization.md](references/layout-optimization.md) — Example: Living Room Layout for the `create_living_room_layout` implementation.
+
+### Bedroom Move Plan
+
+A complete move plan for a bedroom including inventory, move sequence, and checklist.
+
+→ See [references/layout-optimization.md](references/layout-optimization.md) — Example: Bedroom Move Plan for the `plan_bedroom_move` implementation.
+
+## References
+
+- [build123d-tool Skill](../build123d-tool/SKILL.md) - Core CAD functionality
+- [3d-modeling Skill](../3d-modeling/SKILL.md) - Architectural components
+- [Ergonomic Standards](https://www.osha.gov/) - Workplace design guidelines
+- [Moving Industry Standards](https://www.amsa.org/) - Professional moving guidelines
+
+## Related Skills
+- **build123d-tool** (skill, dependency) — Core build123d CAD tool setup and Python environment — provides the foundation this skill builds on
+- **3d-modeling** (skill, dependency) — Architectural 3D modeling skill that provides room structures and architectural components used here
+- **base-ai-guidance** (skill, base-framework) — Base AI guidance and content principles for all AI skills
+
+---
+
+- **Full skill**: [`skills/cad/room-planner/SKILL.md`](skills/cad/room-planner/SKILL.md)
+- **Install**: `npx skills add levonk/skills-releases`
+- **Generated**: 2026-07-07T22:59:26Z
