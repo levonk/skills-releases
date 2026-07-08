@@ -57,4 +57,4 @@ Comprehensive code quality validation supporting multiple languages with linting
 
 - **Full skill**: [`skills/software-dev/code-quality-validation/SKILL.md`](skills/software-dev/code-quality-validation/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-07T22:59:26Z
+- **Generated**: 2026-07-08T09:27:24Z

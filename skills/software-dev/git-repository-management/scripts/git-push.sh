@@ -181,9 +181,9 @@ main() {
         fi
     fi
 
-    # Step 5: Push
+    # Step 5: Push (with --follow-tags to push auto-tags created by git-commit-batch.sh)
     echo "PUSHING:"
-    if git_cmd push "$remote" "$branch" 2>&1; then
+    if git_cmd push --follow-tags "$remote" "$branch" 2>&1; then
         echo "PUSH_SUCCESS:$remote/$branch"
         echo "BACKUP_BRANCH:$backup_branch"
         echo "BACKUP_NOTE:Remove with: git branch -D $backup_branch"

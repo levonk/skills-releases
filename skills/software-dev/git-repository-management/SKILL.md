@@ -45,14 +45,14 @@ Systematic workflow for managing git repositories from dirty state to clean with
 # Workflow (3-4 handoffs total):
 # 1. AI calls git-collect.sh - gets all data (changes + quality checks)
 # 2. AI analyzes data and makes decisions
-# 3. AI calls git-commit-batch.sh with all commit decisions
-# 4. AI calls git-push.sh if needed
-# 5. AI calls git-tag.sh if the user requests a tag
+# 3. AI calls git-commit-batch.sh with all commit decisions (auto-creates pre/post tags)
+# 4. AI calls git-push.sh if needed (pushes commits + auto-tags via --follow-tags)
+# 5. AI calls git-tag.sh if the user requests an additional tag
 
 ./scripts/git-collect.sh [path]              # Collect all data in one call
-./scripts/git-commit-batch.sh [path]         # Execute all commits in one call
-./scripts/git-push.sh [remote] [branch] [path]  # Push commits
-./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD
+./scripts/git-commit-batch.sh [--slug <slug>] [path]  # Execute all commits + auto-tag
+./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # Push commits + tags
+./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD (user-requested only)
 ```
 
 > **Working in a subdirectory?** All scripts automatically discover the repository root from any subdirectory. You can also pass the target path explicitly:

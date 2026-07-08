@@ -88,4 +88,4 @@ For the full constraint checklist for products and services, see `references/con
 
 - **Full skill**: [`skills/commerce/needs-discovery/SKILL.md`](skills/commerce/needs-discovery/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-07T22:59:26Z
+- **Generated**: 2026-07-08T09:27:24Z

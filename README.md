@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `550a5db5dff8e9f3a27a9156109e07a3c4f28539` · Branch: `main` · Generated: 2026-07-07T22:59:26Z
+> Commit: `7a443cbefadaced9c0b9144ef74734509ecd1c7c` · Branch: `main` · Generated: 2026-07-08T09:27:24Z
 
 ## Overview
 
@@ -27,16 +27,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
-| org-development | Comprehensive organizational design, restructuring, and role management for Agent Org framework. ... | [Synopsis](business-org-development.md) |
 | task-triage | Apply the Agent Organization 26-tier prioritization framework to triage tasks, requests, and work... | [Synopsis](business-task-triage.md) |
-
-### cad
-
-| Skill | Description | Details |
-|-------|-------------|---------|
-| 3d-modeling | Architectural 3D modeling skill for rooms, cabinets, closets, and building elements using build12... | [Synopsis](cad-3d-modeling.md) |
-| build123d-tool | Core build123d CAD tool setup and Python environment for 3D modeling. Provides the foundation for... | [Synopsis](cad-build123d-tool.md) |
-| room-planner | Furniture layout and move planning skill using build123d. Optimizes room arrangements, creates fu... | [Synopsis](cad-room-planner.md) |
 
 ### commerce
 
@@ -65,12 +56,6 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | peer-review | >- | [Synopsis](general-peer-review.md) |
 | think-assist | >- | [Synopsis](general-think-assist.md) |
 
-### gov-contract
-
-| Skill | Description | Details |
-|-------|-------------|---------|
-| gov-contract-past | Research past government contract vendors, pricing, and contract structures for a specific servic... | [Synopsis](gov-contract-gov-contract-past.md) |
-
 ### software-dev
 
 | Skill | Description | Details |
@@ -91,7 +76,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
-| tech-maturity | Quantify, audit, and visualize a project's technical maturity using the Tech Maturity rubric from... | [Synopsis](tech-maturity-tech-maturity.md) |
+| tech-maturity | Quantify, audit, and visualize a project's technical maturity. Supports both interactive and full... | [Synopsis](tech-maturity-tech-maturity.md) |
 
 
 

@@ -197,10 +197,33 @@ validate_commit_message() {
 }
 
 main() {
-    local target_path="${1:-.}"
+    local slug="" target_path="."
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --slug) slug="$2"; shift 2 ;;
+            --slug=*) slug="${1#--slug=}"; shift ;;
+            *) target_path="$1"; shift ;;
+        esac
+    done
+
     local repo_root
     repo_root=$(discover_repo_root "$target_path")
     cd "$repo_root"
+
+    # Derive slug from branch name if not provided (strip path prefix: chore/foo-bar → foo-bar)
+    if [[ -z "$slug" ]]; then
+        slug=$(git_cmd rev-parse --abbrev-ref HEAD 2>/dev/null || echo "run")
+        slug="${slug##*/}"
+    fi
+
+    # Capture pre-run SHA and create pre-tag before any commits
+    local pre_sha
+    pre_sha=$(git_cmd rev-parse HEAD)
+    local tag_prefix
+    tag_prefix="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
+    local pre_tag="${tag_prefix}-${slug}-pre"
+    git_cmd tag -a "$pre_tag" "$pre_sha" -m "Pre-run checkpoint: ${slug}"
+    echo "AUTO_TAG_PRE:$pre_tag"
 
     echo "=== BATCH_COMMIT_START ==="
 
@@ -340,6 +363,15 @@ main() {
     fi
 
     echo "BATCH_COMMIT_COMPLETE:$commit_count"
+
+    # Create post-run tag after all commits
+    local post_ts
+    post_ts=$(date -u +%Y%m%d%H%M%S)
+    local post_prefix="tags/auto/$(date -u +%Y/%m)/${post_ts}"
+    local post_tag="${post_prefix}-${slug}-post"
+    git_cmd tag -a "$post_tag" HEAD -m "Post-run checkpoint: ${slug}"
+    echo "AUTO_TAG_POST:$post_tag"
+
     echo "=== BATCH_COMMIT_END ==="
 }
 

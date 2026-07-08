@@ -80,29 +80,22 @@ The AI agent orchestrates the complete workflow with minimal handoffs:
 # - Groups changes into logical commits
 # - Writes commit messages
 # - Handles quality check failures
-# - Derives a slug for the run (used in automatic tags)
+# - Derives a slug for the run (optional — defaults to branch name)
 
-# Create pre-run tag (automatic, no user permission needed)
-TAG_PREFIX="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
-git tag -a "${TAG_PREFIX}-${SLUG}-pre" -m "Pre-run checkpoint: ${SLUG}"
-
-# Handoff 2: Execute all commits
+# Handoff 2: Execute all commits (auto-creates pre/post tags)
 # NOTE: Use \n\n to separate subject from body — the script enforces
 # mandatory commit bodies and rejects bodyless commits with NO_BODY.
+# Pass --slug for a descriptive run slug; it's also used by git-push.sh.
 echo "COMMIT:Add user authentication\n\n- Implement login endpoint with JWT generation\n- Add session validation middleware\n- Cover with auth tests
 FILES:src/auth/login.py
 FILES:src/auth/session.py
 FILES:tests/auth/test_login.py
 COMMIT:Update API documentation\n\n- Document the new /auth/login endpoint\n- Add JWT token format section to README
 FILES:docs/api/authentication.md
-FILES:README.md" | ./scripts/git-commit-batch.sh
+FILES:README.md" | ./scripts/git-commit-batch.sh --slug add-jwt-auth
 
-# Create post-run tag (automatic, no user permission needed)
-TAG_PREFIX="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
-git tag -a "${TAG_PREFIX}-${SLUG}-post" -m "Post-run checkpoint: ${SLUG}"
-
-# Handoff 3: Push if needed (including tags)
-./scripts/git-push.sh origin main
+# Handoff 3: Push (auto-tags pushed via --follow-tags)
+./scripts/git-push.sh origin main --slug add-jwt-auth
 
 # Handoff 4 (only if user asked for a tag): tag HEAD
 ./scripts/git-tag.sh --category feat --slug add-jwt-auth --message "Mark JWT auth rollout"
@@ -149,9 +142,10 @@ Only 3 scripts needed to minimize AI-script handoffs:
 
 **git-commit-batch.sh** - Single commit execution handoff
 - Executes multiple commits from AI-provided decisions
+- Creates automatic pre/post run tags (`tags/auto/YYYY/MM/TS-<slug>-{pre,post}`)
 - Input: STDIN with commit messages and file groupings
-- Usage: `printf 'COMMIT:<subject>\\n\\n- <body line>\\nFILES:<file1>\nFILES:<file2>\n' | ./scripts/git-commit-batch.sh [repo_root]`
-- Output: Execution results for each commit
+- Usage: `printf 'COMMIT:<subject>\\n\\n- <body line>\\nFILES:<file1>\nFILES:<file2>\n' | ./scripts/git-commit-batch.sh [--slug <slug>] [repo_root]`
+- Output: Execution results for each commit, `AUTO_TAG_PRE:<tag>`, `AUTO_TAG_POST:<tag>`
 
 **git-push.sh** - Push commits (fetch-rebase-push with auto-resolution)
 - Creates a backup branch at `scratch/merge/YYYY/MM/YYYYMMDDHHmm-{slug}-pre` before any changes
@@ -163,6 +157,7 @@ Only 3 scripts needed to minimize AI-script handoffs:
   - `MERGE_STATE:IN_PROGRESS` — merge is active, not aborted
   - `NEXT_STEPS:` — instructions for AI to resolve, stage, commit, and re-run push
   - `ABORT_CMD:` — how to discard the merge if needed
+- Uses `--follow-tags` so auto-tags from `git-commit-batch.sh` are pushed with the commits
 - The AI agent should resolve conflicts, `git add` resolved files, `git commit --no-edit`, then re-run the push script
 - Usage: `./scripts/git-push.sh [remote] [branch] [repo_root] [--slug <slug>]`
 - Output: `PUSH_SUCCESS:<remote>/<branch>` with backup branch info, or `PUSH_FAILED:MERGE_CONFLICTS_NEED_RESOLUTION` with conflict details

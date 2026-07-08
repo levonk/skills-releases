@@ -5,7 +5,7 @@
 
 > Category: **tech-maturity** · Status:  · Version: 1.0.0
 
-Quantify, audit, and visualize a project's technical maturity using the Tech Maturity rubric from techmaturity.github.io. Supports both interactive and fully automated AI-driven assessments where Claude examines codebases, configuration files, and documentation to score 42 engineering capabilities across 6 dimensions. Use this skill whenever the user asks to assess technical maturity, evaluate engineering practices, audit development processes, score software quality, measure DevOps maturity, analyze code quality practices, review testing coverage, evaluate CI/CD maturity, or wants to understand how mature their technical practices are compared to industry standards.
+Quantify, audit, and visualize a project's technical maturity. Supports both interactive and fully automated AI-driven assessments where AI examines codebases, configuration files, and documentation to score 42 engineering capabilities across 6 dimensions. Use this skill whenever the user asks to assess technical maturity, evaluate engineering practices, audit development processes, score software quality, measure DevOps maturity, analyze code quality practices, review testing coverage, evaluate CI/CD maturity, or wants to understand how mature their technical practices are compared to industry standards.
 
 ## Metadata
 
@@ -135,4 +135,4 @@ When assessing legacy systems:
 
 - **Full skill**: [`skills/tech-maturity/tech-maturity/SKILL.md`](skills/tech-maturity/tech-maturity/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-07T22:59:26Z
+- **Generated**: 2026-07-08T09:27:24Z
