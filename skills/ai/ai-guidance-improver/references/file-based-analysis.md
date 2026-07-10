@@ -8,6 +8,101 @@ This skill applies the same quality principles used in creating new AI guidance,
 
 ## Analysis Framework
 
+The shared process discipline (prioritize, propose before applying, confirm,
+apply as separate commits, update dates, validate, never silently overwrite)
+follows the shared audit methodology:
+
+---
+description: Shared audit and improvement methodology for upserting/improving existing AI guidance files
+---
+
+### Audit Methodology
+
+When updating or improving an existing AI guidance file (skill, workflow, agent,
+prompt, rule, AGENTS.md), follow this process. The type-specific audit checklist
+stays in each consumer's own reference file; this include covers the shared
+process discipline that applies to all guidance types.
+
+#### Step 1: Read Fully
+
+Read the existing file completely — frontmatter, body, and any bundled resources
+(`scripts/`, `references/`, `assets/`, `evals/`). Understand what the guidance
+currently does before proposing any changes. Do not skip this step even if the
+file looks familiar.
+
+#### Step 2: Audit Against Guidelines
+
+Check the existing file for compliance with the type-specific guidelines. The
+audit checklist for each type lives in the consumer's own reference file — this
+step is where type-specific knowledge is applied. Flag every issue found.
+
+#### Step 3: Prioritize
+
+Not all issues are equally important. Group findings into three tiers:
+
+- **Critical**: Missing required frontmatter, broken references, stale text that
+  misleads, anything that breaks functionality or discovery.
+- **Important**: Description quality, progressive disclosure, context
+  declaration, structure issues that cause token inefficiency.
+- **Nice to have**: Tag cleanup, see-also relationships, unused example files,
+  minor audience separation issues.
+
+#### Step 4: Propose — Do Not Apply Yet
+
+Present a prioritized list of specific, actionable changes. For each change,
+show the before/after so the author can see exactly what will change and why.
+Do not modify the file at this stage.
+
+#### Step 5: Confirm Before Applying
+
+Present the proposed changes and ask whether to proceed. Let the author:
+- Accept all changes
+- Accept a subset (cherry-pick)
+- Reject entirely
+
+Do not modify the file until the author confirms. The author may have
+intentionally deviated from a guideline — propose, explain the benefit, and let
+them decide.
+
+#### Step 6: Apply as Separate Commits
+
+Apply approved changes as separate commits, one logical change per commit
+(same discipline as format conversion): frontmatter fixes, structure changes,
+resource cleanup, include additions — each independently reviewable and
+revertable.
+
+#### Step 7: Update Dates
+
+Update `date.updated` and `date.last-used` in the frontmatter when changes are
+applied. Set both to the current date (YYYY-MM-DD).
+
+#### Step 8: Validate
+
+After applying improvements:
+
+1. **Check for new conflicts** introduced by changes
+2. **Verify all references** point to valid files/sections
+3. **Test Go text/templates** render correctly (if `.tmpl` files were modified)
+4. **Run `just validate`** to check for leaked delimiters and frontmatter issues
+5. **Run `just build`** to confirm the build succeeds
+
+#### Never Silently Overwrite
+
+The author may have intentionally deviated from a guideline. Propose, explain
+the benefit, and let them decide. Never blindly overwrite the author's intent.
+
+#### Deeper Analysis
+
+For cross-file and system-wide issues (conflicts between files, duplications
+across multiple guidance files, scattered context across the AI system), use
+the `ai-guidance-improver` skill, which has the full cross-file analysis
+framework. Type-specific upsert skills focus on single-file compliance; the
+improver handles system-wide consistency.
+
+
+The type-specific parts of this framework are the issue catalog (Step 1 below),
+the fix examples (Step 3), and the type-specific guidance at the end.
+
 ### Step 1: Identify Issues
 
 Analyze the target AI guidance file(s) for the following issues:
@@ -47,10 +142,15 @@ Analyze the target AI guidance file(s) for the following issues:
 - **Example**: Boilerplate repo with deployer and creator guidance mixed
 - **Fix**: Use progressive disclosure to separate audience-specific information
 
-#### Missing Jinja Templating
+#### Missing Go Text/Template Includes
 - **Symptom**: Repeated patterns that could be shared via templates
 - **Example**: Same frontmatter structure copied across 10 files
-- **Fix**: Create shared templates and use jinja includes
+- **Fix**: Create shared templates and use Go text/template includes
+
+#### Python Scripts Missing PEP 723 / uv Header
+- **Symptom**: Bundled `.py` scripts in `scripts/` lack the PEP 723 inline script metadata header, so they require a manual venv/build step instead of running via `uv run --script`
+- **Example**: Script starts with `#!/usr/bin/env python3` and no `# /// script` block; dependencies installed via inline `pip install` or a separate requirements file
+- **Fix**: Add the `#!/usr/bin/env -S uv run --script` shebang and `# /// script` metadata block (see the `python-script-standards` include); declare third-party deps in the `dependencies` array; remove inline `pip install` calls
 
 #### Stale or Contradictory Text
 - **Symptom**: Documentation that no longer reflects current reality
@@ -72,25 +172,7 @@ Analyze the target AI guidance file(s) for the following issues:
 - **Example**: "Be careful not to break the legacy build system" when the legacy system was removed
 - **Fix**: Trim warnings for risks that no longer exist
 
-### Step 2: Prioritize Improvements
-
-Not all issues are equally important. Prioritize based on:
-
-**High Priority** (Fix immediately):
-- Conflicting instructions (breaks functionality)
-- Duplicated critical information (maintenance burden)
-- Missing required frontmatter fields (breaks discovery)
-
-**Medium Priority** (Fix soon):
-- Poor progressive disclosure (token inefficiency)
-- Scattered context (cache inefficiency)
-- Specific vs general issues (flexibility)
-
-**Low Priority** (Fix when convenient):
-- Missing jinja templating (maintenance optimization)
-- Minor audience separation issues (usability improvement)
-
-### Step 3: Apply Improvements
+### Step 2: Apply Improvements
 
 For each identified issue, apply the appropriate fix:
 
@@ -98,8 +180,159 @@ For each identified issue, apply the appropriate fix:
 
 Use the base frontmatter template:
 
-```jinja2
-{{{ include "includes/base-frontmatter.md" . }}}
+```go-template
+---
+description: Standard frontmatter template for AI guidance files (skills, workflows, agents, prompts)
+---
+
+### Standard Frontmatter Template
+
+This template provides consistent frontmatter structure across all AI guidance files. Use jinja templating to include only the fields relevant to your file type.
+
+#### Required Fields (All Types)
+
+```yaml
+# Basic identification
+name: <string>                    # Human-readable name
+description: <string>            # What this does and when to use it (100-200 words ideal)
+```
+
+#### Common Optional Fields
+
+```yaml
+# Versioning and status
+version: <string>                 # Semantic version (e.g., 1.0.0)
+status: <enum>                    # draft | ready | deprecated | archived
+date:
+  created: <YYYY-MM-DD>           # Creation date
+  updated: <YYYY-MM-DD>           # Last modification date
+  last-used: <YYYY-MM-DD>         # Last usage date (for maintenance tracking)
+
+# Ownership and metadata
+owner: <url>                      # Repository or team URL
+tags: <array<string>>             # Discoverability tags
+see-also: <array>                 # Related resources (use base-ai-guidance or base-workflow-guidance)
+dependencies: <array>            # Required skills/tools/templates
+
+# Execution control (workflows/agents)
+triggers: <array<string>>        # When this should activate
+concurrency:
+  group: <string>                 # Concurrency control group
+  cancel_in_progress: <boolean>  # Whether to cancel running instances
+retries:
+  max: <number>                   # Maximum retry attempts
+  backoff_secs: <number>          # Backoff delay between retries
+safety:
+  dry_run: <boolean>              # Whether to run in dry-run mode
+  confirm_dangerous_ops: <boolean> # Whether to confirm dangerous operations
+
+# Artifacts and permissions
+artifacts: <array<string>>        # Files this creates
+permissions: <array<string>>      # Required permissions
+tools: <array<object>>           # Tools this uses
+
+# Runtime information
+runtime:
+  duration:
+    min: <string>                 # Minimum execution time
+    max: <string>                 # Maximum execution time
+    avg: <string>                 # Average execution time
+  terminate: <string>            # Termination condition
+```
+
+#### Type-Specific Fields
+
+**Skills:**
+```yaml
+# No additional fields beyond common ones
+```
+
+**Workflows:**
+```yaml
+workflow: <string>               # Workflow identifier
+slug: <string>                   # URL-friendly slug
+use: <string>                    # When to use this workflow
+role: <string>                   # Role this workflow embodies
+aliases: <array<string>>         # Alternative names
+visibility: <enum>               # internal | public | private
+compliance: <array<string>>      # Compliance requirements
+```
+
+**Agents:**
+```yaml
+agent: <string>                  # Agent identifier
+slug: <string>                   # URL-friendly slug
+use: <string>                    # When to use this agent
+role: <string>                   # Role this agent embodies
+color: <string>                   # UI color hex code
+icon: <string>                   # UI emoji/icon
+categories: <array<string>>      # Categorization
+capabilities: <array<string>>    # What this agent can do
+model-level: <enum>              # default | advanced | experimental
+model: <string>                  # Specific model override
+```
+
+**Prompts:**
+```yaml
+prompt: <string>                 # Prompt identifier
+slug: <string>                   # URL-friendly slug
+template: <string>               # Template this follows
+use: <string>                    # When to use this prompt
+role: <string>                   # Role this prompt embodies
+```
+
+#### see-also Best Practices
+
+For most AI guidance files, reference the bundled templates rather than individual components:
+
+- **Skills**: Use `base-ai-guidance` (includes self-update, ai-guidance-creation, base-content-principles)
+- **Workflows**: Use `base-workflow-guidance` (includes base-ai-guidance + levonk-methodology + workflow-design-principles)
+- **Execution-only workflows**: Use `base-ai-guidance` (no methodology/design principles needed)
+
+Example:
+```yaml
+see-also:
+  - template: "base-workflow-guidance"
+    relationship: "base-framework"
+    description: "Shared framework for creating all AI guidance types"
+  - template: "base-frontmatter"
+    relationship: "structure-standard"
+    description: "Standard frontmatter template for AI guidance files"
+```
+
+#### Self-Update Requirement Pattern
+
+For files that track usage, include this pattern via the `base-ai-guidance` template:
+
+```markdown
+{{ include "includes/base-ai-guidance.md" . }}
+```
+
+This automatically includes the self-update requirement along with other base guidance.
+
+#### Context Declaration Pattern
+
+To preserve AI cache capability, declare context at the bottom:
+
+```markdown
+---
+## Context Declaration
+
+### File Paths
+- Skill directory: `{{ skill_path }}`
+- Reference files: `{{ references_path }}`
+- Template files: `{{ templates_path }}`
+
+### External Resources
+- Documentation: {{ external_docs_url }}
+- Repository: {{ repo_url }}
+
+### Project Information
+- Project name: {{ project_name }}
+- Repository: {{ repo_name }}
+- Owner: {{ owner }}
+```
+
 ```
 
 Customize fields based on the guidance type (skill, workflow, agent, prompt).
@@ -183,13 +416,13 @@ For creating or modifying boilerplates, see [Boilerplate Development Guide](docs
 - **I want to modify an existing boilerplate**: See Development Guide
 ```
 
-#### Applying Jinja Templating
+#### Applying Go Text/Template Includes
 
 For repeated patterns:
 
 1. **Identify repeated content** across multiple files
 2. **Create shared template** in `includes/` directory
-3. **Replace with jinja include** in each file
+3. **Replace with Go text/template include** in each file
 4. **Update template** to propagate changes
 
 **Example:**
@@ -209,22 +442,163 @@ date:
 **After:**
 ```yaml
 ---
-{{{ include "includes/base-frontmatter.md" . }}}
+---
+description: Standard frontmatter template for AI guidance files (skills, workflows, agents, prompts)
+---
+
+### Standard Frontmatter Template
+
+This template provides consistent frontmatter structure across all AI guidance files. Use jinja templating to include only the fields relevant to your file type.
+
+#### Required Fields (All Types)
+
+```yaml
+# Basic identification
+name: <string>                    # Human-readable name
+description: <string>            # What this does and when to use it (100-200 words ideal)
+```
+
+#### Common Optional Fields
+
+```yaml
+# Versioning and status
+version: <string>                 # Semantic version (e.g., 1.0.0)
+status: <enum>                    # draft | ready | deprecated | archived
+date:
+  created: <YYYY-MM-DD>           # Creation date
+  updated: <YYYY-MM-DD>           # Last modification date
+  last-used: <YYYY-MM-DD>         # Last usage date (for maintenance tracking)
+
+# Ownership and metadata
+owner: <url>                      # Repository or team URL
+tags: <array<string>>             # Discoverability tags
+see-also: <array>                 # Related resources (use base-ai-guidance or base-workflow-guidance)
+dependencies: <array>            # Required skills/tools/templates
+
+# Execution control (workflows/agents)
+triggers: <array<string>>        # When this should activate
+concurrency:
+  group: <string>                 # Concurrency control group
+  cancel_in_progress: <boolean>  # Whether to cancel running instances
+retries:
+  max: <number>                   # Maximum retry attempts
+  backoff_secs: <number>          # Backoff delay between retries
+safety:
+  dry_run: <boolean>              # Whether to run in dry-run mode
+  confirm_dangerous_ops: <boolean> # Whether to confirm dangerous operations
+
+# Artifacts and permissions
+artifacts: <array<string>>        # Files this creates
+permissions: <array<string>>      # Required permissions
+tools: <array<object>>           # Tools this uses
+
+# Runtime information
+runtime:
+  duration:
+    min: <string>                 # Minimum execution time
+    max: <string>                 # Maximum execution time
+    avg: <string>                 # Average execution time
+  terminate: <string>            # Termination condition
+```
+
+#### Type-Specific Fields
+
+**Skills:**
+```yaml
+# No additional fields beyond common ones
+```
+
+**Workflows:**
+```yaml
+workflow: <string>               # Workflow identifier
+slug: <string>                   # URL-friendly slug
+use: <string>                    # When to use this workflow
+role: <string>                   # Role this workflow embodies
+aliases: <array<string>>         # Alternative names
+visibility: <enum>               # internal | public | private
+compliance: <array<string>>      # Compliance requirements
+```
+
+**Agents:**
+```yaml
+agent: <string>                  # Agent identifier
+slug: <string>                   # URL-friendly slug
+use: <string>                    # When to use this agent
+role: <string>                   # Role this agent embodies
+color: <string>                   # UI color hex code
+icon: <string>                   # UI emoji/icon
+categories: <array<string>>      # Categorization
+capabilities: <array<string>>    # What this agent can do
+model-level: <enum>              # default | advanced | experimental
+model: <string>                  # Specific model override
+```
+
+**Prompts:**
+```yaml
+prompt: <string>                 # Prompt identifier
+slug: <string>                   # URL-friendly slug
+template: <string>               # Template this follows
+use: <string>                    # When to use this prompt
+role: <string>                   # Role this prompt embodies
+```
+
+#### see-also Best Practices
+
+For most AI guidance files, reference the bundled templates rather than individual components:
+
+- **Skills**: Use `base-ai-guidance` (includes self-update, ai-guidance-creation, base-content-principles)
+- **Workflows**: Use `base-workflow-guidance` (includes base-ai-guidance + levonk-methodology + workflow-design-principles)
+- **Execution-only workflows**: Use `base-ai-guidance` (no methodology/design principles needed)
+
+Example:
+```yaml
+see-also:
+  - template: "base-workflow-guidance"
+    relationship: "base-framework"
+    description: "Shared framework for creating all AI guidance types"
+  - template: "base-frontmatter"
+    relationship: "structure-standard"
+    description: "Standard frontmatter template for AI guidance files"
+```
+
+#### Self-Update Requirement Pattern
+
+For files that track usage, include this pattern via the `base-ai-guidance` template:
+
+```markdown
+{{ include "includes/base-ai-guidance.md" . }}
+```
+
+This automatically includes the self-update requirement along with other base guidance.
+
+#### Context Declaration Pattern
+
+To preserve AI cache capability, declare context at the bottom:
+
+```markdown
+---
+## Context Declaration
+
+### File Paths
+- Skill directory: `{{ skill_path }}`
+- Reference files: `{{ references_path }}`
+- Template files: `{{ templates_path }}`
+
+### External Resources
+- Documentation: {{ external_docs_url }}
+- Repository: {{ repo_url }}
+
+### Project Information
+- Project name: {{ project_name }}
+- Repository: {{ repo_name }}
+- Owner: {{ owner }}
+```
+
 name: skill-name
 description: ...
 ```
 
-### Step 4: Validate Changes
-
-After applying improvements:
-
-1. **Check for new conflicts** introduced by changes
-2. **Verify all references** point to valid files/sections
-3. **Test jinja templates** render correctly
-4. **Ensure frontmatter** is valid YAML
-5. **Confirm context declaration** is complete and accurate
-
-### Step 5: Document Changes
+### Step 3: Document Changes
 
 For significant improvements, document:
 

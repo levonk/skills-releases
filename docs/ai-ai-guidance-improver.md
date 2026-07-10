@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# AI Guidance Improver
+# /// script
 
 > Category: **ai** · Status:  · Version: 1.0.0
 
@@ -32,7 +32,7 @@ Analyze and improve existing AI guidance files (skills, workflows, agents, promp
 This skill operates in two distinct modes:
 
 #### File-Based Mode
-Analyzes and improves existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) stored in the filesystem. This mode can apply jinja templating, restructure files, and make persistent changes.
+Analyzes and improves existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) stored in the filesystem. This mode can apply Go text/template includes, restructure files, and make persistent changes.
 
 **Use when:**
 - Improving existing guidance files in your codebase
@@ -41,7 +41,7 @@ Analyzes and improves existing AI guidance files (skills, workflows, agents, pro
 - Doing batch improvements to guidance files
 
 #### Interactive Mode
-Provides real-time suggestions and improvements for prompts users are actively writing or editing inline. This mode works with the text directly without file operations or jinja templating.
+Provides real-time suggestions and improvements for prompts users are actively writing or editing inline. This mode works with the text directly without file operations or Go text/template includes.
 
 **Use when:**
 - Writing a new prompt and want immediate feedback
@@ -57,7 +57,8 @@ Provides real-time suggestions and improvements for prompts users are actively w
 - "optimize this prompt: [your prompt text]"
 
 ## Related Skills
-- **ai-skill-upsert** (skill, complement) — For creating new AI guidance files
+- **ai-skill-upsert** (skill, complement) — For creating new AI guidance files; shares the research-phase and comparison-methodology includes
+- **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 
@@ -65,4 +66,4 @@ Provides real-time suggestions and improvements for prompts users are actively w
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-08T09:27:24Z
+- **Generated**: 2026-07-10T20:22:44Z

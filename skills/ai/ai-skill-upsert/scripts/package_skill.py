@@ -1,13 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Package a skill into a distributable .skill file (zip archive).
 
 Usage:
+    uv run --script package_skill.py <path/to/skill-folder>
+    uv run --script package_skill.py <path/to/skill-folder> ./dist
     python package_skill.py <path/to/skill-folder>
     python package_skill.py <path/to/skill-folder> ./dist
 
 Example:
-    python package_skill.py ./skills/pdf-rotator
+    uv run --script package_skill.py ./skills/pdf-rotator
     python package_skill.py ./skills/pdf-rotator ./dist
 """
 

@@ -9,6 +9,10 @@ Templates and terminology for the `agent-file-upsert` skill.
 | `AGENT-project-root-template.md.tmpl` | `AGENTS.md` | Users (people deploying/using the project) |
 | `AGENT-project-developer-template.md.tmpl` | `.agents/knowledge/developer.md` | Developers (people working on the code) |
 | `AGENT-project-subfolder-template.md.tmpl` | `{package}/AGENTS.md` | Agents working in a specific package/subtree |
+| `convention-detection.md.tmpl` | (reference only) | The skill itself — Phase 0 convention detection workflow |
+| `delta-analysis.md.tmpl` | (reference only) | The skill itself — Phase 1b delta analysis workflow |
+| `improvements-template.md.tmpl` | `internal-docs/improvements/INDEX.md` + `YYYY/MM/improvements-*.md` | Both humans and agents — potential improvements to consider |
+| `anti-patterns-template.md.tmpl` | `internal-docs/anti-patterns/INDEX.md` + `YYYY/MM/anti-patterns-*.md` | Both humans and agents — things explicitly NOT to do |
 
 ## Jargon
 
@@ -112,3 +116,86 @@ A structured rules format in the developer template:
 - **`<never>`** — forbidden actions (commit secrets, delete tests, use npm)
 
 **Why three buckets not one list:** A single list of "rules" doesn't communicate severity. "Always" is a habit; "ask-first" is a gate; "never" is a hard stop. The structure tells an agent not just *what* to do but *how binding* each rule is.
+
+### Convention Detection
+
+Phase 0 of the skill — detecting which agent-file convention a project uses
+(`AGENTS.md`, `CLAUDE.md`, `AGENT.md`, or combinations) and how they relate
+(symlink, referral, independent). The skill always creates `AGENTS.md` as the
+primary file; `CLAUDE.md` and `AGENT.md` are maintained as referrals or
+symlinks to it.
+
+**Why "convention" not "format":** "Format" implies file structure (YAML,
+JSON). "Convention" is about which filename the project uses and how multiple
+agent files relate — the social/organizational agreement, not the file
+structure.
+
+### Delta Analysis
+
+Phase 1b of the skill — analyzing repository changes (git history) since the
+AGENTS.md was last updated to extract positive findings (to add to AGENTS.md),
+negative findings (anti-patterns), and improvement candidates. Two-stage:
+script generates a structured report, subagent interprets it.
+
+**Why "delta" not "diff" or "changes":** "Delta" is the mathematical term for
+the difference between two states — it implies a structured comparison, not
+just a raw diff. The analysis produces categorized findings (positive,
+negative, improvements), not a line-by-line diff.
+
+### Improvements
+
+Potential improvements to architecture, standards, and processes —
+suggestions to consider, not decisions yet. Stored in
+`internal-docs/improvements/` with an `INDEX.md` (progressive disclosure:
+one-line summaries) and date-stamped detailed files (full rationale, current
+state, proposed change, origin). Populated from delta analysis and research
+phase findings.
+
+**Why "improvements" not "suggestions" or "ideas":** "Improvement" is
+directional — it makes something better. "Suggestion" is passive; "idea" is
+unformed. "Improvement" communicates that this is a concrete proposal with
+rationale, not a vague notion.
+
+### Anti-Patterns
+
+Things explicitly NOT to do — practices that were tried and found harmful or
+inferior. Stored in `internal-docs/anti-patterns/` with an `INDEX.md` (every
+entry marked with 🛑) and date-stamped detailed files (`🛑 Anti-Pattern:`
+title, `DO NOT DO THIS` preamble). Populated from delta analysis
+(revert/removal commits) and research phase anti-pattern discovery.
+
+**Triple marking:** Anti-patterns are marked as negative in three places —
+the AGENTS.md reference ("things NOT to do", "do NOT implement"), the
+INDEX.md preamble ("Do NOT implement any of these approaches", 🛑 prefixing
+every entry summary), and the detailed file (`🛑 Anti-Pattern:` title,
+`DO NOT DO THIS` preamble). This prevents any reader from mistaking an
+anti-pattern for a recommendation.
+
+**Why "anti-patterns" not "mistakes" or "bad practices":** "Anti-pattern" is
+the established software engineering term for a practice that seems good but
+is actually harmful. "Mistake" implies a one-off error; "bad practice" is
+vague. "Anti-pattern" carries the specific meaning of a repeatable approach
+that is known to be inferior.
+
+### Referral
+
+A convention file (`CLAUDE.md`, `AGENT.md`) that contains a single line
+pointing to `AGENTS.md` rather than independent content. Either `@AGENTS.md`
+(Claude Code native import syntax) or `Refer to [AGENTS.md](AGENTS.md)`.
+
+**Why "referral" not "redirect" or "alias":** "Referral" communicates that
+the file points to another for content — like a medical referral. "Redirect"
+implies HTTP-style automatic forwarding; "alias" implies the file is the same
+file. A referral is a pointer, not a copy and not an alias.
+
+### Symlink (convention)
+
+A filesystem symbolic link from `CLAUDE.md` to `AGENTS.md` — zero
+maintenance, changes to `AGENTS.md` automatically reflected. Preferred on
+Unix; on Windows, use a referral instead (symlink support is unreliable).
+
+**Why symlink over referral when possible:** A symlink is transparent —
+tools that read `CLAUDE.md` automatically get `AGENTS.md` content with no
+parsing step. A referral requires the tool to understand the `@AGENTS.md`
+import syntax. Symlinks are the Unix-native solution; referrals are the
+portable fallback.

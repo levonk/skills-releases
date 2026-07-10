@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# AI Workflow Upsert
+# Research Phase: Search Before You Create or Improve
 
 > Category: **ai** · Status:  · Version: 3.0.0
 
@@ -34,10 +34,11 @@ Create new workflows, modify and improve existing workflows, and convert between
 ## Related Skills
 - **base-workflow-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
+- **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **ai-skill-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a workflow, or when converting a workflow into a skill (the reverse of this skill's Mode B).
 
 ---
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-08T09:27:24Z
+- **Generated**: 2026-07-10T20:22:44Z

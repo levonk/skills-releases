@@ -73,7 +73,27 @@ Required fields:
 
 **Trigger guard include**: Every skill with a pushy description should wire in the trigger-guard include so over-triggering doesn't waste effort:
 ```
-{{{ include "includes/trigger-guard.md" . }}}
+---
+description: Reusable trigger guard — when a skill is triggered but the question is a poor fit, answer without the skill, explain why, and offer a rerun on a one-word affirmative
+---
+
+### Trigger Guard
+
+If this skill is triggered but the question is a poor fit for it — for example, the question matches one of the "Do NOT trigger on..." cases in this skill's description — follow this protocol:
+
+1. **Answer the question directly.** Do not invoke this skill's process, scripts, or multi-step workflow. Provide the best answer you can without the skill.
+
+2. **Explain briefly that the answer was provided without the skill and why.** One or two sentences. Reference the specific reason from the description's negative-trigger clause. Examples:
+   - "Answered without the council because this is a factual question with one right answer — the multi-perspective process wouldn't add value."
+   - "Answered without peer-review because there's only one response to review — anonymization and comparison need multiple inputs."
+   - "Answered without briefingmemo because this is a fast pressure-test, not a high-stakes strategic decision needing research and governance — use think-assist instead."
+
+3. **Offer a rerun.** Tell the user: "If you'd like to run this through the full skill process anyway, respond with `go`." Use `go` as the suggested affirmative — one word, unambiguous, fast to type.
+
+4. **On `go`, run the skill.** If the user responds with `go` (or any clear affirmative), execute the full skill process regardless of the initial guard assessment. The user's explicit request overrides the guard.
+
+**Why this guard exists:** Skills with "pushy" descriptions over-trigger on questions they can't add value to. The guard prevents wasted effort (running a 5-advisor council on "what's the capital of France") while respecting explicit user intent — if the user wants the heavy process run anyway, one word gets it done.
+
 ```
 Place it right after the `base-ai-guidance` include. The guard protocol: when triggered but the question is a poor fit, answer without the skill, explain why, and offer a rerun on a one-word affirmative (`go`).
 

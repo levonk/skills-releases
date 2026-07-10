@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `7a443cbefadaced9c0b9144ef74734509ecd1c7c` · Branch: `main` · Generated: 2026-07-08T09:27:24Z
+> Commit: `23da753dceed5bfd3eafe0a2f99e89825eeeebc0` · Branch: `main` · Generated: 2026-07-10T20:22:44Z
 
 ## Overview
 
@@ -15,9 +15,9 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
-| agent-file-upsert | Generate hierarchical AGENTS.md documentation for AI agents working in codebases. Use when onboar... | [Synopsis](ai-agent-file-upsert.md) |
+| agent-file-upsert | Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Conte... | [Synopsis](ai-agent-file-upsert.md) |
 | ai-guidance-improver | Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) an... | [Synopsis](ai-ai-guidance-improver.md) |
-| ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Use when us... | [Synopsis](ai-ai-skill-upsert.md) |
+| ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
 | knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
@@ -63,10 +63,13 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
 | code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](software-dev-code-quality-validation.md) |
 | codebase-tutorial | Generate beginner-friendly tutorials from codebases. Use when asked to analyze a repository, expl... | [Synopsis](software-dev-codebase-tutorial.md) |
+| container-image-build | Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre... | [Synopsis](software-dev-container-image-build.md) |
+| container-service-deploy | Deploy multi-container services using docker-compose (local/dev) or Ansible docker_container (pro... | [Synopsis](software-dev-container-service-deploy.md) |
 | git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](software-dev-git-repository-management.md) |
 | monorepo-extractor | Safely extract projects from monorepos while preserving git history and ensuring team coordinatio... | [Synopsis](software-dev-monorepo-extractor.md) |
 | nixify | Add Nix flake support to a project so it can be installed via nix run github:... or nix profile i... | [Synopsis](software-dev-nixify.md) |
 | project-adopter | Adopt and establish best practices for projects by overwriting existing preferences with standard... | [Synopsis](software-dev-project-adopter.md) |
+| project-comparison | >- | [Synopsis](software-dev-project-comparison.md) |
 | project-configuration | Configure existing projects with compatible preferences without overwriting established workflows... | [Synopsis](software-dev-project-configuration.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
 | repository-health-review | Comprehensive repository health analysis for outdated information, conflicting rules, undocumente... | [Synopsis](software-dev-repository-health-review.md) |

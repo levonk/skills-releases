@@ -3,9 +3,9 @@
 
 # Agent File Upsert
 
-> Category: **ai** · Status: ready · Version: 2.0.0
+> Category: **ai** · Status: ready · Version: 3.0.0
 
-Generate hierarchical AGENTS.md documentation for AI agents working in codebases. Use when onboarding an AI agent to an existing codebase (Brownfield) to establish context and conventions. Triggers on requests like "create AGENTS.md", "generate agent documentation", "help AI understand this codebase", or "set up agent guidance for this repo".
+Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Context-aware — detects and follows the project's existing convention (AGENTS.md, CLAUDE.md, AGENT.md, or combinations via referral/symlink). When updating existing docs, runs delta analysis (git changes since last update) via a script + subagent to extract positive findings, anti-patterns, and improvement candidates. Use when onboarding an AI agent to an existing codebase (Brownfield) to establish context and conventions, or when updating existing agent documentation after significant repo changes. Triggers on requests like "create AGENTS.md", "create CLAUDE.md", "generate agent documentation", "update AGENTS.md", "help AI understand this codebase", or "set up agent guidance for this repo". Do NOT trigger on README generation (use readme-upsert), general coding questions, or skill creation (use ai-skill-upsert).
 
 ## Metadata
 
@@ -13,7 +13,7 @@ Generate hierarchical AGENTS.md documentation for AI agents working in codebases
 |-------|-------|
 | Name | `agent-file-upsert` |
 | Category | `ai` |
-| Version | `2.0.0` |
+| Version | `3.0.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -24,14 +24,18 @@ Generate hierarchical AGENTS.md documentation for AI agents working in codebases
 - `agents`
 - `brownfield`
 - `hierarchical-docs`
+- `convention-detection`
+- `delta-analysis`
 
 ## Quick Start
 
-When invoked, this skill analyzes the codebase and creates:
-- `AGENTS.md` (Root)
+When invoked, this skill analyzes the codebase and creates or updates:
+- `AGENTS.md` (Root — primary; CLAUDE.md/AGENT.md maintained as referral or symlink)
 - `apps/**/AGENTS.md` (Sub-projects)
 - `packages/**/AGENTS.md` (Sub-packages)
 - `internal-docs/oos/` (Out-of-scope documentation)
+- `internal-docs/improvements/` (Potential improvements — INDEX.md + date-stamped files)
+- `internal-docs/anti-patterns/` (Things NOT to do — INDEX.md with 🛑 + date-stamped files)
 
 ## Instructions
 
@@ -52,10 +56,12 @@ Example:
 ## Related Skills
 - **readme-upsert** (skill, related) — Generate or update README documentation with similar hierarchical principles
 - **ai-skill-upsert** (skill, complement) — For creating new AI skills — pairs with agent-file-upsert for full AI guidance setup
+- **ai-guidance-improver** (skill, complement) — Cross-file analysis and system-wide consistency for AI guidance — use when agent-file-upsert surfaces conflicts that span multiple guidance files
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
+- **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts and anti-patterns before creating or improving
 
 ---
 
 - **Full skill**: [`skills/ai/agent-file-upsert/SKILL.md`](skills/ai/agent-file-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-08T09:27:24Z
+- **Generated**: 2026-07-10T20:22:44Z

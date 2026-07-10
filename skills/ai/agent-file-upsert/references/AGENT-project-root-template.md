@@ -54,6 +54,12 @@ devbox run -- just doctor-internal
 ## Out of Scope
 For information about what this repo does NOT do, see [`internal-docs/oos/`](internal-docs/oos/).
 
+## Improvements
+For potential improvements to architecture, standards, and processes, see [`internal-docs/improvements/INDEX.md`](internal-docs/improvements/INDEX.md). These are suggestions to consider — not decisions yet. Check before proposing changes to avoid re-proposing already-evaluated improvements.
+
+## Anti-Patterns
+For things explicitly NOT to do (practices found harmful or inferior), see [`internal-docs/anti-patterns/INDEX.md`](internal-docs/anti-patterns/INDEX.md). These are negative findings — do NOT implement any approach listed there.
+
 ## Universal Contracts
 - Use `devbox run -- just <command>` for AI agents (fresh shell)
 - Use `pnpm` for JavaScript/TypeScript packages (never `npm`)

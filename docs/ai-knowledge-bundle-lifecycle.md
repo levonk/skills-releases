@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Knowledge Bundle Lifecycle
+# Research Phase: Search Before You Create or Improve
 
 > Category: **ai** · Status:  · Version: 1.0.0
 
@@ -33,6 +33,7 @@ OKF bundles operate within a three-layer architecture:
 
 ## Related Skills
 - **** (, creates-the-bundle) — Create OKF-compliant knowledge bundles — the create-only workflow this skill wraps
+- **research-phase** (template, shared-include) — Shared research phase — check for existing concepts before creating new bundle pages
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 
@@ -40,4 +41,4 @@ OKF bundles operate within a three-layer architecture:
 
 - **Full skill**: [`skills/ai/knowledge-bundle-lifecycle/SKILL.md`](skills/ai/knowledge-bundle-lifecycle/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-08T09:27:24Z
+- **Generated**: 2026-07-10T20:22:44Z

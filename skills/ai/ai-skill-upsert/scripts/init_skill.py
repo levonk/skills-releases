@@ -1,8 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Initialize a new skill with proper directory structure and template files.
 
 Usage:
+    uv run --script init_skill.py <skill-name> --path <output-directory>
     python init_skill.py <skill-name> --path <output-directory>
 
 Examples:
