@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `a97645edac0f5141490f347342da71d68cd99983` · Branch: `main` · Generated: 2026-07-11T11:03:17Z
+> Commit: `f0e6cd10a298f6eff9c0c34d086af02ee264a2f3` · Branch: `main` · Generated: 2026-07-11T15:49:28Z
 
 ## Overview
 
@@ -16,12 +16,16 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | agent-file-upsert | Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Conte... | [Synopsis](ai-agent-file-upsert.md) |
+| agent-upsert | Create new expert agents, modify and improve existing agents, and audit agent definitions for rel... | [Synopsis](ai-agent-upsert.md) |
 | ai-guidance-improver | Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) an... | [Synopsis](ai-ai-guidance-improver.md) |
 | ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
-| knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
+| knowledge-bundle-upsert | Create and maintain OKF knowledge bundles through four operations: create a new bundle from scrat... | [Synopsis](ai-knowledge-bundle-upsert.md) |
+| prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
 | readme-upsert | Generate or update a project's README.md for human developers. Use when onboarding a human to an ... | [Synopsis](ai-readme-upsert.md) |
+| rule-upsert | Create new AI agent rules or audit and update existing rules. Scaffolds new rules from the rule t... | [Synopsis](ai-rule-upsert.md) |
+| template-upsert | Create new reusable templates, modify and improve existing templates, and audit template contract... | [Synopsis](ai-template-upsert.md) |
 
 ### business
 

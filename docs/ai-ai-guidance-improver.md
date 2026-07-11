@@ -3,7 +3,7 @@
 
 # If installed via skills (includes/ is bundled alongside the skill):
 
-> Category: **ai** · Status:  · Version: 1.0.0
+> Category: **ai** · Status:  · Version: 1.1.0
 
 Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) and interactive prompts by identifying conflicts, duplications, inadequate frontmatter, poor progressive disclosure, scattered context, and specific solutions where general would be better. Use when users want to improve the quality and maintainability of their AI guidance files, ensure consistency across their AI system, apply best practices for token efficiency and progressive disclosure, or get real-time suggestions for prompts they're actively writing.
 
@@ -13,7 +13,7 @@ Analyze and improve existing AI guidance files (skills, workflows, agents, promp
 |-------|-------|
 | Name | `ai-guidance-improver` |
 | Category | `ai` |
-| Version | `1.0.0` |
+| Version | `1.1.0` |
 | Status | `` |
 | Owner |  |
 
@@ -66,4 +66,4 @@ Provides real-time suggestions and improvements for prompts users are actively w
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T11:03:17Z
+- **Generated**: 2026-07-11T15:49:28Z

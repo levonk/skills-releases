@@ -1,14 +1,25 @@
 ---
 name: readme-upsert
 description: Generate or update a project's README.md for human developers. Use when onboarding a human to an existing codebase, creating a README from scratch, or refreshing a stale README. Triggers on requests like "create README", "generate readme", "update README", "write project readme", or "set up readme for this repo".
-version: 1.0.0
+version: 1.1.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-06-26"
-  updated: "2026-06-26"
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
 tags: ["ai/skill", "software-development", "documentation", "readme", "brownfield"]
 dependencies: []
+see-also:
+  - skill: "agent-file-upsert"
+    relationship: "complement"
+    description: "Generates AGENTS.md hierarchy — run first, then readme-upsert so README can link to AGENTS.md"
+  - skill: "ai-skill-upsert"
+    relationship: "sibling"
+    description: "Same upsert family — handles AI skill creation and updates"
+  - skill: "ai-guidance-improver"
+    relationship: "complement"
+    description: "Quality analysis and improvement of existing AI guidance files"
 ---
 
 ---
@@ -651,6 +662,304 @@ The `#!/usr/bin/env -S uv run --script` shebang makes the script directly execut
 
 See `references/script-execution-standards.md` for the full devbox/rtk detection code and the combined header + detection template.
 
+
+---
+description: Shared research phase rules — when to search, gap assessment, create-vs-reuse decision, and how to incorporate findings. Each consumer adds its own artifact-specific search tactics (inline or via a type-specific include).
+---
+
+# Research Phase: Search Before You Create or Improve
+
+Before creating or improving any AI guidance artifact, research what already
+exists. This prevents duplicating effort, ensures new artifacts incorporate
+the best ideas from existing work, and surfaces existing artifacts the user
+could adopt instead of creating from scratch.
+
+## When to Run
+
+- **Always**, unless the user explicitly says "skip research", "don't
+  search", or "just create it"
+- Before **creating** a new artifact (skill, workflow, agent, prompt, template,
+  knowledge bundle)
+- Before **improving** an existing artifact — to understand the landscape and
+  avoid regressing below the state of the art
+
+If the user provides an existing file to convert or update, the research phase
+still applies: check whether better alternatives exist that the user could
+adopt instead of converting/updating their current file.
+
+## Anti-Pattern and Inferior-Solution Discovery
+
+As part of researching existing artifacts, also search for **anti-patterns**
+and **inferior solutions** — approaches that were tried and found harmful or
+worse than the current approach. These are negative findings: things NOT to
+do, or approaches that are known to be inferior.
+
+Sources to check:
+- **Git history**: commits that reverted or removed an approach (revert
+  commits, "remove X" commits, "switch from X to Y" commits)
+- **Issue trackers**: closed issues labeled "wontfix" or "invalid" where an
+  approach was rejected, with rationale
+- **ADR / OOS files**: architecture decisions that explicitly rejected an
+  alternative; out-of-scope files that document what the repo does NOT do
+- **Existing anti-patterns files**: `internal-docs/anti-patterns/` if it
+  exists — check the INDEX.md for previously recorded anti-patterns
+- **Code comments**: `// HACK`, `// FIXME`, `// TODO: replace`, `// DEPRECATED`
+  markers that signal known-bad approaches
+- **External research**: blog posts, discussions, or documentation that
+  describe why an approach is inferior (when the artifact type warrants it)
+
+Record discovered anti-patterns clearly marked as negative — they must never
+be mistaken for positive recommendations. If the consumer skill produces an
+anti-patterns file (see `agent-file-upsert`), write findings there. Otherwise,
+note them in the research summary with explicit "❌ DO NOT" framing.
+
+## Artifact-Specific Search
+
+Each artifact type has different search tactics. See the consumer's own
+section below (inline or via a type-specific include) for how to search for
+that artifact type. The gap assessment and decision framework that follow
+apply to all artifact types.
+
+## Gap Assessment
+
+After researching, determine whether there's a gap:
+
+| Situation | Gap? | Action |
+|---|---|---|
+| No existing artifacts found | Yes — clear gap | Proceed to create |
+| Artifacts found but none cover the user's need | Yes — coverage gap | Proceed to create, incorporating best ideas |
+| Artifacts found, partially cover the need | Yes — scope gap | Proceed to create, noting what existing artifacts miss |
+| Artifacts found, fully cover the need | No gap | Offer to adopt the best match (see below) |
+| Multiple artifacts found, each covers part | Partial gap | Consider creating one that combines the best parts |
+
+### What Counts as "Fully Covered"
+
+A need is fully covered when an existing artifact:
+1. Addresses the user's specific use case (not just a related one)
+2. Has acceptable quality (structured, maintained, has evals/tests)
+3. Matches the user's constraints (language, platform, distribution)
+4. Is installable and usable by the user
+
+If any of these fail, there's at least a partial gap.
+
+## Decision: Create vs Reuse
+
+### If there IS a gap
+
+Present the findings to the user:
+- What artifacts exist and what they cover
+- What's missing (the gap)
+- How the new artifact would be better
+
+Then offer to create. The user's ideas/constraints + best practices the LLM
+knows + the best ideas from existing artifacts all feed into the new
+artifact's design.
+
+### If there is NO gap
+
+Present the best existing artifact(s) with:
+- Name, description, and link (so the user can investigate themselves)
+- Why it fits the user's need
+- Any caveats (quality, maintenance, scope limitations)
+
+Then ask the user:
+1. **Adopt the existing artifact?** — Provide the install/usage command.
+2. **Still create a new one?** — The user may have reasons to create their
+   own (customization, learning, different constraints). Respect their choice
+   and proceed with creation.
+
+### If the user wants to investigate
+
+Always provide links so the user can investigate existing artifacts themselves
+before deciding. Do not make the decision for them — present the evidence and
+let them choose.
+
+## Incorporating Findings
+
+When proceeding to create after finding existing artifacts:
+
+1. **Note the best ideas**: What did existing artifacts do well? (structure,
+   patterns, reference organization, eval design)
+2. **Note the gaps**: What did existing artifacts miss? This is the value
+   proposition of the new artifact.
+3. **Note the user's ideas/constraints**: What does the user want that
+   existing artifacts don't address?
+4. **Apply best practices**: Use the LLM's knowledge of design best practices
+   for the artifact type.
+5. **Synthesize**: Combine all three inputs (existing ideas + gap filling +
+   best practices) into the new artifact's design.
+
+The new artifact should be **better than any single existing artifact** — not
+just different. If it's merely a reimplementation, reconsider whether creation
+is warranted.
+
+
+---
+description: Reusable trigger guard — when a skill is triggered but the question is a poor fit, answer without the skill, explain why, and offer a rerun on a one-word affirmative
+---
+
+### Trigger Guard
+
+If this skill is triggered but the question is a poor fit for it — for example, the question matches one of the "Do NOT trigger on..." cases in this skill's description — follow this protocol:
+
+1. **Answer the question directly.** Do not invoke this skill's process, scripts, or multi-step workflow. Provide the best answer you can without the skill.
+
+2. **Explain briefly that the answer was provided without the skill and why.** One or two sentences. Reference the specific reason from the description's negative-trigger clause. Examples:
+   - "Answered without the council because this is a factual question with one right answer — the multi-perspective process wouldn't add value."
+   - "Answered without peer-review because there's only one response to review — anonymization and comparison need multiple inputs."
+   - "Answered without briefingmemo because this is a fast pressure-test, not a high-stakes strategic decision needing research and governance — use think-assist instead."
+
+3. **Offer a rerun.** Tell the user: "If you'd like to run this through the full skill process anyway, respond with `go`." Use `go` as the suggested affirmative — one word, unambiguous, fast to type.
+
+4. **On `go`, run the skill.** If the user responds with `go` (or any clear affirmative), execute the full skill process regardless of the initial guard assessment. The user's explicit request overrides the guard.
+
+**Why this guard exists:** Skills with "pushy" descriptions over-trigger on questions they can't add value to. The guard prevents wasted effort (running a 5-advisor council on "what's the capital of France") while respecting explicit user intent — if the user wants the heavy process run anyway, one word gets it done.
+
+
+---
+description: Reusable cross-linking guidance for AI guidance artifacts — see-also frontmatter format, relationship types, and circular dependency avoidance
+---
+
+### Cross-Linking
+
+When an AI guidance artifact references other artifacts (skills, workflows, rules,
+prompts, templates, agents):
+
+1. **Use `see-also` in frontmatter**: Document every relationship to other
+   artifacts. The `see-also` field is an array of entries, each with:
+   - `template`, `skill`, `workflow`, or `rule` — the artifact kind
+   - `relationship` — the relationship type (see below)
+   - `description` — one line explaining the relationship
+
+2. **Specify relationship type**: Use one of:
+   - `dependency` — this artifact requires the other to function
+   - `alternative` — this artifact can be used instead of the other
+   - `complement` — this artifact works alongside the other
+   - `sibling` — this artifact is in the same family/category
+
+3. **Explain the relationship**: The `description` field should make clear why
+   the relationship exists and when a user would follow the link. One line is
+   enough.
+
+4. **Avoid circular dependencies**: Artifacts should not depend on each other
+   bidirectionally. If A depends on B, B should not also depend on A — restructure
+   so the dependency flows one direction, or use `complement`/`sibling` for the
+   reverse link.
+
+**Example `see-also` entry:**
+```yaml
+see-also:
+  - skill: "readme-upsert"
+    relationship: "sibling"
+    description: "Same upsert family — handles README.md creation and updates"
+```
+
+
+---
+description: Reusable date management guidance for upsert operations — when to update date.updated and date.last-used in frontmatter
+---
+
+### Date Management
+
+AI guidance artifacts track two dates in their frontmatter under the `date:` key:
+
+| Field | When to update | Meaning |
+|-------|----------------|---------|
+| `date.updated` | When content changes are applied | Last time the artifact's content was modified |
+| `date.last-used` | When the artifact is invoked | Last time the artifact was actually used |
+
+**Format**: Both dates use `YYYY-MM-DD` as a quoted string in YAML:
+```yaml
+date:
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
+```
+
+**When updating an existing artifact (Mode C):**
+- Set `date.updated` to the current date when you apply content changes.
+- Set `date.last-used` to the current date when the skill is invoked (even if no
+  changes are made).
+
+**Relationship to `self-update-requirement`:**
+The `self-update-requirement` include handles the invocation-time `last-used`
+update — it fires every time the skill is called. This include handles the
+change-time `updated` update, which only fires when content is actually modified.
+Both should be wired into upsert skills: `self-update-requirement` for
+invocation tracking, this include for change tracking.
+
+
+---
+description: Shared clarifying-questions protocol — ask numbered multiple-choice questions before generating or updating any artifact, until complete clarity is achieved. Generic across all generative skills.
+---
+
+### Clarifying Questions (Mandatory Before Generation)
+
+Before generating or updating an artifact, ask clarifying questions until you
+have complete clarity on what the user wants. Only ask about gaps that
+materially affect the output — skip questions where the answer is already clear
+from the prompt, the codebase, or prior context.
+
+#### What to Ask About
+
+Ask about gaps in any of these areas (only the ones that are unclear):
+
+- **Problem / goal** — What is the user trying to achieve?
+- **Core functionality** — What should the artifact do or contain?
+- **Scope boundaries** — What is explicitly in scope and out of scope?
+- **Success criteria** — How will the user know the output is correct?
+- **Target audience** — Who is the primary consumer of the output?
+- **Priority / effort** — Is this P1 (critical), P2 (high), or P3 (medium)?
+- **Constraints** — Known dependencies, deadlines, or technical constraints?
+- **Existing context** — Are there designs, tickets, specs, or prior work to incorporate?
+
+#### Formatting Requirements
+
+- Number questions: `1.`, `2.`, `3.`, etc.
+- Provide multiple-choice options per question: `A.`, `B.`, `C.`, `D.`, ...
+- Make it easy for the user to reply like: `1A, 2C, 3B`.
+- Keep questions concise — one sentence per question.
+- 2–4 options per question (never more than 5).
+- Include an "Other" implication: the user can always write a custom answer
+  instead of picking a letter.
+
+#### Example Question Format (for style only)
+
+```text
+1. What is the primary goal of this feature?
+   A. Improve user onboarding experience
+   B. Increase user retention
+   C. Reduce support burden
+   D. Generate additional revenue
+
+2. Who is the target user for this feature?
+   A. New users only
+   B. Existing users only
+   C. All users
+   D. Admin users only
+
+3. What is the priority level for this feature?
+   A. P1 - Critical, needs immediate attention
+   B. P2 - High priority, next sprint
+   C. P3 - Medium priority, backlog
+```
+
+#### When to Stop Asking
+
+- Stop when you have enough clarity to produce a correct, complete artifact.
+- Do not ask more than 7 questions in a single round — if you need more, batch
+  them and let the user answer what they can.
+- If the user's initial prompt is already detailed and unambiguous, you may ask
+  only 1–2 confirmation questions or skip straight to generation with a brief
+  summary of your understanding.
+
+#### After the User Answers
+
+- Synthesize the answers into a brief understanding statement before proceeding.
+- If any answer is ambiguous or contradicts another answer, ask one focused
+  follow-up question.
+- Then proceed to the next phase (research, generation, etc.) — do not re-ask
+  questions already answered.
+
 ---
 
 # Readme Upsert
@@ -701,6 +1010,94 @@ Create a README using the template at `references/README-project-root-template.m
 - Architecture Decision Records (those go in `internal-docs/adr/`)
 
 ### Phase 3: Upsert (Create or Update)
+
+---
+description: Shared audit and improvement methodology for upserting/improving existing AI guidance files
+---
+
+### Audit Methodology
+
+When updating or improving an existing AI guidance file (skill, workflow, agent,
+prompt, rule, AGENTS.md), follow this process. The type-specific audit checklist
+stays in each consumer's own reference file; this include covers the shared
+process discipline that applies to all guidance types.
+
+#### Step 1: Read Fully
+
+Read the existing file completely — frontmatter, body, and any bundled resources
+(`scripts/`, `references/`, `assets/`, `evals/`). Understand what the guidance
+currently does before proposing any changes. Do not skip this step even if the
+file looks familiar.
+
+#### Step 2: Audit Against Guidelines
+
+Check the existing file for compliance with the type-specific guidelines. The
+audit checklist for each type lives in the consumer's own reference file — this
+step is where type-specific knowledge is applied. Flag every issue found.
+
+#### Step 3: Prioritize
+
+Not all issues are equally important. Group findings into three tiers:
+
+- **Critical**: Missing required frontmatter, broken references, stale text that
+  misleads, anything that breaks functionality or discovery.
+- **Important**: Description quality, progressive disclosure, context
+  declaration, structure issues that cause token inefficiency.
+- **Nice to have**: Tag cleanup, see-also relationships, unused example files,
+  minor audience separation issues.
+
+#### Step 4: Propose — Do Not Apply Yet
+
+Present a prioritized list of specific, actionable changes. For each change,
+show the before/after so the author can see exactly what will change and why.
+Do not modify the file at this stage.
+
+#### Step 5: Confirm Before Applying
+
+Present the proposed changes and ask whether to proceed. Let the author:
+- Accept all changes
+- Accept a subset (cherry-pick)
+- Reject entirely
+
+Do not modify the file until the author confirms. The author may have
+intentionally deviated from a guideline — propose, explain the benefit, and let
+them decide.
+
+#### Step 6: Apply as Separate Commits
+
+Apply approved changes as separate commits, one logical change per commit
+(same discipline as format conversion): frontmatter fixes, structure changes,
+resource cleanup, include additions — each independently reviewable and
+revertable.
+
+#### Step 7: Update Dates
+
+Update `date.updated` and `date.last-used` in the frontmatter when changes are
+applied. Set both to the current date (YYYY-MM-DD).
+
+#### Step 8: Validate
+
+After applying improvements:
+
+1. **Check for new conflicts** introduced by changes
+2. **Verify all references** point to valid files/sections
+3. **Test Go text/templates** render correctly (if `.tmpl` files were modified)
+4. **Run `just validate`** to check for leaked delimiters and frontmatter issues
+5. **Run `just build`** to confirm the build succeeds
+
+#### Never Silently Overwrite
+
+The author may have intentionally deviated from a guideline. Propose, explain
+the benefit, and let them decide. Never blindly overwrite the author's intent.
+
+#### Deeper Analysis
+
+For cross-file and system-wide issues (conflicts between files, duplications
+across multiple guidance files, scattered context across the AI system), use
+the `ai-guidance-improver` skill, which has the full cross-file analysis
+framework. Type-specific upsert skills focus on single-file compliance; the
+improver handles system-wide consistency.
+
 
 - **No existing README**: Create from the template, adapted to the project
 - **Existing README, stale**: Update sections that are outdated, preserve accurate ones. Do not rewrite from scratch unless the existing README is fundamentally wrong

@@ -1,13 +1,13 @@
 ---
 name: ai-skill-upsert
 description: Create new skills, modify and improve existing skills, and measure skill performance. Before creating a new skill, researches existing skills locally, on skills.sh, and on GitHub to avoid duplication and incorporate best ideas. Use when users want to create a skill from scratch, convert an existing workflow file into a skill (preserving git history via git mv), edit or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy. Make sure to use this skill whenever the user mentions skill creation, skill development, skill testing, skill evaluation, skill benchmarking, skill optimization, workflow-to-skill conversion, find existing skills for a purpose, or wants to package/distribute skills, even if they don't explicitly ask for a "skill creator." Do NOT trigger on general coding questions, bug fixes, feature implementation, or code review — this skill is for skill lifecycle management, not general development.
-version: 2.2.0
+version: 2.3.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-05-25"
-  updated: "2026-07-09"
-  last-used: "2026-06-25"
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
 tags:
   - "ai/skill"
   - "skill-creation"
@@ -694,6 +694,151 @@ The `#!/usr/bin/env -S uv run --script` shebang makes the script directly execut
 **When uv is unavailable:** `python script.py` still works for stdlib-only scripts (the PEP 723 block is a comment Python ignores). Scripts with declared dependencies require `uv run` (or a pre-provisioned venv matching the declared deps).
 
 See `references/script-execution-standards.md` for the full devbox/rtk detection code and the combined header + detection template.
+
+
+---
+description: Reusable cross-linking guidance for AI guidance artifacts — see-also frontmatter format, relationship types, and circular dependency avoidance
+---
+
+### Cross-Linking
+
+When an AI guidance artifact references other artifacts (skills, workflows, rules,
+prompts, templates, agents):
+
+1. **Use `see-also` in frontmatter**: Document every relationship to other
+   artifacts. The `see-also` field is an array of entries, each with:
+   - `template`, `skill`, `workflow`, or `rule` — the artifact kind
+   - `relationship` — the relationship type (see below)
+   - `description` — one line explaining the relationship
+
+2. **Specify relationship type**: Use one of:
+   - `dependency` — this artifact requires the other to function
+   - `alternative` — this artifact can be used instead of the other
+   - `complement` — this artifact works alongside the other
+   - `sibling` — this artifact is in the same family/category
+
+3. **Explain the relationship**: The `description` field should make clear why
+   the relationship exists and when a user would follow the link. One line is
+   enough.
+
+4. **Avoid circular dependencies**: Artifacts should not depend on each other
+   bidirectionally. If A depends on B, B should not also depend on A — restructure
+   so the dependency flows one direction, or use `complement`/`sibling` for the
+   reverse link.
+
+**Example `see-also` entry:**
+```yaml
+see-also:
+  - skill: "readme-upsert"
+    relationship: "sibling"
+    description: "Same upsert family — handles README.md creation and updates"
+```
+
+
+---
+description: Reusable date management guidance for upsert operations — when to update date.updated and date.last-used in frontmatter
+---
+
+### Date Management
+
+AI guidance artifacts track two dates in their frontmatter under the `date:` key:
+
+| Field | When to update | Meaning |
+|-------|----------------|---------|
+| `date.updated` | When content changes are applied | Last time the artifact's content was modified |
+| `date.last-used` | When the artifact is invoked | Last time the artifact was actually used |
+
+**Format**: Both dates use `YYYY-MM-DD` as a quoted string in YAML:
+```yaml
+date:
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
+```
+
+**When updating an existing artifact (Mode C):**
+- Set `date.updated` to the current date when you apply content changes.
+- Set `date.last-used` to the current date when the skill is invoked (even if no
+  changes are made).
+
+**Relationship to `self-update-requirement`:**
+The `self-update-requirement` include handles the invocation-time `last-used`
+update — it fires every time the skill is called. This include handles the
+change-time `updated` update, which only fires when content is actually modified.
+Both should be wired into upsert skills: `self-update-requirement` for
+invocation tracking, this include for change tracking.
+
+
+---
+description: Shared clarifying-questions protocol — ask numbered multiple-choice questions before generating or updating any artifact, until complete clarity is achieved. Generic across all generative skills.
+---
+
+### Clarifying Questions (Mandatory Before Generation)
+
+Before generating or updating an artifact, ask clarifying questions until you
+have complete clarity on what the user wants. Only ask about gaps that
+materially affect the output — skip questions where the answer is already clear
+from the prompt, the codebase, or prior context.
+
+#### What to Ask About
+
+Ask about gaps in any of these areas (only the ones that are unclear):
+
+- **Problem / goal** — What is the user trying to achieve?
+- **Core functionality** — What should the artifact do or contain?
+- **Scope boundaries** — What is explicitly in scope and out of scope?
+- **Success criteria** — How will the user know the output is correct?
+- **Target audience** — Who is the primary consumer of the output?
+- **Priority / effort** — Is this P1 (critical), P2 (high), or P3 (medium)?
+- **Constraints** — Known dependencies, deadlines, or technical constraints?
+- **Existing context** — Are there designs, tickets, specs, or prior work to incorporate?
+
+#### Formatting Requirements
+
+- Number questions: `1.`, `2.`, `3.`, etc.
+- Provide multiple-choice options per question: `A.`, `B.`, `C.`, `D.`, ...
+- Make it easy for the user to reply like: `1A, 2C, 3B`.
+- Keep questions concise — one sentence per question.
+- 2–4 options per question (never more than 5).
+- Include an "Other" implication: the user can always write a custom answer
+  instead of picking a letter.
+
+#### Example Question Format (for style only)
+
+```text
+1. What is the primary goal of this feature?
+   A. Improve user onboarding experience
+   B. Increase user retention
+   C. Reduce support burden
+   D. Generate additional revenue
+
+2. Who is the target user for this feature?
+   A. New users only
+   B. Existing users only
+   C. All users
+   D. Admin users only
+
+3. What is the priority level for this feature?
+   A. P1 - Critical, needs immediate attention
+   B. P2 - High priority, next sprint
+   C. P3 - Medium priority, backlog
+```
+
+#### When to Stop Asking
+
+- Stop when you have enough clarity to produce a correct, complete artifact.
+- Do not ask more than 7 questions in a single round — if you need more, batch
+  them and let the user answer what they can.
+- If the user's initial prompt is already detailed and unambiguous, you may ask
+  only 1–2 confirmation questions or skip straight to generation with a brief
+  summary of your understanding.
+
+#### After the User Answers
+
+- Synthesize the answers into a brief understanding statement before proceeding.
+- If any answer is ambiguous or contradicts another answer, ask one focused
+  follow-up question.
+- Then proceed to the next phase (research, generation, etc.) — do not re-ask
+  questions already answered.
 
 
 # Skill Creator
@@ -1556,7 +1701,13 @@ user explicitly says "skip research".
 3. **Propose changes — do not apply yet.** Present a prioritized list (Critical / Important / Nice to have) with before/after for each change.
 4. **Ask for confirmation before applying.** Let the author accept all, a subset, or reject.
 5. **Apply approved changes as separate commits** — one logical change per commit, each independently reviewable and revertable.
-6. **Update `date.updated` and `date.last-used`** in the frontmatter when changes are applied.
+6. **Update `date.updated` and `date.last-used`** in the frontmatter when changes are applied. See the date-management include wired in above.
+7. **Consistency verification** — after applying changes, verify the skill is internally consistent:
+   - Frontmatter fields are valid (`name`, `description`, `version`, `date`, `tags`, `see-also`)
+   - All include directives resolve at build time (no leaked delimiters in built output)
+   - All `references/` files referenced in SKILL.md exist
+   - All `scripts/` files have PEP 723 headers
+   - Run `scripts/package_skill.py` to validate structure
 
 **Never silently overwrite.** The author may have intentionally deviated from a guideline. Propose, explain the benefit, and let them decide.
 
@@ -1576,12 +1727,8 @@ Ensure no secrets, keys, or sensitive paths are exposed in skills. See `referenc
 
 ### Cross-Linking Skills
 
-When skills reference other skills:
-
-1. **Use see_also in frontmatter**: Document relationships
-2. **Specify relationship type**: dependency, alternative, complement
-3. **Explain the relationship**: Why this skill is related
-4. **Avoid circular dependencies**: Skills shouldn't depend on each other
+See the cross-linking include wired in above for guidance on `see-also`
+frontmatter format, relationship types, and circular dependency avoidance.
 
 ### Enhanced User Interaction
 

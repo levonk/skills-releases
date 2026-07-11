@@ -1,13 +1,13 @@
 ---
 name: ai-workflow-upsert
 description: Create new workflows, modify and improve existing workflows, and convert between workflow and skill formats. Use when users want to create a workflow from scratch, update or audit an existing workflow, convert a skill back into a workflow (preserving git history via git mv), edit or optimize an existing workflow's frontmatter or steps, or scaffold a new workflow file with the Template/Wrapper pattern. Make sure to use this skill whenever the user mentions workflow creation, workflow design, workflow scaffolding, workflow updating, workflow auditing, workflow optimization, skill-to-workflow conversion, or wants to package a multi-step procedure into a reusable workflow file, even if they don't explicitly ask for a "workflow creator." Do NOT trigger on general coding questions, one-off scripts, single-step tasks, bug fixes, feature implementation, or code review — this skill is for workflow lifecycle management, not general development. For skill lifecycle management (create/update/convert/eval/benchmark), use ai-skill-upsert instead.
-version: 3.0.0
+version: 3.1.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2025-12-20"
-  updated: "2026-07-05"
-  last-used: "2026-07-05"
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
 tags:
   - "ai/workflow/workflow/upsert"
   - "skill"
@@ -783,6 +783,67 @@ If this skill is triggered but the question is a poor fit for it — for example
 
 
 ---
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+---
+
+### CLI Tool Discovery
+
+Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
+detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
+standard PATH locations, checks package managers (brew, mise, asdf), and
+accounts for the project's tech stack — all in one pass. **Never give up on
+the first `command -v` failure.**
+
+#### Get the script
+
+```bash
+# If installed via skills (includes/ is bundled alongside the skill):
+bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+
+# If not bundled, fetch from the public releases repo:
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### Usage
+
+```bash
+# Resolve only — print where the tool is or how to run it
+cli-tool-discovery.sh <tool-name>          # text output
+cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
+
+# Resolve and exec — runs the tool through the right wrapper/path, never returns
+cli-tool-discovery.sh -- <tool-name> [args...]
+```
+
+#### Output (resolve mode)
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `FOUND: <path>` | Tool found at a specific path | Use that path directly |
+| `WRAPPER: <wrapper-cmd>` | Tool is inside an environment wrapper | Run via the wrapper (e.g. `devbox run -- <tool>`) |
+| `NOT_FOUND: <tool>` | Tool not found anywhere | Install it (ask user first) |
+
+In exec mode (`--`), the script resolves the tool and replaces itself with
+the tool process — stdout/stderr/exit code pass through directly. If the tool
+is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### When to Use
+
+- **Always**, before reporting a tool as "not found" or "not installed"
+- When a build/test/lint command fails with "command not found"
+- When a skill or workflow script needs a tool that isn't on PATH
+- When the user reports a tool "should be installed" but `command -v` fails
+
+#### Anti-Patterns
+
+- **Giving up on first `command -v` failure** — run the script instead
+- **Installing a tool without asking** — always confirm before adding packages
+- **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
+  likely inside devbox, not on the bare shell
+
+
+---
 description: Python script standards for skills — PEP 723 inline metadata for uv, modern type hints, pathlib, error handling, and best practices for runnable skill scripts
 ---
 
@@ -968,6 +1029,151 @@ just different. If it's merely a reimplementation, reconsider whether creation
 is warranted.
 
 
+---
+description: Reusable cross-linking guidance for AI guidance artifacts — see-also frontmatter format, relationship types, and circular dependency avoidance
+---
+
+### Cross-Linking
+
+When an AI guidance artifact references other artifacts (skills, workflows, rules,
+prompts, templates, agents):
+
+1. **Use `see-also` in frontmatter**: Document every relationship to other
+   artifacts. The `see-also` field is an array of entries, each with:
+   - `template`, `skill`, `workflow`, or `rule` — the artifact kind
+   - `relationship` — the relationship type (see below)
+   - `description` — one line explaining the relationship
+
+2. **Specify relationship type**: Use one of:
+   - `dependency` — this artifact requires the other to function
+   - `alternative` — this artifact can be used instead of the other
+   - `complement` — this artifact works alongside the other
+   - `sibling` — this artifact is in the same family/category
+
+3. **Explain the relationship**: The `description` field should make clear why
+   the relationship exists and when a user would follow the link. One line is
+   enough.
+
+4. **Avoid circular dependencies**: Artifacts should not depend on each other
+   bidirectionally. If A depends on B, B should not also depend on A — restructure
+   so the dependency flows one direction, or use `complement`/`sibling` for the
+   reverse link.
+
+**Example `see-also` entry:**
+```yaml
+see-also:
+  - skill: "readme-upsert"
+    relationship: "sibling"
+    description: "Same upsert family — handles README.md creation and updates"
+```
+
+
+---
+description: Reusable date management guidance for upsert operations — when to update date.updated and date.last-used in frontmatter
+---
+
+### Date Management
+
+AI guidance artifacts track two dates in their frontmatter under the `date:` key:
+
+| Field | When to update | Meaning |
+|-------|----------------|---------|
+| `date.updated` | When content changes are applied | Last time the artifact's content was modified |
+| `date.last-used` | When the artifact is invoked | Last time the artifact was actually used |
+
+**Format**: Both dates use `YYYY-MM-DD` as a quoted string in YAML:
+```yaml
+date:
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
+```
+
+**When updating an existing artifact (Mode C):**
+- Set `date.updated` to the current date when you apply content changes.
+- Set `date.last-used` to the current date when the skill is invoked (even if no
+  changes are made).
+
+**Relationship to `self-update-requirement`:**
+The `self-update-requirement` include handles the invocation-time `last-used`
+update — it fires every time the skill is called. This include handles the
+change-time `updated` update, which only fires when content is actually modified.
+Both should be wired into upsert skills: `self-update-requirement` for
+invocation tracking, this include for change tracking.
+
+
+---
+description: Shared clarifying-questions protocol — ask numbered multiple-choice questions before generating or updating any artifact, until complete clarity is achieved. Generic across all generative skills.
+---
+
+### Clarifying Questions (Mandatory Before Generation)
+
+Before generating or updating an artifact, ask clarifying questions until you
+have complete clarity on what the user wants. Only ask about gaps that
+materially affect the output — skip questions where the answer is already clear
+from the prompt, the codebase, or prior context.
+
+#### What to Ask About
+
+Ask about gaps in any of these areas (only the ones that are unclear):
+
+- **Problem / goal** — What is the user trying to achieve?
+- **Core functionality** — What should the artifact do or contain?
+- **Scope boundaries** — What is explicitly in scope and out of scope?
+- **Success criteria** — How will the user know the output is correct?
+- **Target audience** — Who is the primary consumer of the output?
+- **Priority / effort** — Is this P1 (critical), P2 (high), or P3 (medium)?
+- **Constraints** — Known dependencies, deadlines, or technical constraints?
+- **Existing context** — Are there designs, tickets, specs, or prior work to incorporate?
+
+#### Formatting Requirements
+
+- Number questions: `1.`, `2.`, `3.`, etc.
+- Provide multiple-choice options per question: `A.`, `B.`, `C.`, `D.`, ...
+- Make it easy for the user to reply like: `1A, 2C, 3B`.
+- Keep questions concise — one sentence per question.
+- 2–4 options per question (never more than 5).
+- Include an "Other" implication: the user can always write a custom answer
+  instead of picking a letter.
+
+#### Example Question Format (for style only)
+
+```text
+1. What is the primary goal of this feature?
+   A. Improve user onboarding experience
+   B. Increase user retention
+   C. Reduce support burden
+   D. Generate additional revenue
+
+2. Who is the target user for this feature?
+   A. New users only
+   B. Existing users only
+   C. All users
+   D. Admin users only
+
+3. What is the priority level for this feature?
+   A. P1 - Critical, needs immediate attention
+   B. P2 - High priority, next sprint
+   C. P3 - Medium priority, backlog
+```
+
+#### When to Stop Asking
+
+- Stop when you have enough clarity to produce a correct, complete artifact.
+- Do not ask more than 7 questions in a single round — if you need more, batch
+  them and let the user answer what they can.
+- If the user's initial prompt is already detailed and unambiguous, you may ask
+  only 1–2 confirmation questions or skip straight to generation with a brief
+  summary of your understanding.
+
+#### After the User Answers
+
+- Synthesize the answers into a brief understanding statement before proceeding.
+- If any answer is ambiguous or contradicts another answer, ask one focused
+  follow-up question.
+- Then proceed to the next phase (research, generation, etc.) — do not re-ask
+  questions already answered.
+
+
 # AI Workflow Upsert
 
 ## Workflow-Specific Search
@@ -1009,6 +1215,24 @@ Before starting, determine which mode applies:
    - Otherwise → **Mode A: Create a New Workflow from Scratch**.
 3. **If the wrapper already exists** → **Mode C: Update an Existing Workflow (Upsert)**. See `references/workflow-upsert.md` for the full update workflow.
 
+## Location Selection
+
+Before creating a new workflow (Mode A) or converting a skill (Mode B), determine where the workflow should live. Check whether the `skills-src` repository is checked out at the standard location (`~/p/gh/levonk/skills-src/`). If it exists, present three location options to the user:
+
+1. **skills-src repo** (recommended for workflows intended for distribution):
+   - `~/p/gh/levonk/skills-src/src/current/workflows/<category>/<name>.md.tmpl`
+   - Use this when the workflow should be versioned, built, and published via the skills-src pipeline.
+
+2. **Current project** (for project-specific workflows):
+   - `<project-root>/.agents/workflows/<category>/<name>.md.tmpl`
+   - Use this when the workflow is specific to the current project and should travel with that project's repository.
+
+3. **User directory** (for personal workflows available across all projects):
+   - `~/.agents/workflows/<category>/<name>.md.tmpl`
+   - Use this when the workflow is personal and should be available in every project on the user's machine.
+
+If `skills-src` is not checked out at the standard location, default to option 2 (current project) or option 3 (user directory) based on the user's preference. The selected location becomes the `<output-directory>` passed to `init_workflow.py` in Mode A step 1 and the target path in Mode B step 2.
+
 ## Mode A: Create a New Workflow from Scratch
 
 ### Workflow Design Focus
@@ -1049,6 +1273,11 @@ When designing workflows, skills, agents, templates, or prompts that involve dat
    - Fill in the placeholders.
 4. **Verify**: Validate step sequencing and template syntax. Run `chezmoi execute-template` on the wrapper to confirm the include resolves.
 5. **Deliver**: Save to `internal-docs/workflows/` and update `date.last-used` in the frontmatter.
+6. **Packaging verification**: Verify the workflow structure before considering the task complete:
+   - **Frontmatter**: Confirm the wrapper starts with valid YAML frontmatter (delimited by `---`) and contains required fields (`name`/`description` or workflow-specific `workflow`/`slug`/`use`/`role`).
+   - **Forbidden files**: Ensure no extraneous documentation files (`README.md`, `INSTALLATION_GUIDE.md`, `QUICK_REFERENCE.md`, `CHANGELOG.md`) are bundled alongside the workflow. Workflows do not support `scripts/`, `references/`, `evals/`, or `assets/` subdirectories — if any are present, the workflow should be converted to a skill (see Mode B).
+   - **Template/Wrapper split**: Confirm the content template (no frontmatter) and wrapper (frontmatter + `includeTemplate` call) are separate files.
+   - This mirrors the verification pattern from `ai-skill-upsert/scripts/package_skill.py` (validate frontmatter, check for forbidden files).
 
 ## Mode B: Convert an Existing Skill to a Workflow
 
@@ -1087,12 +1316,9 @@ This skill bundles `scripts/init_workflow.py`. All scripts bundled with or creat
 
 ### Cross-Linking
 
-When workflows reference other workflows or skills:
-
-1. **Use see-also in frontmatter**: Document relationships
-2. **Specify relationship type**: dependency, alternative, complement, sibling
-3. **Explain the relationship**: Why this workflow is related
-4. **Avoid circular dependencies**: Workflows shouldn't depend on each other
+See the cross-linking include wired in above for guidance on `see-also`
+frontmatter format, relationship types (dependency/alternative/complement/sibling),
+and circular dependency avoidance.
 
 ### When to Convert to a Skill
 
@@ -1103,22 +1329,44 @@ If a workflow grows to need `scripts/`, `references/`, `evals/`, or `assets/`, i
 - Reference material growing too large for the content template
 - Needing bundled assets (templates, icons, fonts)
 
+### Command Handling
+
+This skill also handles **commands** — workflow-adjacent artifacts that encapsulate a single reusable shell command or short command sequence. Commands use the same Template/Wrapper pattern and location conventions as workflows:
+
+- **Wrapper**: `<location>/commands/<category>/<name>.md.tmpl` with YAML frontmatter and an `includeTemplate` call.
+- **Content template**: `<location>/templates/<category>/<name>-template.md` with the command logic, no frontmatter.
+
+When the user asks to create, update, or convert a command, follow the same Mode A / Mode B / Mode C decision tree and location selection above, substituting `commands/` for `workflows/` in the output paths. Commands do not support bundled subdirectories (`scripts/`, `references/`, `evals/`, `assets/`) — if a command grows to need them, convert it to a skill via `ai-skill-upsert`.
+
+### Security
+
+Ensure no secrets, keys, or sensitive paths are exposed in workflows. Before packaging or delivering a workflow, review:
+
+- **Frontmatter**: Check for secrets, API keys, tokens, or passwords in workflow frontmatter fields.
+- **Steps**: Scan workflow steps for hardcoded credentials, API keys, or tokens.
+- **Paths**: No hardcoded absolute paths — use indirect references and the Context Declaration.
+- **External fetches**: If the workflow fetches external URLs, document what is being fetched, use HTTPS with certificate validation, and implement timeouts.
+
+See `ai-skill-upsert/references/security.md` for the full security review guidelines, including the security checklist (no hardcoded credentials, no malicious code, all inputs validated, file operations restricted to appropriate directories).
+
 ---
 ## Context Declaration
 
 ### File Paths
-- Main skill: `config/ai/skills/ai/ai-workflow-upsert/SKILL.md`
-- Scaffolder script: `config/ai/skills/ai/ai-workflow-upsert/scripts/init_workflow.py`
-- References: `config/ai/skills/ai/ai-workflow-upsert/references/`
-- Workflow template: `config/ai/templates/meta/workflow-template.md`
-- Output directory: `internal-docs/workflows/`
+- Main skill: `src/current/skills/ai/ai-workflow-upsert/SKILL.md` (in the `skills-src` repo at `~/p/gh/levonk/skills-src/`)
+- Scaffolder script: `src/current/skills/ai/ai-workflow-upsert/scripts/init_workflow.py`
+- References: `src/current/skills/ai/ai-workflow-upsert/references/` (including `anatomy.md`, `workflow-upsert.md.tmpl`, `skill-to-workflow-conversion.md.tmpl`)
+- Includes: `src/current/includes/` (shared includes wired in at build time)
+- Workflow output (skills-src repo): `src/current/workflows/<category>/<name>.md.tmpl`
+- Content template output: `src/current/templates/<category>/<name>-template.md`
 
 ### External Resources
-- Project documentation: https://github.com/levonk/dotfiles
+- skills.sh API: https://www.skills.sh/docs/api
+- skills.sh search: https://www.skills.sh/vercel-labs/skills/find-skills
 
 ### Project Information
-- Project: levonk/dotfiles
-- Repository: https://github.com/levonk/dotfiles
+- Project: levonk/skills-src
+- Repository: https://github.com/levonk/skills-src
 - Owner: levonk
 
 <!-- vim: set ft=markdown -->

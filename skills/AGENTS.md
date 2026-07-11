@@ -40,7 +40,7 @@ just validate
 
 | Path | Category |
 |------|----------|
-| `ai/` | AI guidance lifecycle (ai-skill-upsert, ai-guidance-improver, etc.) |
+| `ai/` | AI guidance upsert skills (ai-skill-upsert, ai-workflow-upsert, agent-file-upsert, readme-upsert, ai-guidance-improver, prompt-upsert, template-upsert, agent-upsert, knowledge-bundle-upsert, rule-upsert, handoff) |
 | `software-dev/` | Software development skills |
 | `business/` | Business skills |
 | `commerce/` | Commerce skills |

@@ -50,4 +50,4 @@
 
 - **Full skill**: [`skills/general/peer-review/SKILL.md`](skills/general/peer-review/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T11:03:17Z
+- **Generated**: 2026-07-11T15:49:28Z

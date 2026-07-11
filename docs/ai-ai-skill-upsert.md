@@ -3,7 +3,7 @@
 
 # If installed via skills (includes/ is bundled alongside the skill):
 
-> Category: **ai** · Status:  · Version: 2.2.0
+> Category: **ai** · Status:  · Version: 2.3.0
 
 Create new skills, modify and improve existing skills, and measure skill performance. Before creating a new skill, researches existing skills locally, on skills.sh, and on GitHub to avoid duplication and incorporate best ideas. Use when users want to create a skill from scratch, convert an existing workflow file into a skill (preserving git history via git mv), edit or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy. Make sure to use this skill whenever the user mentions skill creation, skill development, skill testing, skill evaluation, skill benchmarking, skill optimization, workflow-to-skill conversion, find existing skills for a purpose, or wants to package/distribute skills, even if they don't explicitly ask for a "skill creator." Do NOT trigger on general coding questions, bug fixes, feature implementation, or code review — this skill is for skill lifecycle management, not general development.
 
@@ -13,7 +13,7 @@ Create new skills, modify and improve existing skills, and measure skill perform
 |-------|-------|
 | Name | `ai-skill-upsert` |
 | Category | `ai` |
-| Version | `2.2.0` |
+| Version | `2.3.0` |
 | Status | `` |
 | Owner |  |
 
@@ -42,4 +42,4 @@ Create new skills, modify and improve existing skills, and measure skill perform
 
 - **Full skill**: [`skills/ai/ai-skill-upsert/SKILL.md`](skills/ai/ai-skill-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T11:03:17Z
+- **Generated**: 2026-07-11T15:49:28Z

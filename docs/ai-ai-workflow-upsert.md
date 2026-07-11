@@ -3,7 +3,7 @@
 
 # If installed via skills (includes/ is bundled alongside the skill):
 
-> Category: **ai** · Status:  · Version: 3.0.0
+> Category: **ai** · Status:  · Version: 3.1.0
 
 Create new workflows, modify and improve existing workflows, and convert between workflow and skill formats. Use when users want to create a workflow from scratch, update or audit an existing workflow, convert a skill back into a workflow (preserving git history via git mv), edit or optimize an existing workflow's frontmatter or steps, or scaffold a new workflow file with the Template/Wrapper pattern. Make sure to use this skill whenever the user mentions workflow creation, workflow design, workflow scaffolding, workflow updating, workflow auditing, workflow optimization, skill-to-workflow conversion, or wants to package a multi-step procedure into a reusable workflow file, even if they don't explicitly ask for a "workflow creator." Do NOT trigger on general coding questions, one-off scripts, single-step tasks, bug fixes, feature implementation, or code review — this skill is for workflow lifecycle management, not general development. For skill lifecycle management (create/update/convert/eval/benchmark), use ai-skill-upsert instead.
 
@@ -13,7 +13,7 @@ Create new workflows, modify and improve existing workflows, and convert between
 |-------|-------|
 | Name | `ai-workflow-upsert` |
 | Category | `ai` |
-| Version | `3.0.0` |
+| Version | `3.1.0` |
 | Status | `` |
 | Owner |  |
 
@@ -41,4 +41,4 @@ Create new workflows, modify and improve existing workflows, and convert between
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T11:03:17Z
+- **Generated**: 2026-07-11T15:49:28Z

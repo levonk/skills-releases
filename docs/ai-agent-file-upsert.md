@@ -3,7 +3,7 @@
 
 # If installed via skills (includes/ is bundled alongside the skill):
 
-> Category: **ai** · Status: ready · Version: 3.0.0
+> Category: **ai** · Status: ready · Version: 3.1.0
 
 Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Context-aware — detects and follows the project's existing convention (AGENTS.md, CLAUDE.md, AGENT.md, or combinations via referral/symlink). When updating existing docs, runs delta analysis (git changes since last update) via a script + subagent to extract positive findings, anti-patterns, and improvement candidates. Use when onboarding an AI agent to an existing codebase (Brownfield) to establish context and conventions, or when updating existing agent documentation after significant repo changes. Triggers on requests like "create AGENTS.md", "create CLAUDE.md", "generate agent documentation", "update AGENTS.md", "help AI understand this codebase", or "set up agent guidance for this repo". Do NOT trigger on README generation (use readme-upsert), general coding questions, or skill creation (use ai-skill-upsert).
 
@@ -13,7 +13,7 @@ Generate or update hierarchical AGENTS.md documentation for AI agents working in
 |-------|-------|
 | Name | `agent-file-upsert` |
 | Category | `ai` |
-| Version | `3.0.0` |
+| Version | `3.1.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -64,4 +64,4 @@ Example:
 
 - **Full skill**: [`skills/ai/agent-file-upsert/SKILL.md`](skills/ai/agent-file-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T11:03:17Z
+- **Generated**: 2026-07-11T15:49:28Z
