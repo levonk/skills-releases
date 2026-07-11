@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Gather Research Script for BriefingMemo Skill
 Gathers research data based on committee needs

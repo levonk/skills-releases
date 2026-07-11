@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Container Service Deploy
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **software-dev** · Status:  · Version: 1.0.0
 
@@ -30,4 +30,4 @@ Deploy multi-container services using docker-compose (local/dev) or Ansible dock
 
 - **Full skill**: [`skills/software-dev/container-service-deploy/SKILL.md`](skills/software-dev/container-service-deploy/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

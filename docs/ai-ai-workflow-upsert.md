@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Research Phase: Search Before You Create or Improve
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **ai** · Status:  · Version: 3.0.0
 
@@ -41,4 +41,4 @@ Create new workflows, modify and improve existing workflows, and convert between
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Code Quality Validation
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **software-dev** · Status: ready · Version: 1.0.0
 
@@ -57,4 +57,4 @@ Comprehensive code quality validation supporting multiple languages with linting
 
 - **Full skill**: [`skills/software-dev/code-quality-validation/SKILL.md`](skills/software-dev/code-quality-validation/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

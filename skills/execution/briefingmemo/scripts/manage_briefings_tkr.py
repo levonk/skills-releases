@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Manage Briefings Script for BriefingMemo Skill - Tkr Integration
 Provides TUI interface for managing strategic briefings using tkr ticket system

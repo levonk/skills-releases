@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Handoff
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **ai** · Status:  · Version: 2.0.0
 
@@ -25,4 +25,4 @@ Capture and restore AI conversation context for seamless work continuation acros
 
 - **Full skill**: [`skills/ai/handoff/SKILL.md`](skills/ai/handoff/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

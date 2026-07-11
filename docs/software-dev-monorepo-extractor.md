@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Auto-detect single branch and extract
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **software-dev** · Status: ready · Version: 1.0.0
 
@@ -122,4 +122,4 @@ read -p "Press enter after team confirmation..."
 
 - **Full skill**: [`skills/software-dev/monorepo-extractor/SKILL.md`](skills/software-dev/monorepo-extractor/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

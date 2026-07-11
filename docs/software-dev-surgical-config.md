@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Surgical Configuration Management
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **software-dev** · Status: ready · Version: 1.0.0
 
@@ -141,4 +141,4 @@ This Skill integrates seamlessly with:
 
 - **Full skill**: [`skills/software-dev/surgical-config/SKILL.md`](skills/software-dev/surgical-config/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

@@ -1,0 +1,44 @@
+{
+  "skill_name": "biz-email-upsert",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Draft an email to my manager asking for approval to hire a contractor for 3 months to help with the Q2 migration project. Budget is $45K. I need a decision by Friday.",
+      "expected_output": "A decision-needed email with subject tag, first sentence stating the ask, body with budget and duration, recommendation, and Friday deadline.",
+      "files": [],
+      "assertions": [
+        "Subject line starts with 'Decision needed:' or similar triage tag",
+        "First sentence states the ask (approve contractor hire)",
+        "Includes specific numbers ($45K, 3 months)",
+        "States deadline (Friday)",
+        "No generic filler phrases ('I hope this finds you well', 'I wanted to reach out')"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review and improve this email: Subject: Quick question. Hi team, I wanted to reach out regarding the deployment issue we've been having. There have been some complications and I think we might need to revisit our approach. Please let me know your thoughts when you get a chance.",
+      "expected_output": "Identifies critical issues (no triage tag, buried ask, vague, no deadline) and proposes a revised email with Risk or Action tag, specific first sentence, and clear next step.",
+      "files": [],
+      "assertions": [
+        "Identifies missing subject triage tag as an issue",
+        "Identifies vagueness ('some complications') as an issue",
+        "Identifies missing deadline/next step as an issue",
+        "Proposes revised email with triage-tagged subject",
+        "Revised email has specific first sentence and clear next step"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Convert this Slack message into a formal email to the client: 'hey the deploy went fine, all tests passed, we're live on prod now. minor thing - the dashboard is loading slow but we're on it, should be fixed by EOD.'",
+      "expected_output": "An Update email with subject tag, first sentence announcing the successful deployment, body with status details, and note about the dashboard issue with ETA.",
+      "files": [],
+      "assertions": [
+        "Subject line starts with 'Update:' or similar triage tag",
+        "First sentence states the headline (deployment successful)",
+        "Includes the dashboard issue with specific ETA (EOD)",
+        "Professional tone without losing the specific information",
+        "No Slack-style informal language in the final email"
+      ]
+    }
+  ]
+}

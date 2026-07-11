@@ -32,6 +32,67 @@ description: Self-update requirement template for AI guidance files to track usa
 ---
 
 ---
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+---
+
+### CLI Tool Discovery
+
+Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
+detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
+standard PATH locations, checks package managers (brew, mise, asdf), and
+accounts for the project's tech stack — all in one pass. **Never give up on
+the first `command -v` failure.**
+
+#### Get the script
+
+```bash
+# If installed via skills (includes/ is bundled alongside the skill):
+bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+
+# If not bundled, fetch from the public releases repo:
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### Usage
+
+```bash
+# Resolve only — print where the tool is or how to run it
+cli-tool-discovery.sh <tool-name>          # text output
+cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
+
+# Resolve and exec — runs the tool through the right wrapper/path, never returns
+cli-tool-discovery.sh -- <tool-name> [args...]
+```
+
+#### Output (resolve mode)
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `FOUND: <path>` | Tool found at a specific path | Use that path directly |
+| `WRAPPER: <wrapper-cmd>` | Tool is inside an environment wrapper | Run via the wrapper (e.g. `devbox run -- <tool>`) |
+| `NOT_FOUND: <tool>` | Tool not found anywhere | Install it (ask user first) |
+
+In exec mode (`--`), the script resolves the tool and replaces itself with
+the tool process — stdout/stderr/exit code pass through directly. If the tool
+is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### When to Use
+
+- **Always**, before reporting a tool as "not found" or "not installed"
+- When a build/test/lint command fails with "command not found"
+- When a skill or workflow script needs a tool that isn't on PATH
+- When the user reports a tool "should be installed" but `command -v` fails
+
+#### Anti-Patterns
+
+- **Giving up on first `command -v` failure** — run the script instead
+- **Installing a tool without asking** — always confirm before adding packages
+- **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
+  likely inside devbox, not on the bare shell
+
+
+---
 description: Base template for creating AI guidance files (skills, workflows, agents, prompts) with shared principles and patterns
 ---
 
@@ -539,6 +600,61 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 - **Skipping review**: trusting the subagent's self-report without running a check. The subagent's "done" and the orchestrator's "correct" are different bars.
 
 
+
+---
+description: Python script standards for skills — PEP 723 inline metadata for uv, modern type hints, pathlib, error handling, and best practices for runnable skill scripts
+---
+
+### Python Script Standards
+
+All Python scripts bundled with a skill MUST include a [PEP 723](https://peps.python.org/pep-0723/) inline script metadata header so they run via `uv run <script>.py` with no build step, no virtualenv activation, and no manual dependency installation. This makes skill scripts self-contained and portable.
+
+**Minimal header (stdlib-only scripts):**
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
+```
+
+**Header with dependencies:**
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "requests>=2.31.0",
+# ]
+# ///
+```
+
+The `#!/usr/bin/env -S uv run --script` shebang makes the script directly executable (`./script.py`) when `uv` is on PATH; `uv run --script script.py` works regardless. The `# /// script` block is the PEP 723 metadata that `uv` parses to provision an ephemeral environment.
+
+**Placement:** Shebang first, then the PEP 723 block, then the module docstring, then imports.
+
+**Best practices for skill Python scripts:**
+
+1. **PEP 723 header required** — every `.py` file in `scripts/` starts with the shebang + metadata block above. Pin `requires-python` to `>=3.11` unless the script uses newer syntax.
+2. **Declare third-party deps in the header** — never `pip install` at runtime; list them in the `dependencies` array so `uv run` resolves them automatically.
+3. **Prefer the stdlib** — if a task needs no third-party package, omit the `dependencies` array. Fewer deps = faster cold start and fewer supply-chain risks.
+4. **Devbox + rtk detection** — keep the existing detection wrappers (see `references/script-execution-standards.md`). The PEP 723 header is additive; it does not replace devbox/rtk patterns.
+5. **Quiet by default, `--verbose` / `--dry-run`** — follow the script output contract from `references/anatomy.md`.
+6. **Type hints + `if __name__ == "__main__":`** — keep the `main()` entry point so the script is importable for testing.
+7. **No inline `pip install` / `subprocess` env mutation** — `uv run` handles environment provisioning; scripts should not modify their own environment.
+8. **Modern type hint syntax (PEP 604/585)** — use built-in generics (`list[str]`, `dict[str, int]`) and union syntax (`X | Y`, `X | None`). Never import `List`, `Dict`, `Union`, `Optional` from `typing`. Use `type` statement (PEP 695) for aliases on Python 3.12+.
+9. **`pathlib.Path` over `os.path`** — use `Path` for all filesystem paths: `Path("foo") / "bar"`, `path.exists()`, `path.read_text()`. Reserve `os` for `os.environ` and `os.path.isfile` in detection guards.
+10. **Specific exceptions, no bare `except:`** — catch concrete exception types (`except FileNotFoundError`, `except json.JSONDecodeError`). Use `except Exception` only at top-level boundaries with `logging.exception()` or `sys.exit(1)`. Never swallow errors silently.
+11. **f-strings for string formatting** — use f-strings (`f"{name}: {value}"`) instead of `.format()` or `%`. For logging, use `logger.info("msg %s", val)` to defer formatting until the log level is active.
+12. **Import ordering** — stdlib first, then third-party, then local, with a blank line between groups. If using ruff, `I` (isort) enforces this automatically.
+13. **Google-style docstrings** — module docstring (after PEP 723 block), then function/class docstrings: one-line summary, blank line, detailed description, `Args:`, `Returns:`, `Raises:` sections.
+14. **`dataclass` for structured records** — use `@dataclass` (with `frozen=True` for immutability, `slots=True` for efficiency) instead of plain classes or dicts for structured data. Use `StrEnum` with `auto()` for enumerations.
+15. **`Protocol` over ABC for interfaces** — define structural types with `Protocol` (PEP 544) instead of `ABC` + `abstractmethod`. Enables duck typing without inheritance coupling.
+
+**When uv is unavailable:** `python script.py` still works for stdlib-only scripts (the PEP 723 block is a comment Python ignores). Scripts with declared dependencies require `uv run` (or a pre-provisioned venv matching the declared deps).
+
+See `references/script-execution-standards.md` for the full devbox/rtk detection code and the combined header + detection template.
 
 # Tech Maturity
 

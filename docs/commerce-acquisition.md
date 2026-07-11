@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Shopping Acquisition
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **commerce** · Status: ready · Version: 1.0.0
 
@@ -34,4 +34,4 @@ Execute the final purchase of a product or hiring of a service after research is
 
 - **Full skill**: [`skills/commerce/acquisition/SKILL.md`](skills/commerce/acquisition/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

@@ -53,6 +53,67 @@ description: Self-update requirement template for AI guidance files to track usa
 ---
 
 ---
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+---
+
+### CLI Tool Discovery
+
+Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
+detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
+standard PATH locations, checks package managers (brew, mise, asdf), and
+accounts for the project's tech stack — all in one pass. **Never give up on
+the first `command -v` failure.**
+
+#### Get the script
+
+```bash
+# If installed via skills (includes/ is bundled alongside the skill):
+bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+
+# If not bundled, fetch from the public releases repo:
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### Usage
+
+```bash
+# Resolve only — print where the tool is or how to run it
+cli-tool-discovery.sh <tool-name>          # text output
+cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
+
+# Resolve and exec — runs the tool through the right wrapper/path, never returns
+cli-tool-discovery.sh -- <tool-name> [args...]
+```
+
+#### Output (resolve mode)
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `FOUND: <path>` | Tool found at a specific path | Use that path directly |
+| `WRAPPER: <wrapper-cmd>` | Tool is inside an environment wrapper | Run via the wrapper (e.g. `devbox run -- <tool>`) |
+| `NOT_FOUND: <tool>` | Tool not found anywhere | Install it (ask user first) |
+
+In exec mode (`--`), the script resolves the tool and replaces itself with
+the tool process — stdout/stderr/exit code pass through directly. If the tool
+is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### When to Use
+
+- **Always**, before reporting a tool as "not found" or "not installed"
+- When a build/test/lint command fails with "command not found"
+- When a skill or workflow script needs a tool that isn't on PATH
+- When the user reports a tool "should be installed" but `command -v` fails
+
+#### Anti-Patterns
+
+- **Giving up on first `command -v` failure** — run the script instead
+- **Installing a tool without asking** — always confirm before adding packages
+- **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
+  likely inside devbox, not on the bare shell
+
+
+---
 description: Base template for creating AI guidance files (skills, workflows, agents, prompts) with shared principles and patterns
 ---
 

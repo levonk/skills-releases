@@ -104,7 +104,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "get_video_info",
-        description: "Retrieves video metadata (Title, ID, URL).",
+        description: "Retrieves basic video info (ID, URL). For full metadata (title, uploader, duration), use yt-dlp.",
         inputSchema: {
           type: "object",
           properties: {

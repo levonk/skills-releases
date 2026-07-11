@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `23da753dceed5bfd3eafe0a2f99e89825eeeebc0` · Branch: `main` · Generated: 2026-07-10T20:22:44Z
+> Commit: `a97645edac0f5141490f347342da71d68cd99983` · Branch: `main` · Generated: 2026-07-11T11:03:17Z
 
 ## Overview
 
@@ -27,6 +27,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
+| biz-email-upsert | Draft, review, and improve business emails using a structured framework that prioritizes speed, c... | [Synopsis](business-biz-email-upsert.md) |
 | task-triage | Apply the Agent Organization 26-tier prioritization framework to triage tasks, requests, and work... | [Synopsis](business-task-triage.md) |
 
 ### commerce
@@ -48,6 +49,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | briefingmemo | >- | [Synopsis](execution-briefingmemo.md) |
+| execute-upsert | >- | [Synopsis](execution-execute-upsert.md) |
 
 ### general
 

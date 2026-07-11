@@ -1,13 +1,13 @@
 ---
 name: youtube-content-analysis
-description: Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video transcripts (with or without timestamps), analyze video content, extract video information, or process YouTube content for further LLM analysis. Triggers on requests like 'get transcript', 'analyze YouTube video', 'extract video content', or 'fetch video metadata'.
+description: Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video transcripts (with or without timestamps), analyze video content, extract video information, or process YouTube content for further LLM analysis. Triggers on requests like 'get transcript', 'analyze YouTube video', 'extract video content', or 'fetch video metadata'. Do NOT trigger on general video playback questions, downloading video files, non-YouTube platforms, or video editing tasks.
 version: 1.0.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-02-01"
-  updated: "2026-07-02"
-  last-used: "2026-07-02"
+  updated: "2026-07-10"
+  last-used: "2026-07-10"
 tags: ["ai/skill", "content-creation", "video-analysis", "transcript-processing"]
 see-also:
   - template: "base-ai-guidance"
@@ -15,8 +15,8 @@ see-also:
     description: "Shared framework for creating all AI guidance types"
 dependencies:
   - type: node
-    name: youtube-transcript-api
-    url: https://www.npmjs.com/package/youtube-transcript-api
+    name: youtube-transcript
+    url: https://www.npmjs.com/package/youtube-transcript
   - type: node
     name: mcp-sdk
     url: https://www.npmjs.com/package/mcp-sdk
@@ -42,6 +42,67 @@ description: Self-update requirement template for AI guidance files to track usa
 
 
 ---
+
+---
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+---
+
+### CLI Tool Discovery
+
+Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
+detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
+standard PATH locations, checks package managers (brew, mise, asdf), and
+accounts for the project's tech stack — all in one pass. **Never give up on
+the first `command -v` failure.**
+
+#### Get the script
+
+```bash
+# If installed via skills (includes/ is bundled alongside the skill):
+bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+
+# If not bundled, fetch from the public releases repo:
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### Usage
+
+```bash
+# Resolve only — print where the tool is or how to run it
+cli-tool-discovery.sh <tool-name>          # text output
+cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
+
+# Resolve and exec — runs the tool through the right wrapper/path, never returns
+cli-tool-discovery.sh -- <tool-name> [args...]
+```
+
+#### Output (resolve mode)
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `FOUND: <path>` | Tool found at a specific path | Use that path directly |
+| `WRAPPER: <wrapper-cmd>` | Tool is inside an environment wrapper | Run via the wrapper (e.g. `devbox run -- <tool>`) |
+| `NOT_FOUND: <tool>` | Tool not found anywhere | Install it (ask user first) |
+
+In exec mode (`--`), the script resolves the tool and replaces itself with
+the tool process — stdout/stderr/exit code pass through directly. If the tool
+is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### When to Use
+
+- **Always**, before reporting a tool as "not found" or "not installed"
+- When a build/test/lint command fails with "command not found"
+- When a skill or workflow script needs a tool that isn't on PATH
+- When the user reports a tool "should be installed" but `command -v` fails
+
+#### Anti-Patterns
+
+- **Giving up on first `command -v` failure** — run the script instead
+- **Installing a tool without asking** — always confirm before adding packages
+- **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
+  likely inside devbox, not on the bare shell
+
 
 ---
 description: Base template for creating AI guidance files (skills, workflows, agents, prompts) with shared principles and patterns
@@ -552,6 +613,28 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 
 
 
+---
+description: Reusable trigger guard — when a skill is triggered but the question is a poor fit, answer without the skill, explain why, and offer a rerun on a one-word affirmative
+---
+
+### Trigger Guard
+
+If this skill is triggered but the question is a poor fit for it — for example, the question matches one of the "Do NOT trigger on..." cases in this skill's description — follow this protocol:
+
+1. **Answer the question directly.** Do not invoke this skill's process, scripts, or multi-step workflow. Provide the best answer you can without the skill.
+
+2. **Explain briefly that the answer was provided without the skill and why.** One or two sentences. Reference the specific reason from the description's negative-trigger clause. Examples:
+   - "Answered without the council because this is a factual question with one right answer — the multi-perspective process wouldn't add value."
+   - "Answered without peer-review because there's only one response to review — anonymization and comparison need multiple inputs."
+   - "Answered without briefingmemo because this is a fast pressure-test, not a high-stakes strategic decision needing research and governance — use think-assist instead."
+
+3. **Offer a rerun.** Tell the user: "If you'd like to run this through the full skill process anyway, respond with `go`." Use `go` as the suggested affirmative — one word, unambiguous, fast to type.
+
+4. **On `go`, run the skill.** If the user responds with `go` (or any clear affirmative), execute the full skill process regardless of the initial guard assessment. The user's explicit request overrides the guard.
+
+**Why this guard exists:** Skills with "pushy" descriptions over-trigger on questions they can't add value to. The guard prevents wasted effort (running a 5-advisor council on "what's the capital of France") while respecting explicit user intent — if the user wants the heavy process run anyway, one word gets it done.
+
+
 # YouTube Content Analysis Skill
 
 This skill enables AI agents to interact with YouTube content by extracting transcripts and metadata. It is a TypeScript-based implementation of the YouTube Transcript MCP, designed to be lightweight and fast.
@@ -562,26 +645,45 @@ This skill enables AI agents to interact with YouTube content by extracting tran
 2. **Structured Output**: Return transcripts in formats suitable for further LLM processing (plain text or timed snippets).
 3. **Efficiency**: Use TypeScript for performance and type safety.
 
+## Tool Selection: yt-dlp First
+
+**Prefer `yt-dlp` over the built-in MCP tool when available.** yt-dlp is more
+capable: it fetches full metadata (title, uploader, upload date, duration,
+description), handles age-restricted and member content, and can extract
+subtitles/transcripts in multiple formats.
+
+### Decision Flow
+
+1. **Check if `yt-dlp` is installed**: `command -v yt-dlp || yt-dlp --version`
+2. **If available, use yt-dlp directly**:
+   - Transcript: `yt-dlp --write-auto-sub --sub-lang en --skip-download -o '%(title)s' <url>`
+   - Metadata: `yt-dlp --dump-json <url>` (returns title, uploader, duration, etc.)
+3. **If yt-dlp is NOT available**, fall back to the built-in MCP tools below.
+
+The built-in MCP tool (`index.mts`) is a lightweight fallback that uses the
+`youtube-transcript` npm package. It handles basic transcript fetching but
+cannot retrieve full video metadata.
+
 ## Tools
 
 - `get_transcript`: Fetches the full text transcript of a video.
 - `get_timed_transcript`: Fetches transcript snippets with start times and durations.
-- `get_video_info`: Retrieves video metadata (title, description, duration, etc.).
+- `get_video_info`: Retrieves basic video info (ID, URL). For full metadata, use yt-dlp.
 
 ## Implementation
 
-The logic is implemented in `index.mts` and executed via a shebang script. It leverages `youtube-transcript-api` (or equivalent) and `mcp-sdk`.
+The logic is implemented in `index.mts` and executed via a shebang script. It leverages `youtube-transcript` and `mcp-sdk`.
 
 ## Context Declaration
 
 ### File Paths
-- Main skill: `config/ai/skills/content/youtube/SKILL.md`
-- Scripts: `index.mts`, `youtube-tool`
+- Main skill: `src/current/skills/content/youtube/SKILL.md` (in the `skills-src` repo)
+- Tool: `index.mts` (MCP server, executed via shebang)
 - Package: `package.json`
 
 ### Related Skills
 - base-ai-guidance (base-framework)
 
 ### Project Information
-- Project: levonk/dotfiles
-- Repository: https://github.com/levonk/dotfiles
+- Project: levonk/skills-src
+- Repository: https://github.com/levonk/skills-src

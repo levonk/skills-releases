@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# Tech Maturity
+# If installed via skills (includes/ is bundled alongside the skill):
 
 > Category: **tech-maturity** · Status:  · Version: 1.0.0
 
@@ -135,4 +135,4 @@ When assessing legacy systems:
 
 - **Full skill**: [`skills/tech-maturity/tech-maturity/SKILL.md`](skills/tech-maturity/tech-maturity/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-10T20:22:44Z
+- **Generated**: 2026-07-11T11:03:17Z

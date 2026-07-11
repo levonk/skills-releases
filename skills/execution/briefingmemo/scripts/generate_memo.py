@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Generate Memo Script for BriefingMemo Skill
 Generates final decision memo from deliberation results

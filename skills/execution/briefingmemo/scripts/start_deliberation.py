@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
 """
 Start Deliberation Script for BriefingMemo Skill
 Main entry point for the briefing-to-memo decision process

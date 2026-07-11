@@ -2,6 +2,8 @@
 name: ai-skill-upsert
 description: Create new skills, modify and improve existing skills, and measure skill performance. Before creating a new skill, researches existing skills locally, on skills.sh, and on GitHub to avoid duplication and incorporate best ideas. Use when users want to create a skill from scratch, convert an existing workflow file into a skill (preserving git history via git mv), edit or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy. Make sure to use this skill whenever the user mentions skill creation, skill development, skill testing, skill evaluation, skill benchmarking, skill optimization, workflow-to-skill conversion, find existing skills for a purpose, or wants to package/distribute skills, even if they don't explicitly ask for a "skill creator." Do NOT trigger on general coding questions, bug fixes, feature implementation, or code review — this skill is for skill lifecycle management, not general development.
 version: 2.2.0
+user-invocable: true
+disable-model-invocation: true
 date:
   created: "2026-05-25"
   updated: "2026-07-09"
@@ -45,6 +47,67 @@ description: Self-update requirement template for AI guidance files to track usa
 
 
 ---
+
+---
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+---
+
+### CLI Tool Discovery
+
+Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
+detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
+standard PATH locations, checks package managers (brew, mise, asdf), and
+accounts for the project's tech stack — all in one pass. **Never give up on
+the first `command -v` failure.**
+
+#### Get the script
+
+```bash
+# If installed via skills (includes/ is bundled alongside the skill):
+bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+
+# If not bundled, fetch from the public releases repo:
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### Usage
+
+```bash
+# Resolve only — print where the tool is or how to run it
+cli-tool-discovery.sh <tool-name>          # text output
+cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
+
+# Resolve and exec — runs the tool through the right wrapper/path, never returns
+cli-tool-discovery.sh -- <tool-name> [args...]
+```
+
+#### Output (resolve mode)
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `FOUND: <path>` | Tool found at a specific path | Use that path directly |
+| `WRAPPER: <wrapper-cmd>` | Tool is inside an environment wrapper | Run via the wrapper (e.g. `devbox run -- <tool>`) |
+| `NOT_FOUND: <tool>` | Tool not found anywhere | Install it (ask user first) |
+
+In exec mode (`--`), the script resolves the tool and replaces itself with
+the tool process — stdout/stderr/exit code pass through directly. If the tool
+is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### When to Use
+
+- **Always**, before reporting a tool as "not found" or "not installed"
+- When a build/test/lint command fails with "command not found"
+- When a skill or workflow script needs a tool that isn't on PATH
+- When the user reports a tool "should be installed" but `command -v` fails
+
+#### Anti-Patterns
+
+- **Giving up on first `command -v` failure** — run the script instead
+- **Installing a tool without asking** — always confirm before adding packages
+- **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
+  likely inside devbox, not on the bare shell
+
 
 ---
 description: Base template for creating AI guidance files (skills, workflows, agents, prompts) with shared principles and patterns
@@ -830,7 +893,7 @@ just different. If it's merely a reimplementation, reconsider whether creation
 is warranted.
 
 
-1. **Initialize the skill directory**: Run `scripts/init_skill.py <skill-name> --path <output-directory>` using the location chosen above. The script creates the skill directory (including any nested parent directories like `src/current/skills/<category>/`) with proper structure, a `SKILL.md` template with frontmatter and TODO placeholders, and example resource directories (`scripts/`, `references/`, `assets/`) with example files that can be customized or deleted.
+1. **Initialize the skill directory**: Run `scripts/init_skill.py <skill-name> --path <output-directory>` using the location chosen above. The script creates the skill directory (including any nested parent directories like `src/current/skills/<category>/`) with proper structure, a `SKILL.md` scaffolded from `templates/SKILL.md.template` (with frontmatter, invocation control fields, base-ai-guidance and trigger-guard includes, and TODO placeholders), and example resource directories (`scripts/`, `references/`, `assets/`) with example files that can be customized or deleted. See `references/skill-template.md` for the full skill structure and all optional frontmatter fields.
    ```bash
    # If devbox is available and you are not already in a devbox shell:
    devbox run -- python scripts/init_skill.py <skill-name> --path <output-directory>
@@ -862,6 +925,67 @@ description: Self-update requirement template for AI guidance files to track usa
 
 
 ---
+
+---
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+---
+
+### CLI Tool Discovery
+
+Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
+detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
+standard PATH locations, checks package managers (brew, mise, asdf), and
+accounts for the project's tech stack — all in one pass. **Never give up on
+the first `command -v` failure.**
+
+#### Get the script
+
+```bash
+# If installed via skills (includes/ is bundled alongside the skill):
+bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+
+# If not bundled, fetch from the public releases repo:
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### Usage
+
+```bash
+# Resolve only — print where the tool is or how to run it
+cli-tool-discovery.sh <tool-name>          # text output
+cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
+
+# Resolve and exec — runs the tool through the right wrapper/path, never returns
+cli-tool-discovery.sh -- <tool-name> [args...]
+```
+
+#### Output (resolve mode)
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `FOUND: <path>` | Tool found at a specific path | Use that path directly |
+| `WRAPPER: <wrapper-cmd>` | Tool is inside an environment wrapper | Run via the wrapper (e.g. `devbox run -- <tool>`) |
+| `NOT_FOUND: <tool>` | Tool not found anywhere | Install it (ask user first) |
+
+In exec mode (`--`), the script resolves the tool and replaces itself with
+the tool process — stdout/stderr/exit code pass through directly. If the tool
+is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### When to Use
+
+- **Always**, before reporting a tool as "not found" or "not installed"
+- When a build/test/lint command fails with "command not found"
+- When a skill or workflow script needs a tool that isn't on PATH
+- When the user reports a tool "should be installed" but `command -v` fails
+
+#### Anti-Patterns
+
+- **Giving up on first `command -v` failure** — run the script instead
+- **Installing a tool without asking** — always confirm before adding packages
+- **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
+  likely inside devbox, not on the bare shell
+
 
 ---
 description: Base template for creating AI guidance files (skills, workflows, agents, prompts) with shared principles and patterns
@@ -1402,7 +1526,7 @@ If this skill is triggered but the question is a poor fit for it — for example
 
 ## Mode B: Convert an Existing Workflow to a Skill
 
-When the user provides an existing workflow file and wants it turned into a skill, use this path to preserve the workflow's git history while transforming it into a skill. **See `references/workflow-conversion.md` for the full process**, including the frontmatter requirement (disable auto-loading with `triggers: [user]`), the git-mv-based history preservation, and the optimization checklist.
+When the user provides an existing workflow file and wants it turned into a skill, use this path to preserve the workflow's git history while transforming it into a skill. **See `references/workflow-conversion.md` for the full process**, including the frontmatter requirement (disable auto-loading with `disable-model-invocation: true`), the git-mv-based history preservation, and the optimization checklist.
 
 **Research phase**: Run Step 0 above before converting — an existing skill may
 already do what the workflow does. Skip only if the user explicitly says
@@ -1488,9 +1612,9 @@ When skills serve multiple audiences (e.g., end users vs developers), apply prog
 
 ### File Paths
 - Main skill: `src/current/skills/ai/ai-skill-upsert/SKILL.md` (in the `skills-src` repo at `~/p/gh/levonk/skills-src/`)
-- References: `src/current/skills/ai/ai-skill-upsert/references/` (including `skill-discovery.md` for the research phase)
+- References: `src/current/skills/ai/ai-skill-upsert/references/` (including `skill-discovery.md` for the research phase, `skill-template.md` for the full skill structure and frontmatter reference)
 - Scripts: `src/current/skills/ai/ai-skill-upsert/scripts/` (including `discover_skills.py` for the research phase)
-- Templates: `src/current/skills/ai/ai-skill-upsert/templates/`
+- Templates: `src/current/skills/ai/ai-skill-upsert/templates/` (including `SKILL.md.template` used by `init_skill.py`)
 - Includes: `src/current/includes/` (including `comparison-methodology.md.tmpl` shared with `project-comparison`)
 
 ### External Resources
