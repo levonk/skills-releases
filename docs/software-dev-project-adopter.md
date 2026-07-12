@@ -66,4 +66,4 @@ For ADR references and detailed configuration links, see [ADR References](refere
 
 - **Full skill**: [`skills/software-dev/project-adopter/SKILL.md`](skills/software-dev/project-adopter/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T01:27:53Z
+- **Generated**: 2026-07-12T19:44:04Z

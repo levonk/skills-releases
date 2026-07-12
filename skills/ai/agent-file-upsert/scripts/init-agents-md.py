@@ -1,0 +1,596 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""
+Initialize the AGENTS.md hierarchy for a project.
+
+Creates the initial file structure from template files in references/:
+  - AGENTS.md (root, user-facing)
+  - .agents/knowledge/developer.md (developer-facing)
+  - internal-docs/oos/ (directory with .gitkeep)
+  - internal-docs/improvements/INDEX.md (empty index)
+  - internal-docs/anti-patterns/INDEX.md (empty index)
+  - {package}/AGENTS.md for each major directory (apps/*, packages/*)
+  - CLAUDE.md and/or AGENT.md as referrals to AGENTS.md (if they don't exist)
+
+The script substitutes deterministic placeholders ({project name}) and leaves
+all other content as TODO markers for the AI to fill in during the
+agent-file-upsert workflow.
+
+Usage:
+    uv run --script init-agents-md.py /path/to/project
+    uv run --script init-agents-md.py /path/to/project --verbose
+    python init-agents-md.py /path/to/project
+
+Examples:
+    # Initialize AGENTS.md hierarchy in the current directory
+    python init-agents-md.py .
+
+    # Initialize in a specific project
+    python init-agents-md.py ~/p/gh/levonk/my-project --verbose
+"""
+
+import argparse
+import os
+import re
+import sys
+from pathlib import Path
+
+
+
+import json
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+
+def _walk_up_find(*patterns: str) -> Path | None:
+    """Walk up from cwd looking for any of the given filenames. Return the dir containing the first match."""
+    cwd = Path.cwd()
+    for d in [cwd, *cwd.parents]:
+        for p in patterns:
+            if (d / p).is_file():
+                return d
+    return None
+
+
+def _detect_wrapper() -> str | None:
+    """Detect an environment wrapper for the current directory. Returns the wrapper prefix or None."""
+    # Already inside devbox shell?
+    if os.environ.get("DEVBOX_SHELL") or os.environ.get("IN_DEVBOX_SHELL"):
+        return None
+
+    # devbox
+    if shutil.which("devbox") and _walk_up_find("devbox.json"):
+        return "devbox run --"
+
+    # mise
+    if shutil.which("mise") and _walk_up_find(".mise.toml", ".mise/config.toml"):
+        return "mise exec --"
+
+    # flox
+    if shutil.which("flox") and _walk_up_find("flox.nix"):
+        return "flox activate --"
+
+    # direnv
+    if shutil.which("direnv") and _walk_up_find(".envrc"):
+        return "direnv export &&"
+
+    # nix
+    if shutil.which("nix"):
+        nix_root = _walk_up_find("flake.nix", "shell.nix")
+        if nix_root:
+            if (nix_root / "flake.nix").is_file():
+                return "nix develop --command"
+            return "nix-shell --run"
+
+    return None
+
+
+def _get_repo_root() -> Path | None:
+    """Get git repo root if available."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=True,
+        )
+        return Path(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def _search_dirs() -> list[Path]:
+    """Build the list of directories to search, tech-stack-aware."""
+    home = Path.home()
+    dirs: list[Path] = []
+
+    # Universal user-local and system dirs
+    xdg_bin = os.environ.get("XDG_BIN_HOME")
+    if xdg_bin:
+        dirs.append(Path(xdg_bin))
+    dirs.extend([
+        home / ".local/bin",
+        home / ".nix-profile/bin",
+        Path("/nix/var/nix/profiles/default/bin"),
+        home / "bin",
+        Path("/usr/local/bin"),
+        Path("/usr/local/sbin"),
+        Path("/usr/sbin"),
+        Path("/usr/bin"),
+        Path("/sbin"),
+        Path("/bin"),
+    ])
+    # Homebrew: only check the prefix for the current arch.
+    # A Time Machine restore across arches can leave a stale directory
+    # with non-universal binaries that won't run.
+    import platform
+    arch = platform.machine()
+    if arch == "arm64":
+        dirs.extend([Path("/opt/homebrew/bin"), Path("/opt/homebrew/sbin")])
+    elif arch in ("x86_64", "i386"):
+        dirs.extend([Path("/usr/local/bin"), Path("/usr/local/sbin")])
+    # MacPorts (both arches use /opt/local)
+    dirs.append(Path("/opt/local/bin"))
+    dirs.extend([Path("/snap/bin"), Path("/run/current-system/sw/bin")])
+
+    # Language/runtime-specific dirs
+    dirs.extend([
+        home / ".cargo/bin",
+        home / ".bun/bin",
+        home / ".deno/bin",
+        home / ".volta/bin",
+        home / "go/bin",
+        home / ".rbenv/shims",
+        home / ".pyenv/shims",
+        home / ".pixi/bin",
+        home / ".krew/bin",
+        home / ".foundry/bin",
+    ])
+
+    # nvm: all installed versions
+    nvm_node = home / ".nvm/versions/node"
+    if nvm_node.is_dir():
+        for v in nvm_node.iterdir():
+            b = v / "bin"
+            if b.is_dir():
+                dirs.append(b)
+
+    # mise/rtx managed tool installs
+    for base in [home / ".local/share/mise/installs", home / ".local/share/rtx/installs"]:
+        if base.is_dir():
+            for inst in base.iterdir():
+                b = inst / "bin"
+                if b.is_dir():
+                    dirs.append(b)
+
+    # Tech-stack-specific repo-local dirs
+    repo = _get_repo_root()
+    if repo:
+        if (repo / "package.json").is_file():
+            dirs.extend([repo / "node_modules/.bin", repo / ".bin"])
+        if (repo / "Cargo.toml").is_file():
+            dirs.extend([repo / "target/release", repo / "target/debug"])
+        if (repo / "go.mod").is_file():
+            dirs.extend([repo / "bin", repo / ".bin"])
+        if (repo / "pyproject.toml").is_file() or (repo / "requirements.txt").is_file():
+            dirs.extend([repo / ".venv/bin", repo / ".local/bin"])
+        if (repo / "Gemfile").is_file():
+            dirs.extend([repo / "bin", repo / ".bundle/bin"])
+        if (repo / "composer.json").is_file():
+            dirs.append(repo / "vendor/bin")
+        dirs.extend([repo / "bin", repo / "scripts", repo / ".local/bin"])
+
+    return dirs
+
+
+def resolve_tool(tool: str) -> dict:
+    """Resolve a CLI tool. Returns a dict with 'status' and 'path' or 'wrapper'.
+
+    Return values:
+        {"status": "found", "path": "/usr/local/bin/go"}
+        {"status": "wrapper", "wrapper": "devbox run --"}
+        {"status": "not_found"}
+    """
+    # 1. Already on PATH?
+    path = shutil.which(tool)
+    if path:
+        return {"status": "found", "path": path}
+
+    # 2. Environment wrapper
+    wrapper = _detect_wrapper()
+    if wrapper:
+        return {"status": "wrapper", "wrapper": wrapper}
+
+    # 3. Standard PATH locations
+    for d in _search_dirs():
+        candidate = d / tool
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return {"status": "found", "path": str(candidate)}
+
+    # 4. Package manager lookup
+    if shutil.which("brew"):
+        try:
+            subprocess.run(["brew", "list", tool], capture_output=True, check=True)
+            prefix = subprocess.run(
+                ["brew", "--prefix", tool], capture_output=True, text=True
+            ).stdout.strip()
+            if prefix:
+                p = Path(prefix) / "bin" / tool
+                if p.is_file() and os.access(p, os.X_OK):
+                    return {"status": "found", "path": str(p)}
+            brew_prefix = subprocess.run(
+                ["brew", "--prefix"], capture_output=True, text=True
+            ).stdout.strip()
+            p = Path(brew_prefix) / "bin" / tool
+            if p.is_file() and os.access(p, os.X_OK):
+                return {"status": "found", "path": str(p)}
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+
+    if shutil.which("mise"):
+        try:
+            result = subprocess.run(
+                ["mise", "which", tool], capture_output=True, text=True
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return {"status": "found", "path": result.stdout.strip()}
+        except FileNotFoundError:
+            pass
+
+    if shutil.which("asdf"):
+        try:
+            result = subprocess.run(
+                ["asdf", "which", tool], capture_output=True, text=True
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return {"status": "found", "path": result.stdout.strip()}
+        except FileNotFoundError:
+            pass
+
+    return {"status": "not_found"}
+
+
+def run_tool(tool: str, args: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """Resolve a tool and run it. If a wrapper is detected, runs through the wrapper.
+
+    Uses subprocess.run (captures output only if kwargs request it).
+    For exec (replace process), use run_tool_exec instead.
+    """
+    result = resolve_tool(tool)
+    status = result["status"]
+
+    if status == "found":
+        return subprocess.run([result["path"], *args], **kwargs)
+    elif status == "wrapper":
+        wrapper = result["wrapper"]
+        if wrapper == "devbox run --":
+            return subprocess.run(["devbox", "run", "--", tool, *args], **kwargs)
+        elif wrapper == "mise exec --":
+            return subprocess.run(["mise", "exec", "--", tool, *args], **kwargs)
+        elif wrapper == "flox activate --":
+            return subprocess.run(["flox", "activate", "--", tool, *args], **kwargs)
+        elif wrapper == "direnv export &&":
+            # direnv needs eval — fall back to running direnv export then the tool
+            export = subprocess.run(
+                ["direnv", "export", "bash"], capture_output=True, text=True
+            )
+            # Can't easily eval in Python; just run the tool and hope PATH is set
+            return subprocess.run([tool, *args], **kwargs)
+        elif wrapper == "nix develop --command":
+            return subprocess.run(["nix", "develop", "--command", tool, *args], **kwargs)
+        elif wrapper == "nix-shell --run":
+            return subprocess.run(
+                ["nix-shell", "--run", " ".join([tool, *args])], **kwargs
+            )
+        else:
+            raise RuntimeError(f"Unknown wrapper: {wrapper}")
+    else:
+        raise FileNotFoundError(f"Tool not found: {tool}")
+
+
+def run_tool_exec(tool: str, args: list[str]) -> None:
+    """Resolve a tool and exec it (replaces the current process). Never returns."""
+    result = resolve_tool(tool)
+    status = result["status"]
+
+    if status == "found":
+        os.execv(result["path"], [tool, *args])
+    elif status == "wrapper":
+        wrapper = result["wrapper"]
+        if wrapper == "devbox run --":
+            os.execvp("devbox", ["devbox", "run", "--", tool, *args])
+        elif wrapper == "mise exec --":
+            os.execvp("mise", ["mise", "exec", "--", tool, *args])
+        elif wrapper == "flox activate --":
+            os.execvp("flox", ["flox", "activate", "--", tool, *args])
+        elif wrapper == "direnv export &&":
+            os.execvp(tool, [tool, *args])
+        elif wrapper == "nix develop --command":
+            os.execvp("nix", ["nix", "develop", "--command", tool, *args])
+        elif wrapper == "nix-shell --run":
+            os.execvp("nix-shell", ["nix-shell", "--run", " ".join([tool, *args])])
+        else:
+            raise RuntimeError(f"Unknown wrapper: {wrapper}")
+    else:
+        raise FileNotFoundError(f"Tool not found: {tool}")
+
+
+# --- Convenience wrappers (backward-compatible with old devbox_run/rtk_wrap) ---
+
+def is_devbox_available() -> bool:
+    """Backward compat: check if devbox wrapper would be used."""
+    r = resolve_tool("devbox")
+    # Actually check if devbox wrapper is active for this dir
+    if os.environ.get("DEVBOX_SHELL") or os.environ.get("IN_DEVBOX_SHELL"):
+        return False
+    if not shutil.which("devbox"):
+        return False
+    return _walk_up_find("devbox.json") is not None
+
+
+def devbox_run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
+    """Backward compat: run a command through devbox if available, otherwise directly."""
+    if is_devbox_available():
+        return subprocess.run(["devbox", "run", "--", *cmd], **kwargs)
+    return subprocess.run(cmd, **kwargs)
+
+
+def is_rtk_available() -> bool:
+    """Backward compat: check if rtk is available."""
+    return shutil.which("rtk") is not None
+
+
+def rtk_wrap(tool: str, *args: str, **kwargs) -> subprocess.CompletedProcess:
+    """Backward compat: run a command through rtk if available, otherwise through devbox/direct."""
+    if is_rtk_available():
+        return devbox_run(["rtk", tool, *args], **kwargs)
+    return devbox_run([tool, *args], **kwargs)
+
+
+
+def get_script_dir() -> Path:
+    """Get the directory where this script is located."""
+    return Path(__file__).parent.parent
+
+
+def load_template(template_name: str) -> str:
+    """Load a template file from the references directory.
+
+    Tries the built version (.md, no .tmpl extension) first, then falls back
+    to the source version (.tmpl) and strips Go template comments.
+    """
+    script_dir = get_script_dir()
+    refs_dir = script_dir / "references"
+
+    # Try built version first (rendered .md without .tmpl)
+    built_path = refs_dir / template_name.replace(".tmpl", "")
+    if built_path.exists():
+        return built_path.read_text(encoding="utf-8")
+
+    # Fall back to source .tmpl version — strip Go template comments
+    tmpl_path = refs_dir / template_name
+    if tmpl_path.exists():
+        content = tmpl_path.read_text(encoding="utf-8")
+        return strip_go_comments(content)
+
+    print(f"Error: Template not found: {built_path} or {tmpl_path}", file=sys.stderr)
+    sys.exit(1)
+
+
+def strip_go_comments(content: str) -> str:
+    """Remove Go text/template comments () from template content."""
+    return re.sub(r"\{\{\{/\*.*?\*/\}\}\}", "", content, flags=re.DOTALL)
+
+
+def detect_project_name(project_root: Path) -> str:
+    """Detect the project name from README.md H1 or directory name."""
+    readme = project_root / "README.md"
+    if readme.exists():
+        for line in readme.read_text(encoding="utf-8").splitlines():
+            if line.startswith("# ") and not line.startswith("##"):
+                return line[2:].strip()
+    return project_root.resolve().name
+
+
+def detect_major_dirs(project_root: Path) -> list[Path]:
+    """Detect major directories that should get sub-folder AGENTS.md files."""
+    major: list[Path] = []
+    for parent_name in ("apps", "packages", "services"):
+        parent = project_root / parent_name
+        if parent.is_dir():
+            for child in sorted(parent.iterdir()):
+                if child.is_dir() and not child.name.startswith("."):
+                    major.append(child)
+    return major
+
+
+def create_root_agents_md(project_root: Path, project_name: str, verbose: bool) -> bool:
+    """Create AGENTS.md from the root template. Returns True if created."""
+    agents_md = project_root / "AGENTS.md"
+    if agents_md.exists():
+        if verbose:
+            print(f"  [skip] AGENTS.md already exists")
+        return False
+
+    template = load_template("AGENT-project-root-template.md.tmpl")
+    template = template.replace("{project name}", project_name)
+    agents_md.write_text(template, encoding="utf-8")
+    if verbose:
+        print(f"  [ok] Created AGENTS.md (root, user-facing)")
+    return True
+
+
+def create_developer_guide(project_root: Path, project_name: str, verbose: bool) -> bool:
+    """Create .agents/knowledge/developer.md from the developer template."""
+    dev_guide = project_root / ".agents" / "knowledge" / "developer.md"
+    if dev_guide.exists():
+        if verbose:
+            print(f"  [skip] .agents/knowledge/developer.md already exists")
+        return False
+
+    template = load_template("AGENT-project-developer-template.md.tmpl")
+    template = template.replace("{project name}", project_name)
+    dev_guide.parent.mkdir(parents=True, exist_ok=True)
+    dev_guide.write_text(template, encoding="utf-8")
+    if verbose:
+        print(f"  [ok] Created .agents/knowledge/developer.md (developer-facing)")
+    return True
+
+
+def create_oos_dir(project_root: Path, verbose: bool) -> bool:
+    """Create internal-docs/oos/ directory with .gitkeep."""
+    oos_dir = project_root / "internal-docs" / "oos"
+    if oos_dir.exists():
+        if verbose:
+            print(f"  [skip] internal-docs/oos/ already exists")
+        return False
+    oos_dir.mkdir(parents=True, exist_ok=True)
+    (oos_dir / ".gitkeep").write_text("", encoding="utf-8")
+    if verbose:
+        print(f"  [ok] Created internal-docs/oos/ (out-of-scope directory)")
+    return True
+
+
+def create_improvements_index(project_root: Path, verbose: bool) -> bool:
+    """Create internal-docs/improvements/INDEX.md (empty index)."""
+    index = project_root / "internal-docs" / "improvements" / "INDEX.md"
+    if index.exists():
+        if verbose:
+            print(f"  [skip] internal-docs/improvements/INDEX.md already exists")
+        return False
+
+    index.parent.mkdir(parents=True, exist_ok=True)
+    index.write_text(
+        "# Improvements Index\n\n"
+        "> Potential improvements to architecture, standards, and processes. Each\n"
+        "> entry is a suggestion to consider — not a decision yet. Read the summary;\n"
+        "> drill into the full file only if your current task touches that area.\n\n"
+        "| # | Improvement | Area | Added | Status | Details |\n"
+        "|---|-------------|------|-------|--------|---------|\n",
+        encoding="utf-8",
+    )
+    if verbose:
+        print(f"  [ok] Created internal-docs/improvements/INDEX.md (empty index)")
+    return True
+
+
+def create_anti_patterns_index(project_root: Path, verbose: bool) -> bool:
+    """Create internal-docs/anti-patterns/INDEX.md (empty index)."""
+    index = project_root / "internal-docs" / "anti-patterns" / "INDEX.md"
+    if index.exists():
+        if verbose:
+            print(f"  [skip] internal-docs/anti-patterns/INDEX.md already exists")
+        return False
+
+    index.parent.mkdir(parents=True, exist_ok=True)
+    index.write_text(
+        "# Anti-Patterns Index\n\n"
+        "> 🛑 These are things explicitly NOT to do. Every entry below is a practice\n"
+        "> that was found to be harmful or inferior. Read the summary; drill into the\n"
+        "> full file only if your current task touches that area. Do NOT implement\n"
+        "> any of these approaches.\n\n"
+        "| Anti-Pattern | Area | Added | Details |\n"
+        "|---|---|---|---|\n",
+        encoding="utf-8",
+    )
+    if verbose:
+        print(f"  [ok] Created internal-docs/anti-patterns/INDEX.md (empty index)")
+    return True
+
+
+def create_subfolder_agents_md(project_root: Path, verbose: bool) -> int:
+    """Create sub-folder AGENTS.md files for major directories."""
+    template = load_template("AGENT-project-subfolder-template.md.tmpl")
+    created = 0
+    for major_dir in detect_major_dirs(project_root):
+        agents_md = major_dir / "AGENTS.md"
+        if agents_md.exists():
+            if verbose:
+                print(f"  [skip] {agents_md.relative_to(project_root)} already exists")
+            continue
+        content = template.replace("[Package Name]", major_dir.name)
+        agents_md.write_text(content, encoding="utf-8")
+        if verbose:
+            print(f"  [ok] Created {agents_md.relative_to(project_root)}")
+        created += 1
+    return created
+
+
+def create_convention_referrals(project_root: Path, verbose: bool) -> int:
+    """Create CLAUDE.md and/or AGENT.md as referrals to AGENTS.md.
+
+    Only creates them if AGENTS.md exists and the convention file doesn't.
+    """
+    agents_md = project_root / "AGENTS.md"
+    if not agents_md.exists():
+        return 0
+
+    created = 0
+    for conv_name in ("CLAUDE.md", "AGENT.md"):
+        conv_file = project_root / conv_name
+        if conv_file.exists():
+            if verbose:
+                print(f"  [skip] {conv_name} already exists")
+            continue
+        conv_file.write_text("@AGENTS.md\n", encoding="utf-8")
+        if verbose:
+            print(f"  [ok] Created {conv_name} (referral to AGENTS.md)")
+        created += 1
+    return created
+
+
+def init_project(project_root: Path, verbose: bool) -> None:
+    """Initialize the AGENTS.md hierarchy for a project."""
+    project_root = project_root.resolve()
+    if not project_root.is_dir():
+        print(f"Error: {project_root} is not a directory", file=sys.stderr)
+        sys.exit(1)
+
+    project_name = detect_project_name(project_root)
+    if verbose:
+        print(f"Project: {project_name}")
+        print(f"Root: {project_root}\n")
+
+    created_any = False
+    created_any |= create_root_agents_md(project_root, project_name, verbose)
+    created_any |= create_developer_guide(project_root, project_name, verbose)
+    created_any |= create_oos_dir(project_root, verbose)
+    created_any |= create_improvements_index(project_root, verbose)
+    created_any |= create_anti_patterns_index(project_root, verbose)
+
+    sub_count = create_subfolder_agents_md(project_root, verbose)
+    conv_count = create_convention_referrals(project_root, verbose)
+
+    if not created_any and sub_count == 0 and conv_count == 0:
+        print("All files already exist — nothing to scaffold.")
+    else:
+        print(f"\n✓ AGENTS.md hierarchy initialized for: {project_name}")
+        print(f"\nNext steps:")
+        print(f"1. Fill in the TODO sections in AGENTS.md (Project Snapshot, Setup, Tech Stack)")
+        print(f"2. Fill in the TODO sections in .agents/knowledge/developer.md (Workflow, Patterns, Boundaries)")
+        print(f"3. Customize sub-folder AGENTS.md files for each package")
+        print(f"4. Run the consistency checker: uv run --script scripts/verify_consistency.py {project_root} --verbose")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Initialize the AGENTS.md hierarchy for a project"
+    )
+    parser.add_argument(
+        "project_root",
+        help="Path to the project root directory",
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Print details about each file created or skipped",
+    )
+
+    args = parser.parse_args()
+    init_project(Path(args.project_root).expanduser(), args.verbose)
+
+
+if __name__ == "__main__":
+    main()

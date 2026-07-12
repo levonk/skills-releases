@@ -188,6 +188,38 @@ The initialization creates:
 
 Customize or remove the generated example files as needed.
 
+### Scaffolder Script Pattern
+
+When creating an upsert skill that scaffolds other artifacts (agents, AGENTS.md
+hierarchies, workflows, prompts), use a **scaffolder script** that reads from a
+**template file** in `references/` — do NOT embed template content inline in the
+script. The script handles deterministic substitutions; the template holds the
+structure.
+
+**Pattern:**
+1. Create a plain template file in `references/` (e.g., `agent-scaffold-template.md`)
+   with placeholder markers like `<agent-name>`, `<YYYY-MM-DD>`, `<Skill Title>`
+2. The scaffolder script loads the template file and performs string substitution
+   on the deterministic placeholders (dates, names, slugs)
+3. All other fields remain as TODO placeholders for the author to fill in
+4. The script does NOT embed template content — it reads from the template file
+
+**Why template files, not embedded templates:**
+- The template is editable independently of the script
+- No duplication between the script and the references directory
+- The template can be reviewed and tested separately
+- Changes to the template don't require changing the script
+
+**Examples:**
+- `ai-skill-upsert/scripts/init_skill.py` loads `references/skill-template.md`
+- `agent-upsert/scripts/init-agent.py` loads `references/agent-scaffold-template.md`
+- `agent-file-upsert/scripts/init-agents-md.py` loads `references/AGENT-project-*-template.md.tmpl`
+
+**When a scaffolder is needed:** When there is deterministic structure to create
+(directory hierarchy, multiple files with known relationships, placeholder
+substitution). When the artifact is a single file with no deterministic
+substitution, a template file alone (without a script) may suffice.
+
 ## Step 5: Develop the Guidance Content
 
 ### Degrees of Freedom Framework

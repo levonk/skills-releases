@@ -1,0 +1,37 @@
+{
+  "skill_name": "cli-tool-upsert",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "id": "create-embedded-python",
+      "prompt": "Create a CLI script called 'fetch-status' that fetches service status from an API endpoint and prints it. It should be a Python script using uv/PEP 723, with --verbose and --dry-run flags, structured errors, and XDG cache for the API response.",
+      "expected_behavior": "Creates a Python script with PEP 723 header, argparse with --verbose/--dry-run, structured error format (error: + help:), XDG cache dir for API response caching, no interactive prompts, exit codes 0/1/2."
+    },
+    {
+      "id": "create-embedded-bash",
+      "prompt": "Create a tiny bash script called 'check-git-clean' that checks if the git working tree is clean and exits 0 if clean, 1 if dirty. It should be agent-friendly with structured output.",
+      "prompt": "Create a tiny bash script called 'check-git-clean' that checks if the git working tree is clean. Agent-friendly: structured output, no interactive prompts, proper exit codes.",
+      "expected_behavior": "Creates a bash script with set -euo pipefail, structured output (ok/dirty), exit codes 0/1, no interactive prompts, --help flag."
+    },
+    {
+      "id": "create-full-rust",
+      "prompt": "Scaffold a full Rust CLI tool called 'task-tracker' from the boilerplate. It should have AXI agent mode with TOON output, session hooks, and content-first no-args.",
+      "expected_behavior": "Prints copier-wrapper.sh instructions for scaffolding from apps/cli/rust/core/, lists post-scaffold AXI additions needed (structured errors, TOON, session hooks, content-first, XDG paths)."
+    },
+    {
+      "id": "update-existing-cli",
+      "prompt": "I have a Python CLI script that uses print() for everything including errors and has input() for confirmation. Make it agent-friendly.",
+      "expected_behavior": "Audits the script against AXI checklist, identifies: errors on stderr instead of stdout, interactive input() prompts, missing structured error format. Proposes fixes classified as automatic (fix exit codes, add structured errors) vs interactive (change default output format)."
+    },
+    {
+      "id": "tier-selection",
+      "prompt": "I need a CLI that manages local cache of Docker images and their metadata. Should I make an embedded script or a full CLI tool?",
+      "expected_behavior": "Asks about scope: if single-file and bundled in a project, suggests embedded. If needs config files, shell completion, or distribution, suggests full CLI tool. Defaults to embedded if unsure."
+    },
+    {
+      "id": "axi-empty-state",
+      "prompt": "My CLI tool lists items but when there are no items it just prints nothing. How do I fix this for agents?",
+      "expected_behavior": "Applies AXI principle 3 (definitive empty states): changes empty output to explicit '0 items found' with context, exit code 0. Classifies as automatic change."
+    }
+  ]
+}

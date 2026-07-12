@@ -187,6 +187,38 @@ The initialization creates:
 
 Customize or remove the generated example files as needed.
 
+### Scaffolder Script Pattern
+
+When creating an upsert skill that scaffolds other artifacts (agents, AGENTS.md
+hierarchies, workflows, prompts), use a **scaffolder script** that reads from a
+**template file** in `references/` — do NOT embed template content inline in the
+script. The script handles deterministic substitutions; the template holds the
+structure.
+
+**Pattern:**
+1. Create a plain template file in `references/` (e.g., `agent-scaffold-template.md`)
+   with placeholder markers like `<agent-name>`, `<YYYY-MM-DD>`, `<Skill Title>`
+2. The scaffolder script loads the template file and performs string substitution
+   on the deterministic placeholders (dates, names, slugs)
+3. All other fields remain as TODO placeholders for the author to fill in
+4. The script does NOT embed template content — it reads from the template file
+
+**Why template files, not embedded templates:**
+- The template is editable independently of the script
+- No duplication between the script and the references directory
+- The template can be reviewed and tested separately
+- Changes to the template don't require changing the script
+
+**Examples:**
+- `ai-skill-upsert/scripts/init_skill.py` loads `references/skill-template.md`
+- `agent-upsert/scripts/init-agent.py` loads `references/agent-scaffold-template.md`
+- `agent-file-upsert/scripts/init-agents-md.py` loads `references/AGENT-project-*-template.md.tmpl`
+
+**When a scaffolder is needed:** When there is deterministic structure to create
+(directory hierarchy, multiple files with known relationships, placeholder
+substitution). When the artifact is a single file with no deterministic
+substitution, a template file alone (without a script) may suffice.
+
 ## Step 5: Develop the Guidance Content
 
 ### Degrees of Freedom Framework
@@ -994,6 +1026,56 @@ Ask about gaps in any of these areas (only the ones that are unclear):
 - Then proceed to the next phase (research, generation, etc.) — do not re-ask
   questions already answered.
 
+
+---
+description: Shared script materialization guidance — materialize shared scripts into new skills' scripts/ dirs via .tmpl includes so artifacts are self-contained after installation
+---
+
+### Script Materialization
+
+When creating a new artifact, shared scripts that the artifact needs at runtime
+must be materialized into the artifact's own directory tree — not referenced from
+an external location. This ensures the artifact is self-contained after
+installation (via `npx skills add` or copy).
+
+#### Skills (have `scripts/` directories)
+
+If a skill needs a shared script (like `cli-tool-discovery.sh`), create a
+`scripts/<name>.sh.tmpl` file containing a single include directive:
+
+```
+{{ include "includes/<name>.sh" . }}
+```
+
+The templater inlines the shared script content at build time, producing a
+self-contained `scripts/<name>.sh` in the built skill. This is the same pattern
+used for `.md` includes — the `.tmpl` extension marks it for rendering, and the
+include is resolved relative to the profile root. `init_skill.py` does this
+automatically for `cli-tool-discovery.sh`.
+
+#### Workflows, Agents, Prompts, Rules (no `scripts/` directory)
+
+These artifact types don't have `scripts/` directories. They reference
+`cli-tool-discovery.sh` via the online URL fallback:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
+bash /tmp/cli-tool-discovery.sh <tool-name>
+```
+
+#### General Principle
+
+Never make an artifact depend on a file outside its own directory tree after
+installation. If a shared script is needed at runtime, either:
+
+1. **Materialize** it via a `.tmpl` include file in the artifact's `scripts/`
+   directory (for skills), or
+2. **Fetch** it from a stable online URL (for artifacts without `scripts/` dirs)
+
+Do not reference scripts via relative paths like `../../includes/` or
+`$(dirname "$0")/../includes/` — these break after installation because the
+includes/ directory is not bundled with the artifact.
+
 ---
 
 # Agent File Upsert
@@ -1208,6 +1290,12 @@ When updating an existing AGENTS.md (not creating from scratch), analyze what ch
 - Repository has no git history
 
 ### Phase 2: Generate Root AGENTS.md and Developer Guide
+
+**Scaffold the initial structure** (create mode only — skip in update mode):
+```bash
+uv run --script scripts/init-agents-md.py {REPO_ROOT} --verbose
+```
+The scaffolder creates the initial file hierarchy from template files in `references/` — root `AGENTS.md`, `.agents/knowledge/developer.md`, `internal-docs/oos/`, `internal-docs/improvements/INDEX.md`, `internal-docs/anti-patterns/INDEX.md`, sub-folder `AGENTS.md` files for major directories, and `CLAUDE.md`/`AGENT.md` referrals. It substitutes the project name and leaves TODO sections for the AI to fill in. After scaffolding, continue with the content generation below.
 
 Split content across two files by audience. The root `AGENTS.md` serves **users** (people deploying/using the project); a separate `.agents/knowledge/developer.md` serves **developers** (people working on the code). This is progressive disclosure — developer content is only loaded when an agent is editing code, not when a user is setting up or running the project.
 
@@ -1530,6 +1618,7 @@ Done! Updated:
 - Sub-folder template: `references/AGENT-project-subfolder-template.md.tmpl`
 - Improvements template: `references/improvements-template.md.tmpl`
 - Anti-patterns template: `references/anti-patterns-template.md.tmpl`
+- Scaffolder script: `scripts/init-agents-md.py.tmpl`
 - Consistency checker: `scripts/verify_consistency.py`
 - Delta analysis script: `scripts/analyze_git_delta.py`
 - Output files: `AGENTS.md`, `CLAUDE.md` (referral/symlink), `.agents/knowledge/developer.md`, `**/AGENTS.md`

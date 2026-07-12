@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `4d404dd70207372841c245c3ae160d51d9e3d9c8` · Branch: `main` · Generated: 2026-07-12T01:27:53Z
+> Commit: `00387d4472de4720a7f201ba2626da40dd4928f7` · Branch: `main` · Generated: 2026-07-12T19:44:04Z
 
 ## Overview
 
@@ -69,6 +69,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 |-------|-------------|---------|
 | ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
 | cicd-upsert | Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI images, security... | [Synopsis](software-dev-cicd-upsert.md) |
+| cli-tool-upsert | Create, update, and optimize CLI programs and scripts for AI agent consumption. Two tiers: embedd... | [Synopsis](software-dev-cli-tool-upsert.md) |
 | code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](software-dev-code-quality-validation.md) |
 | codebase-tutorial | Generate beginner-friendly tutorials from codebases. Use when asked to analyze a repository, expl... | [Synopsis](software-dev-codebase-tutorial.md) |
 | container-image-build | Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre... | [Synopsis](software-dev-container-image-build.md) |

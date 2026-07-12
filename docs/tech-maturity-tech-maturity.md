@@ -135,4 +135,4 @@ When assessing legacy systems:
 
 - **Full skill**: [`skills/tech-maturity/tech-maturity/SKILL.md`](skills/tech-maturity/tech-maturity/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T01:27:53Z
+- **Generated**: 2026-07-12T19:44:04Z

@@ -87,4 +87,4 @@ The workflow consists of 5 phases: Script Discovery, Data Collection, AI Analysi
 
 - **Full skill**: [`skills/software-dev/git-repository-management/SKILL.md`](skills/software-dev/git-repository-management/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T01:27:53Z
+- **Generated**: 2026-07-12T19:44:04Z

@@ -203,6 +203,38 @@ The initialization creates:
 
 Customize or remove the generated example files as needed.
 
+### Scaffolder Script Pattern
+
+When creating an upsert skill that scaffolds other artifacts (agents, AGENTS.md
+hierarchies, workflows, prompts), use a **scaffolder script** that reads from a
+**template file** in `references/` — do NOT embed template content inline in the
+script. The script handles deterministic substitutions; the template holds the
+structure.
+
+**Pattern:**
+1. Create a plain template file in `references/` (e.g., `agent-scaffold-template.md`)
+   with placeholder markers like `<agent-name>`, `<YYYY-MM-DD>`, `<Skill Title>`
+2. The scaffolder script loads the template file and performs string substitution
+   on the deterministic placeholders (dates, names, slugs)
+3. All other fields remain as TODO placeholders for the author to fill in
+4. The script does NOT embed template content — it reads from the template file
+
+**Why template files, not embedded templates:**
+- The template is editable independently of the script
+- No duplication between the script and the references directory
+- The template can be reviewed and tested separately
+- Changes to the template don't require changing the script
+
+**Examples:**
+- `ai-skill-upsert/scripts/init_skill.py` loads `references/skill-template.md`
+- `agent-upsert/scripts/init-agent.py` loads `references/agent-scaffold-template.md`
+- `agent-file-upsert/scripts/init-agents-md.py` loads `references/AGENT-project-*-template.md.tmpl`
+
+**When a scaffolder is needed:** When there is deterministic structure to create
+(directory hierarchy, multiple files with known relationships, placeholder
+substitution). When the artifact is a single file with no deterministic
+substitution, a template file alone (without a script) may suffice.
+
 ## Step 5: Develop the Guidance Content
 
 ### Degrees of Freedom Framework
@@ -868,6 +900,62 @@ Ask about gaps in any of these areas (only the ones that are unclear):
 
 
 ---
+description: Python script standards for skills — PEP 723 inline metadata for uv, modern type hints, pathlib, error handling, and best practices for runnable skill scripts
+---
+
+### Python Script Standards
+
+All Python scripts bundled with a skill MUST include a [PEP 723](https://peps.python.org/pep-0723/) inline script metadata header so they run via `uv run <script>.py` with no build step, no virtualenv activation, and no manual dependency installation. This makes skill scripts self-contained and portable.
+
+**Minimal header (stdlib-only scripts):**
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
+```
+
+**Header with dependencies:**
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "requests>=2.31.0",
+# ]
+# ///
+```
+
+The `#!/usr/bin/env -S uv run --script` shebang makes the script directly executable (`./script.py`) when `uv` is on PATH; `uv run --script script.py` works regardless. The `# /// script` block is the PEP 723 metadata that `uv` parses to provision an ephemeral environment.
+
+**Placement:** Shebang first, then the PEP 723 block, then the module docstring, then imports.
+
+**Best practices for skill Python scripts:**
+
+1. **PEP 723 header required** — every `.py` file in `scripts/` starts with the shebang + metadata block above. Pin `requires-python` to `>=3.11` unless the script uses newer syntax.
+2. **Declare third-party deps in the header** — never `pip install` at runtime; list them in the `dependencies` array so `uv run` resolves them automatically.
+3. **Prefer the stdlib** — if a task needs no third-party package, omit the `dependencies` array. Fewer deps = faster cold start and fewer supply-chain risks.
+4. **Devbox + rtk detection** — keep the existing detection wrappers (see `references/script-execution-standards.md`). The PEP 723 header is additive; it does not replace devbox/rtk patterns.
+5. **Quiet by default, `--verbose` / `--dry-run`** — follow the script output contract from `references/anatomy.md`.
+6. **Type hints + `if __name__ == "__main__":`** — keep the `main()` entry point so the script is importable for testing.
+7. **No inline `pip install` / `subprocess` env mutation** — `uv run` handles environment provisioning; scripts should not modify their own environment.
+8. **Modern type hint syntax (PEP 604/585)** — use built-in generics (`list[str]`, `dict[str, int]`) and union syntax (`X | Y`, `X | None`). Never import `List`, `Dict`, `Union`, `Optional` from `typing`. Use `type` statement (PEP 695) for aliases on Python 3.12+.
+9. **`pathlib.Path` over `os.path`** — use `Path` for all filesystem paths: `Path("foo") / "bar"`, `path.exists()`, `path.read_text()`. Reserve `os` for `os.environ` and `os.path.isfile` in detection guards.
+10. **Specific exceptions, no bare `except:`** — catch concrete exception types (`except FileNotFoundError`, `except json.JSONDecodeError`). Use `except Exception` only at top-level boundaries with `logging.exception()` or `sys.exit(1)`. Never swallow errors silently.
+11. **f-strings for string formatting** — use f-strings (`f"{name}: {value}"`) instead of `.format()` or `%`. For logging, use `logger.info("msg %s", val)` to defer formatting until the log level is active.
+12. **Import ordering** — stdlib first, then third-party, then local, with a blank line between groups. If using ruff, `I` (isort) enforces this automatically.
+13. **Google-style docstrings** — module docstring (after PEP 723 block), then function/class docstrings: one-line summary, blank line, detailed description, `Args:`, `Returns:`, `Raises:` sections.
+14. **`dataclass` for structured records** — use `@dataclass` (with `frozen=True` for immutability, `slots=True` for efficiency) instead of plain classes or dicts for structured data. Use `StrEnum` with `auto()` for enumerations.
+15. **`Protocol` over ABC for interfaces** — define structural types with `Protocol` (PEP 544) instead of `ABC` + `abstractmethod`. Enables duck typing without inheritance coupling.
+
+**When uv is unavailable:** `python script.py` still works for stdlib-only scripts (the PEP 723 block is a comment Python ignores). Scripts with declared dependencies require `uv run` (or a pre-provisioned venv matching the declared deps).
+
+See `references/script-execution-standards.md` for the full devbox/rtk detection code and the combined header + detection template.
+
+
+---
 description: Shared script materialization guidance — materialize shared scripts into new skills' scripts/ dirs via .tmpl includes so artifacts are self-contained after installation
 ---
 
@@ -1069,13 +1157,13 @@ just different. If it's merely a reimplementation, reconsider whether creation
 is warranted.
 
 
-1. **Initialize the agent directory**: Run `scripts/init_agent.py <agent-name> --path <output-directory>` to scaffold a new agent file with the standard frontmatter structure, i/o schema, workflow, guardrails, and contracts. See `references/agent-template.md.tmpl` for the full agent structure the scaffolder uses.
+1. **Initialize the agent directory**: Run `scripts/init-agent.py <agent-name> --path <output-directory>` to scaffold a new agent file from `references/agent-scaffold-template.md` — a plain template with `<agent-name>`, `<Agent Title>`, and `<YYYY-MM-DD>` placeholders that the script substitutes deterministically. See `references/agent-structure.md` for the full frontmatter field reference and `references/README.md` for the scaffolder architecture.
    ```bash
    # If devbox is available and you are not already in a devbox shell:
-   devbox run -- python scripts/init_agent.py <agent-name> --path <output-directory>
+   devbox run -- python scripts/init-agent.py <agent-name> --path <output-directory>
 
    # If devbox is not available or you are already in a devbox shell:
-   python scripts/init_agent.py <agent-name> --path <output-directory>
+   python scripts/init-agent.py <agent-name> --path <output-directory>
    ```
 
 2. **Customize frontmatter**: Fill in `agent`, `description`, `use`, `personality` (name, role, color, icon, voice), `categories`, `capabilities`, `model-level`, `model`, `tools`, `tags`. The `description` is the primary triggering mechanism — state what the agent does and when to use it. See `references/agent-structure.md` for the full frontmatter field reference.
@@ -1084,7 +1172,11 @@ is warranted.
 
 4. **Apply agent-specific guidelines**: Follow the agent-specific guidelines that complement the universal creation framework. See `references/agent-guidelines.md`.
 
-5. **Verify**: Validate the agent definition against domain standards. Confirm the frontmatter is complete, the i/o schema is valid, and the workflow phases are clear.
+5. **Verify**: Run the verification script to check frontmatter completeness and body structure:
+   ```bash
+   uv run --script scripts/verify-agent.py <output-directory>/<agent-name>.md --verbose
+   ```
+   Confirms required frontmatter fields are present and non-empty, personality sub-fields are set, date format is valid, model-level/agent-status/visibility values are valid, and required body sections (Goal, i/o, Primary Workflow, Guardrails) exist. Fix all issues before delivering.
 
 6. **Deliver**: Save to `internal-docs/agents/`. Include `date.last-used` in the agent's frontmatter set to the current date (YYYY-MM-DD format).
 
@@ -1220,9 +1312,12 @@ methodology above, check:
    commit, each independently reviewable and revertable.
 6. **Update `date.updated` and `date.last-used`** in the frontmatter when
    changes are applied. See the date-management include wired in above.
-7. **Consistency verification** — after applying changes, verify the agent is
-   internally consistent:
-   - Frontmatter fields are valid and complete
+7. **Consistency verification** — after applying changes, run the verification
+   script and verify the agent is internally consistent:
+   ```bash
+   uv run --script scripts/verify-agent.py <agent-file> --verbose
+   ```
+   - Frontmatter fields are valid and complete (script checks this)
    - The i/o schema is internally consistent (inputs match workflow
      expectations, outputs match deliverables)
    - Tool contracts reference valid tools
@@ -1259,8 +1354,10 @@ do not accept unvalidated external data.
 
 ### File Paths
 - Main skill: `src/current/skills/ai/agent-upsert/SKILL.md.tmpl` (in the `skills-src` repo at `~/p/gh/levonk/skills-src/`)
-- Scaffolder script: `src/current/skills/ai/agent-upsert/scripts/init_agent.py.tmpl`
-- References: `src/current/skills/ai/agent-upsert/references/` (including `agent-search.md`, `agent-guidelines.md`, `agent-design.md`, `agent-structure.md`, `agent-template.md.tmpl`)
+- Scaffolder script: `src/current/skills/ai/agent-upsert/scripts/init-agent.py.tmpl`
+- Verification script: `src/current/skills/ai/agent-upsert/scripts/verify-agent.py.tmpl`
+- Scaffold template: `src/current/skills/ai/agent-upsert/references/agent-scaffold-template.md` (plain template with placeholders, used by the scaffolder)
+- References: `src/current/skills/ai/agent-upsert/references/` (including `agent-search.md`, `agent-guidelines.md`, `agent-design.md`, `agent-structure.md`, `agent-template.md.tmpl`, `agent-scaffold-template.md`, `README.md`)
 - Agent template: `src/current/templates/meta/agent-template.md.tmpl`
 - Includes: `src/current/includes/` (shared includes wired in at build time)
 - Output directory: `internal-docs/agents/`

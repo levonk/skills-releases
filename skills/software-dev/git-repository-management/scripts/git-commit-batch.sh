@@ -231,7 +231,7 @@ main() {
     local current_files=()
     local commit_count=0
 
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
         # Skip empty lines and comments
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
