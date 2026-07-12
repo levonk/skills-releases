@@ -389,7 +389,7 @@ create_package_json() {
 {
   "name": "$project_name",
   "version": "0.0.1",
-  "sha-version": "$Id$",
+  "sha-version": "$Id: ea76d4f89d679a19b110184911ca311b0a79b9b3 $",
   "private": true,
   "description": "A Next.js TypeScript project",
   "type": "module",

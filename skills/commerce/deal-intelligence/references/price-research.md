@@ -10,6 +10,7 @@ Detailed source comparison and output format for building price history profiles
 | [Wayback Machine](https://web.archive.org/) | Archived retailer pages | Verify historical MSRP, detect price inflation before "sales" |
 | [Slickdeals](https://slickdeals.net/) | Community-sourced deals, historical deal threads | Find recurring deal patterns and typical discount depth |
 | Closed auction data ([eBay sold](https://www.ebay.com/), [Mercari](https://www.mercari.com/)) | Actual transaction prices | Establish used/refurbished fair market value |
+| Government auction sold prices ([GovDeals](https://www.govdeals.com/) "sold" filter, [GovAuctions.app](https://govauctions.app/), [BidProwl](https://bidprowl.com/), [PropertyRoom](https://www.propertyroom.com/) completed auctions) | Actual government surplus/seized sale prices | Benchmark for vehicles, equipment, electronics, jewelry — see `references/sourcing-guide.md` for which platforms offer sold price history |
 | [Google Shopping](https://shopping.google.com/) | Cross-retailer price comparison | Current lowest price across retailers |
 | [Honey](https://www.joinhoney.com/) / [Keepa](https://keepa.com/) | Price drop alerts, coupon aggregation | Supplementary price tracking |
 

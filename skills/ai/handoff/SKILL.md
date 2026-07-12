@@ -52,10 +52,10 @@ the first `command -v` failure.**
 #### Get the script
 
 ```bash
-# If installed via skills (includes/ is bundled alongside the skill):
-bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
+bash scripts/cli-tool-discovery.sh <tool-name>
 
-# If not bundled, fetch from the public releases repo:
+# Workflows, agents, and rules (no scripts/ directory): fetch from the public releases repo
 curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
 bash /tmp/cli-tool-discovery.sh <tool-name>
 ```
@@ -605,6 +605,77 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 - **Serializing independent tasks "to be safe"**: three independent searches run one-after-another when they could have run concurrently. Costs 3x the wall time for no safety gain.
 - **Skipping review**: trusting the subagent's self-report without running a check. The subagent's "done" and the orchestrator's "correct" are different bars.
 
+
+
+---
+description: Reusable user-reference convention — use male pronouns for the user, address him as "user", avoid proper names unless relevant to the output
+---
+
+### User Info
+
+When communicating with or about the user, follow this convention:
+
+1. **Male pronouns.** Refer to the user with `he`/`him`/`his`/`himself` in any
+   prose, examples, or generated content that mentions the user. Do not use
+   `they`/`them` or `she`/`her` for the user.
+
+2. **Address him as "user".** Call the user "user" — even when his real name is
+   available in memory, environment variables, git config, or session context.
+   The word "user" is the canonical form of address in generated output and
+   in-conversation references.
+
+3. **Avoid proper names unless relevant to the output.** Do not insert the
+   user's actual name into generated artifacts or conversation unless the name
+   is itself the subject of the work (e.g. authoring an `AUTHORS` file, signing
+   a commit the user explicitly asked to be attributed to him, or filling a
+   `name:` field the user requested). When a name is required and none is
+   explicitly requested, use "user".
+
+**Examples:**
+- ✅ "The user wants his skill to trigger on kebab-case slugs."
+- ✅ "Ask the user for his repo root before materializing the script."
+- ❌ "They want their skill to trigger on kebab-case slugs." (wrong pronoun)
+- ❌ "Ask John for his repo root." (proper name not relevant to output)
+
+
+---
+description: Reusable naming conventions for artifacts created by upsert skills — kebab-case for file names, identifiers, and slugs; avoid snake_case everywhere
+---
+
+### Naming Conventions
+
+When creating or renaming artifacts (skills, workflows, agents, prompts,
+rules, templates, knowledge bundles, handoffs), follow this naming convention:
+
+1. **Use kebab-case whenever possible.** File names, directory names, slugs,
+   identifiers, frontmatter `name:` fields, tags, and URL/path segments are all
+   `kebab-case`: lowercase letters and digits separated by single hyphens.
+   - ✅ `ai-skill-upsert`, `greenfield-prd`, `feature-auth-implementation`
+   - ✅ `name: agent-file-upsert`
+   - ✅ tag: `ai/skill`
+
+2. **Avoid snake_case everywhere.** Do not use `snake_case` (`_` separators) for
+   artifact names, file names, slugs, identifiers, or frontmatter fields. If an
+   existing artifact uses snake_case and the upsert operation touches its name,
+   rename it to kebab-case (preserving git history via `git mv` where applicable).
+   - ❌ `ai_skill_upsert`, `greenfield_prd`, `feature_auth_implementation`
+   - ❌ `name: agent_file_upsert`
+
+3. **Scope.** This convention applies to the artifacts themselves — the files
+   and directories the upsert skills create. It does **not** override language-
+   specific conventions inside generated *content* (Python function names stay
+   `snake_case`, Rust types stay `PascalCase`, etc.). The rule is about the
+   artifact layer, not the code inside artifacts.
+
+4. **Slugs in generated paths.** When a script generates a path containing a
+   human-readable slug (e.g. handoff file names, branch names, output
+   directories), derive the slug as kebab-case: lowercase, trim, replace
+   whitespace and `_` with `-`, collapse repeats, strip leading/trailing `-`.
+
+**Examples:**
+- ✅ `skills/ai/agent-file-upsert/SKILL.md` — `name: agent-file-upsert`
+- ✅ `workflows/greenfield-prd/WORKFLOW.md` — `name: greenfield-prd`
+- ❌ `skills/ai/agent_file_upsert/SKILL.md` — `name: agent_file_upsert`
 
 
 ---

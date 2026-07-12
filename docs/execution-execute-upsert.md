@@ -1,9 +1,9 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# If installed via skills (includes/ is bundled alongside the skill):
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **execution** · Status:  · Version: 1.0.0
+> Category: **execution** · Status:  · Version: 1.1.0
 
 >-
 
@@ -13,7 +13,7 @@
 |-------|-------|
 | Name | `execute-upsert` |
 | Category | `execution` |
-| Version | `1.0.0` |
+| Version | `1.1.0` |
 | Status | `` |
 | Owner |  |
 
@@ -37,9 +37,10 @@ intelligence to:
 - **** (, prd-creation) — Workflow for generating a PRD from a brief feature prompt — used when no PRD exists
 - **** (, task-breakdown) — Workflow for breaking a PRD into parallelizable task stories — used when no task files exist
 - **** (, task-execution) — Workflow for processing task stories — delegates to subagents for each story
+- **git-repository-management** (skill, dependency) — Provides the commit checkpoint protocol used before each subagent dispatch — shared via pre-task-commit-checkpoint include
 
 ---
 
 - **Full skill**: [`skills/execution/execute-upsert/SKILL.md`](skills/execution/execute-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T15:49:28Z
+- **Generated**: 2026-07-12T00:50:23Z

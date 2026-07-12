@@ -16,8 +16,8 @@ owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  updated: "2026-07-02"
-  last-used: "2026-07-02"
+  updated: "2026-07-11"
+  last-used: "2026-07-11"
 tags: ["ai/skill", "commerce", "pricing", "deal-hunting", "market-timing", "cashback"]
 see-also:
   - skill: "shopping-needs-discovery"
@@ -50,23 +50,20 @@ dependencies:
     name: Rakuten
     url: https://www.rakuten.com/
   - type: url
-    name: Capital One Shopping
-    url: https://capitaloneshopping.com/
+    name: USA.gov Auctions Portal
+    url: https://www.usa.gov/auctions-and-sales
   - type: url
-    name: Chase Offers
-    url: https://www.chase.com/personal/chase-offers
+    name: GovAuctions (aggregator)
+    url: https://govauctions.app/
   - type: url
-    name: Bing Shopping Cashback
-    url: https://www.bing.com/shop
-  - type: url
-    name: GovPlanet (Gov Surplus)
-    url: https://www.govplanet.com/
+    name: GovDeals
+    url: https://www.govdeals.com/
   - type: url
     name: GSA Auctions
     url: https://gsaauctions.gov/
   - type: url
-    name: GovDeals
-    url: https://www.govdeals.com/
+    name: PropertyRoom (police auctions)
+    url: https://www.propertyroom.com/
 ---
 
 ---
@@ -99,10 +96,10 @@ the first `command -v` failure.**
 #### Get the script
 
 ```bash
-# If installed via skills (includes/ is bundled alongside the skill):
-bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
+bash scripts/cli-tool-discovery.sh <tool-name>
 
-# If not bundled, fetch from the public releases repo:
+# Workflows, agents, and rules (no scripts/ directory): fetch from the public releases repo
 curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
 bash /tmp/cli-tool-discovery.sh <tool-name>
 ```
@@ -679,17 +676,27 @@ For the full source comparison table and price summary output format, see `refer
 
 ### 2. Sourcing Channels
 
-Search across all viable channels, ranked by price advantage:
+Search across all viable channels, ranked by price advantage. The full
+channel inventory with URLs, buyer's premiums, savings ranges, and
+online/in-person details is in `references/sourcing-guide.md` — consult it
+for every sourcing pass. Key channel categories:
 
 - **Retail**: Amazon, Walmart, Target, Best Buy, Costco, B&H Photo, manufacturer direct
 - **Auctions**: eBay, Catawiki, Heritage Auctions, Sotheby's (luxury), Bonhams
-- **Government surplus**: [GSA Auctions](https://gsaauctions.gov/), [GovDeals](https://www.govdeals.com/), [GovPlanet](https://www.govplanet.com/), local municipality surplus sales
-- **Neighborhood / local**: Facebook Marketplace, Craigslist, Nextdoor, OfferUp, local buy-nothing groups, estate sales, garage sales
-- **Secondhand / refurbished**: [Back Market](https://www.backmarket.com/), [Swappa](https://swappa.com/), Goodwill, Habitat for Humanity ReStore, manufacturer refurbished programs
+- **Government surplus & seized property**: Federal (GSA, US Marshals, Treasury/IRS, HUD, DLA), state/local (GovDeals, Public Surplus, Municibid), police-seized (PropertyRoom), military (GovPlanet) — see sourcing guide for all 20+ platforms, contracted auctioneers, and aggregators
+- **Repossession & tow yards**: Credit union/bank repos, impound lien sales, Autura, TOWLOT — see sourcing guide
+- **Storage unit auctions**: StorageTreasures, Lockerfox — see sourcing guide
+- **Neighborhood / local**: Facebook Marketplace, Craigslist, Nextdoor, OfferUp, Buy Nothing, Freecycle, Trash Nothing, VarageSale, estate sales, garage sales
+- **Secondhand / refurbished**: Back Market, Swappa, Goodwill (ShopGoodwill.com), St. Vincent de Paul, ThredUp, Poshmark, Depop, Mercari, ThriftBooks, Habitat ReStore, manufacturer refurbished
 - **Wholesale / bulk**: Alibaba (MOQ items), restaurant supply stores, industrial surplus
-- **Specialty**: Manufacturer outlet stores, B-stock liquidation, open-box deals at retailers
+- **Corporate liquidation**: B-Stock, Liquidation.com, BULQ, Direct Liquidation (retailer returns/overstock pallets); AllSurplus, Salvex (industrial equipment); ITAD firms for enterprise IT refresh — see sourcing guide
+- **Specialty**: Manufacturer outlet stores, B-stock liquidation, open-box deals
 
-For detailed sourcing strategies by product category, see `references/sourcing-guide.md`.
+When the user specifies a travel radius, filter for in-person channels
+within that distance (estate sales, tow yard auctions, city impound,
+courthouse steps, retail open-box) and online channels everywhere. The
+sourcing guide notes online vs. in-person and local pickup requirements
+for each platform.
 
 ### 3. Market Timing Analysis
 
@@ -809,7 +816,8 @@ Deliver a **Deal Intelligence Report**:
 ## Resources
 
 - `references/price-research.md` — Price history source comparison and price summary output format
-- `references/sourcing-guide.md` — Detailed sourcing strategies by product category
+- `references/sourcing-guide.md` — Detailed sourcing strategies by product category (human-readable)
+- `references/sourcing-sources.toml` — Structured metadata for all sourcing channels (machine-readable; filter by type, auction_type, categories, condition, buyer_premium, online/in_person, api, sold_price_history)
 - `references/market-timing.md` — Timing signal matrix, monthly buying calendar, and signal interpretation
 - `references/purchase-optimization.md` — Optimization stack steps, savings stack format, card selection logic, cashback portal comparison, credit card benefit matrices
 
@@ -817,7 +825,7 @@ Deliver a **Deal Intelligence Report**:
 
 ### File Paths
 - Main skill: `config/ai/skills/commerce/deal-intelligence/SKILL.md`
-- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/market-timing.md`, `references/purchase-optimization.md`
+- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`
 
 ### Related Skills
 - `shopping-needs-discovery` (dependency) — discovers and refines purchasing requirements
@@ -825,7 +833,8 @@ Deliver a **Deal Intelligence Report**:
 - `base-ai-guidance` (base-framework) — shared framework for all AI guidance types
 
 ### Project Information
-- Project: levonk/dotfiles
-- Repository: https://github.com/levonk/dotfiles
+- Project: levonk/skills-src (source) → levonk/skills-releases (built/distributed)
+- Source repository: https://github.com/levonk/skills-src
+- Distribution repository: https://github.com/levonk/skills-releases
 
 <!-- vim: set ft=markdown -->

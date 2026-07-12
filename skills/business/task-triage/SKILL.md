@@ -53,10 +53,10 @@ the first `command -v` failure.**
 #### Get the script
 
 ```bash
-# If installed via skills (includes/ is bundled alongside the skill):
-bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
+bash scripts/cli-tool-discovery.sh <tool-name>
 
-# If not bundled, fetch from the public releases repo:
+# Workflows, agents, and rules (no scripts/ directory): fetch from the public releases repo
 curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
 bash /tmp/cli-tool-discovery.sh <tool-name>
 ```

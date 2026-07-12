@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `f0e6cd10a298f6eff9c0c34d086af02ee264a2f3` · Branch: `main` · Generated: 2026-07-11T15:49:28Z
+> Commit: `c800b6d1e7b8b6bfcef9898cd59e9086c75b16bb` · Branch: `main` · Generated: 2026-07-12T00:50:23Z
 
 ## Overview
 
@@ -21,6 +21,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
+| knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
 | knowledge-bundle-upsert | Create and maintain OKF knowledge bundles through four operations: create a new bundle from scrat... | [Synopsis](ai-knowledge-bundle-upsert.md) |
 | prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
 | readme-upsert | Generate or update a project's README.md for human developers. Use when onboarding a human to an ... | [Synopsis](ai-readme-upsert.md) |
@@ -67,6 +68,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
+| cicd-upsert | Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI images, security... | [Synopsis](software-dev-cicd-upsert.md) |
 | code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](software-dev-code-quality-validation.md) |
 | codebase-tutorial | Generate beginner-friendly tutorials from codebases. Use when asked to analyze a repository, expl... | [Synopsis](software-dev-codebase-tutorial.md) |
 | container-image-build | Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre... | [Synopsis](software-dev-container-image-build.md) |

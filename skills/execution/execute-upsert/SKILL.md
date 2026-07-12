@@ -13,7 +13,7 @@ description: >-
   list they want executed. Do NOT trigger on quick fixes, single-file edits,
   bug fixes with a known root cause, or questions about how something works —
   this skill is for multi-step project execution, not trivial changes.
-version: 1.0.0
+version: 1.1.0
 user-invocable: true
 disable-model-invocation: true
 date:
@@ -43,6 +43,9 @@ see-also:
   - workflow: "tasks-processor"
     relationship: "task-execution"
     description: "Workflow for processing task stories — delegates to subagents for each story"
+  - skill: git-repository-management
+    relationship: "dependency"
+    description: "Provides the commit checkpoint protocol used before each subagent dispatch — shared via pre-task-commit-checkpoint include"
 ---
 
 ---
@@ -77,10 +80,10 @@ the first `command -v` failure.**
 #### Get the script
 
 ```bash
-# If installed via skills (includes/ is bundled alongside the skill):
-bash "$(dirname "$0")/../includes/cli-tool-discovery.sh" <tool-name>
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
+bash scripts/cli-tool-discovery.sh <tool-name>
 
-# If not bundled, fetch from the public releases repo:
+# Workflows, agents, and rules (no scripts/ directory): fetch from the public releases repo
 curl -fsSL https://raw.githubusercontent.com/levonk/skills-releases/main/includes/cli-tool-discovery.sh -o /tmp/cli-tool-discovery.sh
 bash /tmp/cli-tool-discovery.sh <tool-name>
 ```
@@ -633,6 +636,77 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 
 
 ---
+description: Reusable user-reference convention — use male pronouns for the user, address him as "user", avoid proper names unless relevant to the output
+---
+
+### User Info
+
+When communicating with or about the user, follow this convention:
+
+1. **Male pronouns.** Refer to the user with `he`/`him`/`his`/`himself` in any
+   prose, examples, or generated content that mentions the user. Do not use
+   `they`/`them` or `she`/`her` for the user.
+
+2. **Address him as "user".** Call the user "user" — even when his real name is
+   available in memory, environment variables, git config, or session context.
+   The word "user" is the canonical form of address in generated output and
+   in-conversation references.
+
+3. **Avoid proper names unless relevant to the output.** Do not insert the
+   user's actual name into generated artifacts or conversation unless the name
+   is itself the subject of the work (e.g. authoring an `AUTHORS` file, signing
+   a commit the user explicitly asked to be attributed to him, or filling a
+   `name:` field the user requested). When a name is required and none is
+   explicitly requested, use "user".
+
+**Examples:**
+- ✅ "The user wants his skill to trigger on kebab-case slugs."
+- ✅ "Ask the user for his repo root before materializing the script."
+- ❌ "They want their skill to trigger on kebab-case slugs." (wrong pronoun)
+- ❌ "Ask John for his repo root." (proper name not relevant to output)
+
+
+---
+description: Reusable naming conventions for artifacts created by upsert skills — kebab-case for file names, identifiers, and slugs; avoid snake_case everywhere
+---
+
+### Naming Conventions
+
+When creating or renaming artifacts (skills, workflows, agents, prompts,
+rules, templates, knowledge bundles, handoffs), follow this naming convention:
+
+1. **Use kebab-case whenever possible.** File names, directory names, slugs,
+   identifiers, frontmatter `name:` fields, tags, and URL/path segments are all
+   `kebab-case`: lowercase letters and digits separated by single hyphens.
+   - ✅ `ai-skill-upsert`, `greenfield-prd`, `feature-auth-implementation`
+   - ✅ `name: agent-file-upsert`
+   - ✅ tag: `ai/skill`
+
+2. **Avoid snake_case everywhere.** Do not use `snake_case` (`_` separators) for
+   artifact names, file names, slugs, identifiers, or frontmatter fields. If an
+   existing artifact uses snake_case and the upsert operation touches its name,
+   rename it to kebab-case (preserving git history via `git mv` where applicable).
+   - ❌ `ai_skill_upsert`, `greenfield_prd`, `feature_auth_implementation`
+   - ❌ `name: agent_file_upsert`
+
+3. **Scope.** This convention applies to the artifacts themselves — the files
+   and directories the upsert skills create. It does **not** override language-
+   specific conventions inside generated *content* (Python function names stay
+   `snake_case`, Rust types stay `PascalCase`, etc.). The rule is about the
+   artifact layer, not the code inside artifacts.
+
+4. **Slugs in generated paths.** When a script generates a path containing a
+   human-readable slug (e.g. handoff file names, branch names, output
+   directories), derive the slug as kebab-case: lowercase, trim, replace
+   whitespace and `_` with `-`, collapse repeats, strip leading/trailing `-`.
+
+**Examples:**
+- ✅ `skills/ai/agent-file-upsert/SKILL.md` — `name: agent-file-upsert`
+- ✅ `workflows/greenfield-prd/WORKFLOW.md` — `name: greenfield-prd`
+- ❌ `skills/ai/agent_file_upsert/SKILL.md` — `name: agent_file_upsert`
+
+
+---
 description: Reusable trigger guard — when a skill is triggered but the question is a poor fit, answer without the skill, explain why, and offer a rerun on a one-word affirmative
 ---
 
@@ -708,6 +782,81 @@ The `#!/usr/bin/env -S uv run --script` shebang makes the script directly execut
 **When uv is unavailable:** `python script.py` still works for stdlib-only scripts (the PEP 723 block is a comment Python ignores). Scripts with declared dependencies require `uv run` (or a pre-provisioned venv matching the declared deps).
 
 See `references/script-execution-standards.md` for the full devbox/rtk detection code and the combined header + detection template.
+
+
+---
+description: Shared protocol for committing a clean checkpoint before delegating work to a subagent or starting a commit batch, so failures can be rolled back without losing prior progress
+---
+
+### Pre-Task Commit Checkpoint
+
+Before delegating a unit of work to a subagent (or starting any commit batch),
+ensure the working tree is at a clean, labeled commit. This creates a rollback
+point: if the subagent fails or produces unwanted changes, `git reset` or
+`git checkout` returns to the checkpoint without losing prior stories' work.
+
+#### When to Checkpoint
+
+- **Before each subagent dispatch** in a multi-story execution loop.
+- **Before the first commit** in a batch commit operation.
+- **Before any delegation** where the subagent might modify files you cannot
+  easily undo.
+
+Do NOT checkpoint after every file edit inside the orchestrator — only at
+delegation boundaries where a fresh context takes over.
+
+#### Checkpoint Protocol
+
+1. **Check for uncommitted changes**:
+   ```bash
+   git status --porcelain
+   ```
+   - If the output is empty, the tree is clean — proceed to dispatch.
+   - If there are changes, continue to step 2.
+
+2. **Commit the pending work** before dispatching:
+   - If the `git-repository-management` skill is installed, use its
+     `git-commit-batch.sh` script for structured, rollback-safe commits with
+     vertical grouping and mandatory commit bodies.
+   - Otherwise, commit directly:
+     ```bash
+     git add -A
+     git commit -m "checkpoint: <what was completed>" -m "- Pre-task checkpoint before <next task description>"
+     ```
+
+3. **Record the checkpoint commit hash** so the orchestrator can roll back to
+   it if the subagent fails:
+   ```bash
+   git rev-parse HEAD
+   ```
+
+4. **Dispatch the subagent**. The subagent works from the clean checkpoint.
+
+5. **On subagent failure**: roll back to the checkpoint if the subagent left
+   the tree in an undesirable state:
+   ```bash
+   git reset --hard <checkpoint-hash>
+   ```
+   Never roll back past a checkpoint that represents completed, reviewed work.
+
+#### Commit Quality Rules (Apply at Every Checkpoint)
+
+Even at checkpoint boundaries, commits must follow basic quality standards:
+
+- **Imperative mood**: "Add auth middleware" not "Added auth middleware"
+- **Mandatory body**: Every commit includes a body explaining the why, not
+  just the what. A subject line alone is never sufficient.
+- **No AI signatures**: Never add `Co-authored-by:`, `Generated by:`, or any
+  AI attribution trailer. This is a permanent, non-negotiable rule.
+- **Vertical grouping**: When a checkpoint spans multiple functional areas,
+  group changes by feature (code + tests + docs together), not by file type.
+- **Rollback-safe ordering**: When making multiple commits at a checkpoint,
+  order least-complicated → most-complicated so a revert of a complex commit
+  doesn't pull simpler, unrelated commits with it.
+
+For the full commit organization rules (vertical grouping examples, batch
+format, quality check integration, tagging), see the `git-repository-management`
+skill.
 
 
 # Execute Upsert — Project Execution Controller
@@ -844,28 +993,37 @@ For each task story that isn't completed yet:
    pending story has completed dependencies, report blocked stories and wait
    for user direction.
 
-2. **Launch a subagent** to execute the story. The subagent receives:
+2. **Create a pre-task commit checkpoint**: Before dispatching the subagent,
+   follow the Pre-Task Commit Checkpoint protocol (see the include above).
+   Commit any pending work from prior stories or orchestrator-side changes,
+   and record the checkpoint commit hash. This ensures a clean rollback point
+   exists — if the subagent fails or produces unwanted changes, you can
+   `git reset --hard <checkpoint-hash>` without losing completed work.
+
+3. **Launch a subagent** to execute the story. The subagent receives:
    - **Goal**: Implement the story by running the `tasks-processor` workflow.
    - **Inputs**: The story file path, the project's `AGENTS.md` path, the
      task directory path.
    - **Constraints**: Follow the tasks-processor workflow's work protocol
      exactly — mark tasks in-progress, run tests, verify acceptance criteria,
-     commit with conventional commit format.
+     commit with conventional commit format. The subagent starts from the
+     checkpoint commit created in step 2; if it fails, the orchestrator rolls
+     back to that checkpoint.
    - **What to return**: A summary of what was implemented, test results, and
      the commit hash.
 
-3. **Review the subagent's work**:
+4. **Review the subagent's work**:
    - Verify the story is marked `[x] Done` in the index file.
    - Check the commit exists and includes both code and task file updates.
    - Run the smallest check that would fail if the work is wrong (typecheck
      or targeted test).
 
-4. **Chain to the next story**: If the subagent completed successfully, launch
+5. **Chain to the next story**: If the subagent completed successfully, launch
    the next subagent for the next uncompleted story. If something needs human
    involvement, list the story as blocked and move on to the next story that
    doesn't have blocked dependencies.
 
-5. **Handle PRD updates during execution**: If a subagent discovers that the
+6. **Handle PRD updates during execution**: If a subagent discovers that the
    PRD needs updating (e.g., a requirement is infeasible, scope needs to
    change, a new requirement emerged):
    - Pause the execution loop.
@@ -906,12 +1064,53 @@ After all stories are completed (or when the user pauses execution):
   - **What to return**: A list of documentation files updated with a
     one-line summary of each change.
 
-### Commit Documentation Updates
+### Final Commit
 
-- Stage and commit documentation updates separately from code changes:
-  ```bash
-  git add . && git commit -m "docs: update documentation for [PRD-NAME]" -m "- Updated README, API docs, architecture docs" -m "Related to PRD [PRD-NAME]"
-  ```
+After all updates are complete (PRD, task files, documentation), commit
+everything that remains uncommitted. This is the last step of the pipeline —
+no work should be left dirty in the tree.
+
+1. **Check for uncommitted changes**:
+   ```bash
+   git status --porcelain
+   ```
+   If the output is empty, the tree is clean — skip to the summary.
+
+2. **Group remaining changes into commits** by functional area, following the
+   Commit Quality Rules from the Pre-Task Commit Checkpoint protocol above:
+   - **PRD and task files** (`internal-docs/feature/...`) as one commit:
+     ```
+     docs: update PRD and task files for [PRD-NAME]
+
+     - Mark all stories as done or deferred with reasons
+     - Record deviations from the original plan
+     - Update relevant-files sections in per-story files
+     ```
+   - **Project documentation** (README, API docs, architecture docs,
+     `AGENTS.md`, `CHANGELOG.md`) as one or more commits, grouped by area:
+     ```
+     docs: update project documentation for [PRD-NAME]
+
+     - Updated README with new feature capabilities
+     - Added API documentation for new endpoints
+     - Updated architecture docs for system changes
+     ```
+
+3. **Execute the commits**. If the `git-repository-management` skill is
+   installed, use its `git-commit-batch.sh` script for structured,
+   rollback-safe commits with vertical grouping and mandatory commit bodies.
+   Otherwise, commit each group directly:
+   ```bash
+   git add <files-for-this-group>
+   git commit -m "<subject>" -m "<body with bullet points>"
+   ```
+
+4. **Verify the tree is clean**:
+   ```bash
+   git status --porcelain
+   ```
+   If anything remains, commit it or report it to the user — do not leave
+   the tree dirty.
 
 ## Context Declaration
 

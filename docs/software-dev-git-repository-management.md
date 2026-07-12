@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# If installed via skills (includes/ is bundled alongside the skill):
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
 > Category: **software-dev** · Status: ready · Version: 1.6.0
 
@@ -74,14 +74,17 @@ This skill uses a **hybrid architecture** where:
 
 The workflow consists of 5 phases: Script Discovery, Data Collection, AI Analysis & Planning, Execution, and Documentation & Summary, plus optional Tagging. For detailed phase descriptions including Phase 0 (Script Discovery), Phase 1 (Data Collection), Phase 2 (AI Analysis & Planning with rollback-safe ordering and submodule handling), Phase 3 (Execution), Phase 4 (Documentation), and Phase 5 (Tagging), see [Workflow Phases](references/workflow-phases.md).
 
+> **Pre-Task Commit Checkpoint**: The checkpoint protocol used before the first commit in a batch (and before subagent dispatch in `execute-upsert`) is shared via the `pre-task-commit-checkpoint` include. Both this skill and `execute-upsert` inline the same protocol, so consumers only need the checkpoint logic documented once.
+
 ## Related Skills
 - **project-detection** (skill, dependency) — For detecting project types and environment management systems
 - **code-quality-validation** (skill, related) — For comprehensive code quality checks that integrate with git workflow
 - **ai-development-loop** (skill, dependent) — Development loop depends on this skill for commit organization
+- **execute-upsert** (skill, dependent) — Project execution controller uses the pre-task commit checkpoint protocol (shared via include) before each subagent dispatch
 - **base-ai-guidance** (skill, base-framework) — Base AI guidance framework for all AI skills
 
 ---
 
 - **Full skill**: [`skills/software-dev/git-repository-management/SKILL.md`](skills/software-dev/git-repository-management/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T15:49:28Z
+- **Generated**: 2026-07-12T00:50:23Z

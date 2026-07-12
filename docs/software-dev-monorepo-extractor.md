@@ -1,7 +1,7 @@
 <!-- Managed by skills-src build pipeline. Do not edit; changes will be overwritten. -->
 <!-- Generated from SKILL.md frontmatter + body by `just catalog` -->
 
-# If installed via skills (includes/ is bundled alongside the skill):
+# Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
 > Category: **software-dev** · Status: ready · Version: 1.0.0
 
@@ -122,4 +122,4 @@ read -p "Press enter after team confirmation..."
 
 - **Full skill**: [`skills/software-dev/monorepo-extractor/SKILL.md`](skills/software-dev/monorepo-extractor/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-11T15:49:28Z
+- **Generated**: 2026-07-12T00:50:23Z

@@ -15,6 +15,10 @@ Quick-reference table of signals and the action each suggests. Referenced by `SK
 | **Retail calendar** | Prime Day, Black Friday, Presidents Day, Memorial Day | Time purchase to known sale events if timeline allows |
 | **Regulatory** | New tariffs, import restrictions, bans | Buy before regulation reduces supply |
 | **Inventory signals** | "Only X left in stock", warehouse clearance | Low inventory with no restock = buy now; clearance = wait for deeper cuts |
+| **Government fiscal calendar** | Federal fiscal year ends Sept 30; agencies clear surplus before year-end | Sept surge in GSA Auctions and DLA listings as agencies dispose of excess property |
+| **Police auction hold periods** | Seized/found property held 30–90 days before auction (varies by state) | New police auction inventory appears continuously; check PropertyRoom and GovDeals weekly |
+| **Estate sale schedule** | Estate sales run Fri–Sun; day 1 full price, day 2 25–50% off, day 3 half-price/make offer | Best prices on Sunday afternoon; best selection Friday morning |
+| **Repo cycles** | Repossessions spike after holiday season (Jan–Feb) and mid-summer (July–Aug) when loan delinquencies peak | More repo inventory at credit unions and Copart/IAAI during these windows |
 
 ## Timing Recommendation Output Format
 
@@ -40,7 +44,7 @@ Quick-reference table of signals and the action each suggests. Referenced by `SK
 | **June** | Tools, gym memberships, lingerie, menswear | Father's Day, semi-annual sales |
 | **July** | Furniture, clothing, electronics (Prime Day) | Amazon Prime Day ripple, summer clearance start |
 | **August** | Back-to-school electronics, laptops, school supplies, outdoor furniture | Back-to-school, patio clearance |
-| **September** | Grills, outdoor gear, bikes, cars, iPhones (outgoing model) | End of summer, new model year cars, new iPhone launch |
+| **September** | Grills, outdoor gear, bikes, cars, iPhones (outgoing model), **government surplus** | End of summer, new model year cars, new iPhone launch, **federal fiscal year-end Sept 30 — agencies surge surplus listings** |
 | **October** | Jeans, patio furniture, prior-gen electronics | Pre-holiday positioning, Prime Big Deal Days |
 | **November** | Everything (Black Friday/Cyber Monday), TVs, toys, laptops | Biggest sale event of the year |
 | **December** | Gift cards, toys (clearance after 12/25), holiday decor (12/26+) | Post-Christmas clearance starts 12/26 |
