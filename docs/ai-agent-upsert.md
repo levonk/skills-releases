@@ -30,4 +30,4 @@ Create new expert agents, modify and improve existing agents, and audit agent de
 
 - **Full skill**: [`skills/ai/agent-upsert/SKILL.md`](skills/ai/agent-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T00:50:23Z
+- **Generated**: 2026-07-12T00:51:35Z
