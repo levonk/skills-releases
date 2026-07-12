@@ -127,4 +127,4 @@ This creates:
 
 - **Full skill**: [`skills/software-dev/codebase-tutorial/SKILL.md`](skills/software-dev/codebase-tutorial/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T00:51:35Z
+- **Generated**: 2026-07-12T01:27:53Z

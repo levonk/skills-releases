@@ -77,4 +77,4 @@ emit the feature matrix.
 
 - **Full skill**: [`skills/software-dev/project-comparison/SKILL.md`](skills/software-dev/project-comparison/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T00:51:35Z
+- **Generated**: 2026-07-12T01:27:53Z
