@@ -41,4 +41,4 @@ Create new workflows, modify and improve existing workflows, and convert between
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T19:44:04Z
+- **Generated**: 2026-07-15T22:13:34Z

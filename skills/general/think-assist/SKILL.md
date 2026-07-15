@@ -3,9 +3,10 @@ name: think-assist
 description: >-
   Thinking-method library and light multi-advisor council for pressure-testing
   decisions, ideas, and proposals. Use when you need to apply a specific
-  thinking method (first principles, inversion, devil's advocate, second-order
-  thinking, systems thinking, SCAMPER, five-whys, circle of competence,
-  expansionist, outsider, executor) to a problem, OR when you want a fast
+  thinking method (first principles, inversion, devil's advocate, be critical,
+  second-order thinking, systems thinking, SCAMPER, five-whys, circle of
+  competence, expansionist, outsider, executor) to a problem, OR when you want
+  a fast
   multi-perspective "council this" / "pressure-test this" / "stress-test this"
   / "war room this" / "debate this" run that spawns 5 advisors with different
   thinking styles, runs a blind peer-review round, and synthesizes a verdict
@@ -16,7 +17,7 @@ description: >-
 version: "1.0.0"
 date:
   created: "2026-07-05"
-  updated: "2026-07-05"
+  updated: "2026-07-12"
   last-used: "2026-07-05"
 tags:
   - ai/skill
@@ -755,6 +756,7 @@ Pick a method from the library, apply it to the problem.
 | First Principles | Seemingly impossible problems, challenging dogma | [first-principles-thinking.md](references/first-principles-thinking.md) |
 | Inversion | Risk management, stress-testing plans | [inversion.md](references/inversion.md) |
 | Devil's Advocate | Rigorous scrutiny, challenging consensus | [devils-advocate.md](references/devils-advocate.md) |
+| Be Critical | Symmetric evidence for/against + necessary-conditions test | [be-critical.md](references/be-critical.md) |
 | Second-Order Thinking | Long-term consequences, "and then what?" | [second-order-thinking.md](references/second-order-thinking.md) |
 | Systems Thinking | Interconnected impacts, feedback loops | [systems-thinking.md](references/systems-thinking.md) |
 | Five Whys | Root cause analysis | [five-whys.md](references/five-whys.md) |

@@ -14,6 +14,21 @@ if [ "$VERBOSE" = "--verbose" ]; then
   echo "Creating branch: $BRANCH"
 fi
 
+# Sync from upstream before branching — the clone-time rebase in
+# fork-and-clone.sh is stale by the time we get here (steps 7-8 ran tests,
+# analysis took wall-clock time). Starting the branch from fresh upstream
+# shrinks the conflict surface for the late sync at step 18.
+if git remote get-url upstream >/dev/null 2>&1; then
+  if [ "$VERBOSE" = "--verbose" ]; then echo "Fetching upstream and rebasing onto upstream/$UPSTREAM_BRANCH..."; fi
+  git fetch upstream
+  git rebase "upstream/$UPSTREAM_BRANCH"
+else
+  # Direct-access clone (no fork) — upstream remote isn't set; origin IS upstream.
+  if [ "$VERBOSE" = "--verbose" ]; then echo "No upstream remote; fetching origin and rebasing onto origin/$UPSTREAM_BRANCH..."; fi
+  git fetch origin
+  git rebase "origin/$UPSTREAM_BRANCH"
+fi
+
 git checkout -b "$BRANCH"
 
 # Verify git author

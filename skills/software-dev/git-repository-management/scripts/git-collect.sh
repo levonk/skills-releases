@@ -7,14 +7,13 @@
 
 set -euo pipefail
 
-# RTK (Rust Token Killer) detection — use rtk as a proxy for git and supported
+# RTK (Rust Token Killer) — use rtk as a proxy for git and supported
 # commands when available to reduce LLM token consumption by 60-90%.
 # See: https://github.com/rtk-ai/rtk
-if command -v rtk >/dev/null 2>&1; then
-    RTK_AVAILABLE=1
-else
-    RTK_AVAILABLE=0
-fi
+# Detection is handled by the shared rtk-helpers.sh include below.
+# RTK_AVAILABLE is set for the AVAILABLE_TOOLS output and probe_devbox.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_TOOL_DISCOVERY="$SCRIPT_DIR/cli-tool-discovery.sh"
 
 # Devbox detection — use devbox run for environment-aware execution
 # when devbox is available and a devbox.json is present.
@@ -110,22 +109,190 @@ devbox_run() {
     fi
 }
 
-# Wrapper: use 'rtk git' instead of 'git' when rtk is available,
-# and run through devbox when available
+# wrapper_prefix() and run_command() — shared via include.
+# If probe_devbox disabled devbox, set the flag so wrapper_prefix() skips it.
+if [[ "$DEVBOX_AVAILABLE" -ne 1 ]]; then
+    WRAPPER_DEVBOX_DISABLED=1
+fi
+# wrapper-helpers.sh — shared functions for environment wrapper detection
+#
+# Included by skills that need to wrap commands with environment wrappers
+# (devbox, mise, flox, direnv, nix). Provides wrapper_prefix() and run_command().
+#
+# Depends on: cli-tool-discovery.sh materialized in the same scripts/ directory.
+#
+# Consumers:
+#   - shell-wrapper/scripts/wrap_command.sh.tmpl
+#   - git-repository-management/scripts/git-collect.sh.tmpl
+#
+# Usage (in a .tmpl script, after defining SCRIPT_DIR and CLI_TOOL_DISCOVERY):
+#   Include this file via the templater's include directive.
+#
+# Optional override: set WRAPPER_DEVBOX_DISABLED=1 before including to make
+# wrapper_prefix() skip the devbox wrapper (used by git-collect.sh which has
+# its own probe_devbox that can disable devbox at runtime).
+
+# Resolve the environment wrapper for the current directory.
+# Prints the wrapper prefix (e.g. "devbox run --") or empty if none.
+# Delegates entirely to cli-tool-discovery.sh, which checks "already inside"
+# env vars (DEVBOX_SHELL, MISE_SHELL, FLOX_ACTIVE, DIRENV_DIR, IN_NIX_SHELL)
+# and walks up from cwd for config files. No duplicate detection logic here.
+wrapper_prefix() {
+    if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+        printf ''
+        return
+    fi
+
+    # Probe with a nonexistent tool name — cli-tool-discovery.sh checks PATH
+    # first (skipped for nonexistent tools), then wrappers. The output format is
+    # "WRAPPER: <wrapper-cmd> __wrapper_probe__" — strip the probe tool name.
+    local result
+    result="$(bash "$CLI_TOOL_DISCOVERY" __wrapper_probe__ 2>/dev/null || true)"
+    case "$result" in
+        WRAPPER:\ *)
+            local wrapper_full="${result#WRAPPER: }"
+            local prefix="${wrapper_full% __wrapper_probe__}"
+            # Allow callers to disable devbox at runtime (e.g. probe_devbox)
+            if [[ "$prefix" == "devbox run --" && "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+                printf ''
+            else
+                printf '%s' "$prefix"
+            fi
+            ;;
+        *)
+            printf ''
+            ;;
+    esac
+}
+
+# Run a command through the detected environment wrapper (if any), otherwise directly.
+run_command() {
+    local wrapper
+    wrapper="$(wrapper_prefix)"
+    if [[ -n "$wrapper" ]]; then
+        $wrapper "$@"
+    else
+        "$@"
+    fi
+}
+
+
+# rtk_available(), rtk_prefix(), rtk_wrap_command() — shared via include.
+# rtk-helpers.sh — shared functions for rtk (Rust Token Killer) wrapping
+#
+# Provides rtk_available(), rtk_prefix(), and rtk_wrap_command().
+# rtk compresses CLI output by 60-90% for LLM context. Coverage is determined
+# by `rtk rewrite` — the single source of truth that rtk's own hooks use.
+# No hardcoded list of supported commands is maintained here.
+#
+# Depends on: cli-tool-discovery.sh materialized in the same scripts/ directory.
+#
+# Consumers:
+#   - shell-wrapper/scripts/wrap_command.sh.tmpl
+#   - git-repository-management/scripts/git-collect.sh.tmpl
+#
+# Optional: set RTK_SKIP=1 before including to disable all rtk wrapping
+# (used by shell-wrapper's --raw flag and git-collect's probe failure).
+
+# Resolve rtk via cli-tool-discovery.sh (finds it even in non-standard locations).
+# Prints "rtk" if available, empty otherwise.
+rtk_available() {
+    if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+        printf ''
+        return
+    fi
+    if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+        command -v rtk >/dev/null 2>&1 && printf 'rtk'
+        return
+    fi
+    local result
+    result="$(bash "$CLI_TOOL_DISCOVERY" rtk 2>/dev/null || true)"
+    case "$result" in
+        FOUND:*|WRAPPER:*)
+            printf 'rtk'
+            ;;
+        *)
+            printf ''
+            ;;
+    esac
+}
+
+# Check if rtk supports a command by probing `rtk rewrite`.
+# Exit codes from rtk rewrite: 0=allow, 1=not supported, 2=deny, 3=ask.
+# 0 and 3 both mean "rtk supports this command".
+# Prints "rtk" if the command should be wrapped, empty otherwise.
+rtk_prefix() {
+    if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+        printf ''
+        return
+    fi
+    if [[ -z "$(rtk_available)" ]]; then
+        printf ''
+        return
+    fi
+    # Probe with the full command — rtk rewrite needs the subcommand to
+    # determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
+    rtk rewrite -- "$@" >/dev/null 2>&1
+    local rc=$?
+    if [[ $rc -eq 0 || $rc -eq 3 ]]; then
+        printf 'rtk'
+    fi
+}
+
+# Wrap a command with rtk if supported, run through environment wrapper if present.
+# Usage: rtk_wrap_command <tool> [args...]
+# If rtk supports the command, runs: <env-wrapper> rtk <tool> [args...]
+# Otherwise runs:                   <env-wrapper> <tool> [args...]
+rtk_wrap_command() {
+    local tool="$1"
+    shift
+    local rtk_prefix_val
+    rtk_prefix_val="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+    local wrapper
+    wrapper="$(wrapper_prefix)"
+    if [[ -n "$rtk_prefix_val" ]]; then
+        if [[ -n "$wrapper" ]]; then
+            $wrapper rtk "$tool" "$@"
+        else
+            rtk "$tool" "$@"
+        fi
+    else
+        if [[ -n "$wrapper" ]]; then
+            $wrapper "$tool" "$@"
+        else
+            "$tool" "$@"
+        fi
+    fi
+}
+
+
+# Set RTK_AVAILABLE for the AVAILABLE_TOOLS output and probe_devbox.
+if [[ -n "$(rtk_available)" ]]; then
+    RTK_AVAILABLE=1
+else
+    RTK_AVAILABLE=0
+fi
+
+# Wrapper: use 'rtk git' instead of 'git' when rtk supports it,
+# and run through devbox when available. Uses rtk_prefix() for coverage check.
 git_cmd() {
-    if [[ "$RTK_AVAILABLE" -eq 1 ]]; then
+    local rtk_p
+    rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
+    if [[ -n "$rtk_p" ]]; then
         devbox_run rtk git "$@"
     else
         devbox_run git "$@"
     fi
 }
 
-# Wrapper: use 'rtk <tool>' instead of '<tool>' for supported commands,
-# and run through devbox when available
+# Wrapper: use 'rtk <tool>' for supported commands, run through devbox when available.
+# Uses rtk_prefix() for coverage check — no longer wraps unconditionally.
 rtk_wrap() {
     local tool="$1"
     shift
-    if [[ "$RTK_AVAILABLE" -eq 1 ]]; then
+    local rtk_p
+    rtk_p="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+    if [[ -n "$rtk_p" ]]; then
         devbox_run rtk "$tool" "$@"
     else
         devbox_run "$tool" "$@"
@@ -155,40 +322,6 @@ diff_cmd() {
     else
         git_cmd diff "$@"
     fi
-}
-
-# Environment detection (for quality checks that may need other env managers)
-detect_environment() {
-    if [[ -f "devbox.json" ]]; then
-        echo "devbox"
-    elif [[ -f "mise.toml" || -f ".mise.toml" || -f ".tool-versions" ]]; then
-        echo "mise"
-    elif [[ -f "flake.nix" ]]; then
-        echo "nix"
-    else
-        echo "native"
-    fi
-}
-
-# Command wrapper for environment-aware execution
-run_command() {
-    local env_type
-    env_type=$(detect_environment)
-
-    case "$env_type" in
-        "devbox")
-            devbox_run "$@"
-            ;;
-        "mise")
-            mise exec -- "$@"
-            ;;
-        "nix")
-            nix develop --command "$@"
-            ;;
-        "native")
-            "$@"
-            ;;
-    esac
 }
 
 discover_repo_root() {

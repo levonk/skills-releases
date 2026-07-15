@@ -920,6 +920,60 @@ Documentation and reference material intended to be loaded as needed into contex
 - For files longer than 100 lines, include a table of contents at the top
 - Keep references one level deep from SKILL.md (avoid deeply nested references)
 
+### Template Files — Independent Files Per Variant
+
+When a reference file contains multiple variant code blocks that the AI must
+choose between (e.g., one file with bun/pnpm/npm/yarn build docs, or one file
+with Rust/Node/Go/Python devbox configs), **split each variant into its own
+file**. Do not embed multiple variant code blocks in a single markdown file.
+
+**Why**: A monolithic `references/template-x.md` with 4 embedded code blocks
+forces the AI to load all variants into context even when only one applies.
+Embedded code in markdown creates bug risk (the AI may copy-paste the wrong
+block, mix syntax, or partially edit one variant), wastes tokens on irrelevant
+variants, and increases confusion. Independent files let the AI load only the
+relevant variant.
+
+**Bad** — one file, all variants embedded:
+```
+references/
+└── devbox-templates.md      # Rust + Node + Go + Python JSON blocks all inline
+```
+
+**Good** — one file per variant:
+```
+references/
+└── devbox-templates/
+    ├── rust.json            # or rust.md with one code block
+    ├── node.json
+    ├── go.json
+    └── python.json
+```
+
+SKILL.md then links to the specific file: "Use the template from
+`references/devbox-templates/rust.json`" — not "Use the appropriate template
+from `references/devbox-templates.md`".
+
+**DRY via includes (skills-src only)**: When the skill lives in the
+`skills-src` repo (where the Go templater is available), use include directives
+to share common content across template files instead of duplicating headers or
+boilerplate. The directive syntax is `{{ include "path" . }}` (the templater
+uses 3-brace delimiters; see any existing include at the top of this file's
+SKILL.md for the exact syntax):
+
+- **Skill-local includes**: If multiple template variants share the same
+  header/footer/boilerplate, put the shared content in the skill's own
+  `includes/` directory and reference it:
+  `{{ include "skills/<cat>/<skill>/includes/devbox-header.json" . }}`
+- **Cross-skill includes**: If the shared content is relevant to many skills,
+  put it in `src/current/includes/` and reference it:
+  `{{ include "includes/devbox-header.json" . }}`
+
+Includes are inlined at build time, so built/distributed skills remain
+self-contained with no runtime dependency on the templater. See
+`references/progressive-disclosure.md` — Anti-Patterns for the embedded-code
+anti-pattern to avoid.
+
 ### Assets (assets/)
 
 Files not intended to be loaded into context, but rather used within the output Claude produces.

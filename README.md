@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `00387d4472de4720a7f201ba2626da40dd4928f7` · Branch: `main` · Generated: 2026-07-12T19:44:04Z
+> Commit: `870b8cc958ba0d1b9bd7ab9d542f1e83c67ccdac` · Branch: `main` · Generated: 2026-07-15T22:13:34Z
 
 ## Overview
 
@@ -21,7 +21,6 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
-| knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
 | knowledge-bundle-upsert | Create and maintain OKF knowledge bundles through four operations: create a new bundle from scrat... | [Synopsis](ai-knowledge-bundle-upsert.md) |
 | prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
 | readme-upsert | Generate or update a project's README.md for human developers. Use when onboarding a human to an ... | [Synopsis](ai-readme-upsert.md) |
@@ -82,6 +81,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | project-configuration | Configure existing projects with compatible preferences without overwriting established workflows... | [Synopsis](software-dev-project-configuration.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
 | repository-health-review | Comprehensive repository health analysis for outdated information, conflicting rules, undocumente... | [Synopsis](software-dev-repository-health-review.md) |
+| shell-wrapper | Wrap bash tool calls with an environment wrapper (devbox, mise, flox, direnv, or nix) and rtk bef... | [Synopsis](software-dev-shell-wrapper.md) |
 | surgical-config | Deterministic, non-destructive configuration file modifications using a tiered tool hierarchy. Us... | [Synopsis](software-dev-surgical-config.md) |
 
 ### tech-maturity

@@ -43,4 +43,4 @@ Create new skills, modify and improve existing skills, and measure skill perform
 
 - **Full skill**: [`skills/ai/ai-skill-upsert/SKILL.md`](skills/ai/ai-skill-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T19:44:04Z
+- **Generated**: 2026-07-15T22:13:34Z

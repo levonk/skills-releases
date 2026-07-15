@@ -54,4 +54,4 @@ OKF bundles operate within a three-layer architecture:
 
 - **Full skill**: [`skills/ai/knowledge-bundle-upsert/SKILL.md`](skills/ai/knowledge-bundle-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T19:44:04Z
+- **Generated**: 2026-07-15T22:13:34Z

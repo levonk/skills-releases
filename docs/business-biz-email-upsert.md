@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **business** · Status:  · Version: 1.0.0
+> Category: **business** · Status:  · Version: 1.1.0
 
 Draft, review, and improve business emails using a structured framework that prioritizes speed, clarity, and judgment. Creates new emails from a brief or ask, reviews and improves existing emails for conciseness and impact, and converts rough notes or chat messages into polished emails. Use when users need to write or revise a business email, draft an action request, decision email, status update, risk notification, escalation, or confirmation message, prepare a client-facing or executive communication, or improve an email's subject line, structure, or tone. Make sure to use this skill whenever the user mentions email writing, email drafting, email review, email revision, business communication, professional email, subject lines, or wants help composing a message for work, even if they don't explicitly ask for "biz-email-upsert." Do NOT trigger on personal/informal emails, marketing emails or newsletters, customer support ticket responses, or coding tasks — this skill is for structured business communication, not bulk email or casual correspondence.
 
@@ -13,7 +13,7 @@ Draft, review, and improve business emails using a structured framework that pri
 |-------|-------|
 | Name | `biz-email-upsert` |
 | Category | `business` |
-| Version | `1.0.0` |
+| Version | `1.1.0` |
 | Status | `` |
 | Owner |  |
 
@@ -43,4 +43,4 @@ structure template.
 
 - **Full skill**: [`skills/business/biz-email-upsert/SKILL.md`](skills/business/biz-email-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-12T19:44:04Z
+- **Generated**: 2026-07-15T22:13:34Z

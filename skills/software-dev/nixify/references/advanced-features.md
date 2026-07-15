@@ -264,7 +264,7 @@ name: Nix flake
 # concern, so this job is path-filtered to the flake files — it fires only
 # when they change, not on every source/docs commit.
 #
-# Three steps, in order of what they catch:
+# Steps, in order of what they catch:
 #   1. nix flake check --all-systems  — every system's outputs evaluate
 #      (including darwin on an ubuntu runner).
 #   2. nix build .#default            — fetchurl + autoPatchelf + install
@@ -272,6 +272,9 @@ name: Nix flake
 #   3. nix run .#default -- --version — the patched binary actually execs.
 #      This is the only step that catches the `let ... in rec` shadowing
 #      class of bug (passes flake check, fails nix run). Do NOT drop it.
+#   4. nix build .#source (if #source output exists) — the from-source
+#      build path realises for the runner's system. Skip if the flake
+#      does not expose a #source output.
 
 on:
   push:
@@ -314,19 +317,35 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v16
 
       - name: nix flake check --all-systems
-        run: nix flake check --all-systems --print-build-logs
+        # --no-build: evaluate every system's outputs (including darwin on
+        # ubuntu) without realising them. Without --no-build, `nix flake
+        # check` builds every derivation in `checks`, which fails for
+        # non-native systems (darwin stdenv can't run on linux). The
+        # build/run steps below handle realisation for the runner's system.
+        run: nix flake check --all-systems --no-build
 
       - name: nix build .#default
         run: nix build .#default --print-build-logs
 
       - name: nix run .#default -- --version
         run: nix run .#default -- --version
+
+      - name: nix build .#source (if exists)
+        # Exercises the from-source build path. Skip if the flake does not
+        # expose a #source output (source-build-only flakes use #default).
+        run: |
+          if nix flake show --json 2>/dev/null | jq -e 'has("source")' >/dev/null 2>&1; then
+            nix build .#source --print-build-logs
+          else
+            echo "No #source output — skipping"
+          fi
 ```
 
 **Customization notes:**
 - Adjust `branches: [master]` if the project uses a different default branch (e.g., `main`).
 - The `paths:` filter (include) is preferred over `paths-ignore:` (exclude) for nixify targets — Nix is usually a side concern and should not run on every source/docs commit. Add more paths only if the project has non-`.nix` files the flake reads.
 - Replace `--version` with the project's actual smoke command (e.g. `--help`, `--version`, or a no-op subcommand). The point is to exec the patched binary end-to-end.
+- The `#source` build step uses `jq` to detect whether the output exists before building. If the project's runner doesn't have `jq`, install it first or replace the check with `nix build .#source 2>/dev/null || true` (less precise but functional).
 - Pin `actions/checkout` and `nix-installer-action` to commit SHAs (with `# vX.Y.Z` comments) if the project's existing workflows do so — match the repo's convention.
 
 **DO NOT add `DeterminateSystems/magic-nix-cache-action`.** Its hosted backend was sunset in February 2025 and the step now degrades to a silent no-op; it adds noise and a dead dependency for no benefit. If binary caching is actually needed, use Cachix (see [Cachix Integration](#cachix-integration-binary-caching)).

@@ -276,6 +276,36 @@ references/search-existing-work.md
 
 Step numbers in filenames cause cascading renames. Files should be named by topic. Reference files may still contain numbered substeps within their content — the restriction is on filenames only, not on numbered lists inside reference files.
 
+### ❌ Embedded variant code in monolithic template files
+
+Don't put multiple variant code blocks (one per language, framework, package
+manager, etc.) in a single `references/template-x.md` file. The AI must load
+all variants into context even when only one applies, and embedded code in
+markdown creates bug risk — the AI may copy-paste the wrong block, mix syntax
+across variants, or partially edit one variant while leaving siblings stale.
+
+Bad:
+```
+references/
+└── build-docs.md          # bun + pnpm + npm + yarn sections all inline
+```
+
+Good:
+```
+references/
+└── build-docs/
+    ├── bun.md
+    ├── pnpm.md
+    ├── npm.md
+    └── yarn.md
+```
+
+SKILL.md links to the specific variant file, not to a monolithic file where
+the AI must "choose the right section." When the skill lives in skills-src,
+use `{{{ include }}}` directives to share common headers/boilerplate across
+variant files instead of duplicating. See `references/anatomy.md` — Template
+Files for the full pattern.
+
 ### ❌ Monolithic SKILL.md
 
 Don't put everything in SKILL.md. Split deterministic phases into `scripts/` and heavy detail into `references/`.
@@ -288,3 +318,4 @@ When testing your skill, verify:
 3. No information is duplicated between SKILL.md and references
 4. References are one level deep (no nesting)
 5. Deterministic phases are extracted into scripts, not inline in SKILL.md
+6. No monolithic template files with multiple embedded variant code blocks — each variant is its own file

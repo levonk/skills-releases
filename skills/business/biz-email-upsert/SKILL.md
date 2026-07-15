@@ -1,13 +1,13 @@
 ---
 name: biz-email-upsert
 description: Draft, review, and improve business emails using a structured framework that prioritizes speed, clarity, and judgment. Creates new emails from a brief or ask, reviews and improves existing emails for conciseness and impact, and converts rough notes or chat messages into polished emails. Use when users need to write or revise a business email, draft an action request, decision email, status update, risk notification, escalation, or confirmation message, prepare a client-facing or executive communication, or improve an email's subject line, structure, or tone. Make sure to use this skill whenever the user mentions email writing, email drafting, email review, email revision, business communication, professional email, subject lines, or wants help composing a message for work, even if they don't explicitly ask for "biz-email-upsert." Do NOT trigger on personal/informal emails, marketing emails or newsletters, customer support ticket responses, or coding tasks — this skill is for structured business communication, not bulk email or casual correspondence.
-version: 1.0.0
+version: 1.1.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
-  updated: "2026-07-11"
-  last-used: "2026-07-11"
+  updated: "2026-07-13"
+  last-used: "2026-07-13"
 tags:
   - "ai/skill"
   - "business"
@@ -704,15 +704,23 @@ Before starting, determine which mode applies:
    - What action is needed from the recipient, if any?
    - What is the deadline for response or action?
 
-1. **Identify email type**: Match the purpose to a type template. See
-   `references/email-types.md` for subject patterns, structure, and examples for
-   each type:
+1. **Identify email type**: Match the situation to a type. See
+   `references/email-types.md` for the situations index, subject patterns,
+   structure, and worked examples for each type:
    - Action needed — request someone to do something
    - Decision needed — request a choice between options
    - Update — inform stakeholders of status
    - Risk — flag a problem or potential issue
    - Escalation — raise an issue to a higher authority
    - Confirmation — verify an agreement or understanding
+   - Cold Outreach — email an investor, journalist, or cold contact for the
+     first time (goal is a reply, not a meeting)
+   - Introduction — request, make, or follow up on an introduction (double
+     opt-in protocol)
+   - Networking — build a relationship with a new contact, no specific ask
+   - Refusal / Rejection — say no, decline, or reject
+   - Resignation — resign from a job
+   - Clarification Request — punt a vague email back for specifics
 
 2. **Apply the framework**: Follow the core principles while drafting. See
    `references/email-framework.md` for the full principle set. Quick reference:
@@ -721,9 +729,14 @@ Before starting, determine which mode applies:
    - Use as few words as possible — every sentence earns its place
    - Be literal and specific — names, numbers, dates, facts
    - One email does one job — split unrelated topics into separate emails
-   - Make the next step obvious — who does what by when
+   - Make the next step obvious — target what's actually indefinite (time,
+     value, or scope); use a two-step close (suggested step + alternative);
+     for actions that need to happen, state a go-forward plan and ask the
+     recipient to object by a deadline rather than asking permission
    - Separate facts, judgment, and recommendation — keep them distinct
    - Write for forwarding — the email stands alone without context
+   - No warm openings — avoid "I hope this finds you well", "I wanted to
+     reach out", and "let me know how I can help" as a default close
 
 3. **Draft**: Write the subject line, first sentence, body, and close. Use the
    type template from `references/email-types.md` as the starting structure.
@@ -772,8 +785,11 @@ subject line patterns is in `references/email-framework.md`.
 
 ### Email Type Templates
 
-Templates and worked examples for each email type (action, decision, update,
-risk, escalation, confirmation) are in `references/email-types.md`.
+Templates and worked examples for each email type — including a situations
+index that maps real-world requests to types. Covers Action, Decision, Update,
+Risk, Escalation, Confirmation, Cold Outreach, Introduction (double opt-in),
+Networking, Refusal / Rejection, Resignation, and Clarification Request. See
+`references/email-types.md`.
 
 ### Review Checklist
 
@@ -798,7 +814,7 @@ draft the follow-up summary email instead.
 
 ### File Paths
 - Main skill: `src/current/skills/business/biz-email-upsert/SKILL.md` (in the `skills-src` repo at `~/p/gh/levonk/skills-src/`)
-- References: `src/current/skills/business/biz-email-upsert/references/`
+- References: `src/current/skills/business/biz-email-upsert/references/` (email-framework.md, email-types.md, review-checklist.md, sources.yml)
 
 ### Related Skills
 - task-triage (complement) — prioritization framework for triaging tasks; use before writing email to determine if the request warrants an email at all

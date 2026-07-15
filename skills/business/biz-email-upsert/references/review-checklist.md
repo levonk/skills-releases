@@ -8,7 +8,9 @@ each item, note issues, and propose fixes with before/after examples.
 ### Subject Line
 
 - [ ] Has a triage tag (Action / Decision / Update / Risk / Escalation /
-  Confirmation)
+  Confirmation / Refusal / Rejection / Resignation / Clarification) — or, for
+  Cold Outreach, Introduction, and Networking, a descriptive subject that
+  states what the email is about
 - [ ] States the topic clearly
 - [ ] Helps the reader prioritize without opening the email
 
@@ -30,9 +32,12 @@ actual ask is buried in paragraph three.
 - [ ] No filler, repetition, or softening language
 - [ ] Fits on one screen (if longer, punchline is first, then short sections)
 - [ ] No generic AI-sounding phrases ("I wanted to reach out", "Please be
-  informed", "Kindly", "Just circling back")
+  informed", "Kindly", "Just circling back", "Let me know how I can help" as a
+  default close)
 
 **Anti-pattern:** Email is three paragraphs of context before a one-line ask.
+Also: closing with "let me know how I can help" when you could have named the
+next step — it offloads the work back to the reader.
 
 ### Specificity
 
@@ -48,6 +53,12 @@ March 12 deadline."
 - [ ] One email does one job (unrelated topics split into separate emails)
 - [ ] Facts, judgment, and recommendation are separated
 - [ ] Next step is obvious: who does what by when
+- [ ] Next step targets what's actually indefinite (time, value, or scope —
+  not a generic "let me know")
+- [ ] For actions that need to happen, a go-forward plan is stated and the
+  recipient is asked to object by a deadline, rather than asked for
+  permission (reserve "may I?" for genuinely reversible or high-stakes
+  decisions)
 - [ ] Owner and deadline are stated
 
 **Anti-pattern:** Email mixes three unrelated requests, no clear next step, no

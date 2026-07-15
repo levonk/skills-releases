@@ -10,14 +10,28 @@ description: >
   (3) market timing based on seasonality, weather, economic indicators, search
   traffic, and regulatory changes, (4) purchase optimization via credit card
   benefits, affiliate cashback programs, gift card discounts, and extended
-  warranty stacking.
-version: 1.0.0
+  warranty stacking, (5) part-number sourcing — when the Needs Discovery Brief
+  includes a replacement part number, searches by the specific OEM part number
+  across suppliers and cross-brand equivalents to avoid the convenience tax of
+  model-name searches, (6) warranty comparison across suppliers, brands, and
+  conditions with risk-adjusted cost analysis before the final recommendation,
+  (7) cross-brand identical product identification — detects when
+  differently-branded products are the same OEM product (Kenmore = Whirlpool,
+  Acer GB10 = NVIDIA DGX Spark) via model prefix decoding, reference design
+  matching, and FCC ID lookup, and compares them so the user can buy the
+  cheaper rebrand when differences don't matter, including brand premium
+  assessment for luxury and status goods (Rolex vs Grand Seiko, Le Creuset
+  vs Lodge) to advise the user when similar quality is available for
+  significantly less. For services, includes vendor tier verification
+  (comparing quotes across CPA vs bookkeeper, licensed electrician vs
+  handyman) before quote gathering.
+version: 1.5.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  updated: "2026-07-11"
-  last-used: "2026-07-11"
+  updated: "2026-07-13"
+  last-used: "2026-07-13"
 tags: ["ai/skill", "commerce", "pricing", "deal-hunting", "market-timing", "cashback"]
 see-also:
   - skill: "shopping-needs-discovery"
@@ -706,6 +720,19 @@ For each candidate product, build a **price history profile** using CamelCamelCa
 
 For the full source comparison table and price summary output format, see `references/price-research.md`.
 
+### 1.5. Part-Number Sourcing (When Applicable)
+
+When the Needs Discovery Brief includes a `Replacement Part` section with a
+manufacturer part number, run **part-number sourcing** in addition to (or
+instead of) the standard model-name sourcing above. Searching by the specific
+part number avoids the "convenience tax" — model-name searches surface
+pre-packaged repair kits at 30–150% markup; part-number searches surface the
+raw OEM component from multiple suppliers at a fraction of the cost.
+
+For the part-number sourcing workflow, cross-brand equivalent identification,
+condition assessment, supplier reputation checks, and the part-number
+comparison output format, see `references/part-number-research.md`.
+
 ### 2. Sourcing Channels
 
 Search across all viable channels, ranked by price advantage. The full
@@ -730,6 +757,51 @@ courthouse steps, retail open-box) and online channels everywhere. The
 sourcing guide notes online vs. in-person and local pickup requirements
 for each platform.
 
+### 2.1. Candidate Filtering — Specs Are Floors, Not Targets
+
+Numeric specs in the Needs Discovery Brief are tagged `min:` (default) or
+`ceiling:`. **Filter on the tag, not on closeness to the number:**
+
+- A `min:` spec is a **floor**. Include every candidate that meets or exceeds
+  it. Do not exclude a candidate for *exceeding* a minimum — exceeding it at
+  equal or better price is an upgrade, not a miss. Rank candidates by value
+  (price ÷ delivered capability), not by how closely they match the stated
+  number.
+- A `ceiling:` spec is a **hard maximum** (the user explicitly capped it with
+  "only", "at most", "no more than"). Exclude candidates that exceed it.
+
+This corrects a known failure mode: a request for "a BEV with ~90 miles of
+range" filtered to rare, expensive, short-range EVs and missed cheaper
+200+ mile EVs that were strictly better deals. The user's number reflects a
+*need*, not a *limit* — unless they explicitly said it was a limit.
+
+When the best-value candidate far exceeds a `min:` spec, surface it as an
+upgrade and state the assumption so the user can convert it to a `ceiling:`
+if the overshoot is unwanted (e.g., "Best value is a 220-mi EV at $X — say
+'only ~90 mi' if you want a hard cap").
+
+### 2.5. Cross-Brand Identical Products & Brand Premium Assessment
+
+Many products are not manufactured by the brand on the label — the brand buys
+from an OEM and rebrands it (Kenmore is rebranded Whirlpool/LG/Frigidaire;
+the Acer GB10 is the NVIDIA DGX Spark reference design under a different
+name). The same physical product can sell for 20–100% less under a different
+brand name. Before finalizing sourcing, check whether the candidate product
+has cross-brand identical versions.
+
+For luxury and status goods (watches, handbags, pens, cookware), also run a
+**brand premium assessment**: compare the premium brand against alternatives
+of similar quality to determine whether the price difference is justified by
+real differences (resale value, warranty, materials, service) or is
+primarily paying for the logo (Rolex vs Grand Seiko, Le Creuset vs Lodge
+enameled cast iron).
+
+For the OEM identification methods (model number prefix decoding, reference
+design matching, FCC ID matching, ODM databases, community knowledge), the
+cross-brand comparison table format, when cross-brand differences justify the
+brand tax, and the brand premium assessment methodology and comparison table
+format, see `references/cross-brand-identical.md`.
+
 ### 3. Market Timing Analysis
 
 Determine optimal purchase window based on multiple signals: seasonality, upcoming weather, economic cycle, search traffic, ad cost signals, product lifecycle, retail calendar, regulatory changes, and inventory signals.
@@ -742,9 +814,36 @@ Layer savings mechanisms (gift card discounts, cashback portals, credit card cat
 
 For the step-by-step optimization procedure, savings stack output format, and card selection logic from `payment_methods`, see `references/purchase-optimization.md`.
 
+### 5. Warranty Comparison
+
+Before making a final recommendation, compare **warranty terms** across all
+candidate suppliers, brands, and conditions. Two suppliers offering the same
+item at different prices often have different warranty coverage — the cheaper
+option isn't always cheaper once you factor in the risk of an out-of-warranty
+failure. This is especially critical when comparing cross-brand equivalents of
+the same OEM part (see `references/part-number-research.md`), or when
+comparing new vs refurbished vs used-pull conditions.
+
+For the warranty types, terms-to-compare matrix, warranty comparison table
+format, risk-adjusted cost calculation, and when warranty should override
+price, see `references/warranty-comparison.md`.
+
 ## Core Workflow — Services
 
 When the Needs Discovery Brief indicates **Type: Service** or **Type: Both**:
+
+### S0. Vendor Tier Verification
+
+Before gathering quotes, verify the **vendor tier** identified by
+needs-discovery. The same service can often be performed by different vendor
+types at different price points (CPA vs bookkeeper, licensed electrician vs
+handyman, architect vs draftsperson). If the Needs Discovery Brief includes
+a `Service Tier Analysis`, gather quotes at the recommended tier. If it
+doesn't, check whether a lower tier could perform the work at lower cost
+(see `needs-discovery/references/domains/services.md` for the vendor tier
+differentiation table). Present quotes from multiple tiers when the work
+could be done by either, so the user can see the price difference and make
+an informed choice.
 
 ### S1. Quote Gathering
 
@@ -830,8 +929,20 @@ Deliver a **Deal Intelligence Report**:
 |----------|-------|----------|---------|--------|-----------|
 
 ### Best Sources / Providers
-| Rank | Source/Provider | Price/Quote | Condition | Notes |
-|------|----------------|-------------|-----------|-------|
+| Rank | Source/Provider | Price/Quote | Condition | Warranty | Notes |
+|------|----------------|-------------|-----------|----------|-------|
+
+### Cross-Brand Identical Products (if applicable)
+[Cross-brand comparison table showing the same OEM product under different labels — see references/cross-brand-identical.md]
+
+### Brand Premium Assessment (if applicable)
+[Quality comparison and premium analysis for luxury/status goods — see references/cross-brand-identical.md]
+
+### Part-Number Sourcing (if applicable)
+[Part-number comparison table with cross-brand equivalents — see references/part-number-research.md]
+
+### Warranty Comparison
+[Warranty terms comparison across suppliers — see references/warranty-comparison.md]
 
 ### Timing
 [Timing recommendation block]
@@ -852,12 +963,15 @@ Deliver a **Deal Intelligence Report**:
 - `references/sourcing-sources.toml` — Structured metadata for all sourcing channels (machine-readable; filter by type, auction_type, categories, condition, buyer_premium, online/in_person, api, sold_price_history)
 - `references/market-timing.md` — Timing signal matrix, monthly buying calendar, and signal interpretation
 - `references/purchase-optimization.md` — Optimization stack steps, savings stack format, card selection logic, cashback portal comparison, credit card benefit matrices
+- `references/part-number-research.md` — Part-number sourcing workflow, cross-brand equivalent identification, condition assessment, supplier reputation checks, part-number comparison output format
+- `references/warranty-comparison.md` — Warranty types, terms-to-compare matrix, warranty comparison table format, risk-adjusted cost calculation, when warranty overrides price
+- `references/cross-brand-identical.md` — OEM/rebrand identification (model prefix decoding, reference design matching, FCC ID matching, ODM databases), cross-brand comparison table format, when cross-brand differences justify the brand tax, brand premium assessment for luxury/status goods (quality comparison, premium calculation, when premium is justified vs paying for the logo)
 
 ## Context Declaration
 
 ### File Paths
 - Main skill: `config/ai/skills/commerce/deal-intelligence/SKILL.md`
-- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`
+- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/cross-brand-identical.md`
 
 ### Related Skills
 - `shopping-needs-discovery` (dependency) — discovers and refines purchasing requirements

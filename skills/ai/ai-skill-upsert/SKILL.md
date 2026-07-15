@@ -875,7 +875,7 @@ invocation tracking, this include for change tracking.
 
 
 ---
-description: Shared clarifying-questions protocol — ask numbered multiple-choice questions before generating or updating any artifact, until complete clarity is achieved. Generic across all generative skills.
+description: Shared clarifying-questions protocol — ask numbered, outcome-framed multiple-choice questions before generating or updating any artifact, until complete clarity is achieved. Use decision briefs for trade-offs and high-stakes ambiguity. Generic across all generative skills.
 ---
 
 ### Clarifying Questions (Mandatory Before Generation)
@@ -884,6 +884,9 @@ Before generating or updating an artifact, ask clarifying questions until you
 have complete clarity on what the user wants. Only ask about gaps that
 materially affect the output — skip questions where the answer is already clear
 from the prompt, the codebase, or prior context.
+
+Frame every question in outcome terms: what pain is avoided, what capability
+unlocks, or what user experience changes if the artifact is right.
 
 #### What to Ask About
 
@@ -898,7 +901,7 @@ Ask about gaps in any of these areas (only the ones that are unclear):
 - **Constraints** — Known dependencies, deadlines, or technical constraints?
 - **Existing context** — Are there designs, tickets, specs, or prior work to incorporate?
 
-#### Formatting Requirements
+#### Standard Question Format
 
 - Number questions: `1.`, `2.`, `3.`, etc.
 - Provide multiple-choice options per question: `A.`, `B.`, `C.`, `D.`, ...
@@ -908,7 +911,33 @@ Ask about gaps in any of these areas (only the ones that are unclear):
 - Include an "Other" implication: the user can always write a custom answer
   instead of picking a letter.
 
-#### Example Question Format (for style only)
+#### Decision Brief Format (for Trade-Offs and High-Stakes Ambiguity)
+
+When a question is a genuine choice among options with different coverage,
+risk, or effort, or when the wrong answer would materially change the output,
+package it as a decision brief:
+
+- **D<N> — <one-line title>** (e.g. `D1 — Target output format`)
+- **ELI10:** 1–2 plain-English sentences that name the choice and the stakes.
+- **Stakes if we pick wrong:** One sentence on what breaks, what the user sees,
+  or what is lost.
+- **Recommendation:** `Option because reason` (e.g. `B because it keeps the
+  artifact portable without extra dependencies`). Put the `(recommended)` label
+  on that option.
+- **Completeness:** `A=X/10, B=Y/10, ...` when options differ in coverage (10 =
+  complete, 7 = happy path, 3 = shortcut). If options differ in kind, write:
+  `Note: options differ in kind, not coverage — no completeness score.`
+- **Options:** `A)`, `B)`, `C)`, `D)` — each with at least one `✅` pro and one
+  `❌` con, each concrete and ≥40 characters. For one-way / destructive choices
+  the option may be a hard-stop escape.
+- **Net:** One-line synthesis of the trade-off.
+
+For **one-way / destructive** decisions (e.g. deleting files, overwriting
+published artifacts, forcing branch changes, irreversible scope cuts), require
+explicit typed confirmation beyond the letter. State plainly what is
+irreversible and ask for the exact option word or letter before proceeding.
+
+#### Example Question Format (for standard clarifying questions)
 
 ```text
 1. What is the primary goal of this feature?
@@ -932,6 +961,9 @@ Ask about gaps in any of these areas (only the ones that are unclear):
 #### When to Stop Asking
 
 - Stop when you have enough clarity to produce a correct, complete artifact.
+- For high-stakes ambiguity (architecture, scope, data model, destructive
+  actions, missing context), STOP. Name the ambiguity in one sentence, present
+  2–3 options with trade-offs, and ask.
 - Do not ask more than 7 questions in a single round — if you need more, batch
   them and let the user answer what they can.
 - If the user's initial prompt is already detailed and unambiguous, you may ask
@@ -1500,7 +1532,7 @@ is warranted.
 
 4. **Extract deterministic phases into scripts**: Identify sequences of commands that run without needing AI judgment between them. Extract each phase into a single script in `scripts/` — one script per AI→script handoff. SKILL.md should call the script by name and describe what the AI should do with the output; do not inline the script's code. See `references/anatomy.md` — Scripts for the script output contract (quiet by default, `--verbose`, `--dry-run`) and the one-handoff principle.
 
-5. **Move heavy detail to references**: Any detail that would clutter the step overview goes into `references/<topic>.md`. See `references/progressive-disclosure.md` for patterns (high-level guide with references, domain-specific organization, variant-specific organization, conditional details, step overview) and anti-patterns to avoid (duplicating information, deeply nested references, unclear references, step-numbered filenames, monolithic SKILL.md).
+5. **Move heavy detail to references**: Any detail that would clutter the step overview goes into `references/<topic>.md`. When a reference contains multiple variant code blocks (e.g., per-language or per-tool templates), split each variant into its own file under a subdirectory — do not embed multiple variant code blocks in one markdown file. When in skills-src, use the templater's `include` directives (see the project's `src/current/skills/AGENTS.md` for the exact syntax) for shared headers/boilerplate across variant files. See `references/progressive-disclosure.md` for patterns (high-level guide with references, domain-specific organization, variant-specific organization, conditional details, step overview) and anti-patterns to avoid (duplicating information, deeply nested references, unclear references, step-numbered filenames, embedded variant code in monolithic template files, monolithic SKILL.md). See `references/anatomy.md` — Template Files for the independent-files-per-variant pattern and DRY include usage.
 
 6. **Add the base-ai-guidance and trigger-guard includes**: Add `---
 description: Base AI guidance include that bundles common templates for all AI guidance types

@@ -4,7 +4,7 @@ description: Capture and restore AI conversation context for seamless work conti
 version: 2.0.0
 date:
   created: "2026-05-25"
-  updated: "2026-07-02"
+  updated: "2026-07-14"
   last-used: "2026-07-02"
 tags:
   - "ai/skill"
@@ -765,6 +765,86 @@ The `#!/usr/bin/env -S uv run --script` shebang makes the script directly execut
 
 See `references/script-execution-standards.md` for the full devbox/rtk detection code and the combined header + detection template.
 
+
+---
+description: Shared secret-redaction protocol — patterns to detect and redact before committing or capturing context, so secrets never enter version control or handoff documents
+---
+
+### Secret Redaction
+
+Before committing files or capturing context for handoff, scan for and redact
+secrets. Secrets in git history are permanent — even a force-push leaves them
+in reflogs and remote caches. Prevention is the only reliable defense.
+
+#### Patterns to Detect
+
+Scan staged files, diffs, and context text for:
+
+- **API keys and tokens**: `AKIA[0-9A-Z]{16}` (AWS), `ghp_[A-Za-z0-9]{36}` (GitHub),
+  `gho_[A-Za-z0-9]{36}` (GitHub OAuth), `sk-[A-Za-z0-9]{20,}` (OpenAI),
+  `xox[baprs]-[A-Za-z0-9-]+` (Slack), `AIza[0-9A-Za-z_-]{35}` (Google)
+- **Private keys**: lines beginning with `-----BEGIN` (RSA, EC, OPENSSH, PGP)
+- **Connection strings**: `postgres(ql)?://...:...@`, `mongodb(\+srv)?://...:...@`,
+  `redis://...:...@`, any `protocol://user:pass@host`
+- **Generic credentials**: `password =`, `passwd =`, `secret =`, `api_key =`,
+  `token =`, `client_secret =` followed by a non-placeholder value
+- **JWT tokens**: `eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`
+- **PII** (when capturing context): email addresses, phone numbers, government IDs
+
+#### Redaction Format
+
+Replace detected secrets with placeholders, preserving the key name so the
+structure is still readable:
+
+```
+API_KEY: [REDACTED]
+password: [REDACTED]
+DATABASE_URL: [REDACTED]
+-----BEGIN RSA PRIVATE KEY----- [REDACTED]
+```
+
+#### Pre-Commit Scan
+
+Before staging files, check for secret patterns in the diff:
+
+```bash
+# Scan staged changes for common secret patterns
+git diff --cached | grep -E '(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]+|-----BEGIN|://[^:]+:[^@]+@)'
+```
+
+If the scan returns matches:
+1. **Stop** — do not commit
+2. **Identify** which file(s) contain the secret
+3. **Redact** — replace the secret with `[REDACTED]` or move it to an
+   environment variable / `.env` file (which should already be gitignored)
+4. **Re-scan** to confirm no secrets remain
+5. **If a secret was already committed** in a prior commit, alert the user —
+   the secret must be rotated, not just removed from history
+
+#### When Capturing Context (Handoff)
+
+When writing handoff documents or commit messages that reference configuration,
+never copy secret values into the document. Reference the source instead:
+
+```markdown
+# Wrong
+DATABASE_URL=postgres://admin:s3cr3t@db.internal:5432/prod
+
+# Right
+DATABASE_URL is set in .env (gitignored) — see docs/deployment.md for setup
+```
+
+#### Tools
+
+When available, prefer dedicated secret scanners over manual grep:
+
+- **trufflehog** — `trufflehog filesystem --directory .`
+- **gitleaks** — `gitleaks detect --source .`
+- **detect-secrets** — `detect-secrets scan`
+
+These catch obfuscated secrets and non-obvious patterns that manual grep misses.
+Use `cli-tool-discovery.sh` to locate them if not on PATH.
+
 # Handoff
 
 A skill for capturing and restoring AI conversation context for seamless work continuation across sessions.
@@ -852,19 +932,12 @@ See: [`references/handoff-template.md`](references/handoff-template.md)
 
 #### 4. Redact Sensitive Information
 
-**Always redact:**
-- API keys and tokens
-- Passwords and credentials
-- Personally identifiable information (PII)
-- Secret configuration values
-- Private keys or certificates
+Follow the shared secret-redaction protocol (included above) for the full
+pattern list, pre-commit scan commands, and redaction format. Key points:
 
-**Replace with placeholders:**
-```markdown
-API_KEY: [REDACTED]
-password: [REDACTED]
-user@example.com: [REDACTED]
-```
+- **Always redact**: API keys, tokens, passwords, PII, private keys, connection strings
+- **Replace with placeholders**: `API_KEY: [REDACTED]`, `password: [REDACTED]`
+- **Reference, don't copy**: point to `.env` or config docs instead of pasting values
 
 #### 5. Save Handoff Document
 

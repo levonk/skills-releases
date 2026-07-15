@@ -234,6 +234,36 @@ extract_gradle_targets() {
     echo ""
 }
 
+# Extract targets from Package.swift (Swift Package Manager)
+extract_swift_targets() {
+    local package_swift="$1"
+
+    if [[ ! -f "$package_swift" ]]; then
+        return 0
+    fi
+
+    log_debug "Extracting targets from $package_swift"
+
+    echo "build:"
+    echo "	swift build"
+    echo ""
+    echo "build-release:"
+    echo "	swift build -c release"
+    echo ""
+    echo "test:"
+    echo "	swift test"
+    echo ""
+    echo "run:"
+    echo "	swift run"
+    echo ""
+    echo "clean:"
+    echo "	swift package clean"
+    echo ""
+    echo "update:"
+    echo "	swift package update"
+    echo ""
+}
+
 # Extract targets from devbox.json
 extract_devbox_targets() {
     local devbox_json="$1"
@@ -405,6 +435,14 @@ EOF
         found_configs=true
     fi
 
+    if [[ -f "Package.swift" ]]; then
+        log_info "Found Package.swift - adding Swift targets"
+        echo "# Swift Package Manager targets" >> "$output_file"
+        extract_swift_targets "Package.swift" >> "$output_file"
+        echo "" >> "$output_file"
+        found_configs=true
+    fi
+
     if [[ "$found_configs" == "true" ]]; then
         # Add common loop targets
         echo "# Common development targets" >> "$output_file"
@@ -458,6 +496,42 @@ show_available_targets() {
         found_any=true
     fi
 
+    if [[ -f "pyproject.toml" ]] || [[ -f "setup.py" ]]; then
+        log_info "=== Python (standard targets) ==="
+        echo "install, test, lint, fmt, typecheck"
+        found_any=true
+    fi
+
+    if [[ -f "go.mod" ]]; then
+        log_info "=== Go (standard targets) ==="
+        echo "build, test, vet, fmt, run"
+        found_any=true
+    fi
+
+    if [[ -f "pom.xml" ]]; then
+        log_info "=== Maven (standard targets) ==="
+        echo "compile, test, package, install, clean, verify"
+        found_any=true
+    fi
+
+    if [[ -f "build.gradle" ]] || [[ -f "build.gradle.kts" ]]; then
+        log_info "=== Gradle (standard targets) ==="
+        echo "build, test, compile, jar, clean, bootRun"
+        found_any=true
+    fi
+
+    if [[ -f "devbox.json" ]]; then
+        log_info "=== Devbox (custom scripts) ==="
+        jq -r '.scripts // {} | keys[]' "devbox.json" 2>/dev/null || echo "(no custom scripts)"
+        found_any=true
+    fi
+
+    if [[ -f "Package.swift" ]]; then
+        log_info "=== Swift Package Manager (standard targets) ==="
+        echo "build, build-release, test, run, clean, update"
+        found_any=true
+    fi
+
     if [[ "$found_any" == "false" ]]; then
         log_warn "No supported configuration files found"
         return 1
@@ -502,6 +576,7 @@ Supported configuration files:
     - pom.xml (Maven)
     - build.gradle / build.gradle.kts (Gradle)
     - devbox.json (Devbox)
+    - Package.swift (Swift Package Manager)
 
 EOF
             ;;

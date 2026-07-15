@@ -144,7 +144,11 @@ Only 3 scripts needed to minimize AI-script handoffs:
 - Executes multiple commits from AI-provided decisions
 - Creates automatic pre/post run tags (`tags/auto/YYYY/MM/TS-<slug>-{pre,post}`)
 - Input: STDIN with commit messages and file groupings
-- Usage: `printf 'COMMIT:<subject>\\n\\n- <body line>\\nFILES:<file1>\nFILES:<file2>\n' | ./scripts/git-commit-batch.sh [--slug <slug>] [repo_root]`
+- With `--amend`: exactly one COMMIT block; stages files and amends HEAD
+  instead of creating a new commit. Use after a quality-check failure to fix
+  the last commit without polluting history with a "fix the fix" commit.
+  Pre/post auto-tags still fire for rollback safety.
+- Usage: `printf 'COMMIT:<subject>\\n\\n- <body line>\\nFILES:<file1>\nFILES:<file2>\n' | ./scripts/git-commit-batch.sh [--slug <slug>] [--amend] [repo_root]`
 - Output: Execution results for each commit, `AUTO_TAG_PRE:<tag>`, `AUTO_TAG_POST:<tag>`
 
 **git-push.sh** - Push commits (fetch-rebase-push with auto-resolution)
@@ -174,6 +178,15 @@ Only 3 scripts needed to minimize AI-script handoffs:
   - `./scripts/git-tag.sh --path v1.2.3 --message "Release 1.2.3" [repo_root]`
 - Output: `TAG_PATH`, `TARGET` (SHA), `TAG_SUCCESS:<path>` or `TAG_FAILED:<reason>`
 - **Does not push the tag.** Publish with `git push origin <tag-path>` when the user wants it on the remote.
+
+**git-rollback.sh** - Roll back to a tag or SHA (with backup branch)
+- Creates a backup branch at `scratch/rollback/YYYY/MM/YYYYMMDDHHmm-{slug}-pre` before any changes
+- Performs `git reset --hard <target>` to roll back to the specified tag or SHA
+- The backup branch preserves the pre-rollback state for recovery
+- Usage: `./scripts/git-rollback.sh --to <tag-or-sha> [--slug <slug>] [repo_root]`
+- Output: `ROLLBACK_SUCCESS:<target>`, `BACKUP_BRANCH:<branch>`, or `ROLLBACK_FAILED:<reason>`
+- **Does not push.** The backup branch is local. Push it if you need it on the remote.
+- **Recovery**: `git checkout <backup-branch>` or `git reset --hard <backup-branch>` to undo the rollback.
 
 **Environment Detection:**
 The `git-collect.sh` script automatically detects and uses available environment managers:

@@ -43,6 +43,7 @@ If this skill is triggered but the question is a poor fit for it — for example
    - **Progressive disclosure** (see `references/progressive-disclosure.md`): Is detail at the right level? Are audiences separated?
    - **Context declaration**: Is there a Context Declaration section at the bottom with file paths, external resources, and project info? Are paths indirect (not hardcoded user-specific paths)?
    - **Bundled resources**: Are `scripts/`, `references/`, `assets/` properly referenced from `SKILL.md`? Are there unused example files left over from `init_skill.py`? Do all scripts include devbox and rtk detection patterns?
+   - **Template file organization**: Are there monolithic `references/template-*.md` files with multiple embedded variant code blocks (e.g., one file with bun/pnpm/npm/yarn, or Rust/Node/Go/Python)? If so, propose splitting each variant into its own file under a subdirectory (e.g., `references/build-docs/bun.md`, `references/build-docs/pnpm.md`). When in skills-src, propose using `{{ include }}` directives for shared headers/boilerplate across variant files. See `references/anatomy.md` — Template Files and `references/progressive-disclosure.md` — Anti-Patterns for the pattern.
    - **Includes**: Does the skill include `base-ai-guidance.md.tmpl` if it should inherit the shared framework?
    - **Stale or contradictory text**: References to deleted files, outdated workflows, rules that were superseded.
    - **Security** (see `references/security.md`): No secrets, keys, or sensitive paths exposed.

@@ -43,8 +43,8 @@ declare -A BUILD_SYSTEMS=(
     ["pants"]="pants.toml"
     ["buck"]="BUCK"
     ["please"]="BUILD.plz"
-    ["nix"]="flake.nix"
-    ["nixpkgs"]="shell.nix"
+    ["swift"]="Package.swift"
+    ["xcode"]="*.xcodeproj"
     ["docker"]="Dockerfile"
     ["docker-compose"]="docker-compose.yml"
     ["kubernetes"]="k8s"
@@ -157,7 +157,8 @@ declare -A BUILD_SYSTEMS=(
     ["make"]="Makefile"
     ["bazel"]="WORKSPACE"
     ["pants"]="pants.toml"
-    ["nix"]="flake.nix"
+    ["swift"]="Package.swift"
+    ["xcode"]="*.xcodeproj"
     ["docker"]="Dockerfile"
     ["terraform"]="*.tf"
     ["kubernetes"]="k8s/"
@@ -302,6 +303,34 @@ detect_systems() {
             fi
         fi
     done
+
+    # Environment wrappers (devbox, mise, flox, direnv, nix) — detected by
+    # cli-tool-discovery.sh, the single source of truth. It walks up from cwd
+    # and checks "already inside" env vars. No duplicate file checks here.
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local cli_discovery="$script_dir/cli-tool-discovery.sh"
+    if [[ -f "$cli_discovery" ]]; then
+        local result
+        result="$(bash "$cli_discovery" __wrapper_probe__ 2>/dev/null || true)"
+        case "$result" in
+            WRAPPER:\ *)
+                local wrapper_full="${result#WRAPPER: }"
+                local prefix="${wrapper_full% __wrapper_probe__}"
+                case "$prefix" in
+                    "devbox run --")        detected+=("devbox") ;;
+                    "mise exec --")         detected+=("mise") ;;
+                    "flox activate --")     detected+=("flox") ;;
+                    "direnv export &&")     detected+=("direnv") ;;
+                    "nix develop --command") detected+=("nix") ;;
+                    "nix-shell --run")      detected+=("nixpkgs") ;;
+                esac
+                if [[ "$verbose" == "true" ]]; then
+                    echo "✓ ${detected[-1]} (via cli-tool-discovery.sh)"
+                fi
+                ;;
+        esac
+    fi
 
     # Output detected systems as space-separated list
     echo "${detected[*]}"

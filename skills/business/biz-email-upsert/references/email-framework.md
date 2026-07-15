@@ -44,6 +44,28 @@ If you have three unrelated topics, send three emails.
 Say who needs to do what by when. If you want a decision, say the deadline. If
 you want feedback, say what kind of feedback.
 
+**Target what's indefinite.** The close should resolve the aspect of the next
+step that is actually undecided. If only the time is open, suggest a time. If
+the value or scope is open, prescribe the solution or scope. A close that
+offloads *all* the work back to the reader ("let me know how I can help") reads
+as incompetence — you are asking to be paid to solve problems you just handed
+back unsolved.
+
+**The two-step close.** When proposing a next step, pair it with an
+alternative so the reader can reply with a one-line "sounds good" or pick the
+fallback:
+
+- Suggested next step (specific time, action, or scope)
+- Alternative if that does not work
+
+**Prefer a go-forward plan over asking permission.** When an action genuinely
+needs to happen, state the plan and the date you will start, and ask the
+recipient to reach out *only if the plan is not okay*. This shifts the close
+from "may I?" to "I will, unless you object by Friday." It respects the
+reader's time, signals confidence, and still gives them a veto. Reserve
+"may I?" closes for genuinely reversible or high-stakes decisions where
+proceeding without explicit consent would be costly.
+
 ### 8. Separate facts, judgment, and recommendation
 
 - **Facts** are what happened.
@@ -66,9 +88,20 @@ specific and human. If a sentence could be pasted into any company, it is too
 generic.
 
 **Avoid:** I hope this email finds you well, I wanted to reach out, Please be
-informed, Kindly, Just circling back, Revert to me.
+informed, Kindly, Just circling back, Revert to me, Let me know how I can help
+(as a default close).
 
 **Use:** Normal words instead.
+
+**"Let me know how I can help" deserves a scoped warning, not a blanket ban.**
+As a *default* close it offloads the work of figuring out the next step back to
+the reader and signals that you do not know what to do. It is acceptable only
+when the recipient has not yet expressed a need and you are explicitly inviting
+them to articulate one (e.g., an incoming lead where the value proposition is
+still undefined). Even then, a better close names the value you *think* they
+need and asks them to confirm or correct it. The test: if you can name the next
+step, name it; if you genuinely cannot, say so and ask a specific question
+rather than an open-ended "let me know."
 
 ### 11. Respect time
 
@@ -143,6 +176,6 @@ Then send a short email summary with the decision.
 
 ## Sources
 
-This framework is distilled from:
-- Danny Castonguay, "How to Write an Email" (blog.dannycastonguay.com)
-- Hacker News discussion on the above (news.ycombinator.com/item?id=48847536)
+This framework is distilled from multiple sources. The full citation list
+lives in `references/sources.yml` — load it only when you need to attribute or
+extend the framework.

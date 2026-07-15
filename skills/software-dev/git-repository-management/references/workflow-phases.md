@@ -105,6 +105,18 @@ done
 ### Phase 4: Documentation & Summary (AI Agent)
 - **Step 12**: Update project documentation (changelog, architecture, status)
 - **Step 13**: Generate commit summary and statistics
+- **Step 14**: Suggest follow-up skills based on what was committed:
+  - **Code changes** (feat, fix, refactor) → suggest `code-quality-validation`
+    to run lint/test/format checks on the committed code
+  - **Documentation changes** (docs) → suggest `readme-upsert` or
+    `agent-file-upsert` to keep README and AGENTS.md in sync with the changes
+  - **Large batch** (5+ commits) → suggest `handoff` to capture the session's
+    context, decisions, and next steps for continuation
+  - **Release-related** (release, chore with version bumps) → suggest
+    `code-quality-validation` for a final pre-release validation pass
+  - Only suggest skills that are actually installed — check the available
+    skills list before suggesting. State the suggestion as a recommendation,
+    not an automatic invocation.
 
 ### Phase 5: Tagging (Optional, On User Request)
 Only run when the user explicitly asks to tag HEAD (e.g. "tag this", "cut a tag", "mark this release"). Never tag autonomously.

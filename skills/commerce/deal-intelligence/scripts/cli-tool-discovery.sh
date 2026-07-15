@@ -76,34 +76,42 @@ resolve_tool() {
     fi
     # mise
     if command -v mise >/dev/null 2>&1; then
-        if walk_up .mise.toml .mise/config.toml >/dev/null 2>&1; then
-            echo "WRAPPER:mise exec --"
-            return 0
+        if [[ -z "${MISE_SHELL:-}" ]]; then
+            if walk_up .mise.toml .mise/config.toml mise.toml >/dev/null 2>&1; then
+                echo "WRAPPER:mise exec --"
+                return 0
+            fi
         fi
     fi
     # flox
     if command -v flox >/dev/null 2>&1; then
-        if walk_up flox.nix >/dev/null 2>&1; then
-            echo "WRAPPER:flox activate --"
-            return 0
+        if [[ -z "${FLOX_ACTIVE:-}" ]]; then
+            if walk_up flox.nix >/dev/null 2>&1; then
+                echo "WRAPPER:flox activate --"
+                return 0
+            fi
         fi
     fi
     # direnv
     if command -v direnv >/dev/null 2>&1; then
-        if walk_up .envrc >/dev/null 2>&1; then
-            echo "WRAPPER:direnv export &&"
-            return 0
+        if [[ -z "${DIRENV_DIR:-}" ]]; then
+            if walk_up .envrc >/dev/null 2>&1; then
+                echo "WRAPPER:direnv export &&"
+                return 0
+            fi
         fi
     fi
     # nix
     if command -v nix >/dev/null 2>&1; then
-        if nix_root="$(walk_up shell.nix flake.nix 2>/dev/null)"; then
-            if [[ -f "$nix_root/flake.nix" ]]; then
-                echo "WRAPPER:nix develop --command"
-            else
-                echo "WRAPPER:nix-shell --run"
+        if [[ -z "${IN_NIX_SHELL:-}" ]]; then
+            if nix_root="$(walk_up shell.nix flake.nix 2>/dev/null)"; then
+                if [[ -f "$nix_root/flake.nix" ]]; then
+                    echo "WRAPPER:nix develop --command"
+                else
+                    echo "WRAPPER:nix-shell --run"
+                fi
+                return 0
             fi
-            return 0
         fi
     fi
 

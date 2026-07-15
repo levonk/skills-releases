@@ -1,12 +1,12 @@
 ---
 name: git-repository-management
-description: Comprehensive git repository workflow for status analysis, change organization, and commit management with secret scanning and rollback-safe ordering. Use when needing to organize and commit changes, manage git workflow, batch commits, push with backup branches, or tag releases. Triggers on 'commit changes', 'organize git', 'git workflow', 'batch commit', or 'repository management'.
-version: 1.6.0
+description: Comprehensive git repository workflow for status analysis, change organization, and commit management with secret scanning and rollback-safe ordering. Use when needing to organize and commit changes, manage git workflow, batch commits, push with backup branches, tag releases, or make a single checkpoint commit. Triggers on 'commit changes', 'organize git', 'git workflow', 'batch commit', 'checkpoint commit', or 'repository management'. Do NOT trigger on general git questions, branch creation, or merge requests.
+version: 1.7.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  updated: "2026-07-02"
+  updated: "2026-07-14"
   last-used: "2026-07-12"
 tags: ["ai/skill", "git", "version-control", "repository-management", "commit-organization", "tagging", "rollback-safety"]
 see-also:
@@ -725,6 +725,86 @@ format, quality check integration, tagging), see the `git-repository-management`
 skill.
 
 
+---
+description: Shared secret-redaction protocol — patterns to detect and redact before committing or capturing context, so secrets never enter version control or handoff documents
+---
+
+### Secret Redaction
+
+Before committing files or capturing context for handoff, scan for and redact
+secrets. Secrets in git history are permanent — even a force-push leaves them
+in reflogs and remote caches. Prevention is the only reliable defense.
+
+#### Patterns to Detect
+
+Scan staged files, diffs, and context text for:
+
+- **API keys and tokens**: `AKIA[0-9A-Z]{16}` (AWS), `ghp_[A-Za-z0-9]{36}` (GitHub),
+  `gho_[A-Za-z0-9]{36}` (GitHub OAuth), `sk-[A-Za-z0-9]{20,}` (OpenAI),
+  `xox[baprs]-[A-Za-z0-9-]+` (Slack), `AIza[0-9A-Za-z_-]{35}` (Google)
+- **Private keys**: lines beginning with `-----BEGIN` (RSA, EC, OPENSSH, PGP)
+- **Connection strings**: `postgres(ql)?://...:...@`, `mongodb(\+srv)?://...:...@`,
+  `redis://...:...@`, any `protocol://user:pass@host`
+- **Generic credentials**: `password =`, `passwd =`, `secret =`, `api_key =`,
+  `token =`, `client_secret =` followed by a non-placeholder value
+- **JWT tokens**: `eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`
+- **PII** (when capturing context): email addresses, phone numbers, government IDs
+
+#### Redaction Format
+
+Replace detected secrets with placeholders, preserving the key name so the
+structure is still readable:
+
+```
+API_KEY: [REDACTED]
+password: [REDACTED]
+DATABASE_URL: [REDACTED]
+-----BEGIN RSA PRIVATE KEY----- [REDACTED]
+```
+
+#### Pre-Commit Scan
+
+Before staging files, check for secret patterns in the diff:
+
+```bash
+# Scan staged changes for common secret patterns
+git diff --cached | grep -E '(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]+|-----BEGIN|://[^:]+:[^@]+@)'
+```
+
+If the scan returns matches:
+1. **Stop** — do not commit
+2. **Identify** which file(s) contain the secret
+3. **Redact** — replace the secret with `[REDACTED]` or move it to an
+   environment variable / `.env` file (which should already be gitignored)
+4. **Re-scan** to confirm no secrets remain
+5. **If a secret was already committed** in a prior commit, alert the user —
+   the secret must be rotated, not just removed from history
+
+#### When Capturing Context (Handoff)
+
+When writing handoff documents or commit messages that reference configuration,
+never copy secret values into the document. Reference the source instead:
+
+```markdown
+# Wrong
+DATABASE_URL=postgres://admin:s3cr3t@db.internal:5432/prod
+
+# Right
+DATABASE_URL is set in .env (gitignored) — see docs/deployment.md for setup
+```
+
+#### Tools
+
+When available, prefer dedicated secret scanners over manual grep:
+
+- **trufflehog** — `trufflehog filesystem --directory .`
+- **gitleaks** — `gitleaks detect --source .`
+- **detect-secrets** — `detect-secrets scan`
+
+These catch obfuscated secrets and non-obvious patterns that manual grep misses.
+Use `cli-tool-discovery.sh` to locate them if not on PATH.
+
+
 # Git Repository Management
 
 Systematic workflow for managing git repositories from dirty state to clean with proper organization, validation, and documentation.
@@ -743,9 +823,10 @@ Systematic workflow for managing git repositories from dirty state to clean with
 # 5. AI calls git-tag.sh if the user requests an additional tag
 
 ./scripts/git-collect.sh [path]              # Collect all data in one call
-./scripts/git-commit-batch.sh [--slug <slug>] [path]  # Execute all commits + auto-tag
+./scripts/git-commit-batch.sh [--slug <slug>] [--amend] [path]  # Execute all commits + auto-tag
 ./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # Push commits + tags
 ./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD (user-requested only)
+./scripts/git-rollback.sh --to <tag-or-sha> [--slug <slug>] [path]  # Roll back to a tag/SHA (creates backup branch)
 ```
 
 > **Working in a subdirectory?** All scripts automatically discover the repository root from any subdirectory. You can also pass the target path explicitly:
@@ -754,6 +835,55 @@ Systematic workflow for managing git repositories from dirty state to clean with
 > ```
 >
 > **Why:** Git commands like `status`, `add`, and `commit` operate on the repository root. The scripts automatically resolve the root from any subdirectory.
+
+## Entry Points
+
+This skill has two entry points depending on the task:
+
+### Full Repository Cleanup
+
+The default workflow for organizing and committing all pending changes in a
+repository. Use when the user says "commit everything", "organize and commit",
+"clean up the repo", or when a dependent skill needs to flush a batch of work.
+
+**Handoffs**: 3-4 (collect → analyze → batch-commit → optional push → optional tag)
+
+```bash
+./scripts/git-collect.sh [path]                              # 1. Collect all data
+# AI analyzes and groups changes into commits
+./scripts/git-commit-batch.sh [--slug <slug>] [path]         # 2. Execute all commits + auto-tags
+./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # 3. Push (optional)
+./scripts/git-tag.sh --category <cat> --slug <slug> [path]   # 4. Tag HEAD (user-requested only)
+```
+
+See [Core Workflow](#core-workflow) below for the full phase-by-phase description.
+
+### Checkpoint Commit
+
+A lightweight entry point for committing a single logical change without the
+full collect-analyze-push cycle. Use when:
+- A dependent skill (`ai-development-loop`, `execute-upsert`) needs to commit
+  one checkpoint before dispatching a subagent
+- The user says "commit this", "checkpoint", or "save this progress"
+- You need a rollback point before a risky operation
+
+**Handoffs**: 1 (single call to `git-commit-batch.sh`)
+
+```bash
+# Single commit — one COMMIT block, no collect, no push, no quality checks
+# Pre/post auto-tags still fire for rollback safety
+printf 'COMMIT:Checkpoint before auth refactor\n\n- Pre-task checkpoint before starting JWT migration\nFILES:src/auth/index.ts\nFILES:src/auth/types.ts' \
+  | ./scripts/git-commit-batch.sh --slug checkpoint-auth-refactor
+```
+
+**What's skipped**: data collection, quality checks, push, user-requested tags.
+**What's preserved**: mandatory commit body validation, pre/post auto-tags,
+vertical grouping rules, no-AI-signatures rule.
+
+> **For dependent skills**: the `pre-task-commit-checkpoint` include (already
+> inlined above) defines the *protocol* (when to checkpoint, what to check).
+> This entry point is the *script invocation* that executes the checkpoint.
+> They work together — the protocol tells you when, this section tells you how.
 
 ## Core Workflow
 
@@ -820,7 +950,7 @@ For tagging HEAD, automatic run tagging, tag format, tag creation commands, tagg
 
 ### File Paths
 - Main skill: `config/ai/skills/software-dev/git-repository-management/SKILL.md`
-- Scripts: `scripts/git-collect.sh`, `scripts/git-commit-batch.sh`, `scripts/git-push.sh`, `scripts/git-tag.sh`, `scripts/git-repo-manager.sh`, `scripts/git-status-helper.sh`
+- Scripts: `scripts/git-collect.sh`, `scripts/git-commit-batch.sh`, `scripts/git-push.sh`, `scripts/git-tag.sh`, `scripts/git-rollback.sh`, `scripts/git-repo-manager.sh`, `scripts/git-status-helper.sh`
 - References: `references/workflow-phases.md`, `references/commit-organization.md`, `references/quality-checks.md`, `references/tagging-and-pushing.md`, `references/git-status-digest.md`
 
 ### Related Skills

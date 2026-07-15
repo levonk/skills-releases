@@ -2,7 +2,7 @@
 
 # git-commit-batch.sh - Execute batch of commits with AI-provided decisions
 # Purpose: Single handoff to execute multiple commits with their messages and file groups
-# Usage: git-commit-batch.sh [repo_root]
+# Usage: git-commit-batch.sh [--amend] [--slug <slug>] [repo_root]
 # Input: STDIN with commit specifications in format:
 #   COMMIT:<commit_message>
 #   FILES:<file1>
@@ -12,6 +12,8 @@
 #   FILES:<file1>
 # One file per FILES: line — paths containing spaces are preserved
 # because the entire line after "FILES:" is treated as a single path.
+# With --amend: exactly one COMMIT block; stages files and amends HEAD
+# instead of creating a new commit. Pre/post auto-tags still fire.
 # Output: Execution results for each commit
 
 set -euo pipefail
@@ -153,6 +155,7 @@ expand_message() {
 # turning real newlines into literal "\n" in the resulting commit message.
 # Writing the message to a temp file and using -F sidesteps argv entirely.
 # ponytail: ceiling — temp file per commit; fine for batch sizes of dozens.
+# When AMEND=1, amends HEAD instead of creating a new commit.
 _COMMIT_MSG_FILE=""
 commit_with_message() {
     local msg="$1"
@@ -161,7 +164,11 @@ commit_with_message() {
         trap 'rm -f "$_COMMIT_MSG_FILE"' EXIT
     fi
     printf '%s' "$msg" > "$_COMMIT_MSG_FILE"
-    git_cmd commit -F "$_COMMIT_MSG_FILE"
+    if [[ "${AMEND:-0}" -eq 1 ]]; then
+        git_cmd commit --amend -F "$_COMMIT_MSG_FILE"
+    else
+        git_cmd commit -F "$_COMMIT_MSG_FILE"
+    fi
 }
 
 # A path is stageable if it exists on disk OR is tracked by git.
@@ -197,14 +204,16 @@ validate_commit_message() {
 }
 
 main() {
-    local slug="" target_path="."
+    local slug="" target_path="." amend=0
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --slug) slug="$2"; shift 2 ;;
             --slug=*) slug="${1#--slug=}"; shift ;;
+            --amend) amend=1; shift ;;
             *) target_path="$1"; shift ;;
         esac
     done
+    export AMEND="$amend"
 
     local repo_root
     repo_root=$(discover_repo_root "$target_path")
@@ -224,6 +233,10 @@ main() {
     local pre_tag="${tag_prefix}-${slug}-pre"
     git_cmd tag -a "$pre_tag" "$pre_sha" -m "Pre-run checkpoint: ${slug}"
     echo "AUTO_TAG_PRE:$pre_tag"
+
+    if [[ "$amend" -eq 1 ]]; then
+        echo "AMEND_MODE:enabled"
+    fi
 
     echo "=== BATCH_COMMIT_START ==="
 
@@ -301,6 +314,14 @@ main() {
 
             # Set new message
             current_message="${BASH_REMATCH[1]}"
+
+            # In amend mode, only one COMMIT block is allowed
+            if [[ "$amend" -eq 1 ]] && [[ "$commit_count" -gt 0 ]]; then
+                echo "COMMIT_FAILED:AMEND_MULTIPLE_COMMITS"
+                echo "ERROR: --amend mode accepts exactly one COMMIT block, got a second." >&2
+                echo "ERROR: Amend modifies HEAD in place; multiple commits don't make sense." >&2
+                exit 1
+            fi
 
         elif [[ "$line" =~ ^FILES:(.*)$ ]]; then
             # Add file to current commit — one path per FILES: line

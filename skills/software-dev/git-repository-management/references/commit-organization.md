@@ -141,6 +141,29 @@ This applies to ALL commits made through this skill, in ALL repositories, withou
 
 The script validates this before staging files. If validation fails, fix the message and re-run.
 
+### Artifact References in Commit Bodies (DRY)
+
+When the rationale for a commit is already captured in an existing artifact,
+**reference it by path instead of restating the rationale**. This keeps commit
+bodies short while preserving traceability.
+
+- **Handoff documents**: `See: .agents/handoffs/2026/07/202607141430-add-auth.md`
+- **ADRs**: `See: docs/adr/2026-07-14-jwt-auth.md`
+- **Issues**: `Fixes #123` or `Refs #456`
+- **PRDs / plans**: `See: docs/prd/auth-feature.md`
+
+**When to reference vs. restate:**
+- **Reference** when the artifact fully captures the why — a handoff doc with
+  decisions, an ADR with the rationale, an issue with the bug description
+- **Restate** when the commit's rationale is self-contained and doesn't warrant
+  a separate artifact (most bug fixes, small features)
+- **Both** when the artifact has context but the commit adds a specific decision
+  not in the artifact: `See: docs/adr/2026-07-14-jwt-auth.md — chose HS256 over RS256 for dev simplicity`
+
+This pairs naturally with the `handoff` skill: after a handoff-driven session,
+commits reference the handoff document instead of re-explaining the session's
+decisions in each commit body.
+
 ### Message Format (AI Responsibility)
 - **Imperative mood**: "Add feature" not "Added feature"
 - **Specific descriptions**: "Fix overflow in sidebar menu" not "Fix bug"

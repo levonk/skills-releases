@@ -21,7 +21,7 @@ curl -s "https://api.github.com/repos/<owner>/<repo>/releases" | jq -r '.[].asse
 ```
 
 **If prebuilt release tarballs exist:**
-- Use fetchurl approach (see `references/flake-templates.md` — Prebuilt Tarball Flake)
+- Use fetchurl approach (see `references/flake-templates/prebuilt-tarball.md`)
 - Extract and preserve exact layout (bin/ + runtime/ as siblings)
 - Add explicit SHA256 hashes for each platform's tarball
 
@@ -62,6 +62,7 @@ grep -r "postinstall" package.json 2>/dev/null | head -5
 
 **Decision tree:**
 
+- **If `force_source_build=true`** (maintainer or reviewer explicitly requested source-build): Skip prebuilt entirely. Proceed to source-build analysis. This overrides the "preferred" prebuilt path even when tarballs exist and the binary is self-contained. Common trigger: rejection feedback on a prebuilt-binary flake citing "maintenance liability" or "hardcoded hashes".
 - **If prebuilt tarballs exist AND the binary resolves runtime assets beside itself** (vendored `runtime/`, `node_modules`, N-API `.node`, etc.): Use fetchurl approach — MANDATORY. A from-source flake is broken for this class of project, not merely suboptimal.
 - **If prebuilt tarballs exist AND the binary is self-contained**: Use fetchurl approach (PREFERRED).
 - **If no prebuilt tarballs AND simple single-binary project**: Continue with standard flake.nix approach.

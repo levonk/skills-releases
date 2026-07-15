@@ -54,8 +54,16 @@ def _walk_up_find(*patterns: str) -> Path | None:
 
 def _detect_wrapper() -> str | None:
     """Detect an environment wrapper for the current directory. Returns the wrapper prefix or None."""
-    # Already inside devbox shell?
+    # Already inside a wrapper shell — skip (single source of truth for env vars)
     if os.environ.get("DEVBOX_SHELL") or os.environ.get("IN_DEVBOX_SHELL"):
+        return None
+    if os.environ.get("MISE_SHELL"):
+        return None
+    if os.environ.get("FLOX_ACTIVE"):
+        return None
+    if os.environ.get("DIRENV_DIR"):
+        return None
+    if os.environ.get("IN_NIX_SHELL"):
         return None
 
     # devbox
@@ -63,7 +71,7 @@ def _detect_wrapper() -> str | None:
         return "devbox run --"
 
     # mise
-    if shutil.which("mise") and _walk_up_find(".mise.toml", ".mise/config.toml"):
+    if shutil.which("mise") and _walk_up_find(".mise.toml", ".mise/config.toml", "mise.toml"):
         return "mise exec --"
 
     # flox
@@ -317,13 +325,7 @@ def run_tool_exec(tool: str, args: list[str]) -> None:
 
 def is_devbox_available() -> bool:
     """Backward compat: check if devbox wrapper would be used."""
-    r = resolve_tool("devbox")
-    # Actually check if devbox wrapper is active for this dir
-    if os.environ.get("DEVBOX_SHELL") or os.environ.get("IN_DEVBOX_SHELL"):
-        return False
-    if not shutil.which("devbox"):
-        return False
-    return _walk_up_find("devbox.json") is not None
+    return _detect_wrapper() == "devbox run --"
 
 
 def devbox_run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -334,13 +336,30 @@ def devbox_run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
 
 
 def is_rtk_available() -> bool:
-    """Backward compat: check if rtk is available."""
-    return shutil.which("rtk") is not None
+    """Check if rtk is available (resolved via cli-tool-discovery, not just PATH)."""
+    r = resolve_tool("rtk")
+    return r["status"] in ("found", "wrapper")
+
+
+def _rtk_supports(tool: str, args: list[str]) -> bool:
+    """Check if rtk supports a command by probing `rtk rewrite`.
+    Exit codes: 0=allow, 1=not supported, 2=deny, 3=ask. 0 and 3 mean supported."""
+    if not is_rtk_available():
+        return False
+    try:
+        result = subprocess.run(
+            ["rtk", "rewrite", "--", tool, *args],
+            capture_output=True, text=True,
+        )
+        return result.returncode in (0, 3)
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return False
 
 
 def rtk_wrap(tool: str, *args: str, **kwargs) -> subprocess.CompletedProcess:
-    """Backward compat: run a command through rtk if available, otherwise through devbox/direct."""
-    if is_rtk_available():
+    """Run a command through rtk if supported, otherwise through devbox/direct.
+    Uses `rtk rewrite` to check coverage — no hardcoded list of supported commands."""
+    if _rtk_supports(tool, list(args)):
         return devbox_run(["rtk", tool, *args], **kwargs)
     return devbox_run([tool, *args], **kwargs)
 

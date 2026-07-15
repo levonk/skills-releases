@@ -690,11 +690,49 @@ subtitles/transcripts in multiple formats.
 2. **If available, use yt-dlp directly**:
    - Transcript: `yt-dlp --write-auto-sub --sub-lang en --skip-download -o '%(title)s' <url>`
    - Metadata: `yt-dlp --dump-json <url>` (returns title, uploader, duration, etc.)
-3. **If yt-dlp is NOT available**, fall back to the built-in MCP tools below.
+3. **Deduplicate the VTT transcript** (see VTT Post-Processing below).
+4. **If yt-dlp is NOT available**, fall back to the built-in MCP tools below.
 
 The built-in MCP tool (`index.mts`) is a lightweight fallback that uses the
 `youtube-transcript` npm package. It handles basic transcript fetching but
 cannot retrieve full video metadata.
+
+## VTT Post-Processing (Transcript Deduplication)
+
+YouTube auto-captions use a 2-line progressive display: each VTT cue contains
+the previous line plus new words, so consecutive cues overlap ~80%. yt-dlp
+downloads the raw VTT as-is — it does **not** deduplicate. Without cleaning,
+the transcript has ~2x the actual word count.
+
+**Always run `scripts/vid-transcripts.py` on the downloaded VTT before passing
+the transcript to a note-generation workflow.**
+
+```bash
+# Download the VTT (yt-dlp)
+yt-dlp --write-auto-sub --sub-lang en --skip-download -o '%(title)s' <url>
+
+# Defaults: TOON format, unix milliseconds, dedup on, flicker off
+python3 scripts/vid-transcripts.py <input.vtt> <output.txt>
+
+# Other formats and options
+python3 scripts/vid-transcripts.py --format text <input.vtt>     # Plain text (no timestamps)
+python3 scripts/vid-transcripts.py --format srt <input.vtt>      # SRT subtitles
+python3 scripts/vid-transcripts.py --format vtt <input.vtt>      # Clean VTT
+python3 scripts/vid-transcripts.py --no-dedup <input.vtt>        # Raw (no dedup)
+python3 scripts/vid-transcripts.py --timestamps <input.vtt>      # Show timestamps in text
+python3 scripts/vid-transcripts.py --keep-flicker <input.vtt>    # Keep transitions
+python3 scripts/vid-transcripts.py --from 00:05:00 --to 00:10:00 <input.vtt>  # Time range
+python3 scripts/vid-transcripts.py --hhmmss <input.vtt>                      # HH:MM:SS timestamps
+```
+
+The script supports:
+- `--format`: toon (default), text, srt, vtt
+- `--no-dedup`: disable deduplication (keep raw progressive captions)
+- `--timestamps`: show timestamps in text output (off by default)
+- `--keep-flicker`: keep ultra-short transition cues (< 0.1s)
+- `--from` / `--to`: filter by start/end time (HH:MM:SS or seconds)
+- `--hhmmss`: use `HH:MM:SS` instead of unix milliseconds for timestamps (text and toon formats)
+- `--help`: full usage info
 
 ## Tools
 

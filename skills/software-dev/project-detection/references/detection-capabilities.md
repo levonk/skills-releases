@@ -13,6 +13,8 @@
 - **Haskell**: Stack, Cabal
 - **Clojure**: Leiningen, deps.edn
 - **C/C++**: CMake, Make, Meson, Bazel
+- **Swift**: Swift Package Manager (Package.swift), Xcode projects
+- **Environment**: devbox (devbox.json), Nix (flake.nix, shell.nix)
 - **Container**: Docker, Docker Compose, Buildah
 - **Infrastructure**: Terraform, Pulumi, Ansible, Chef, Puppet
 

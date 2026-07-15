@@ -25,6 +25,8 @@ just validate
 ✅ **DO**: Use progressive disclosure (metadata → body → references)
 ✅ **DO**: Extract deterministic phases into `scripts/` (one script per AI→script handoff)
 ✅ **DO**: Put detailed guidance in `references/` with topic-named files
+✅ **DO**: Use skill-local `includes/` for shared content within one skill
+  (e.g. `{{{ include "skills/<cat>/<skill>/includes/foo.md" . }}}`)
 ✅ **DO**: Add PEP 723 headers to Python scripts
 ✅ **DO**: Add "Do NOT trigger on..." clause to descriptions
 ✅ **DO**: Wire in `trigger-guard` for pushy descriptions
