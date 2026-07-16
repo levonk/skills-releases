@@ -43,4 +43,4 @@ structure template.
 
 - **Full skill**: [`skills/business/biz-email-upsert/SKILL.md`](skills/business/biz-email-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-15T22:13:34Z
+- **Generated**: 2026-07-16T08:35:31Z

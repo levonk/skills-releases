@@ -85,4 +85,4 @@ promotion.
 
 - **Full skill**: [`skills/software-dev/cli-tool-upsert/SKILL.md`](skills/software-dev/cli-tool-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-15T22:13:34Z
+- **Generated**: 2026-07-16T08:35:31Z
