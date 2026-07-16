@@ -30,4 +30,4 @@ Deploy multi-container services using docker-compose (local/dev) or Ansible dock
 
 - **Full skill**: [`skills/software-dev/container-service-deploy/SKILL.md`](skills/software-dev/container-service-deploy/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:35:31Z
+- **Generated**: 2026-07-16T08:39:39Z

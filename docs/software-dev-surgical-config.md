@@ -141,4 +141,4 @@ This Skill integrates seamlessly with:
 
 - **Full skill**: [`skills/software-dev/surgical-config/SKILL.md`](skills/software-dev/surgical-config/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:35:31Z
+- **Generated**: 2026-07-16T08:39:39Z

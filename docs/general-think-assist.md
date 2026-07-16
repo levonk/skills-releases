@@ -38,4 +38,4 @@
 
 - **Full skill**: [`skills/general/think-assist/SKILL.md`](skills/general/think-assist/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:35:31Z
+- **Generated**: 2026-07-16T08:39:39Z
