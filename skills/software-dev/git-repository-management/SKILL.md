@@ -819,7 +819,7 @@ Systematic workflow for managing git repositories from dirty state to clean with
 # 1. AI calls git-collect.sh - gets all data (changes + quality checks)
 # 2. AI analyzes data and makes decisions
 # 3. AI calls git-commit-batch.sh with all commit decisions (auto-creates pre/post tags)
-# 4. AI calls git-push.sh if needed (pushes commits + auto-tags via --follow-tags)
+# 4. AI calls git-push.sh to push (handles divergence automatically — never manually rebase)
 # 5. AI calls git-tag.sh if the user requests an additional tag
 
 ./scripts/git-collect.sh [path]              # Collect all data in one call
@@ -852,7 +852,7 @@ repository. Use when the user says "commit everything", "organize and commit",
 ./scripts/git-collect.sh [path]                              # 1. Collect all data
 # AI analyzes and groups changes into commits
 ./scripts/git-commit-batch.sh [--slug <slug>] [path]         # 2. Execute all commits + auto-tags
-./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # 3. Push (optional)
+./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # 3. Push (script handles divergence — never manually rebase)
 ./scripts/git-tag.sh --category <cat> --slug <slug> [path]   # 4. Tag HEAD (user-requested only)
 ```
 

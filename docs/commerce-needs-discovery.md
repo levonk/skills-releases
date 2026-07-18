@@ -117,163 +117,23 @@ Once the category is locked, recommend 2–4 specific products or service provid
 - **Why chosen**: 2–3 sentences per pick linking back to user requirements
 - **Why not alternatives**: Brief explanation of why each major alternative was rejected (e.g., "Brand X has a known firmware issue on v3.2 that causes overheating", "Brand Y discontinued support in 2025")
 - **Comparison matrix** using the standard iconography:
-  - ⭐ Best in class
-  - ☑️ Good / acceptable
-  - ⚠️ Caution / trade-off
-  - ❌ Deal-breaker
 
-### 5. Constraint Identification
+---
+description: Shared commerce rating icons for product/service comparison and deal assessment — ⭐ best in class, ☑️ good/acceptable, ⚠️ caution/trade-off, ❌ deal-breaker. Use in needs-discovery, deal-intelligence, and acquisition skills.
+---
 
-Proactively research and surface constraints before the user asks. The
-constraint system uses **3-level progressive disclosure**:
+# Commerce Rating Icons
 
-1. **Level 1 — Attribute index** (`references/constraint-attributes.md`):
-   Always loaded. Contains an applicability matrix mapping purchase types
-   to relevant attributes and domain files. The AI reads this to determine
-   which files to load next.
-2. **Level 2 — Attribute files** (`references/attributes/*.md`): Loaded
-   when the attribute applies to the purchase type. Each file covers one
-   cross-cutting constraint (obsolescence, repairability, TCO, used risks,
-   situational fit).
-3. **Level 3 — Domain files** (`references/domains/*.md` or
-   `references/domains/<category>/index.md` + sub-domains): Loaded when the
-   purchase matches a product domain. Domain files contain
-   product-specific constraints that don't apply elsewhere. Some domains
-   have their own sub-domain index (e.g., real-estate, automobiles,
-   appliances, computer-parts, tools, leasee) — load the domain index first,
-   then the specific sub-domain.
+Use these icons when rating products, services, or deals in commerce skills.
+The 4-level scale captures purchase-relevant distinctions from best-in-class
+to deal-breaker.
 
-**Load only the files that apply to the current purchase type.** Examples:
-
-- A **watch** purchase: Level 1 index → Level 2 repairability + TCO → Level
-  3 collectibles (if luxury). No real estate, no consumables, no
-  obsolescence (mechanical).
-- A **property purchase**: Level 1 index → Level 2 (none needed for raw
-  land) → Level 3 `real-estate/index.md` (generic) → `real-estate/
-  residential.md` (if buying a home). No obsolescence, no consumables.
-- **Renting an apartment**: Level 1 index → Level 3 `real-estate/index.md`
-  (generic) → `real-estate/leasee/index.md` (generic tenant) →
-  `real-estate/leasee/apartment.md` (apartment-specific). No repairability,
-  no obsolescence.
-- A **food/consumable** purchase: Level 1 index → Level 3 `consumables.md`.
-  No repairability, no obsolescence, no warranty.
-- A **service** hire: Level 1 index → Level 3 `services.md` (including
-  vendor tier differentiation — CPA vs bookkeeper, licensed electrician vs
-  handyman). No repairability or obsolescence.
-- A **used laptop**: Level 1 index → Level 2 obsolescence + repairability +
-  TCO + used-risks → Level 3 `computer-parts/` (if building). No real
-  estate, no consumables.
-- An **EV purchase**: Level 1 index → Level 2 obsolescence + repairability
-  + TCO + used-risks (if used) + situational-fit (charging infra) → Level 3
-  `automobiles/index.md` + `automobiles/ev-phev.md`.
-
-The index file contains an applicability matrix showing which attributes
-apply to common purchase types. Attribute and domain reference files:
-
-- `attributes/obsolescence.md` — OS/firmware update horizon, company
-  viability (cloud device bricking), ecosystem lock-in, right-to-repair
-  hostility
-- `attributes/repairability.md` — iFixit scores, parts availability,
-  service network, soldered/paired/glued components, repairability tiers
-- `attributes/total-cost-of-ownership.md` — subscription lock-in,
-  cheap-to-buy-expensive-to-own, maintenance burden, disposal cost,
-  depreciation cliff, TCO calculation
-- `attributes/used-risks.md` — buy-new-vs-used rules, hidden damage,
-  non-transferable warranty, counterfeit risk, battery degradation,
-  title/ownership issues, recall non-compliance, banned substances
-- `attributes/situational-fit.md` — climate mismatch, infrastructure
-  dependency, space/installation constraints, financial traps
-- `domains/real-estate/index.md` — generic real estate constraints (zoning,
-  terrain, soil, flood, wetlands, access, utilities, HOA/CC&Rs, mineral
-  rights, easements, toxicity, market risks) + sub-domain index
-- `domains/real-estate/residential.md` — owner-occupied: schools, commute,
-  neighborhood, property condition, HOA livability, financing, resale
-- `domains/real-estate/investment.md` — appreciation/ROI: cap rate, cash
-  flow, market analysis, exit strategy, risk factors
-- `domains/real-estate/rental.md` — landlord: tenant law, rent control,
-  eviction, vacancy, property management, tenant screening, insurance, tax
-- `domains/real-estate/commercial.md` — commercial: property types, Phase
-  I/II environmental, zoning/use, lease types (NNN/gross), tenant credit,
-  ADA, TI, financing
-- `domains/real-estate/leasee/index.md` — generic tenant constraints: lease
-  terms, rent escalation, key provisions, hidden costs, tenant rights,
-  negotiation leverage + sub-domain index
-- `domains/real-estate/leasee/home.md` — house rental: maintenance
-  responsibility split, higher utilities, driveway/garage parking, private
-  landlord vs property management, privacy, HOA considerations, neighborhood
-- `domains/real-estate/leasee/apartment.md` — apartment rental: noise
-  (shared walls, upstairs, hallway), parking scarcity, amenities, building
-  management quality, move-in logistics, unit-specific checks, renewal
-- `domains/real-estate/leasee/commercial.md` — commercial lease: NNN/gross/
-  modified gross, TI negotiation, exclusive use, co-tenancy, personal
-  guarantee, percentage rent, customer parking
-- `domains/services.md` — vendor tier differentiation (CPA vs bookkeeper,
-  electrician vs handyman), licensing, insurance/bonding, permits,
-  complaint history, seasonal availability, red flags
-- `domains/consumables.md` — shelf life, bulk economics, quality/sourcing,
-  storage requirements
-- `domains/automobiles/index.md` — generic vehicle constraints (title, VIN,
-  recalls, PPI, insurance, financing, depreciation) + sub-domain index
-- `domains/automobiles/ev-phev.md` — EV/PHEV: charging, battery health, range,
-  tax credits, software horizon
-- `domains/automobiles/hybrid.md` — hybrid battery, regen braking, inverter,
-  CVT, warranty
-- `domains/automobiles/exotic.md` — specialist mechanic, parts, maintenance
-  costs, insurance, storage
-- `domains/automobiles/truck.md` — payload, towing, diesel vs gas, bed/cab
-  configurations
-- `domains/automobiles/rv.md` — Class A/B/C, systems, winterization, storage,
-  depreciation, roof/tire maintenance
-- `domains/appliances/index.md` — generic appliance constraints (energy,
-  sizing, delivery, warranty, reliability) + sub-domain index
-- `domains/appliances/hvac.md` — SEER2, sizing, refrigerant, ductwork, heat
-  pump cold climate
-- `domains/appliances/water-heater.md` — tank vs tankless, fuel types, sizing,
-  venting
-- `domains/appliances/laundry.md` — washer/dryer/combo, front vs top load, gas
-  vs electric vs heat pump
-- `domains/appliances/kitchen.md` — dishwasher, range/oven, pizza oven, gas vs
-  induction
-- `domains/appliances/refrigeration.md` — fridge configs, freezer, compressor,
-  warranty
-- `domains/appliances/spa.md` — sauna (traditional vs infrared), hot tub
-  electrical/chemistry/permits
-- `domains/appliances/commercial-vs-consumer.md` — durability, NSF, electrical,
-  warranty, when to buy commercial
-- `domains/small-appliances.md` — blender, food processor, pressure cooker,
-  fryer, mixer, meat grinder
-- `domains/cameras.md` — DSLR/mirrorless/compact/action, sensor, lens
-  ecosystem, used checks
-- `domains/mobile-phones.md` — OS horizon, battery health, carrier
-  compatibility, repairability, used red flags
-- `domains/collectibles.md` — authentication, grading, provenance, storage,
-  insurance, liquidity, fakes
-- `domains/yard-tools.md` — mowers, trimmers, blowers, chainsaws, gas vs
-  battery vs corded, yard size matching
-- `domains/computer-parts/index.md` — compatibility, bottleneck analysis, used
-  market, warranty + sub-domain index
-- `domains/computer-parts/cpu-motherboard.md` — socket, chipset, VRM, BIOS,
-  form factor, PCIe
-- `domains/computer-parts/gpu.md` — PSU, case clearance, VRAM, driver horizon,
-  used mining risks
-- `domains/computer-parts/ram-storage.md` — speed/timing, capacity, NVMe vs
-  SATA, TBW, CMR vs SMR
-- `domains/computer-parts/psu-case-cooling.md` — wattage, efficiency, quality
-  tiers, airflow, CPU cooling
-- `domains/computer-parts/monitor-peripherals.md` — panel types, resolution,
-  HDR, color accuracy, keyboard/mouse
-- `domains/tools/index.md` — power source, battery ecosystem, quality tiers,
-  safety, used market + sub-domain index
-- `domains/tools/woodworking.md` — table saw, miter saw, router, planer,
-  jointer, bandsaw, dust collection
-- `domains/tools/metalworking.md` — lathe, mill, bandsaw, grinder, measuring,
-  workholding
-- `domains/tools/welding.md` — MIG/TIG/stick/flux-cored, duty cycle, input
-  power, gas, safety
-- `domains/tools/gardening.md` — hand tools, long-handle, pruning, soil prep,
-  ergonomics
-- `domains/tools/pottery.md` — wheel, kiln, clay, glazes, safety (silica,
-  ventilation)
+| Icon | Meaning | Criteria |
+|---|---|---|
+| ⭐ | **Best in class** | Top recommendation — excels on the user's priority requirements |
+| ☑️ | **Good / acceptable** | Meets requirements adequately — solid choice, no standout advantage |
+| ⚠️ | **Caution / trade-off** | Usable but has a known trade-off, risk, or caveat — proceed with eyes open |
+| ❌ | **Deal-breaker** | Fails a hard requirement — disqualify or reject |
 
 ## Related Skills
 - **shopping-deal-intelligence** (skill, dependent) — Consumes the Needs Discovery Brief to research pricing, sourcing, and timing
@@ -284,4 +144,4 @@ apply to common purchase types. Attribute and domain reference files:
 
 - **Full skill**: [`skills/commerce/needs-discovery/SKILL.md`](skills/commerce/needs-discovery/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:39:39Z
+- **Generated**: 2026-07-18T08:27:30Z

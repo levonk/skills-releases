@@ -38,9 +38,11 @@ Create new skills, modify and improve existing skills, and measure skill perform
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving (also used by ai-guidance-improver, ai-workflow-upsert, knowledge-bundle-lifecycle, and creation workflows)
 - **project-comparison** (skill, complement) — Shares comparison methodology via comparison-methodology include; project-comparison compares software projects, this skill compares AI skills
 - **cli-tool-upsert** (skill, complement) — Creates CLI scripts and tools optimized for AI agents — ai-skill-upsert includes its embedded-script-standards reference so skills inherit CLI script best practices at build time
+- **data-pipeline-upsert** (skill, sibling) — Same upsert family — creates and updates data pipeline code (Airflow, Spark, dbt)
+- **java-app-upsert** (skill, sibling) — Same upsert family — creates and updates Java applications
 
 ---
 
 - **Full skill**: [`skills/ai/ai-skill-upsert/SKILL.md`](skills/ai/ai-skill-upsert/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:39:39Z
+- **Generated**: 2026-07-18T08:27:30Z

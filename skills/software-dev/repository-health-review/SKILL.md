@@ -779,6 +779,74 @@ The review covers six key categories:
 
 ### Examples
 
+The output uses the shared severity-level icons (🔴 critical, 🟡 warning,
+🔵 info, 🟢 healthy):
+
+---
+description: Shared severity-level icons for health/security reviews and audit output — 🔴 critical, 🟡 warning, 🔵 info, 🟢 healthy. Use in repository-health-review, security scans, and audit findings.
+---
+
+# Severity-Level Icons
+
+Use these icons to classify findings in health reviews, security audits, and
+code-quality assessments. The color-coded severity makes it easy to scan
+output and prioritize fixes.
+
+| Icon | Meaning | Action |
+|---|---|---|
+| 🔴 | **Critical** | Must fix before proceeding — security vulnerability, hardcoded secret, data loss risk |
+| 🟡 | **Warning** | Should fix soon — deprecated dependency, missing documentation, code smell |
+| 🔵 | **Info** | Informational — no action required, noted for awareness |
+| 🟢 | **Healthy** | No issues found — the check passed cleanly |
+
+## Usage Rules
+
+- **One icon per finding.** Lead the finding line with the icon.
+- **Reserve 🔴 for must-fix issues.** Don't inflate warnings to critical —
+  a critical finding should block progression.
+- **Use 🟡 for should-fix issues.** Warnings don't block but should be
+  addressed in a reasonable timeframe.
+- **Use 🔵 for context.** Info findings help the reader understand the state
+  without requiring action.
+- **Use 🟢 only in summary contexts** (e.g., "all checks passed"), not on
+  individual finding lines.
+
+## Output Format
+
+```markdown
+# 🔴 Critical: Hardcoded API key in config.js
+# 🟡 Warning: Deprecated webpack version in package.json
+# 🟡 Warning: TODO comments older than 6 months
+# 🔵 Info: Authentication patterns documented
+```
+
+## Summary Format
+
+```markdown
+Repository Health Score: 82/100
+Critical Issues: 1
+Warnings: 4
+Info: 8
+```
+
+## Scan Result Format
+
+For security scans that distinguish errors from warnings:
+
+```markdown
+🚨 SECURITY ERRORS FOUND:
+  ⚠️  DANGEROUS: 'rm -rf' found in .envrc
+
+⚠️ Security warnings found:
+  ⚠️  WARNING: 'eval $()' found in .envrc
+
+✓ Security scan completed
+```
+
+In scan output, `🚨` marks the error header, `⚠️` marks individual dangerous
+patterns or warnings, and `✓` (plain checkmark) marks successful completion.
+
+
 #### Example 1: Basic Repository Health Check
 
 ```bash

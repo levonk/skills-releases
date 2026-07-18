@@ -165,17 +165,57 @@ Organize dimensions into groups: **Core** (essential), **Extended**
 For each item × dimension, assign a coverage rating using the full 5-level
 icon scale (matching the `feature-matrix` rule):
 
+---
+description: Shared 5-level coverage scale icons for feature/comparison matrices — 🏆 best-in-class, ✅ full, ➖ partial, ⚠️ problematic, ❌ missing. Use in project-comparison, coverage-mapping, and any feature matrix output.
+---
+
+# 5-Level Coverage Scale Icons
+
+Use this icon scale when rating how well an item (project, tool, product)
+covers a dimension (feature, capability, use case) in a comparison matrix.
+The full 5-level scale makes distinctions visible at a glance.
+
 | Icon | Meaning | Criteria |
 |---|---|---|
-| 🏆 | Best-in-class | Standout, industry-leading implementation — the item's marquee feature |
-| ✅ | Full support | First-class, well-supported feature |
-| ➖ | Partial support | Supported but limited, requires plugins, or has caveats |
-| ⚠️ | Problematic | Exists but broken, deprecated, actively harmful, or has serious known issues |
-| ❌ | Not supported | Not addressed, or requires significant custom work |
+| 🏆 | **Best-in-class** | Standout, industry-leading implementation — the item's marquee feature |
+| ✅ | **Full support** | First-class, well-supported feature |
+| ➖ | **Partial support** | Supported but limited, requires plugins, or has caveats |
+| ⚠️ | **Problematic** | Exists but broken, deprecated, actively harmful, or has serious known issues |
+| ❌ | **Not supported** | Not addressed, or requires significant custom work |
 
-Reserve 🏆 for true standouts (not every ✅ is a 🏆). Use ⚠️ when a feature
-exists but is broken or deprecated — distinct from ➖ (works but limited) and ❌
-(doesn't exist).
+## Usage Rules
+
+- **Reserve 🏆 for true standouts.** Not every ✅ is a 🏆 — 🏆 is for the
+  item's marquee feature or an industry-leading implementation.
+- **Distinguish ⚠️ from ➖ and ❌.** Use ⚠️ when a feature exists but is broken
+  or deprecated — distinct from ➖ (works but limited) and ❌ (doesn't exist).
+- **Use the full scale.** Don't collapse to just ✅/❌ — the middle levels
+  (🏆, ➖, ⚠️) carry the most decision-relevant signal.
+- **Apply consistently across items.** The same dimension uses the same
+  criteria for every item in the matrix.
+
+## Legend Format
+
+When presenting a matrix, include a one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ good · ➖ neutral · ⚠️ bad · ❌ worst
+```
+
+## Coverage Summary Labels
+
+After mapping all items, summarize using these labels:
+
+- **Table-stakes** (all ✅) — baseline, move to bottom of matrix
+- **Best-in-class** (🏆) — competitive advantage, highlight in recommendation
+- **Problematic** (⚠️) — broken or deprecated, flag in recommendation
+- **Differentiating** — items vary, keep prominent
+- **Gaps** (none ✅) — unmet needs, note in recommendation
+- **Unique advantages** — only one item has ✅, highlight in recommendation
+
+
+The scale above is the canonical reference — use it consistently across all
+comparison matrices.
 
 ### Identifying Gaps and Overlaps
 

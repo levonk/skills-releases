@@ -2,7 +2,7 @@
 # Fetch and rebase onto upstream/main (or origin/main for direct-access clones).
 # Usage: sync-upstream.sh [upstream_branch]
 # Run this right before pushing — it's the safety net that catches upstream
-# movement during the work phase (steps 7-17). The early sync in setup-branch.sh
+# movement during the work phase (steps 7-16). The early sync in setup-branch.sh
 # shrinks the conflict surface; this one guarantees the push is from a fresh base.
 # Exits non-zero on rebase failure (conflicts or dirty tree) so the caller
 # can resolve before pushing.

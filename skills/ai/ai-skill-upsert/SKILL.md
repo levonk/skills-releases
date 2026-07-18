@@ -6,8 +6,8 @@ user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-05-25"
-  updated: "2026-07-12"
-  last-used: "2026-07-12"
+  updated: "2026-07-17"
+  last-used: "2026-07-17"
 tags:
   - "ai/skill"
   - "skill-creation"
@@ -32,6 +32,12 @@ see-also:
   - skill: cli-tool-upsert
     relationship: complement
     description: "Creates CLI scripts and tools optimized for AI agents — ai-skill-upsert includes its embedded-script-standards reference so skills inherit CLI script best practices at build time"
+  - skill: data-pipeline-upsert
+    relationship: "sibling"
+    description: "Same upsert family — creates and updates data pipeline code (Airflow, Spark, dbt)"
+  - skill: java-app-upsert
+    relationship: "sibling"
+    description: "Same upsert family — creates and updates Java applications"
 ---
 
 ---
@@ -657,6 +663,52 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 description: Reusable user-reference convention — use male pronouns for the user, address him as "user", avoid proper names unless relevant to the output
 ---
 
+---
+description: Shared DO/DON'T icon convention — ✅ for recommended practices, ❌ for anti-patterns. Use in patterns-and-conventions sections, examples, and guidance lists.
+---
+
+# DO / DON'T Icon Convention
+
+Use these icons consistently when presenting recommended practices and
+anti-patterns. The pairing makes correct and incorrect approaches visually
+scannable side-by-side.
+
+| Icon | Meaning | Usage |
+|---|---|---|
+| ✅ | **DO** — recommended practice | Lead the line with `✅ **DO**:` followed by the practice |
+| ❌ | **DON'T** — anti-pattern | Lead the line with `❌ **DON'T**:` followed by the anti-pattern |
+
+## Formatting Rules
+
+- Place the icon at the start of the line, before any bold label.
+- Use `**DO**` / `**DON'T**` (bold, uppercase) as the label — not "Do" / "Don't"
+  or "GOOD" / "BAD".
+- Keep each item to one sentence; put the rationale after an em dash (`—`).
+- Group all ✅ items together, then all ❌ items — do not interleave.
+
+## Example
+
+```markdown
+✅ **DO**: Use `/` delimiters in `.tmpl` files
+✅ **DO**: Guard against missing commands with `command -v`
+
+❌ **DON'T**: Use `{{`/`}}` — they won't parse under custom delimiters
+❌ **DON'T**: Assume a tool is installed without checking
+```
+
+## Variants
+
+The same icons are used in example-contrast pairs (Weak vs Strong, Bad vs Good)
+without the **DO**/**DON'T** labels:
+
+```markdown
+❌ **Weak:** "We need more time."
+✅ **Strong:** "To hit the quality bar, we have three paths: ..."
+```
+
+When used this way, keep the ❌/✅ pairing adjacent so the contrast is immediate.
+
+
 ### User Info
 
 When communicating with or about the user, follow this convention:
@@ -687,6 +739,52 @@ When communicating with or about the user, follow this convention:
 ---
 description: Reusable naming conventions for artifacts created by upsert skills — kebab-case for file names, identifiers, and slugs; avoid snake_case everywhere
 ---
+
+---
+description: Shared DO/DON'T icon convention — ✅ for recommended practices, ❌ for anti-patterns. Use in patterns-and-conventions sections, examples, and guidance lists.
+---
+
+# DO / DON'T Icon Convention
+
+Use these icons consistently when presenting recommended practices and
+anti-patterns. The pairing makes correct and incorrect approaches visually
+scannable side-by-side.
+
+| Icon | Meaning | Usage |
+|---|---|---|
+| ✅ | **DO** — recommended practice | Lead the line with `✅ **DO**:` followed by the practice |
+| ❌ | **DON'T** — anti-pattern | Lead the line with `❌ **DON'T**:` followed by the anti-pattern |
+
+## Formatting Rules
+
+- Place the icon at the start of the line, before any bold label.
+- Use `**DO**` / `**DON'T**` (bold, uppercase) as the label — not "Do" / "Don't"
+  or "GOOD" / "BAD".
+- Keep each item to one sentence; put the rationale after an em dash (`—`).
+- Group all ✅ items together, then all ❌ items — do not interleave.
+
+## Example
+
+```markdown
+✅ **DO**: Use `/` delimiters in `.tmpl` files
+✅ **DO**: Guard against missing commands with `command -v`
+
+❌ **DON'T**: Use `{{`/`}}` — they won't parse under custom delimiters
+❌ **DON'T**: Assume a tool is installed without checking
+```
+
+## Variants
+
+The same icons are used in example-contrast pairs (Weak vs Strong, Bad vs Good)
+without the **DO**/**DON'T** labels:
+
+```markdown
+❌ **Weak:** "We need more time."
+✅ **Strong:** "To hit the quality bar, we have three paths: ..."
+```
+
+When used this way, keep the ❌/✅ pairing adjacent so the contrast is immediate.
+
 
 ### Naming Conventions
 
@@ -1004,6 +1102,24 @@ self-contained `scripts/<name>.sh` in the built skill. This is the same pattern
 used for `.md` includes — the `.tmpl` extension marks it for rendering, and the
 include is resolved relative to the profile root. `init_skill.py` does this
 automatically for `cli-tool-discovery.sh`.
+
+**Shared scripts available for materialization:**
+
+| Script | When to add |
+|--------|-------------|
+| `cli-tool-discovery.sh` | Always — any skill may need to resolve a CLI tool through wrappers |
+| `scan-artifacts.sh` | Only for skills that generate scripts/files committed to a repo — catches identity leaks (resolved `$HOME`, username, hostname, WiFi SSID, DNS domain) before committing |
+
+**Location matters — include vs materialize:**
+
+- **Inside `skills-src/src/`**: use `{{ include "includes/<name>.sh" . }}` in a
+  `scripts/<name>.sh.tmpl` file. The build-time templater inlines the shared
+  script content. This is the DRY approach — the script lives in one place
+  (`includes/<name>.sh.tmpl`) and is inlined at build time.
+- **Outside `skills-src/src/`** (e.g. `OTHER_PROJECT/.agents/`,
+  `skills-src/.agents`, `~/config/agents/`): no templater is available, so
+  materialize the script by copying the rendered content from
+  `build/current/includes/<name>.sh` into `scripts/<name>.sh` directly.
 
 #### Workflows, Agents, Prompts, Rules (no `scripts/` directory)
 
@@ -1531,6 +1647,15 @@ is warranted.
 3. **Write the SKILL.md body as a high-level step overview**: Apply progressive disclosure — use numbered steps in SKILL.md that call scripts and link to reference files named by topic (not by step number). This makes inserting a step a one-line change instead of renumbering across many files. Each step should make it clear: call a script, then use intelligence on the output; or link to a reference file for sequential intelligence steps. See `references/progressive-disclosure.md` — Pattern 5 (Step overview with topic-named references) for the canonical pattern.
 
 4. **Extract deterministic phases into scripts**: Identify sequences of commands that run without needing AI judgment between them. Extract each phase into a single script in `scripts/` — one script per AI→script handoff. SKILL.md should call the script by name and describe what the AI should do with the output; do not inline the script's code. See `references/anatomy.md` — Scripts for the script output contract (quiet by default, `--verbose`, `--dry-run`) and the one-handoff principle.
+
+   **Add `scan-artifacts.sh` only for skills that generate scripts**: If the new skill's workflow creates scripts or files that will be committed to a repo, add the identity-leak scanner. The method depends on where the skill lives:
+   - **Inside `skills-src/src/`** (this repo): add a `scripts/scan-artifacts.sh.tmpl` file containing the include line — the build-time templater inlines the shared script:
+     ```
+     {{ include "includes/scan-artifacts.sh" . }}
+     ```
+   - **Outside `skills-src/src/`** (e.g. `OTHER_PROJECT/.agents/`, `skills-src/.agents`, `~/config/agents/`): no templater is available, so materialize the script by copying its content from `build/current/includes/scan-artifacts.sh` into `scripts/scan-artifacts.sh` directly.
+   
+   Then add a workflow step that runs `scripts/scan-artifacts.sh` on the generated files before committing. The script resolves this machine's actual identity values (`$HOME`, `whoami`, `hostname`, WiFi SSID, DNS domain) and scans for those specific strings — catching identity leaks that review feedback would otherwise catch. If the user says the files are for private use, the step should pass `--private` to ease scrutiny. See `includes/scan-artifacts.md` for the full guidance.
 
 5. **Move heavy detail to references**: Any detail that would clutter the step overview goes into `references/<topic>.md`. When a reference contains multiple variant code blocks (e.g., per-language or per-tool templates), split each variant into its own file under a subdirectory — do not embed multiple variant code blocks in one markdown file. When in skills-src, use the templater's `include` directives (see the project's `src/current/skills/AGENTS.md` for the exact syntax) for shared headers/boilerplate across variant files. See `references/progressive-disclosure.md` for patterns (high-level guide with references, domain-specific organization, variant-specific organization, conditional details, step overview) and anti-patterns to avoid (duplicating information, deeply nested references, unclear references, step-numbered filenames, embedded variant code in monolithic template files, monolithic SKILL.md). See `references/anatomy.md` — Template Files for the independent-files-per-variant pattern and DRY include usage.
 

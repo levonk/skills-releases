@@ -36,7 +36,7 @@ Comprehensive git repository workflow for status analysis, change organization, 
 # 1. AI calls git-collect.sh - gets all data (changes + quality checks)
 # 2. AI analyzes data and makes decisions
 # 3. AI calls git-commit-batch.sh with all commit decisions (auto-creates pre/post tags)
-# 4. AI calls git-push.sh if needed (pushes commits + auto-tags via --follow-tags)
+# 4. AI calls git-push.sh to push (handles divergence automatically — never manually rebase)
 # 5. AI calls git-tag.sh if the user requests an additional tag
 
 ./scripts/git-collect.sh [path]              # Collect all data in one call
@@ -88,4 +88,4 @@ The workflow consists of 5 phases: Script Discovery, Data Collection, AI Analysi
 
 - **Full skill**: [`skills/software-dev/git-repository-management/SKILL.md`](skills/software-dev/git-repository-management/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:39:39Z
+- **Generated**: 2026-07-18T08:27:30Z

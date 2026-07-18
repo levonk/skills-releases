@@ -870,7 +870,69 @@ For each candidate provider, verify:
 - **Complaint history**: BBB complaints, state AG complaints, Yelp filtered reviews
 - **Tenure**: How long in business? Avoid fly-by-night operations for major work
 
-**Red flag scoring:**
+**Red flag scoring** (uses the shared commerce rating icons):
+
+---
+description: Shared commerce rating icons for product/service comparison and deal assessment — ⭐ best in class, ☑️ good/acceptable, ⚠️ caution/trade-off, ❌ deal-breaker. Use in needs-discovery, deal-intelligence, and acquisition skills.
+---
+
+# Commerce Rating Icons
+
+Use these icons when rating products, services, or deals in commerce skills.
+The 4-level scale captures purchase-relevant distinctions from best-in-class
+to deal-breaker.
+
+| Icon | Meaning | Criteria |
+|---|---|---|
+| ⭐ | **Best in class** | Top recommendation — excels on the user's priority requirements |
+| ☑️ | **Good / acceptable** | Meets requirements adequately — solid choice, no standout advantage |
+| ⚠️ | **Caution / trade-off** | Usable but has a known trade-off, risk, or caveat — proceed with eyes open |
+| ❌ | **Deal-breaker** | Fails a hard requirement — disqualify or reject |
+
+## Usage Rules
+
+- **One icon per cell.** Don't combine — pick the most accurate single rating.
+- **Reserve ⭐ for the top pick.** Not every acceptable option is best-in-class;
+  ⭐ is for the option that best matches the user's stated priorities.
+- **Use ⚠️ for known trade-offs.** If a product has a firmware issue, a
+  discontinued support timeline, or a TCO concern, mark it ⚠️ with a note.
+- **Use ❌ for hard disqualifiers.** Missing license, no insurance, demanding
+  full payment upfront — these are non-negotiable failures.
+
+## Comparison Matrix Format
+
+In a product/service recommendation matrix:
+
+```markdown
+| Product | Rating | Why |
+|---|---|---|
+| Brand A | ⭐ Best in class | Excels on [priority requirement] |
+| Brand B | ☑️ Good | Meets requirements, no standout |
+| Brand C | ⚠️ Caution | Known firmware issue on v3.2 |
+| Brand D | ❌ Deal-breaker | Discontinued support in 2025 |
+```
+
+## Red-Flag Scoring Format
+
+For deal-intelligence red-flag scoring, the same icons map to severity:
+
+```markdown
+| Red Flag | Severity |
+|----------|----------|
+| No license when required by law | ❌ Disqualify |
+| No insurance | ❌ Disqualify |
+| No written estimate | ⚠️ Major concern |
+| Very new with no reviews | ☑️ Caution — may be fine, get references |
+```
+
+## Legend Format
+
+When presenting a commerce comparison, include the legend:
+
+```markdown
+**Ratings**: ⭐ Best in class · ☑️ Good · ⚠️ Caution · ❌ Deal-breaker
+```
+
 
 | Red Flag | Severity |
 |----------|----------|

@@ -39,7 +39,7 @@ This issue tracks adding Nix flake support to the upstream project so users can 
 - **One-command install / run** — `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` with no clone or manual build steps.
 - **Pure / Hermetic builds** — every input (the prebuilt binary, glibc/libiconv) is pinned in `flake.lock`. If it builds today, it builds in ten years.
 - **Reproducible** — the exact same derivation always produces the exact same output bit-for-bit. No "works on my machine."
-- **Idempotent installs** — running `nix profile install` twice is a no-op.
+- **Idempotent installs** — running `nix profile add` twice is a no-op.
 - **Rollback-able** — `nix profile rollback` restores the previous profile generation instantly.
 - **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific linking.
 - **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
@@ -51,7 +51,7 @@ The project currently only documents source builds (`cargo install --path .`, `n
 
 ## Proposed change
 
-- Add `flake.nix` with `packages.default` and `apps.default` (prebuilt release tarball), plus `packages.<system>.source` and `apps.<system>.source` (from-source build) so users can choose between the fast prebuilt path and the reproducible-from-source path.
+- Add `flake.nix` with `packages.prebuilt` and `packages.source` (plus `packages.default` aliasing `prebuilt`), so users can choose between the fast prebuilt path (`nix run .#prebuilt`) and the reproducible-from-source path (`nix run .#source`).
 - Add a scheduled GitHub Action that auto-bumps `version` and refreshes per-platform `sha256` hashes when a new release is cut.
 - Update README install section to include Nix (flakes) instructions
 - Mirror changes to translated READMEs (e.g., `README.ko.md`)
@@ -69,7 +69,7 @@ I have prepared the implementation in my fork at:
 https://github.com/$CURRENT_USER/$UPSTREAM_REPO/tree/feat-nix-package-manager-install
 
 The changes include:
-- `flake.nix`: Nix flake wrapping the prebuilt release tarball as `packages.<system>.default` and `apps.<system>.default`, plus a from-source build as `packages.<system>.source` and `apps.<system>.source`
+- `flake.nix`: Nix flake exposing `packages.<system>.prebuilt` (prebuilt binary), `packages.<system>.source` (from-source build), and `packages.<system>.default` (alias for `prebuilt`), with matching `apps` outputs
 - `flake.lock`: pinned `nixpkgs-unstable` input
 - `.github/workflows/nix-release.yml`: scheduled lag-check automation that auto-bumps `version` + per-platform `sha256` hashes
 - `.github/workflows/nix.yml`: GitHub Actions CI for Nix validation

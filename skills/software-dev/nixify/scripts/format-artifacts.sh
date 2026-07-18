@@ -8,6 +8,11 @@
 #
 # This prevents review feedback like "run our formatter on the file you created"
 # (e.g. yusukebe/ax#27 asked for `bunx oxfmt --write .github/workflows/nix.yml`).
+#
+# Runs BEFORE lint-artifacts.sh so the linter sees already-formatted files.
+# The massive-change guard in lint-artifacts.sh (run after this script) checks
+# the combined format+lint diff against the feature commit, so it catches
+# massive changes from either the formatter or the linter on modified files.
 
 set -euo pipefail
 

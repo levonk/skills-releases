@@ -7,14 +7,14 @@ For users who already have Nix with flakes enabled:
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO
 
 # Install into your profile
-nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO
+nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO
 ```
 
 **Choose a specific version:**
 
 ```bash
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO/v1.2.3
-nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO/v1.2.3
+nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO/v1.2.3
 
 # Or use named flake outputs if the flake exposes them
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO#source

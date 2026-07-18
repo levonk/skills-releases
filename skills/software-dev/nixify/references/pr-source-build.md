@@ -36,7 +36,7 @@ Adds a `flake.nix` so the project can be installed and run directly from GitHub:
 
 ```bash
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO
-nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO
+nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO/v1.2.3   # pin a specific release
 ```
 
@@ -53,7 +53,7 @@ The project currently requires users to clone the repository and build from sour
 
 - **Pure / Hermetic builds** — every input (compiler, libraries, system dependencies) is pinned in `flake.lock`. If it builds today, it builds in ten years.
 - **Reproducible** — the exact same derivation always produces the exact same output bit-for-bit. No "works on my machine."
-- **Idempotent installs** — running `nix profile install` twice is a no-op. The system reaches the declared state and stays there.
+- **Idempotent installs** — running `nix profile add` twice is a no-op. The system reaches the declared state and stays there.
 - **Rollback-able** — `nix profile rollback` restores the previous profile generation instantly. Broken update? One command back.
 - **Declarative** — the entire build is a single expression (`flake.nix`). No imperative `apt install`, `brew install`, `make` dance.
 - **One-command install / run** — `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` with no clone or manual build steps.

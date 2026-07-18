@@ -789,7 +789,106 @@ This is a AI Prompt to trigger a feature comparison.
 1. Always respond as if content is for publication
 5. Link to external sources when referencing companies, software, frameworks, etc.
 6. Add footnotes for claims that aren't common knowledge
-7. Use iconography to help compare options (🏆 best, ✅ good, ➖ neutral, ⚠️ bad, ❌ worst)
+7. Use iconography to help compare options — see the shared coverage-scale and license-icon references below
+
+---
+description: Shared 5-level coverage scale icons for feature/comparison matrices — 🏆 best-in-class, ✅ full, ➖ partial, ⚠️ problematic, ❌ missing. Use in project-comparison, coverage-mapping, and any feature matrix output.
+---
+
+# 5-Level Coverage Scale Icons
+
+Use this icon scale when rating how well an item (project, tool, product)
+covers a dimension (feature, capability, use case) in a comparison matrix.
+The full 5-level scale makes distinctions visible at a glance.
+
+| Icon | Meaning | Criteria |
+|---|---|---|
+| 🏆 | **Best-in-class** | Standout, industry-leading implementation — the item's marquee feature |
+| ✅ | **Full support** | First-class, well-supported feature |
+| ➖ | **Partial support** | Supported but limited, requires plugins, or has caveats |
+| ⚠️ | **Problematic** | Exists but broken, deprecated, actively harmful, or has serious known issues |
+| ❌ | **Not supported** | Not addressed, or requires significant custom work |
+
+## Usage Rules
+
+- **Reserve 🏆 for true standouts.** Not every ✅ is a 🏆 — 🏆 is for the
+  item's marquee feature or an industry-leading implementation.
+- **Distinguish ⚠️ from ➖ and ❌.** Use ⚠️ when a feature exists but is broken
+  or deprecated — distinct from ➖ (works but limited) and ❌ (doesn't exist).
+- **Use the full scale.** Don't collapse to just ✅/❌ — the middle levels
+  (🏆, ➖, ⚠️) carry the most decision-relevant signal.
+- **Apply consistently across items.** The same dimension uses the same
+  criteria for every item in the matrix.
+
+## Legend Format
+
+When presenting a matrix, include a one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ good · ➖ neutral · ⚠️ bad · ❌ worst
+```
+
+## Coverage Summary Labels
+
+After mapping all items, summarize using these labels:
+
+- **Table-stakes** (all ✅) — baseline, move to bottom of matrix
+- **Best-in-class** (🏆) — competitive advantage, highlight in recommendation
+- **Problematic** (⚠️) — broken or deprecated, flag in recommendation
+- **Differentiating** — items vary, keep prominent
+- **Gaps** (none ✅) — unmet needs, note in recommendation
+- **Unique advantages** — only one item has ✅, highlight in recommendation
+
+
+---
+description: Shared license-type icons for feature matrix meta-features — ⭐ FOSS, ☑️ OSS, ⚠️ Free (non-OSI), ❌ Paid. Use in project-comparison meta-features rows and license assessments.
+---
+
+# License-Type Icons
+
+Use these icons in the License meta-feature row of a feature matrix to
+classify an item's license type at a glance.
+
+| Icon | Meaning | Criteria |
+|---|---|---|
+| ⭐ | **FOSS** | Free and Open Source Software — OSI-approved license (MIT, Apache-2.0, GPL, BSD, etc.) |
+| ☑️ | **OSS** | Open Source Software — source available, may have usage restrictions or non-OSI license |
+| ⚠️ | **Free (non-OSI)** | Free to use but not OSI-approved (source-available, freeware, non-commercial clauses) |
+| ❌ | **Paid** | Requires payment, proprietary license, or commercial-only |
+
+## Usage Rules
+
+- **Use the license from GitHub metadata** when available (`license` field in
+  the GitHub API response).
+- **Fall back to the repo's LICENSE file** if GitHub metadata is null or
+  ambiguous (e.g., "Other").
+- **Be honest about ambiguity.** If the license is unclear, mark as ⚠️ with a
+  note rather than guessing ⭐ or ☑️.
+- **One icon per item.** Don't combine — pick the most accurate single
+  classification.
+
+## Legend Format
+
+When presenting a matrix, include the license legend:
+
+```markdown
+**License**: ⭐ FOSS · ☑️ OSS · ⚠️ Free (non-OSI) · ❌ Paid
+```
+
+## License Meta-Feature Row
+
+In the meta-features section of a feature matrix:
+
+```markdown
+| License | ⭐ FOSS | ⭐ FOSS | ☑️ OSS |
+```
+
+If the item has no license file and no GitHub metadata, use:
+
+```markdown
+| License | ⚠️ No license | ⭐ FOSS | ❌ Paid |
+```
+
 
 ## Feature Comparison Format
 
@@ -801,7 +900,7 @@ When comparing features:
 - Use icons for quick comparison
 - Compare as many features across the selections as possible
 - Recommended **MINIMUM** **software** `meta` features to include with category specific features:
-  - ⭐ FOSS, ☑️ OSS, ⚠️ Free, ❌ Paid
+  - License types: ⭐ FOSS, ☑️ OSS, ⚠️ Free (non-OSI), ❌ Paid (see license-icons reference above)
   - UX/UI (or CLI equivalent)
   - Setup Difficulty
   - Community
@@ -902,17 +1001,57 @@ Organize dimensions into groups: **Core** (essential), **Extended**
 For each item × dimension, assign a coverage rating using the full 5-level
 icon scale (matching the `feature-matrix` rule):
 
+---
+description: Shared 5-level coverage scale icons for feature/comparison matrices — 🏆 best-in-class, ✅ full, ➖ partial, ⚠️ problematic, ❌ missing. Use in project-comparison, coverage-mapping, and any feature matrix output.
+---
+
+# 5-Level Coverage Scale Icons
+
+Use this icon scale when rating how well an item (project, tool, product)
+covers a dimension (feature, capability, use case) in a comparison matrix.
+The full 5-level scale makes distinctions visible at a glance.
+
 | Icon | Meaning | Criteria |
 |---|---|---|
-| 🏆 | Best-in-class | Standout, industry-leading implementation — the item's marquee feature |
-| ✅ | Full support | First-class, well-supported feature |
-| ➖ | Partial support | Supported but limited, requires plugins, or has caveats |
-| ⚠️ | Problematic | Exists but broken, deprecated, actively harmful, or has serious known issues |
-| ❌ | Not supported | Not addressed, or requires significant custom work |
+| 🏆 | **Best-in-class** | Standout, industry-leading implementation — the item's marquee feature |
+| ✅ | **Full support** | First-class, well-supported feature |
+| ➖ | **Partial support** | Supported but limited, requires plugins, or has caveats |
+| ⚠️ | **Problematic** | Exists but broken, deprecated, actively harmful, or has serious known issues |
+| ❌ | **Not supported** | Not addressed, or requires significant custom work |
 
-Reserve 🏆 for true standouts (not every ✅ is a 🏆). Use ⚠️ when a feature
-exists but is broken or deprecated — distinct from ➖ (works but limited) and ❌
-(doesn't exist).
+## Usage Rules
+
+- **Reserve 🏆 for true standouts.** Not every ✅ is a 🏆 — 🏆 is for the
+  item's marquee feature or an industry-leading implementation.
+- **Distinguish ⚠️ from ➖ and ❌.** Use ⚠️ when a feature exists but is broken
+  or deprecated — distinct from ➖ (works but limited) and ❌ (doesn't exist).
+- **Use the full scale.** Don't collapse to just ✅/❌ — the middle levels
+  (🏆, ➖, ⚠️) carry the most decision-relevant signal.
+- **Apply consistently across items.** The same dimension uses the same
+  criteria for every item in the matrix.
+
+## Legend Format
+
+When presenting a matrix, include a one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ good · ➖ neutral · ⚠️ bad · ❌ worst
+```
+
+## Coverage Summary Labels
+
+After mapping all items, summarize using these labels:
+
+- **Table-stakes** (all ✅) — baseline, move to bottom of matrix
+- **Best-in-class** (🏆) — competitive advantage, highlight in recommendation
+- **Problematic** (⚠️) — broken or deprecated, flag in recommendation
+- **Differentiating** — items vary, keep prominent
+- **Gaps** (none ✅) — unmet needs, note in recommendation
+- **Unique advantages** — only one item has ✅, highlight in recommendation
+
+
+The scale above is the canonical reference — use it consistently across all
+comparison matrices.
 
 ### Identifying Gaps and Overlaps
 

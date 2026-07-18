@@ -38,12 +38,12 @@ This issue tracks adding Nix flake support to the upstream project so users can 
 
 - **Pure / Hermetic builds**: every input — compiler, libraries, system dependencies — is pinned in `flake.lock`. If it builds today, it builds in ten years.
 - **Reproducible**: the exact same derivation always produces the exact same output bit-for-bit (modulo timestamps). No "works on my machine."
-- **Idempotent installs**: running `nix profile install` twice is a no-op. The system reaches the declared state and stays there.
+- **Idempotent installs**: running `nix profile add` twice is a no-op. The system reaches the declared state and stays there.
 - **Rollback-able**: `nix profile rollback` restores the previous profile generation instantly. Broken update? One command back.
 - **Declarative**: the entire build is a single expression (`flake.nix`). No imperative `apt install`, `brew install`, `make` dance.
 - **Cross-platform**: same `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` works on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific dependencies.
 - **Zero-install runs**: `nix run` fetches from binary cache when available. No clone, no compile, no `cargo build`.
-- **No system pollution**: `nix profile install` adds to a user-specific profile. Uninstall cleanly with `nix profile remove`. No orphaned global packages.
+- **No system pollution**: `nix profile add` adds to a user-specific profile. Uninstall cleanly with `nix profile remove`. No orphaned global packages.
 - **Atomic upgrades / downgrades**: profiles are switched atomically. No half-upgraded state.
 
 ## Current gap

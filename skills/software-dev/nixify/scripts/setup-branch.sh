@@ -17,7 +17,7 @@ fi
 # Sync from upstream before branching — the clone-time rebase in
 # fork-and-clone.sh is stale by the time we get here (steps 7-8 ran tests,
 # analysis took wall-clock time). Starting the branch from fresh upstream
-# shrinks the conflict surface for the late sync at step 18.
+# shrinks the conflict surface for the late sync at step 17.
 if git remote get-url upstream >/dev/null 2>&1; then
   if [ "$VERBOSE" = "--verbose" ]; then echo "Fetching upstream and rebasing onto upstream/$UPSTREAM_BRANCH..."; fi
   git fetch upstream

@@ -170,11 +170,163 @@ decisions in each commit body.
 - **Explain the why**: Include rationale for changes
 - **No filler**: Avoid "oops", "maybe fixed", vague phrases
 - **Generic counters forbidden**: NEVER use "Update X files" or similar
+  (see [Significant-Change Titles](#significant-change-titles-critical)
+  for the broader anti-pattern of restating the obvious instead of the change)
+
+### Significant-Change Titles (CRITICAL)
+
+The subject line is the most valuable real estate in a commit. It is what a
+reviewer reads in `git log --oneline`, what shows up in GitHub's commit list,
+and what gets indexed by `git bisect` and code-search tools. It must describe
+the **significant change** — the thing a reviewer would *not* otherwise know
+from skimming the diff.
+
+The general rule: **lead with what changed and why it matters, not with what
+is already obvious from the diff.** A diff already shows which files moved,
+which lines were added/removed, and which version numbers were bumped. The
+subject must add semantic value on top of that.
+
+#### Anti-Patterns (all UNACCEPTABLE)
+
+**❌ Version bump as the headline** — the version is obvious from the diff:
+```
+Update nixify to v2.9.0
+Bump nixify to 2.9.0
+Update nixify to v2.9.0 (15 files)
+```
+
+**❌ Version bump first, real change buried after** — the version is the least
+interesting part and should not lead:
+```
+Update nixify to v2.9.0 with named outputs, lint step, scan step, and nix profile add
+```
+
+**❌ File count or file list as the headline** — the diff already shows the
+files; a count conveys nothing semantic:
+```
+Update 15 files
+Update config, scripts, and docs
+Modify 8 files in src/auth
+```
+
+**❌ Generic verb with no object** — "Update", "Change", "Modify", "Improve"
+with no specifics tell the reviewer nothing:
+```
+Update config
+Improve code
+Fix issues
+Clean up
+Update README
+```
+
+**❌ Restating the diff** — naming the file or the mechanical operation when
+the semantic change is something else:
+```
+Modify src/auth/login.py
+Run formatter on src/
+Apply linter fixes
+```
+(The real change might be "Sanitize user input before rendering" or "Extract
+auth middleware into its own module" — say that instead.)
+
+**❌ Vague refactor with no what** — "Refactor" alone is not a change:
+```
+Refactor code
+Refactor auth module
+Clean up utilities
+```
+
+**❌ WIP / temp / placeholder** — these convey nothing and break bisect:
+```
+WIP
+temp
+misc changes
+stuff
+asdf
+```
+
+**❌ Issue number only** — a number is not a description:
+```
+Fixes #123
+#456
+```
+
+**❌ Branch name copied as the subject** — branch names are slugs, not prose:
+```
+feature/auth-jwt-tokens
+bugfix/sidebar-overflow
+```
+
+#### Good Patterns (all ACCEPTABLE)
+
+**✅ Lead with the significant change, version in body:**
+```
+Add named outputs, lint step, scan step, and nix profile add to nixify
+Add lint-artifacts step and #prebuilt named output to nixify
+Replace nix profile install with nix profile add across nixify templates
+```
+
+**✅ Name the affected component and the semantic change:**
+```
+Fix overflow in sidebar menu on narrow viewports
+Extract auth middleware into its own module
+Sanitize user input before rendering in login form
+```
+
+**✅ Quantify the impact when meaningful:**
+```
+Reduce bundle size by 25% via code splitting
+Speed up test suite from 90s to 12s with parallel runners
+```
+
+**✅ Use specific verbs (Add, Remove, Replace, Extract, Rename, Split, Merge)
+not generic ones (Update, Change, Modify, Improve):**
+```
+Remove deprecated /v1 API endpoints
+Split nixify flake into per-variant files
+Rename nix profile install to nix profile add
+```
+
+**✅ For multi-change commits, lead with the most impactful change and list
+the rest in the body. If no single change dominates, use a feature-area
+summary:**
+```
+Add lint, scan, and named-output support to nixify
+```
+
+#### Rules
+
+- **Lead with the significant change.** The subject must describe what a
+  reviewer would not otherwise know from skimming the diff.
+- **Never lead with what the diff already shows.** This includes version
+  numbers, file counts, file lists, and mechanical operations ("run
+  formatter", "apply linter").
+- **Never use generic verbs alone.** "Update", "Change", "Modify", "Improve",
+  "Clean up", "Refactor" must be followed by a specific object and the
+  semantic change: "Refactor auth middleware to use dependency injection".
+- **Never append a file count.** `(15 files)`, `(N files)`, `(updated 12
+  files)` are all forbidden — they convey nothing semantic.
+- **One significant change per subject.** If the commit bundles several
+  significant changes, pick the most impactful for the subject and list the
+  rest in the body.
+- **Release and version-bump commits are not exempt.** Even `release:`
+  commits should describe the headline change, not just the version:
+  `release: Ship named outputs and lint pipeline for v2.9.0` — not
+  `release: Prepare for v2.9.0 release`. The version bump belongs in the
+  body (e.g., `- Bump version to 2.9.0`), not the subject.
+- **No WIP, temp, or placeholder subjects.** If the work is not ready to
+  describe, it is not ready to commit. Use the checkpoint entry point with a
+  descriptive `checkpoint/` slug instead.
+
+**Applies to:** all commits, including version bumps, dependency updates,
+release prep, hotfixes, refactors, and checkpoint commits. The version
+number, file count, and mechanical operation are metadata, not headlines.
 
 ### Grouping Strategy (AI Responsibility)
 ✅ **Good**: "Settings page: persist theme to DB and update UI/tests"
 ❌ **Bad**: Separate commits for "code files" and "test files"
 ❌ **Bad**: "Update 4 files" (completely unacceptable)
+❌ **Bad**: "Update nixify to v2.9.0 (15 files)" — version bump + file count, no significant change (see [Significant-Change Titles](#significant-change-titles-critical))
 
 ### Quality Standards (AI Responsibility)
 - **Capitalized subject**: First word capitalized

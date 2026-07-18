@@ -11,9 +11,9 @@ brew install <formula>
 ```bash [Nix]
 # Latest release (auto-bumped daily, prebuilt)
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO
-nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO
+nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO
 
-# Build from source instead
+# Or choose explicitly: #prebuilt (fast) or #source (from source)
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO#source
 ```
 

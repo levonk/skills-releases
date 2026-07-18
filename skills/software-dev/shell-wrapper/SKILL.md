@@ -662,6 +662,52 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 description: Reusable user-reference convention — use male pronouns for the user, address him as "user", avoid proper names unless relevant to the output
 ---
 
+---
+description: Shared DO/DON'T icon convention — ✅ for recommended practices, ❌ for anti-patterns. Use in patterns-and-conventions sections, examples, and guidance lists.
+---
+
+# DO / DON'T Icon Convention
+
+Use these icons consistently when presenting recommended practices and
+anti-patterns. The pairing makes correct and incorrect approaches visually
+scannable side-by-side.
+
+| Icon | Meaning | Usage |
+|---|---|---|
+| ✅ | **DO** — recommended practice | Lead the line with `✅ **DO**:` followed by the practice |
+| ❌ | **DON'T** — anti-pattern | Lead the line with `❌ **DON'T**:` followed by the anti-pattern |
+
+## Formatting Rules
+
+- Place the icon at the start of the line, before any bold label.
+- Use `**DO**` / `**DON'T**` (bold, uppercase) as the label — not "Do" / "Don't"
+  or "GOOD" / "BAD".
+- Keep each item to one sentence; put the rationale after an em dash (`—`).
+- Group all ✅ items together, then all ❌ items — do not interleave.
+
+## Example
+
+```markdown
+✅ **DO**: Use `/` delimiters in `.tmpl` files
+✅ **DO**: Guard against missing commands with `command -v`
+
+❌ **DON'T**: Use `{{`/`}}` — they won't parse under custom delimiters
+❌ **DON'T**: Assume a tool is installed without checking
+```
+
+## Variants
+
+The same icons are used in example-contrast pairs (Weak vs Strong, Bad vs Good)
+without the **DO**/**DON'T** labels:
+
+```markdown
+❌ **Weak:** "We need more time."
+✅ **Strong:** "To hit the quality bar, we have three paths: ..."
+```
+
+When used this way, keep the ❌/✅ pairing adjacent so the contrast is immediate.
+
+
 ### User Info
 
 When communicating with or about the user, follow this convention:
@@ -692,6 +738,52 @@ When communicating with or about the user, follow this convention:
 ---
 description: Reusable naming conventions for artifacts created by upsert skills — kebab-case for file names, identifiers, and slugs; avoid snake_case everywhere
 ---
+
+---
+description: Shared DO/DON'T icon convention — ✅ for recommended practices, ❌ for anti-patterns. Use in patterns-and-conventions sections, examples, and guidance lists.
+---
+
+# DO / DON'T Icon Convention
+
+Use these icons consistently when presenting recommended practices and
+anti-patterns. The pairing makes correct and incorrect approaches visually
+scannable side-by-side.
+
+| Icon | Meaning | Usage |
+|---|---|---|
+| ✅ | **DO** — recommended practice | Lead the line with `✅ **DO**:` followed by the practice |
+| ❌ | **DON'T** — anti-pattern | Lead the line with `❌ **DON'T**:` followed by the anti-pattern |
+
+## Formatting Rules
+
+- Place the icon at the start of the line, before any bold label.
+- Use `**DO**` / `**DON'T**` (bold, uppercase) as the label — not "Do" / "Don't"
+  or "GOOD" / "BAD".
+- Keep each item to one sentence; put the rationale after an em dash (`—`).
+- Group all ✅ items together, then all ❌ items — do not interleave.
+
+## Example
+
+```markdown
+✅ **DO**: Use `/` delimiters in `.tmpl` files
+✅ **DO**: Guard against missing commands with `command -v`
+
+❌ **DON'T**: Use `{{`/`}}` — they won't parse under custom delimiters
+❌ **DON'T**: Assume a tool is installed without checking
+```
+
+## Variants
+
+The same icons are used in example-contrast pairs (Weak vs Strong, Bad vs Good)
+without the **DO**/**DON'T** labels:
+
+```markdown
+❌ **Weak:** "We need more time."
+✅ **Strong:** "To hit the quality bar, we have three paths: ..."
+```
+
+When used this way, keep the ❌/✅ pairing adjacent so the contrast is immediate.
+
 
 ### Naming Conventions
 
@@ -1009,6 +1101,24 @@ self-contained `scripts/<name>.sh` in the built skill. This is the same pattern
 used for `.md` includes — the `.tmpl` extension marks it for rendering, and the
 include is resolved relative to the profile root. `init_skill.py` does this
 automatically for `cli-tool-discovery.sh`.
+
+**Shared scripts available for materialization:**
+
+| Script | When to add |
+|--------|-------------|
+| `cli-tool-discovery.sh` | Always — any skill may need to resolve a CLI tool through wrappers |
+| `scan-artifacts.sh` | Only for skills that generate scripts/files committed to a repo — catches identity leaks (resolved `$HOME`, username, hostname, WiFi SSID, DNS domain) before committing |
+
+**Location matters — include vs materialize:**
+
+- **Inside `skills-src/src/`**: use `{{ include "includes/<name>.sh" . }}` in a
+  `scripts/<name>.sh.tmpl` file. The build-time templater inlines the shared
+  script content. This is the DRY approach — the script lives in one place
+  (`includes/<name>.sh.tmpl`) and is inlined at build time.
+- **Outside `skills-src/src/`** (e.g. `OTHER_PROJECT/.agents/`,
+  `skills-src/.agents`, `~/config/agents/`): no templater is available, so
+  materialize the script by copying the rendered content from
+  `build/current/includes/<name>.sh` into `scripts/<name>.sh` directly.
 
 #### Workflows, Agents, Prompts, Rules (no `scripts/` directory)
 

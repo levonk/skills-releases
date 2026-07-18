@@ -95,7 +95,8 @@ Use when the project publishes prebuilt release tarballs. Preserves exact layout
   in {
     packages = forAllSystems (system: rec {
       <project> = projectFor system;
-      default = <project>;
+      prebuilt = <project>;
+      default = prebuilt;
       source = sourceFor system;
     });
 
@@ -111,6 +112,10 @@ Use when the project publishes prebuilt release tarballs. Preserves exact layout
       sourcePkg = sourceFor system;
     in {
       <project> = {
+        type = "app";
+        program = "${<project>Pkg}/bin/<binary-name>";
+      };
+      prebuilt = {
         type = "app";
         program = "${<project>Pkg}/bin/<binary-name>";
       };
@@ -140,5 +145,5 @@ Key details:
 - No wrapper scripts — binary is real file with runtime/ as sibling
 - Uses `nixpkgs-unstable` for broader platform support
 - **Target set is the 4 glibc+darwin systems** (`x86_64`/`aarch64` × `linux`/`darwin`). Exclude win32 (not a Nix target) and musl tarballs (the glibc tarballs already cover Linux Nix systems). See `references/flake-templates/darwin-framework-note.md` for darwin-specific caveats.
-- **`#source` output**: The prebuilt binary is `#default` (fast, no compilation). The from-source build is `#source` (reproducible from source, auditable). Fill in `sourceFor` using the appropriate language-specific template from `references/flake-templates/source-build-*.md`. The `checks` attrset exercises both so CI catches breakage in either path.
+- **Named outputs**: The flake exposes four outputs: `#prebuilt` (prebuilt binary, fast), `#source` (from-source build, reproducible), `#default` (alias for `#prebuilt`), and `#<project-name>` (alias for `#prebuilt`). Users can `nix run .#prebuilt` or `nix run .#source` explicitly, or just `nix run .` for the default (prebuilt). Fill in `sourceFor` using the appropriate language-specific template from `references/flake-templates/source-build-*.md`. The `checks` attrset exercises both `prebuilt` and `source` so CI catches breakage in either path.
 - **If source build is not feasible** (e.g. complex native addon setup with no nixpkgs support), remove the `source` outputs from `packages`, `apps`, and `checks`, and document why in the PR body. The prebuilt-only flake is still acceptable when accompanied by hash automation + CI.

@@ -664,6 +664,12 @@ If this skill is triggered but the question is a poor fit for it — for example
 **Why this guard exists:** Skills with "pushy" descriptions over-trigger on questions they can't add value to. The guard prevents wasted effort (running a 5-advisor council on "what's the capital of France") while respecting explicit user intent — if the user wants the heavy process run anyway, one word gets it done.
 
 
+---
+description: Container build strategy principles — pre-built first, multi-arch mandatory, no Nix unless runtime needs it, avoid QEMU for heavy compilation, --push required for multi-platform
+---
+
+## Container Build Strategy Principles
+
 - **Check pre-built first.** Before writing any build definition, check upstream registries (GHCR, Docker Hub, Quay) for official multi-arch images. Document the check result in the task or PRD. If a suitable pre-built image exists, wrap it — do not rebuild from source.
 - **Multi-arch is mandatory for mixed-architecture fleets.** Never ship a single-arch `:latest` tag for a fleet that spans x86_64 and aarch64. Use multi-arch manifests (`docker buildx build --platform linux/amd64,linux/arm64 --push`) or arch-specific tags (`:amd64`, `:arm64`). Verify with `docker manifest inspect` before deploying.
 - **No Nix in containers that don't need it at runtime.** If the container does not need a Nix store at runtime (i.e., the service is a static or dynamically linked binary, not a Nix client), do not use `dockerTools.buildLayeredImage`. Use a multi-stage Dockerfile + `docker buildx` instead. Nix flake container builds couple the image to the build host's system — avoid this coupling unless the runtime genuinely requires it.

@@ -6,8 +6,8 @@ user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-06-28"
-  updated: "2026-07-11"
-  last-used: "2026-07-11"
+  updated: "2026-07-17"
+  last-used: "2026-07-17"
 tags:
   - "ai/skill"
   - "okf"
@@ -45,6 +45,21 @@ see-also:
   - skill: "template-upsert"
     relationship: "sibling"
     description: "Same upsert family — handles template creation and updates"
+  - knowledge: "container-best-practices"
+    relationship: "example"
+    description: "Canonical OKF bundle for container authoring and runtime practices"
+  - knowledge: "java-best-practices"
+    relationship: "example"
+    description: "Canonical OKF bundle for Java/JVM practices"
+  - knowledge: "data-engineering-best-practices"
+    relationship: "example"
+    description: "Canonical OKF bundle for data engineering practices"
+  - knowledge: "typescript-monorepo-best-practices"
+    relationship: "example"
+    description: "Canonical OKF bundle for TypeScript monorepo conventions"
+  - knowledge: "devsecops-codeguard"
+    relationship: "example"
+    description: "Canonical OKF bundle for DevSecOps codeguard rules"
 ---
 
 ---
@@ -670,6 +685,52 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 description: Reusable user-reference convention — use male pronouns for the user, address him as "user", avoid proper names unless relevant to the output
 ---
 
+---
+description: Shared DO/DON'T icon convention — ✅ for recommended practices, ❌ for anti-patterns. Use in patterns-and-conventions sections, examples, and guidance lists.
+---
+
+# DO / DON'T Icon Convention
+
+Use these icons consistently when presenting recommended practices and
+anti-patterns. The pairing makes correct and incorrect approaches visually
+scannable side-by-side.
+
+| Icon | Meaning | Usage |
+|---|---|---|
+| ✅ | **DO** — recommended practice | Lead the line with `✅ **DO**:` followed by the practice |
+| ❌ | **DON'T** — anti-pattern | Lead the line with `❌ **DON'T**:` followed by the anti-pattern |
+
+## Formatting Rules
+
+- Place the icon at the start of the line, before any bold label.
+- Use `**DO**` / `**DON'T**` (bold, uppercase) as the label — not "Do" / "Don't"
+  or "GOOD" / "BAD".
+- Keep each item to one sentence; put the rationale after an em dash (`—`).
+- Group all ✅ items together, then all ❌ items — do not interleave.
+
+## Example
+
+```markdown
+✅ **DO**: Use `/` delimiters in `.tmpl` files
+✅ **DO**: Guard against missing commands with `command -v`
+
+❌ **DON'T**: Use `{{`/`}}` — they won't parse under custom delimiters
+❌ **DON'T**: Assume a tool is installed without checking
+```
+
+## Variants
+
+The same icons are used in example-contrast pairs (Weak vs Strong, Bad vs Good)
+without the **DO**/**DON'T** labels:
+
+```markdown
+❌ **Weak:** "We need more time."
+✅ **Strong:** "To hit the quality bar, we have three paths: ..."
+```
+
+When used this way, keep the ❌/✅ pairing adjacent so the contrast is immediate.
+
+
 ### User Info
 
 When communicating with or about the user, follow this convention:
@@ -700,6 +761,52 @@ When communicating with or about the user, follow this convention:
 ---
 description: Reusable naming conventions for artifacts created by upsert skills — kebab-case for file names, identifiers, and slugs; avoid snake_case everywhere
 ---
+
+---
+description: Shared DO/DON'T icon convention — ✅ for recommended practices, ❌ for anti-patterns. Use in patterns-and-conventions sections, examples, and guidance lists.
+---
+
+# DO / DON'T Icon Convention
+
+Use these icons consistently when presenting recommended practices and
+anti-patterns. The pairing makes correct and incorrect approaches visually
+scannable side-by-side.
+
+| Icon | Meaning | Usage |
+|---|---|---|
+| ✅ | **DO** — recommended practice | Lead the line with `✅ **DO**:` followed by the practice |
+| ❌ | **DON'T** — anti-pattern | Lead the line with `❌ **DON'T**:` followed by the anti-pattern |
+
+## Formatting Rules
+
+- Place the icon at the start of the line, before any bold label.
+- Use `**DO**` / `**DON'T**` (bold, uppercase) as the label — not "Do" / "Don't"
+  or "GOOD" / "BAD".
+- Keep each item to one sentence; put the rationale after an em dash (`—`).
+- Group all ✅ items together, then all ❌ items — do not interleave.
+
+## Example
+
+```markdown
+✅ **DO**: Use `/` delimiters in `.tmpl` files
+✅ **DO**: Guard against missing commands with `command -v`
+
+❌ **DON'T**: Use `{{`/`}}` — they won't parse under custom delimiters
+❌ **DON'T**: Assume a tool is installed without checking
+```
+
+## Variants
+
+The same icons are used in example-contrast pairs (Weak vs Strong, Bad vs Good)
+without the **DO**/**DON'T** labels:
+
+```markdown
+❌ **Weak:** "We need more time."
+✅ **Strong:** "To hit the quality bar, we have three paths: ..."
+```
+
+When used this way, keep the ❌/✅ pairing adjacent so the contrast is immediate.
+
 
 ### Naming Conventions
 

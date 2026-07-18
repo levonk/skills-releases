@@ -159,7 +159,7 @@ Ensures system reliability under load
 
 ### Dependency Updates
 ```
-chore(deps): Update all packages to latest stable versions
+chore(deps): Upgrade React 17→18 and patch security vulnerabilities
 
 - Update React from 17.0.2 to 18.2.0
 - Upgrade Node.js dependencies
@@ -183,30 +183,37 @@ Bundle size reduced from 2.5MB to 1.9MB
 
 ## Release Commits
 
+> **Title rule**: Lead with the headline change, not the version number.
+> `release: Ship named outputs and lint pipeline for v2.9.0` — not
+> `release: Prepare for v2.9.0 release`. See
+> [Significant-Change Titles](references/commit-organization.md#significant-change-titles-critical)
+> in the Commit Organization reference.
+
 ### Version Release
 ```
-release: Prepare for v2.1.0 release
+release: Ship named outputs and lint pipeline for v2.9.0
 
-- Update version numbers in package.json
-- Generate comprehensive changelog
-- Update documentation for new features
-- Tag release candidate
-- Prepare release notes
+- Add #prebuilt named output alongside #default and #source
+- Add lint-artifacts step with yamllint, markdownlint-cli2, statix, deadnix
+- Add scan-artifacts step for identity-leak detection
+- Replace nix profile install with nix profile add (Nix 2.30 deprecation)
+- Bump version to 2.9.0, update dates
 
 Highlights:
-- New user authentication system
-- Performance improvements (40% faster)
-- Enhanced security features
+- Named outputs for prebuilt tarballs
+- Lint and scan steps in the workflow
+- nix profile add migration
 ```
 
 ### Hotfix Release
 ```
-release: Hotfix v2.0.1 for critical security issue
+release: Patch XSS vulnerability in authentication for v2.0.1
 
-- Patch security vulnerability in authentication
+- Sanitize user input before rendering
 - Update security dependencies
 - Regenerate security tokens
 - Update documentation
+- Bump version to 2.0.1
 
 All users should upgrade immediately
 ```

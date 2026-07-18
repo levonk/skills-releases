@@ -334,7 +334,7 @@ jobs:
         # Exercises the from-source build path. Skip if the flake does not
         # expose a #source output (source-build-only flakes use #default).
         run: |
-          if nix flake show --json 2>/dev/null | jq -e 'has("source")' >/dev/null 2>&1; then
+          if nix flake show --json 2>/dev/null | jq -e 'any(.packages[]?; has("source"))' >/dev/null 2>&1; then
             nix build .#source --print-build-logs
           else
             echo "No #source output — skipping"

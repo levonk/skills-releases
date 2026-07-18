@@ -37,7 +37,7 @@ Adds a `flake.nix` so the project can be installed and run directly from GitHub 
 
 ```bash
 nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO
-nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO
+nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO
 ```
 
 The flake tracks the default branch and is auto-bumped to the latest release by a daily workflow, so `github:$UPSTREAM_OWNER/$UPSTREAM_REPO` always serves the current release.
@@ -56,7 +56,7 @@ For users who already have Nix installed, a flake provides:
 - **One-command install / run** — `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` with no clone or manual build steps.
 - **Pure / Hermetic builds** — every input (the prebuilt binary, glibc/libiconv) is pinned in `flake.lock`. If it builds today, it builds in ten years.
 - **Reproducible** — the exact same derivation always produces the exact same output bit-for-bit. No "works on my machine."
-- **Idempotent installs** — running `nix profile install` twice is a no-op.
+- **Idempotent installs** — running `nix profile add` twice is a no-op.
 - **Rollback-able** — `nix profile rollback` restores the previous profile generation instantly.
 - **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific linking.
 - **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
@@ -87,7 +87,7 @@ Builds and runs successfully on `<platform>`.
 
 ## Notes
 
-- The flake exposes the **prebuilt release tarball** as `#default` (fast, no compilation) and a **from-source build** as `#source` (reproducible, auditable). Both are exercised by CI.
+- The flake exposes the **prebuilt release tarball** as `#prebuilt` (also `#default`, fast, no compilation) and a **from-source build** as `#source` (reproducible, auditable). Both are exercised by CI.
 - Tag-pinning (`github:.../vX.Y.Z`) is not supported for the prebuilt output — release tags are cut before the bump workflow updates `flake.nix`. Use `github:.../` (tracks default branch) or pin to a commit SHA. The `#source` output works at any tag since it builds from source.
 - No breaking changes to existing build paths.
 

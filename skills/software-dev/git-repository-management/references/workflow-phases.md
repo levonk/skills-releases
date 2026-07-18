@@ -100,7 +100,24 @@ done
 - **Step 10**: **Create post-run tag** (see Automatic Run Tagging below)
   - Tag the final state AFTER all commits are made
   - This is automatic and does NOT require user permission
-- **Step 11**: Call `git-push.sh` if pushing is needed (push tags with `--tags`)
+- **Step 11**: Call `git-push.sh` to push commits and auto-tags.
+  - **When to push**: Push when the user's intent includes publishing — "commit
+    and push", "ship this", "clean up the repo" (cleanup implies pushing for
+    most workflows). For checkpoint commits (the Checkpoint entry point), don't
+    push — that entry point skips push by design. If the user only said "commit"
+    without mentioning pushing, ask once whether to push. Don't ask about
+    *how* to handle divergence — that's the script's job, not a user decision.
+  - **Divergence is not a decision point**: If the branch has diverged from
+    remote (local has commits remote doesn't, remote has commits local
+    doesn't), just run `git-push.sh`. The script fetches, creates a backup
+    branch, rebases with `-X auto` (auto-resolves trivial conflicts), and only
+    escalates to the AI if there are real conflicts needing manual resolution.
+    See [Tagging and Pushing](tagging-and-pushing.md) for the full conflict
+    escalation flow.
+  - **Never manually rebase or pull before pushing**: `git-push.sh` handles
+    fetch-rebase-push with a backup branch for safety. Running `git rebase` or
+    `git pull` manually bypasses that backup and defeats the rollback safety
+    the script provides. The only correct way to push is through the script.
 
 ### Phase 4: Documentation & Summary (AI Agent)
 - **Step 12**: Update project documentation (changelog, architecture, status)

@@ -690,6 +690,7 @@ subtitles/transcripts in multiple formats.
 2. **If available, use yt-dlp directly**:
    - Transcript: `yt-dlp --write-auto-sub --sub-lang en --skip-download -o '%(title)s' <url>`
    - Metadata: `yt-dlp --dump-json <url>` (returns title, uploader, duration, etc.)
+3. If not available, but the system has a devbox.json in the current directory add `yt-dlp` to the `packages` object and use `devbox run -- yt-dlp`
 3. **Deduplicate the VTT transcript** (see VTT Post-Processing below).
 4. **If yt-dlp is NOT available**, fall back to the built-in MCP tools below.
 

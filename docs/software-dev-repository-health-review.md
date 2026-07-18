@@ -119,103 +119,25 @@ The review covers six key categories:
 
 ### Examples
 
-#### Example 1: Basic Repository Health Check
+The output uses the shared severity-level icons (🔴 critical, 🟡 warning,
+🔵 info, 🟢 healthy):
 
-```bash
-# Quick health assessment
-./scripts/repository-health-review.sh /opt/my-project
+---
+description: Shared severity-level icons for health/security reviews and audit output — 🔴 critical, 🟡 warning, 🔵 info, 🟢 healthy. Use in repository-health-review, security scans, and audit findings.
+---
 
-# Output:
-# Repository Health Score: 82/100
-# Critical Issues: 1
-# Warnings: 4
-# Info: 8
-#
-# 🔴 Critical: Hardcoded API key in config.js
-# 🟡 Warning: Deprecated webpack version in package.json
-# 🟡 Warning: Conflicting ESLint rules
-# 🟡 Warning: TODO comments older than 6 months
-# 🟡 Warning: Missing security headers documentation
-```
+# Severity-Level Icons
 
-#### Example 2: Security-Focused Review
+Use these icons to classify findings in health reviews, security audits, and
+code-quality assessments. The color-coded severity makes it easy to scan
+output and prioritize fixes.
 
-```bash
-# Security-specific analysis
-./scripts/repository-health-review.sh --security --verbose /opt/my-project
-
-# Output:
-# Security Analysis Results:
-# 🔴 Critical: Hardcoded database password
-# 🔴 Critical: SSL verification disabled
-# 🟡 Warning: Debug mode enabled in production config
-# 🟡 Warning: Overly permissive file permissions
-# 🔵 Info: Authentication patterns documented
-```
-
-#### Example 3: Pre-Migration Analysis
-
-```bash
-# Before extracting from monorepo
-./scripts/repository-health-review.sh --pre-extraction /opt/company-monorepo webapp
-
-# Output:
-# Pre-Extraction Health Review for 'webapp':
-# Migration Readiness: 78/100
-#
-# Issues to address before extraction:
-# 🔴 Critical: Shared secrets in project config
-# 🟡 Warning: Monorepo-specific paths in documentation
-# 🟡 Warning: Undocumented build dependencies
-#
-# Recommendations:
-# 1. Extract and secure shared secrets
-# 2. Update documentation for standalone project
-# 3. Document all build dependencies
-```
-
-### Troubleshooting
-
-#### Common Issues
-
-**Analysis Takes Too Long**:
-
-- Use `--quick` flag for faster analysis
-- Limit analysis with `--categories` flag
-- Exclude large directories with `--exclude`
-
-**False Positives**:
-
-- Review analysis patterns and adjust regex
-- Use `--ignore-patterns` to exclude known false positives
-- Customize analysis functions for your repository
-
-**Missing Issues**:
-
-- Ensure analysis patterns cover your use cases
-- Add custom analysis functions for domain-specific issues
-- Update pattern lists regularly
-
-### Resources
-
-#### Related Skills
-
-- `monorepo-extractor` - Uses this skill for pre/post-extraction health analysis
-- `project-configuration` - Can use health review for setup validation
-
-#### Documentation
-
-- Repository health guidelines
-- Security best practices
-- Documentation standards
-- Code quality metrics
-
-#### External Resources
-
-- OWASP security guidelines
-- Industry documentation standards
-- Security vulnerability databases
-- Code quality frameworks
+| Icon | Meaning | Action |
+|---|---|---|
+| 🔴 | **Critical** | Must fix before proceeding — security vulnerability, hardcoded secret, data loss risk |
+| 🟡 | **Warning** | Should fix soon — deprecated dependency, missing documentation, code smell |
+| 🔵 | **Info** | Informational — no action required, noted for awareness |
+| 🟢 | **Healthy** | No issues found — the check passed cleanly |
 
 ## References
 
@@ -232,4 +154,4 @@ The review covers six key categories:
 
 - **Full skill**: [`skills/software-dev/repository-health-review/SKILL.md`](skills/software-dev/repository-health-review/SKILL.md)
 - **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-16T08:39:39Z
+- **Generated**: 2026-07-18T08:27:30Z
