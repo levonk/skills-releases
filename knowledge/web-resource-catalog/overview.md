@@ -48,8 +48,8 @@ domains[3]: github.com,gitlab.com,bitbucket.org
 ## Maintenance
 
 The bundle is synchronized with `~/.config/devin/config.json` (the deployed
-config) and the chezmoi source at
-`~/p/gh/levonk/dotfiles/home/current/dot_config/devin/config.json`.
+config) and the source at
+`src/current/templates/ (devin config)`.
 
 When new domains are added to the config:
 
@@ -68,4 +68,4 @@ designed for progressive disclosure and LLM-friendly consumption.
 
 [1] [TOON Format](https://toonformat.dev/)
 [2] [TOON Format Overview](https://toonformat.dev/guide/format-overview)
-[3] [Devin CLI config](https://github.com/levonk/dotfiles/blob/main/home/current/dot_config/devin/config.json)
+[3] [Devin CLI config](src/current/templates/ (devin config))

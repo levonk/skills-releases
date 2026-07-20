@@ -231,7 +231,7 @@ dev:
 
 # Run E2E tests (if Playwright is available)
 e2e:
-    npx playwright test
+    pnpm exec playwright test
 
 # Complete development loop - fails fast if any step fails
 loop: || (install build lint test dev e2e)
@@ -315,7 +315,7 @@ run_node_development_loop() {
         "lint:$pkg_manager run lint"
         "test:$pkg_manager test"
         "dev:$pkg_manager run dev"
-        "e2e:npx playwright test"
+        "e2e:pnpm exec playwright test"
     )
 
     for step in "${steps[@]}"; do

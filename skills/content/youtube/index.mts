@@ -1,4 +1,4 @@
-#!/usr/bin/env -S devbox run -- npx tsx
+#!/usr/bin/env -S devbox run -- pnpm exec tsx
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

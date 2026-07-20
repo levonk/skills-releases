@@ -161,7 +161,7 @@ audit:
 ```json
 {
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
+    "preinstall": "pnpm dlx only-allow pnpm",
     "dev": "next dev --turbopack",
     "watchmode": "node --watch-path=. --watch-extensions=ts,tsx,js,jsx,json --eval 'console.log(\"Node watchmode active. Monitoring for changes...\")'",
     "build": "next build",
@@ -182,8 +182,8 @@ audit:
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "db:setup": "npx tsx lib/db/setup.ts",
-    "db:seed": "npx tsx lib/db/seed.ts",
+    "db:setup": "pnpm exec tsx lib/db/setup.ts",
+    "db:seed": "pnpm exec tsx lib/db/seed.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

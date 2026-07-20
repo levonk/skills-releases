@@ -137,17 +137,17 @@ across AWS, Azure, GCP, and OCI, plus IaC implementation patterns for AWS
 using Pulumi and Terraform. It does **not** cover:
 
 - Container deployment patterns — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 - Networking patterns for VPN/zero-trust infrastructure — see
-  [infrastructure-networking-practices](../infrastructure-networking-practices/overview.md).
+  [infrastructure-networking-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/infrastructure-networking-practices/overview.md).
 - Application-level security — see
-  [devsecops-codeguard](../devsecops-codeguard/overview.md).
+  [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md).
 
 ## Related Knowledge Bundles
 
-- [container-best-practices](../container-best-practices/overview.md) — Container
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) — Container
   deployment patterns for cloud (base image selection, multi-stage builds,
   runtime hardening, registry cache strategy).
-- [infrastructure-networking-practices](../infrastructure-networking-practices/overview.md)
+- [infrastructure-networking-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/infrastructure-networking-practices/overview.md)
   — Networking patterns (zero-trust platforms, multi-exit node architecture,
   backup connectivity, infrastructure variable consolidation).

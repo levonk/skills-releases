@@ -1,5 +1,31 @@
 # Directory Update Log
 
+## 2026-07-18
+
+* **Rule**: Added a hard "NEVER `npx`/`bunx`/`yarn dlx` — always `pnpm dlx` or
+  `pnpm exec`" section to [pnpm-nx-monorepo.md](pnpm-nx-monorepo.md) with a
+  decision table and before/after examples. The rule is absolute on the host
+  and inside pnpm workspaces — no exceptions, including when contributing to
+  upstream projects that use bun or yarn. **Container exception**: inside a
+  Docker container, use `bunx <pkg>` and never install pnpm in a container.
+  Replaced every prescriptive `npx`/`bunx` reference in this bundle with
+  `pnpm dlx` (ad-hoc packages) or `pnpm exec` (workspace binaries). Added
+  matching rows to the canonical tech-stack table include
+  (`src/current/includes/tech-stack-table.md.tmpl`) — one for host/pnpm-workspace
+  use, one for container use — so every overview that includes it inherits
+  both rules. Updated [index.md](index.md) to surface the rule in the concept
+  blurb.
+
+## 2026-07-18
+
+* **DRY**: Converted [overview.md](overview.md.tmpl) to `overview.md.tmpl` and
+  added `{{{ include "includes/tech-stack-table.md" . }}}` so the canonical
+  tech-stack choices table (Nx, pnpm, Vitest, ESLint+antfu, no Prettier/Turbo/
+  Jest/Biome) is inlined from a single source of truth at
+  `src/current/includes/tech-stack-table.md.tmpl`. When a choice changes, update
+  that one include file and every overview that includes it stays in sync at
+  build time. The build output remains `overview.md` (`.tmpl` stripped).
+
 ## 2026-07-17
 
 * **Ingest**: Ingested ADR-20260419001 (Use Nx for Monorepo Build Orchestration),

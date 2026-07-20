@@ -1,5 +1,13 @@
 # Directory Update Log
 
+## 2026-07-18
+
+* **DRY**: Converted [overview.md](overview.md.tmpl) to `overview.md.tmpl` and
+  added `{{{ include "includes/tech-stack-table.md" . }}}` so the canonical
+  tech-stack choices table is inlined from a single source of truth at
+  `src/current/includes/tech-stack-table.md.tmpl`. See the
+  typescript-monorepo-best-practices log entry for the full rationale.
+
 ## 2026-07-17
 
 * **Initialization**: Created the `cicd-testing-practices` knowledge bundle to consolidate CI/CD and testing practices from three ADRs in levonk-base-boilerplate and the bookkeep-saas PRD.

@@ -329,26 +329,105 @@ discover_repo_root() {
     local repo_root
     repo_root=$(cd "$target_path" && git rev-parse --show-toplevel 2>/dev/null)
     if [ -z "$repo_root" ]; then
-        echo "ERROR: $target_path is not inside a git repository" >&2
-        exit 1
+        echo ""
+    else
+        echo "$repo_root"
     fi
-    echo "$repo_root"
+}
+
+# Emit a structured NOT_A_GIT_REPO signal so the AI agent can decide whether to
+# initialize the directory via scripts/git-repo-init.bash before re-running
+# collection. Honors json_mode to match the rest of the script's output format.
+# Exit code is 2 (distinguishable from generic errors at exit 1).
+emit_not_a_git_repo() {
+    local abs_path="$1"
+    local init_script="$SCRIPT_DIR/git-repo-init.bash"
+    local init_cmd="bash \"$init_script\" \"$abs_path\""
+    if [[ "$json_mode" -eq 1 ]]; then
+        printf '{"not_a_git_repo":true,"path":"%s","init_command":"%s","init_script":"%s"}\n' \
+            "$(printf '%s' "$abs_path" | json_escape)" \
+            "$(printf '%s' "$init_cmd" | json_escape)" \
+            "$(printf '%s' "$init_script" | json_escape)"
+    else
+        echo "=== NOT_A_GIT_REPO ==="
+        echo "PATH:$abs_path"
+        echo "INIT_SCRIPT:$init_script"
+        echo "INIT_COMMAND:$init_cmd"
+        echo "ADVICE:Run the init command above to create a git repository here, then re-run git-collect.sh. See references/repository-initialization.md for scope choices (full CREATE mode vs init-only)."
+        echo "=== END NOT_A_GIT_REPO ==="
+    fi
 }
 
 main() {
-    local target_path="${1:-.}"
+    local target_path="." json_mode=0
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --json) json_mode=1; shift ;;
+            --help|-h)
+                echo "Usage: git-collect.sh [--json] [repo_root]"
+                echo "  --json  Emit a single JSON object instead of the text marker format"
+                exit 0
+                ;;
+            *) target_path="$1"; shift ;;
+        esac
+    done
+
     local repo_root
     repo_root=$(discover_repo_root "$target_path")
+    if [ -z "$repo_root" ]; then
+        # Not a git repo: emit the structured signal directly to stdout (not
+        # captured by command substitution since we're in main, not a subshell)
+        # and exit 2 so the AI agent can distinguish this from generic errors.
+        local abs_path
+        abs_path=$(cd "$target_path" && pwd 2>/dev/null || echo "$target_path")
+        emit_not_a_git_repo "$abs_path"
+        exit 2
+    fi
     cd "$repo_root"
+
+    # Gather all data into variables so both text and JSON modes can use them.
+    local branch upstream
+    branch=$(git_cmd rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
+    upstream=$(git_cmd rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "none")
+
+    local recent_log
+    recent_log=$(jj_log -n 10 --no-graph 2>/dev/null || echo "<none>")
+
+    local staged unstaged untracked diff_stats
+    staged=$(git_cmd diff --cached --name-status 2>/dev/null || echo "<none>")
+    unstaged=$(git_cmd diff --name-status 2>/dev/null || echo "<none>")
+    untracked=$(git_cmd ls-files --others --exclude-standard 2>/dev/null || echo "<none>")
+    diff_stats=$(git_cmd diff --stat 2>/dev/null || echo "<none>")
+
+    # Full diff: staged + unstaged + untracked file contents, bounded by
+    # FULL_DIFF_MAX_BYTES (default 200KB) to avoid token explosions on huge
+    # changes. A truncation notice is emitted when the bound is hit.
+    # Previously this only ran `git diff` (unstaged-only), which was empty
+    # when all changes were staged or untracked — leaving the FULL_DIFF
+    # marker with no content. Now it covers all three categories.
+    local full_diff
+    full_diff=$(collect_full_diff)
+
+    # Quality checks (eslint, prettier, tests, just)
+    local qc_eslint qc_prettier qc_tests qc_just
+    qc_eslint=$(detect_eslint)
+    qc_prettier=$(detect_prettier)
+    qc_tests=$(detect_tests)
+    qc_just=$(detect_just)
+
+    if [[ "$json_mode" -eq 1 ]]; then
+        emit_json "$repo_root" "$branch" "$upstream" "$recent_log" \
+            "$staged" "$unstaged" "$untracked" "$diff_stats" "$full_diff" \
+            "$qc_eslint" "$qc_prettier" "$qc_tests" "$qc_just"
+        return
+    fi
 
     echo "=== COLLECTION_START ==="
 
-    # Repository metadata
     echo "REPO_ROOT:$repo_root"
-    echo "BRANCH:$(git_cmd rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
-    echo "UPSTREAM:$(git_cmd rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo 'none')"
+    echo "BRANCH:$branch"
+    echo "UPSTREAM:$upstream"
 
-    # Available tools (for AI agent to use in subsequent operations)
     echo "AVAILABLE_TOOLS:"
     echo "RTK:$RTK_AVAILABLE"
     echo "DEVBOX:$DEVBOX_AVAILABLE"
@@ -358,31 +437,87 @@ main() {
     echo "HUNK:$HUNK_AVAILABLE"
     echo "GIT_EXTRAS:$GIT_EXTRAS_AVAILABLE"
 
-    # Recent log (uses jj log when available for cleaner output)
     echo "RECENT_LOG:"
-    jj_log -n 10 --no-graph 2>/dev/null || echo "<none>"
+    printf '%s\n' "$recent_log"
 
-    # Change data
     echo "STAGED:"
-    git_cmd diff --cached --name-status 2>/dev/null || echo "<none>"
+    printf '%s\n' "$staged"
 
     echo "UNSTAGED:"
-    git_cmd diff --name-status 2>/dev/null || echo "<none>"
+    printf '%s\n' "$unstaged"
 
     echo "UNTRACKED:"
-    git_cmd ls-files --others --exclude-standard 2>/dev/null || echo "<none>"
+    printf '%s\n' "$untracked"
 
-    # Diff stats
     echo "DIFF_STATS:"
-    git_cmd diff --stat 2>/dev/null || echo "<none>"
+    printf '%s\n' "$diff_stats"
 
-    # Full diff (uses difftastic > delta > raw when available)
     echo "FULL_DIFF:"
-    diff_cmd 2>/dev/null || echo "<none>"
+    printf '%s\n' "$full_diff"
 
-    # Quality checks
     echo "QUALITY_CHECKS:"
+    printf '%s\n' "$qc_eslint"
+    printf '%s\n' "$qc_prettier"
+    printf '%s\n' "$qc_tests"
+    if [[ -n "$qc_just" ]]; then
+        printf '%s\n' "$qc_just"
+    fi
 
+    echo "=== COLLECTION_END ==="
+}
+
+# Collect a bounded full diff covering staged, unstaged, and untracked files.
+# Emits the combined diff content. When the total exceeds FULL_DIFF_MAX_BYTES
+# (default 204800 = 200KB), stops and appends a truncation notice.
+collect_full_diff() {
+    local max_bytes="${FULL_DIFF_MAX_BYTES:-204800}"
+    local out=""
+    local section
+
+    # Staged changes
+    section=$(git_cmd diff --cached 2>/dev/null || true)
+    if [[ -n "$section" ]]; then
+        out+="$section"
+    fi
+
+    # Unstaged changes
+    section=$(git_cmd diff 2>/dev/null || true)
+    if [[ -n "$section" ]]; then
+        out+="$section"
+    fi
+
+    # Untracked files: emit their full contents as pseudo-diff new-file blocks
+    local untracked_files
+    untracked_files=$(git_cmd ls-files --others --exclude-standard 2>/dev/null || true)
+    if [[ -n "$untracked_files" ]] && [[ "$untracked_files" != "<none>" ]]; then
+        while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            if [[ -f "$f" ]]; then
+                out+=$'\n'"diff --git a/$f b/$f"$'\n'"new file mode 100644"$'\n'"--- /dev/null"$'\n'"+++ b/$f"$'\n'
+                # Bound per-file content to avoid one huge file blowing the budget
+                local file_content
+                file_content=$(head -c "$max_bytes" -- "$f" 2>/dev/null || cat -- "$f" 2>/dev/null || true)
+                out+="$file_content"
+            fi
+        done <<< "$untracked_files"
+    fi
+
+    if [[ -z "$out" ]]; then
+        echo "<none>"
+        return
+    fi
+
+    # Bound the total output
+    local total=${#out}
+    if [[ "$total" -gt "$max_bytes" ]]; then
+        printf '%s' "${out:0:$max_bytes}"
+        printf '\n[TRUNCATED: full diff exceeded %s bytes, showing first %s bytes]\n' "$max_bytes" "$max_bytes"
+    else
+        printf '%s' "$out"
+    fi
+}
+
+detect_eslint() {
     if command -v eslint >/dev/null 2>&1; then
         echo "ESLINT:"
         if run_command rtk_wrap eslint . 2>&1; then
@@ -393,7 +528,9 @@ main() {
     else
         echo "ESLINT:NOT_AVAILABLE"
     fi
+}
 
+detect_prettier() {
     if command -v prettier >/dev/null 2>&1; then
         echo "PRETTIER:"
         if run_command rtk_wrap prettier --check . 2>&1; then
@@ -404,11 +541,34 @@ main() {
     else
         echo "PRETTIER:NOT_AVAILABLE"
     fi
+}
 
-    # Test runners
+detect_tests() {
     if [[ -f "package.json" ]] && grep -q '"test"' package.json; then
+        # Resolve the active package manager via the shared detect-package-manager.sh
+        # include (materialized into this skill's scripts/ dir at build time).
+        # This respects `packageManager` in package.json and lockfile presence,
+        # so pnpm/yarn/bun repos no longer get a false-positive `npm test` failure.
+        # Fallback is pnpm (not npm) — if pnpm isn't available, emit NOT_AVAILABLE
+        # with the recommendation rather than trying to run a missing command.
+        local pkg_manager="pnpm"
+        local pkg_available="true"
+        local pkg_recommendation=""
+        if [[ -x "$SCRIPT_DIR/detect-package-manager.sh" ]]; then
+            local pkg_json
+            pkg_json="$("$SCRIPT_DIR/detect-package-manager.sh" "$PWD" --json 2>/dev/null || true)"
+            if [[ -n "$pkg_json" ]]; then
+                pkg_manager="$(printf '%s' "$pkg_json" | grep -oE '"manager":"[^"]*"' | head -1 | sed 's/"manager":"//;s/"//')"
+                pkg_available="$(printf '%s' "$pkg_json" | grep -oE '"available":(true|false)' | head -1 | sed 's/"available"://')"
+                pkg_recommendation="$(printf '%s' "$pkg_json" | grep -oE '"recommendation":"[^"]*"' | head -1 | sed 's/"recommendation":"//;s/"//')"
+            fi
+        fi
         echo "NPM_TEST:"
-        if run_command rtk_wrap npm test 2>&1; then
+        echo "NPM_TEST_PACKAGE_MANAGER:${pkg_manager}"
+        if [[ "$pkg_available" == "false" ]]; then
+            echo "NPM_TEST_STATUS:NOT_AVAILABLE"
+            echo "NPM_TEST_RECOMMENDATION:${pkg_recommendation}"
+        elif run_command rtk_wrap "${pkg_manager}" test 2>&1; then
             echo "NPM_TEST_STATUS:PASS"
         else
             echo "NPM_TEST_STATUS:FAIL"
@@ -430,8 +590,139 @@ main() {
     else
         echo "TESTS:NOT_CONFIGURED"
     fi
+}
 
-    echo "=== COLLECTION_END ==="
+# Detect `just` task runner targets. `just` is a generic task runner (like
+# make but simpler). If a Justfile/justfile exists at repo root, probe for
+# common targets (validate, test, lint, build, check, format) and emit a
+# JUST:<target> line for each found. This is the same pattern the script
+# uses for npm/make/cargo — just is generic, not project-specific.
+detect_just() {
+    command -v just >/dev/null 2>&1 || return 0
+    local justfile=""
+    for f in Justfile justfile JUSTFILE; do
+        if [[ -f "$f" ]]; then
+            justfile="$f"
+            break
+        fi
+    done
+    [[ -z "$justfile" ]] && return 0
+
+    # Cache `just --list` output once — calling it once per target is slow
+    # and can produce inconsistent results when grep -q exits early.
+    local just_list
+    just_list=$(just --list 2>/dev/null || true)
+    [[ -z "$just_list" ]] && return 0
+
+    local targets="validate test lint build check format"
+    local found=()
+    local t
+    for t in $targets; do
+        if printf '%s\n' "$just_list" | grep -qE "^[[:space:]]*${t}([[:space:]]|$)"; then
+            found+=("$t")
+        fi
+    done
+
+    if [[ ${#found[@]} -gt 0 ]]; then
+        local line
+        for t in "${found[@]}"; do
+            line+="JUST:${t}"$'\n'
+        done
+        # Strip trailing newline
+        printf '%s' "${line%$'\n'}"
+    fi
+}
+
+# Escape a string for JSON output (handles backslash, double-quote, newline,
+# tab, carriage return). Reads from stdin, writes escaped JSON string to stdout.
+json_escape() {
+    local s
+    s=$(cat)
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\t'/\\t}"
+    s="${s//$'\r'/\\r}"
+    printf '%s' "$s"
+}
+
+# Emit a single JSON object with a stable schema. Arguments are the gathered
+# data values. Arrays are split from newline-delimited strings.
+emit_json() {
+    local repo_root="$1" branch="$2" upstream="$3" recent_log="$4" \
+          staged="$5" unstaged="$6" untracked="$7" diff_stats="$8" \
+          full_diff="$9" qc_eslint="${10}" qc_prettier="${11}" \
+          qc_tests="${12}" qc_just="${13}"
+
+    # Helper: emit a JSON array from a newline-delimited string
+    json_array() {
+        local s="$1"
+        if [[ -z "$s" || "$s" == "<none>" ]]; then
+            printf '[]'
+            return
+        fi
+        local first=1
+        printf '['
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            if [[ "$first" -eq 0 ]]; then printf ','; fi
+            first=0
+            printf '"%s"' "$(printf '%s' "$line" | json_escape)"
+        done <<< "$s"
+        printf ']'
+    }
+
+    # Parse just targets from qc_just (lines like "JUST:validate")
+    local just_arr="[]"
+    if [[ -n "$qc_just" ]]; then
+        local just_first=1 just_items=""
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            local t="${line#JUST:}"
+            if [[ "$just_first" -eq 0 ]]; then just_items+=","; fi
+            just_first=0
+            just_items+="\"$(printf '%s' "$t" | json_escape)\""
+        done <<< "$qc_just"
+        just_arr="[$just_items]"
+    fi
+
+    # Parse eslint/prettier/tests status from the multi-line qc strings
+    parse_status() {
+        local s="$1"
+        if [[ "$s" == *"STATUS:PASS"* ]]; then printf 'PASS'
+        elif [[ "$s" == *"STATUS:FAIL"* ]]; then printf 'FAIL'
+        elif [[ "$s" == *"NOT_AVAILABLE"* ]]; then printf 'NOT_AVAILABLE'
+        elif [[ "$s" == *"NOT_CONFIGURED"* ]]; then printf 'NOT_CONFIGURED'
+        else printf 'UNKNOWN'; fi
+    }
+
+    local eslint_status prettier_status tests_status
+    eslint_status=$(parse_status "$qc_eslint")
+    prettier_status=$(parse_status "$qc_prettier")
+    tests_status=$(parse_status "$qc_tests")
+
+    printf '{'
+    printf '"repo_root":"%s"' "$(printf '%s' "$repo_root" | json_escape)"
+    printf ',"branch":"%s"' "$(printf '%s' "$branch" | json_escape)"
+    printf ',"upstream":"%s"' "$(printf '%s' "$upstream" | json_escape)"
+    printf ',"available_tools":{'
+    printf '"rtk":%s,"devbox":%s,"jj":%s,"difft":%s,"delta":%s,"hunk":%s,"git_extras":%s' \
+        "$RTK_AVAILABLE" "$DEVBOX_AVAILABLE" "$JJ_AVAILABLE" \
+        "$DIFFT_AVAILABLE" "$DELTA_AVAILABLE" "$HUNK_AVAILABLE" "$GIT_EXTRAS_AVAILABLE"
+    printf '}'
+    printf ',"recent_log":%s' "$(json_array "$recent_log")"
+    printf ',"staged":%s' "$(json_array "$staged")"
+    printf ',"unstaged":%s' "$(json_array "$unstaged")"
+    printf ',"untracked":%s' "$(json_array "$untracked")"
+    printf ',"diff_stats":"%s"' "$(printf '%s' "$diff_stats" | json_escape)"
+    printf ',"full_diff":"%s"' "$(printf '%s' "$full_diff" | json_escape)"
+    printf ',"quality_checks":{'
+    printf '"eslint":"%s"' "$eslint_status"
+    printf ',"prettier":"%s"' "$prettier_status"
+    printf ',"tests":"%s"' "$tests_status"
+    printf ',"just":%s' "$just_arr"
+    printf '}'
+    printf '}\n'
 }
 
 main "$@"

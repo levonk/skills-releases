@@ -27,6 +27,9 @@ the maintainer's first comment was:
 
 > Can you run: `bunx oxfmt --write .github/workflows/nix.yml`
 
+(We would run `pnpm dlx oxfmt --write .github/workflows/nix.yml` — never
+`bunx`, `npx`, or `yarn dlx`. See the [Detection](#detection) table below.)
+
 The file was correct YAML, but oxfmt's style (single-quoted strings)
 differed from the double-quoted strings the template produced. The
 formatter step would have caught this before pushing.
@@ -35,13 +38,19 @@ formatter step would have caught this before pushing.
 
 | Formatter | Config files | Runner |
 |-----------|-------------|--------|
-| oxfmt | `.oxfmtrc.json`, `oxfmt` in package.json | `bunx` → `pnpm dlx` → `npx` |
-| prettier | `.prettierrc*`, `.prettierignore`, `prettier` in package.json | `bunx` → `pnpm dlx` → `npx` |
-| biome | `biome.json`, `biome.jsonc` | `bunx` → `pnpm dlx` → `npx` |
+| oxfmt | `.oxfmtrc.json`, `oxfmt` in package.json | `pnpm dlx oxfmt` |
+| prettier | `.prettierrc*`, `.prettierignore`, `prettier` in package.json | `pnpm dlx prettier` |
+| biome | `biome.json`, `biome.jsonc` | `pnpm dlx @biomejs/biome` |
 | deno fmt | `deno.json`, `deno.jsonc` | `deno fmt` |
 
 If no formatter is detected, skip silently. Most Nix-only or
 config-only projects won't have one.
+
+> **Runner selection is fixed**: always `pnpm dlx <pkg>` — never `npx`,
+> `bunx`, `bun x`, or `yarn dlx`, even when the upstream project you're
+> contributing to uses bun or yarn as its package manager. `pnpm dlx` runs the
+> package identically regardless of the target project's package manager. See
+> [typescript-monorepo-best-practices/pnpm-nx-monorepo.md](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/pnpm-nx-monorepo.md).
 
 ## Scope
 

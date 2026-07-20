@@ -7,6 +7,7 @@ This guide is for developers working on the codebase. For user-facing setup and 
 - Out of Scope: [`internal-docs/oos/`](../../internal-docs/oos/) - What this repo explicitly does NOT do (check before adding features)
 - Improvements: [`internal-docs/improvements/INDEX.md`](../../internal-docs/improvements/INDEX.md) - Potential improvements to consider (check before proposing changes to avoid re-proposing already-evaluated improvements)
 - Anti-Patterns: [`internal-docs/anti-patterns/INDEX.md`](../../internal-docs/anti-patterns/INDEX.md) - Things explicitly NOT to do (check before implementing changes to avoid re-introducing known-bad approaches)
+- Knowledge Bundles: [`.agents/knowledge/bundles/`](../../.agents/knowledge/bundles/) - Offline practice bundles (universal + stack-matched); see root AGENTS.md for the full table including URL-referenced domain bundles
 
 ## <commands>
 **Devbox Commands (Environment)**

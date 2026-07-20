@@ -190,12 +190,48 @@ def _search_dirs() -> list[Path]:
     return dirs
 
 
+def ensure_devbox_package(pkg: str) -> bool:
+    """Ensure a package is listed in the nearest devbox.json."""
+    devbox_dir = _walk_up_find("devbox.json")
+    if not devbox_dir:
+        return False
+    devbox_json = devbox_dir / "devbox.json"
+    try:
+        with open(devbox_json, "r") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return False
+    packages = data.get("packages", {})
+    if isinstance(packages, dict):
+        if pkg not in packages:
+            packages[pkg] = ""
+            data["packages"] = packages
+        else:
+            return True
+    elif isinstance(packages, list):
+        if pkg not in packages:
+            packages.append(pkg)
+            data["packages"] = packages
+        else:
+            return True
+    else:
+        return False
+    try:
+        with open(devbox_json, "w") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+    except OSError:
+        return False
+    return True
+
+
 def resolve_tool(tool: str) -> dict:
     """Resolve a CLI tool. Returns a dict with 'status' and 'path' or 'wrapper'.
 
     Return values:
         {"status": "found", "path": "/usr/local/bin/go"}
         {"status": "wrapper", "wrapper": "devbox run --"}
+        {"status": "fallback", "fallback": "pip", "runner": "..."}
         {"status": "not_found"}
     """
     # 1. Already on PATH?
@@ -254,6 +290,27 @@ def resolve_tool(tool: str) -> dict:
         except FileNotFoundError:
             pass
 
+    # 5. uv fallback: ensure uv is recorded in devbox.json, then fall back to pip.
+    if tool == "uv":
+        ensure_devbox_package("uv")
+        pip_cmd = None
+        if shutil.which("pip3"):
+            pip_cmd = "pip3"
+        elif shutil.which("pip"):
+            pip_cmd = "pip"
+        elif shutil.which("python3"):
+            pip_cmd = "python3 -m pip"
+        if pip_cmd:
+            return {
+                "status": "fallback",
+                "fallback": "pip",
+                "runner": pip_cmd,
+                "message": (
+                    "uv not found; pip is available as a fallback for Python "
+                    f"package operations. Consider installing uv with '{pip_cmd} install --user uv'."
+                ),
+            }
+
     return {"status": "not_found"}
 
 
@@ -268,6 +325,15 @@ def run_tool(tool: str, args: list[str], **kwargs) -> subprocess.CompletedProces
 
     if status == "found":
         return subprocess.run([result["path"], *args], **kwargs)
+    elif status == "fallback":
+        if tool == "uv" and result.get("fallback") == "pip":
+            runner = result.get("runner", "pip3")
+            print(f"[cli-tool-discovery] uv not found; installing uv via {runner}", file=sys.stderr)
+            subprocess.run([*runner.split(), "install", "--user", "uv"], check=False)
+            if shutil.which("uv"):
+                return subprocess.run(["uv", *args], **kwargs)
+            raise FileNotFoundError(f"uv could not be installed; {runner} is available as fallback")
+        raise FileNotFoundError(f"Tool not found: {tool}")
     elif status == "wrapper":
         wrapper = result["wrapper"]
         if wrapper == "devbox run --":
@@ -302,6 +368,15 @@ def run_tool_exec(tool: str, args: list[str]) -> None:
 
     if status == "found":
         os.execv(result["path"], [tool, *args])
+    elif status == "fallback":
+        if tool == "uv" and result.get("fallback") == "pip":
+            runner = result.get("runner", "pip3")
+            print(f"[cli-tool-discovery] uv not found; installing uv via {runner}", file=sys.stderr)
+            subprocess.run([*runner.split(), "install", "--user", "uv"], check=False)
+            if shutil.which("uv"):
+                os.execvp("uv", ["uv", *args])
+            raise FileNotFoundError(f"uv could not be installed; {runner} is available as fallback")
+        raise FileNotFoundError(f"Tool not found: {tool}")
     elif status == "wrapper":
         wrapper = result["wrapper"]
         if wrapper == "devbox run --":
@@ -364,6 +439,167 @@ def rtk_wrap(tool: str, *args: str, **kwargs) -> subprocess.CompletedProcess:
         return devbox_run(["rtk", tool, *args], **kwargs)
     return devbox_run([tool, *args], **kwargs)
 
+
+# --- Runner mode: resolve the ad-hoc runner for an ecosystem ---
+# Mirrors `cli-tool-discovery.sh --runner <ecosystem>`. Returns a dict with
+# the binary, the script runner (for PEP 723-style inline-metadata files),
+# the package runner (for ad-hoc package execution), the fallback, and a
+# recommendation when the binary is not found.
+#
+# Supported ecosystems: python, node, rust, go.
+# The mapping is the single source of truth for "how do I invoke an ad-hoc
+# command in ecosystem X?" — detect-package-manager.py (future) and the
+# python-services-practices/standalone-scripts.md knowledge page both
+# delegate to this.
+
+def _in_container() -> bool:
+    """Detect whether we are inside a container. Used by runner mode to pick
+    bunx (container) vs pnpm dlx (host) for node."""
+    if Path("/.dockerenv").exists():
+        return True
+    if os.environ.get("DOCKER_CONTAINER"):
+        return True
+    cgroup = Path("/proc/1/cgroup")
+    if cgroup.is_file():
+        try:
+            text = cgroup.read_text()
+            if any(marker in text for marker in ("docker", "containerd", "lxc", "kubepods")):
+                return True
+        except OSError:
+            pass
+    return False
+
+
+_RUNNER_MAP = {
+    "python": {
+        "binary": "uv",
+        "script": "uv run --script",
+        "package": "uvx",
+        "fallback": "pip install + python3",
+        "fallback_runner": "python3",
+    },
+    "node": {
+        # node is special: the binary and package runner depend on container vs host.
+        # _resolve_node_runner below handles the split; this entry is a placeholder.
+        "binary": "",
+        "script": "",
+        "package": "",
+        "fallback": "",
+        "fallback_runner": "",
+    },
+    "rust": {
+        "binary": "cargo",
+        "script": "",
+        "package": "cargo binstall -y",
+        "fallback": "cargo install",
+        "fallback_runner": "cargo",
+    },
+    "go": {
+        "binary": "go",
+        "script": "",
+        "package": "go install",
+        "fallback": "",
+        "fallback_runner": "",
+    },
+}
+
+
+def resolve_runner(ecosystem: str) -> dict:
+    """Resolve the ad-hoc runner for an ecosystem. Returns a dict with:
+        ecosystem, binary, binary_status, binary_path, wrapper,
+        script, package, fallback, fallback_runner, recommendation.
+
+    binary_status is one of: found, wrapper, not_found.
+    When not_found, recommendation tells the caller what to do (add to
+    devbox.json, use fallback, or install manually).
+    """
+    eco = ecosystem.lower()
+    if eco not in _RUNNER_MAP:
+        raise ValueError(
+            f"Unknown ecosystem: {ecosystem} (supported: {', '.join(_RUNNER_MAP)})"
+        )
+
+    # node: container vs host split
+    if eco == "node":
+        if _in_container():
+            spec = {"binary": "bun", "script": "", "package": "bunx",
+                    "fallback": "", "fallback_runner": ""}
+        else:
+            spec = {"binary": "pnpm", "script": "", "package": "pnpm dlx",
+                    "fallback": "", "fallback_runner": ""}
+    else:
+        spec = _RUNNER_MAP[eco]
+
+    binary = spec["binary"]
+    result = resolve_tool(binary)
+    binary_status = result["status"]
+    # The bash version treats FALLBACK (uv→pip) as not_found for runner purposes;
+    # the caller uses fallback/fallback_runner instead of the binary.
+    if binary_status == "fallback":
+        binary_status = "not_found"
+
+    binary_path = result.get("path", "") if binary_status == "found" else ""
+    wrapper = result.get("wrapper", "") if binary_status == "wrapper" else ""
+
+    recommendation = ""
+    if binary_status == "not_found":
+        if _walk_up_find("devbox.json"):
+            recommendation = f"add {binary} to devbox.json (run: devbox add {binary})"
+        elif spec.get("fallback_runner"):
+            recommendation = f"use {spec['fallback_runner']} as fallback"
+        else:
+            recommendation = (
+                f"{binary} not found; install before running {eco} ad-hoc commands"
+            )
+
+    return {
+        "ecosystem": eco,
+        "binary": binary,
+        "binary_status": binary_status,
+        "binary_path": binary_path,
+        "wrapper": wrapper,
+        "script": spec["script"],
+        "package": spec["package"],
+        "fallback": spec["fallback"],
+        "fallback_runner": spec["fallback_runner"],
+        "recommendation": recommendation,
+    }
+
+
+
+def _ensure_devbox_uv(start_path: str) -> None:
+    """Ensure 'uv' is in the nearest devbox.json walking up from start_path."""
+    current = Path(start_path).resolve()
+    for d in [current, *current.parents]:
+        devbox_json = d / "devbox.json"
+        if devbox_json.is_file():
+            try:
+                with open(devbox_json, "r") as f:
+                    data = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                return
+            packages = data.get("packages", {})
+            if isinstance(packages, dict):
+                if "uv" not in packages:
+                    packages["uv"] = ""
+                    data["packages"] = packages
+                else:
+                    return
+            elif isinstance(packages, list):
+                if "uv" not in packages:
+                    packages.append("uv")
+                    data["packages"] = packages
+                else:
+                    return
+            else:
+                return
+            try:
+                with open(devbox_json, "w") as f:
+                    json.dump(data, f, indent=2)
+                    f.write("\n")
+            except OSError:
+                pass
+            return
 
 
 def get_script_dir() -> Path:
@@ -444,293 +680,20 @@ def create_skill_structure(skill_name: str, output_path: str) -> None:
     with open(skill_dir / "scripts" / "example.py", "w") as f:
         f.write(example_script_template)
 
-    # Materialize cli-tool-discovery.sh via a .tmpl include so the new skill
-    # is self-contained after install (no online fetch needed).
+    # Materialize shared scripts via .tmpl includes so the new skill is
+    # self-contained after install (no online fetch needed).
     with open(skill_dir / "scripts" / "cli-tool-discovery.sh.tmpl", "w") as f:
-        f.write('#!/usr/bin/env bash
-# cli-tool-discovery.sh — resolve a CLI tool through environment wrappers and standard PATH locations
-#
-# Usage:
-#   cli-tool-discovery.sh <tool-name> [--json]          # resolve only, print result
-#   cli-tool-discovery.sh -- <tool-name> [args...]      # resolve and exec the tool
-#
-# Output (resolve mode, text): FOUND: <path> | WRAPPER: <wrapper-cmd> | NOT_FOUND: <tool>
-# Output (resolve mode, json): {"status":"found|wrapper|not_found", "path": "...", "wrapper": "...", "tool": "..."}
-# Output (exec mode): the tool's own stdout/stderr/exit code
-#
-# Resolution order:
-#   1. Already on PATH (command -v)
-#   2. Environment wrappers (devbox, mise, flox, direnv, nix) — walks up from cwd
-#   3. Tech-stack-aware standard PATH locations (30+ dirs)
-#   4. Package manager lookup (brew, mise, asdf)
-#   5. Reports NOT_FOUND with what was checked
-set -euo pipefail
+        f.write('{' * 3 + ' include "includes/cli-tool-discovery.sh" . ' + '}' * 3 + '\n')
 
-# --- Parse args: exec mode vs resolve mode ---
-exec_mode=0
-json_output=0
-tool=""
-tool_args=()
+    # resolve-reference.sh enables the skill to pull in dependencies (knowledge
+    # bundles, other skills) via the three-tier fallback resolver at runtime.
+    with open(skill_dir / "scripts" / "resolve-reference.sh.tmpl", "w") as f:
+        f.write('{' * 3 + ' include "includes/resolve-reference.sh" . ' + '}' * 3 + '\n')
 
-if [[ "${1:-}" == "--" ]]; then
-    exec_mode=1
-    shift
-    tool="${1:?Usage: cli-tool-discovery.sh -- <tool-name> [args...]}"
-    shift
-    tool_args=("$@")
-elif [[ "${1:-}" == "--json" ]]; then
-    json_output=1
-    shift
-    tool="${1:?Usage: cli-tool-discovery.sh --json <tool-name>}"
-else
-    tool="${1:?Usage: cli-tool-discovery.sh <tool-name> [--json] | -- <tool-name> [args...]}"
-    shift
-    [[ "${1:-}" == "--json" ]] && json_output=1
-fi
-
-repo_root=""
-if command -v git >/dev/null 2>&1; then
-    repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-fi
-
-# --- Walk up from cwd looking for config files ---
-walk_up() {
-    local dir="$PWD"
-    while [[ "$dir" != "/" ]]; do
-        for pattern in "$@"; do
-            if [[ -f "$dir/$pattern" ]]; then echo "$dir"; return 0; fi
-        done
-        dir="$(dirname "$dir")"
-    done
-    return 1
-}
-
-# --- Resolve tool: prints "FOUND: <path>" or "WRAPPER: <cmd>" to stdout, returns 0/1 ---
-resolve_tool() {
-    # 1. Already on PATH?
-    if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
-        echo "FOUND:$path"
-        return 0
-    fi
-
-    # 2. Environment wrappers
-    # devbox
-    if command -v devbox >/dev/null 2>&1; then
-        if [[ -z "${DEVBOX_SHELL:-}" && -z "${IN_DEVBOX_SHELL:-}" ]]; then
-            if walk_up devbox.json >/dev/null 2>&1; then
-                echo "WRAPPER:devbox run --"
-                return 0
-            fi
-        fi
-    fi
-    # mise
-    if command -v mise >/dev/null 2>&1; then
-        if [[ -z "${MISE_SHELL:-}" ]]; then
-            if walk_up .mise.toml .mise/config.toml mise.toml >/dev/null 2>&1; then
-                echo "WRAPPER:mise exec --"
-                return 0
-            fi
-        fi
-    fi
-    # flox
-    if command -v flox >/dev/null 2>&1; then
-        if [[ -z "${FLOX_ACTIVE:-}" ]]; then
-            if walk_up flox.nix >/dev/null 2>&1; then
-                echo "WRAPPER:flox activate --"
-                return 0
-            fi
-        fi
-    fi
-    # direnv
-    if command -v direnv >/dev/null 2>&1; then
-        if [[ -z "${DIRENV_DIR:-}" ]]; then
-            if walk_up .envrc >/dev/null 2>&1; then
-                echo "WRAPPER:direnv export &&"
-                return 0
-            fi
-        fi
-    fi
-    # nix
-    if command -v nix >/dev/null 2>&1; then
-        if [[ -z "${IN_NIX_SHELL:-}" ]]; then
-            if nix_root="$(walk_up shell.nix flake.nix 2>/dev/null)"; then
-                if [[ -f "$nix_root/flake.nix" ]]; then
-                    echo "WRAPPER:nix develop --command"
-                else
-                    echo "WRAPPER:nix-shell --run"
-                fi
-                return 0
-            fi
-        fi
-    fi
-
-    # 3. Tech-stack-aware directory search
-    local arch=""
-    arch="$(uname -m 2>/dev/null || true)"
-    local search_dirs=()
-    search_dirs+=(
-        "${XDG_BIN_HOME:-}"
-        "$HOME/.local/bin"
-        "$HOME/.nix-profile/bin"
-        "/nix/var/nix/profiles/default/bin"
-        "$HOME/bin"
-        "/usr/local/bin"
-        "/usr/local/sbin"
-        "/usr/sbin"
-        "/usr/bin"
-        "/sbin"
-        "/bin"
-    )
-    # Homebrew: only check the prefix for the current arch.
-    # A Time Machine restore across arches can leave a stale directory
-    # with non-universal binaries that won't run.
-    case "$arch" in
-        arm64)      search_dirs+=("/opt/homebrew/bin" "/opt/homebrew/sbin") ;;
-        #x86_64|i386) search_dirs+=("/usr/local/bin" "/usr/local/sbin") ;;
-    esac
-    # MacPorts (both arches use /opt/local)
-    search_dirs+=("/opt/local/bin")
-    search_dirs+=("/snap/bin" "/run/current-system/sw/bin")
-    search_dirs+=(
-        "$HOME/.cargo/bin"
-        "$HOME/.bun/bin"
-        "$HOME/.deno/bin"
-        "$HOME/.volta/bin"
-        "$HOME/go/bin"
-        "$HOME/.rbenv/shims"
-        "$HOME/.pyenv/shims"
-        "$HOME/.pixi/bin"
-        "$HOME/.krew/bin"
-        "$HOME/.foundry/bin"
-    )
-    if [[ -d "$HOME/.nvm/versions/node" ]]; then
-        for nv in "$HOME/.nvm/versions/node"/*/bin; do
-            [[ -d "$nv" ]] && search_dirs+=("$nv")
-        done
-    fi
-    for inst_dir in "$HOME/.local/share/mise/installs"/*/bin "$HOME/.local/share/rtx/installs"/*/bin; do
-        [[ -d "$inst_dir" ]] && search_dirs+=("$inst_dir")
-    done
-    if [[ -n "$repo_root" ]]; then
-        if [[ -f "$repo_root/package.json" ]]; then
-            search_dirs+=("$repo_root/node_modules/.bin" "$repo_root/.bin")
-        fi
-        if [[ -f "$repo_root/Cargo.toml" ]]; then
-            search_dirs+=("$repo_root/target/release" "$repo_root/target/debug")
-        fi
-        if [[ -f "$repo_root/go.mod" ]]; then
-            search_dirs+=("$repo_root/bin" "$repo_root/.bin")
-        fi
-        if [[ -f "$repo_root/pyproject.toml" || -f "$repo_root/requirements.txt" ]]; then
-            search_dirs+=("$repo_root/.venv/bin" "$repo_root/.local/bin")
-        fi
-        if [[ -f "$repo_root/Gemfile" ]]; then
-            search_dirs+=("$repo_root/bin" "$repo_root/.bundle/bin")
-        fi
-        if [[ -f "$repo_root/composer.json" ]]; then
-            search_dirs+=("$repo_root/vendor/bin")
-        fi
-        search_dirs+=("$repo_root/bin" "$repo_root/scripts" "$repo_root/.local/bin")
-    fi
-    for d in "${search_dirs[@]}"; do
-        [[ -z "$d" ]] && continue
-        if [[ -x "$d/$tool" ]]; then
-            echo "FOUND:$d/$tool"
-            return 0
-        fi
-    done
-
-    # 4. Package manager lookup
-    if command -v brew >/dev/null 2>&1; then
-        if brew list "$tool" >/dev/null 2>&1; then
-            local prefix
-            prefix="$(brew --prefix "$tool" 2>/dev/null || true)"
-            if [[ -n "$prefix" && -x "$prefix/bin/$tool" ]]; then
-                echo "FOUND:$prefix/bin/$tool"
-                return 0
-            fi
-            local brew_prefix
-            brew_prefix="$(brew --prefix)/bin"
-            if [[ -x "$brew_prefix/$tool" ]]; then
-                echo "FOUND:$brew_prefix/$tool"
-                return 0
-            fi
-        fi
-    fi
-    if command -v mise >/dev/null 2>&1; then
-        if mise_path="$(mise which "$tool" 2>/dev/null || true)" && [[ -n "$mise_path" ]]; then
-            echo "FOUND:$mise_path"
-            return 0
-        fi
-    fi
-    if command -v asdf >/dev/null 2>&1; then
-        if asdf_path="$(asdf which "$tool" 2>/dev/null || true)" && [[ -n "$asdf_path" ]]; then
-            echo "FOUND:$asdf_path"
-            return 0
-        fi
-    fi
-
-    # 5. Not found
-    echo "NOT_FOUND:"
-    return 1
-}
-
-# --- Main ---
-result="$(resolve_tool)" || true
-status="${result%%:*}"
-value="${result#*:}"
-
-if [[ "$exec_mode" -eq 1 ]]; then
-    case "$status" in
-        FOUND)
-            exec "$value" "${tool_args[@]}"
-            ;;
-        WRAPPER)
-            # Wrapper commands need different arg passing
-            case "$value" in
-                "devbox run --")        exec devbox run -- "$tool" "${tool_args[@]}" ;;
-                "mise exec --")         exec mise exec -- "$tool" "${tool_args[@]}" ;;
-                "flox activate --")     exec flox activate -- "$tool" "${tool_args[@]}" ;;
-                "direnv export &&")     eval "$(direnv export bash)" && exec "$tool" "${tool_args[@]}" ;;
-                "nix develop --command") exec nix develop --command "$tool" "${tool_args[@]}" ;;
-                "nix-shell --run")      exec nix-shell --run "$tool ${tool_args[*]}" ;;
-                *) echo "Unknown wrapper: $value" >&2; exit 1 ;;
-            esac
-            ;;
-        NOT_FOUND)
-            echo "NOT_FOUND: $tool" >&2
-            echo "Checked: PATH, devbox, mise, flox, direnv, nix, standard locations, package managers" >&2
-            exit 127
-            ;;
-    esac
-else
-    case "$status" in
-        FOUND)
-            if [[ "$json_output" -eq 1 ]]; then
-                printf '{"status":"found","path":"%s","tool":"%s"}\n' "$value" "$tool"
-            else
-                echo "FOUND: $value"
-            fi
-            ;;
-        WRAPPER)
-            if [[ "$json_output" -eq 1 ]]; then
-                printf '{"status":"wrapper","wrapper":"%s","tool":"%s"}\n' "$value $tool" "$tool"
-            else
-                echo "WRAPPER: $value $tool"
-            fi
-            ;;
-        NOT_FOUND)
-            if [[ "$json_output" -eq 1 ]]; then
-                printf '{"status":"not_found","tool":"%s","checked":["PATH","devbox","mise","flox","direnv","nix","standard_locations","package_managers"]}\n' "$tool"
-            else
-                echo "NOT_FOUND: $tool"
-                echo "Checked: PATH, devbox, mise, flox, direnv, nix, standard locations, package managers"
-            fi
-            exit 1
-            ;;
-    esac
-fi
-\n')
+    # Ensure uv is available in the nearest devbox.json so PEP 723 Python
+    # scripts in the skill can run. Walk up from the skill directory to find
+    # a devbox.json and add uv if missing.
+    _ensure_devbox_uv(str(skill_dir))
 
     # Create example reference from template
     example_reference_template = load_template("example-reference.md.template")

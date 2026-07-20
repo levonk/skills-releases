@@ -144,7 +144,7 @@ failing scan breaks the build.
 
 - Use Docker/Kubernetes secrets — never in layers or environment variables.
 - Mount secrets at runtime; see
-  [hardcoded-credentials-detection](../devsecops-codeguard/hardcoded-credentials-detection.md)
+  [hardcoded-credentials-detection](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/hardcoded-credentials-detection.md)
   for source-code credential detection patterns.
 - For build-time secrets, use BuildKit `--mount=type=secret` — see
   [buildkit-secrets](/buildkit-secrets.md).

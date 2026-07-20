@@ -1,5 +1,29 @@
 # Directory Update Log
 
+## 2026-07-18
+
+* **Ingest**: Added [auth-provider-selection.md](auth-provider-selection.md) —
+  the canonical auth provider decision: better-auth as auth provider + Supabase
+  Postgres for storage-engine RLS via session variables. Documents the
+  passkey-first preference ordering (passkey-first > passkey > Google/Apple
+  OAuth > local password + 2FA > local password only) and the email-always-
+  collected-for-recovery requirement. Supersedes supabase-auth-pattern.md
+  (which is retained as historical context for why the original PRD specified
+  Supabase Auth).
+* **Update**: Marked [supabase-auth-pattern.md](supabase-auth-pattern.md) as
+  superseded by auth-provider-selection.md in [index.md](index.md) and
+  [overview.md](overview.md).
+* **Cross-link**: Added bidirectional links to
+  [software-architecture-essentials/tech-decision-risk-assessment.md](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/tech-decision-risk-assessment.md)
+  and
+  [software-architecture-essentials/ai-human-timeline-estimates.md](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/ai-human-timeline-estimates.md)
+  — the risk hierarchy and AI + human estimate format that drove the
+  "better-auth from day one, do not migrate later" decision.
+* **Source**: Decision dialogue in
+  `internal-docs/feature/2026/07/bookkeeping-saas-mvp/` covering PocketBase
+  evaluation, Supabase Auth vs. better-auth, passkey-first onboarding, and
+  the cost-of-migration risk analysis.
+
 ## 2026-07-17
 
 * **Initialization**: Created the `api-auth-payment-practices` knowledge bundle to consolidate SaaS authentication, payment processing, and multi-tenant isolation practices from the bookkeep-saas PRD and task specs.

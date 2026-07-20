@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status: ready · Version: 1.7.0
+> Category: **software-dev** · Status: ready · Version: 1.8.0
 
 Comprehensive git repository workflow for status analysis, change organization, and commit management with secret scanning and rollback-safe ordering. Use when needing to organize and commit changes, manage git workflow, batch commits, push with backup branches, tag releases, or make a single checkpoint commit. Triggers on 'commit changes', 'organize git', 'git workflow', 'batch commit', 'checkpoint commit', or 'repository management'. Do NOT trigger on general git questions, branch creation, or merge requests.
 
@@ -13,7 +13,7 @@ Comprehensive git repository workflow for status analysis, change organization, 
 |-------|-------|
 | Name | `git-repository-management` |
 | Category | `software-dev` |
-| Version | `1.7.0` |
+| Version | `1.8.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -32,15 +32,17 @@ Comprehensive git repository workflow for status analysis, change organization, 
 # The skill orchestrates the workflow with minimal AI-script handoffs
 # This is an AI skill - invoke it through your AI agent interface
 
-# Workflow (3-4 handoffs total):
+# Workflow (3-4 handoffs total, +1-2 if the target is not a git repo):
+# 0. (conditional) If git-collect.sh emits NOT_A_GIT_REPO, AI runs git-repo-init.bash then re-collects
 # 1. AI calls git-collect.sh - gets all data (changes + quality checks)
 # 2. AI analyzes data and makes decisions
 # 3. AI calls git-commit-batch.sh with all commit decisions (auto-creates pre/post tags)
 # 4. AI calls git-push.sh to push (handles divergence automatically — never manually rebase)
 # 5. AI calls git-tag.sh if the user requests an additional tag
 
-./scripts/git-collect.sh [path]              # Collect all data in one call
-./scripts/git-commit-batch.sh [--slug <slug>] [--amend] [path]  # Execute all commits + auto-tag
+./scripts/git-collect.sh [--json] [path]           # Collect all data in one call (text or JSON; emits NOT_A_GIT_REPO + exit 2 if target is not a git repo)
+bash ./scripts/git-repo-init.bash --init-only [TARGET-DIR]  # (conditional) Full CREATE init on a non-git dir; run from inside the dir; --dry-run -v to preview
+./scripts/git-commit-batch.sh [--slug <slug>] [--amend] [--dry-run] [path]  # Execute all commits + auto-tag (or validate with --dry-run)
 ./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # Push commits + tags
 ./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD (user-requested only)
 ./scripts/git-rollback.sh --to <tag-or-sha> [--slug <slug>] [path]  # Roll back to a tag/SHA (creates backup branch)
@@ -73,7 +75,7 @@ This skill uses a **hybrid architecture** where:
 
 ### Workflow Phases
 
-The workflow consists of 5 phases: Script Discovery, Data Collection, AI Analysis & Planning, Execution, and Documentation & Summary, plus optional Tagging. For detailed phase descriptions including Phase 0 (Script Discovery), Phase 1 (Data Collection), Phase 2 (AI Analysis & Planning with rollback-safe ordering and submodule handling), Phase 3 (Execution), Phase 4 (Documentation), and Phase 5 (Tagging), see [Workflow Phases](references/workflow-phases.md).
+The workflow consists of 7 phases: Script Discovery, Repository Initialization (conditional), Data Collection, AI Analysis & Planning, Execution, Documentation & Summary, plus optional Tagging. For detailed phase descriptions including Phase 0 (Script Discovery), Phase 1 (Repository Initialization — conditional, handles non-git targets via the bundled `git-repo-init.bash`), Phase 2 (Data Collection), Phase 3 (AI Analysis & Planning with rollback-safe ordering and submodule handling), Phase 4 (Execution), Phase 5 (Documentation), and Phase 6 (Tagging), see [Workflow Phases](references/workflow-phases.md).
 
 > **Pre-Task Commit Checkpoint**: The checkpoint protocol used before the first commit in a batch (and before subagent dispatch in `execute-upsert`) is shared via the `pre-task-commit-checkpoint` include. Both this skill and `execute-upsert` inline the same protocol, so consumers only need the checkpoint logic documented once.
 
@@ -87,5 +89,5 @@ The workflow consists of 5 phases: Script Discovery, Data Collection, AI Analysi
 ---
 
 - **Full skill**: [`skills/software-dev/git-repository-management/SKILL.md`](skills/software-dev/git-repository-management/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z

@@ -30,6 +30,7 @@ Each phase has practices that prevent specific failure modes:
 | Task Runner | [Just Over Makefiles](just-over-makefiles.md) | .PHONY confusion, file-name collisions, complex variable syntax |
 | Workflow | [Standard Developer UX Flow](standard-developer-ux-flow.md) | Inconsistent commands across projects, AI agent environment drift |
 | Targets | [Internal vs Normal Targets](internal-vs-normal-targets.md) | Double-wrapping devbox run, unclear target responsibilities |
+| Warmup | [Async Prime Internal](async-prime-internal.md) | Cold-cache latency on first command, serial warmup steps that could overlap |
 | Reliability | [Devbox Script Generation Bug](devbox-script-generation-bug.md) | Silent script failures, "command not found" in CI |
 | Quality | [Mandatory Testing Workflow](mandatory-testing-workflow.md) | Untested changes, regressions, missing quality gates |
 | Scripts | [Shell Scripting Best Practices](shell-scripting-best-practices.md) | Unsafe shell scripts, missing dry-runs, untested scripts, dirty repo state |
@@ -41,9 +42,9 @@ the tools, configuration, and processes that ensure every developer and AI agent
 works in the same reproducible environment. It does **not** cover:
 
 - Build system orchestration (Nx, Turborepo) — see
-  [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md).
+  [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md).
 - Container build environments — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 - CI/CD pipeline configuration — separate bundle.
 - IDE-specific configuration (editor settings, extensions) — separate bundle.
 
@@ -85,11 +86,11 @@ from the platform shell rules.
 
 ## Related Knowledge Bundles
 
-- [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md)
+- [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md)
   — Monorepo build orchestration that runs inside the dev environment.
-- [container-best-practices](../container-best-practices/overview.md) — Container
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) — Container
   build environments that complement local dev environments.
-- [upstream-contribution-practices](../upstream-contribution-practices/overview.md)
+- [upstream-contribution-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/upstream-contribution-practices/overview.md)
   — Contribution workflow that depends on consistent local environments.
 
 ## Citations

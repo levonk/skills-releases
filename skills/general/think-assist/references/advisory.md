@@ -3,7 +3,7 @@ modeline: "vim: set ft=markdown:"
 title: "Dynamic Guide & Advisory Panel Creator"
 slug: "dynamic-guide-advisory-panel-creator"
 description: "Instructions for an AI to act as a dynamic guide-builder, creating either a single-expert coaching session or a multi-expert advisory panel based on user input."
-url: "https://github.com/levonk/dotfiles/blob/main/home/current/.chezmoitemplates/dot_config/ai/workflows/business/consulting/dynamic-guide-advisory-panel-creator.md.tmpl"
+url: "src/current/workflows/business/consulting/dynamic-guide-advisory-panel-creator.md.tmpl"
 authors: ["https://github.com/levonk"]
 date:
   created: "2025-11-10"

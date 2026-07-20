@@ -34,11 +34,11 @@ path cleanliness, distribution patterns, CI egress firewalls, and vault
 recovery. It does **not** cover:
 
 - Application-level token encryption — see
-  [api-auth-payment-practices](../api-auth-payment-practices/overview.md).
+  [api-auth-payment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/api-auth-payment-practices/overview.md).
 - Network VPN security — see
-  [infrastructure-networking-practices](../infrastructure-networking-practices/overview.md).
+  [infrastructure-networking-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/infrastructure-networking-practices/overview.md).
 - Code-level security audits — see
-  [devsecops-codeguard](../devsecops-codeguard/overview.md).
+  [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md).
 
 ## Sources
 
@@ -48,11 +48,11 @@ recovery. It does **not** cover:
 
 ## Related Knowledge Bundles
 
-- [api-auth-payment-practices](../api-auth-payment-practices/overview.md) —
+- [api-auth-payment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/api-auth-payment-practices/overview.md) —
   Application-level token security
-- [infrastructure-networking-practices](../infrastructure-networking-practices/overview.md)
+- [infrastructure-networking-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/infrastructure-networking-practices/overview.md)
   — Network-level security
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — Code-level
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — Code-level
   security practices
 
 ## Citations

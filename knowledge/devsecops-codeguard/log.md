@@ -3,12 +3,12 @@
 ## 2026-07-17
 
 * **Restructure**: Moved container-specific concepts to the
-  [container-best-practices](../container-best-practices/index.md) bundle,
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/index.md) bundle,
   which is the canonical home for container authoring, runtime, and Dockerfile
   practices. Moved files:
-  - [container-hardening.md](../container-best-practices/container-runtime-hardening.md) → merged into `container-runtime-hardening.md` (unique sections: docker.sock prohibition, TCP daemon, image scanning, implementation checklist)
-  - [nodejs-in-containers.md](../container-best-practices/nodejs-in-containers.md) → moved as-is
-  - [dockerfile-best-practices.md](../container-best-practices/dockerfile-best-practices.md) → moved as-is
+  - [container-hardening.md](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/container-runtime-hardening.md) → merged into `container-runtime-hardening.md` (unique sections: docker.sock prohibition, TCP daemon, image scanning, implementation checklist)
+  - [nodejs-in-containers.md](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/nodejs-in-containers.md) → moved as-is
+  - [dockerfile-best-practices.md](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/dockerfile-best-practices.md) → moved as-is
   Updated [overview.md](overview.md) pipeline, scope, and citations to reflect
   the narrower code-level security + audit focus. Updated [index.md](index.md)
   to remove the three container concept entries.

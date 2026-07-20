@@ -34,6 +34,86 @@ Use **pnpm** exclusively as the package manager and **Nx** as the unified
 build/task orchestration system across the entire monorepo — JavaScript,
 Docker, Python, and Rust.
 
+### NEVER `npx`, `bunx`, or `yarn dlx` — Always `pnpm dlx` or `pnpm exec`
+
+**Hard rule**: never invoke `npx`, `bunx`, `bun x`, or `yarn dlx` on the host
+or inside a pnpm workspace — not in scripts, CI workflows, documentation,
+examples, or shell commands. Not inside this monorepo, and not when
+contributing to upstream projects that use a different package manager. These
+runners pull from their respective registries by default, bypass pnpm's
+lockfile, and silently install packages outside the workspace's
+content-addressable store, which re-introduces the phantom-dependency and
+non-deterministic-install failure modes that pnpm was chosen to prevent.
+`yarn dlx` additionally lacks the runtime execution semantics needed for
+ad-hoc package invocation and is not a substitute.
+
+| Need | Use | Don't use |
+|------|-----|-----------|
+| Run a package that is **not** a workspace dependency (ad-hoc / one-off) | `pnpm dlx <pkg> [args...]` | `npx <pkg>`, `bunx <pkg>`, `bun x <pkg>`, `yarn dlx <pkg>` |
+| Run a binary that **is** installed in the workspace (dev dep or root dep) | `pnpm exec <cmd> [args...]` | `npx <cmd>`, `bunx <cmd>`, `bun x <cmd>`, `yarn dlx <cmd>` |
+| Run a binary via a pnpm script | `pnpm run <script>` (or `pnpm <script>` for built-ins) | `npx <cmd>`, `bunx <cmd>`, `bun x <cmd>`, `yarn dlx <cmd>` |
+
+```bash
+# ✅ Correct — ad-hoc package
+pnpm dlx only-allow pnpm
+pnpm dlx skills add levonk/skills-releases
+
+# ✅ Correct — workspace-installed binary (nx is a dev dep)
+pnpm exec nx affected -t build test --parallel=3
+# (equivalently, via a pnpm script that calls nx)
+
+# ❌ Wrong — never use any of these on the host or in a pnpm workspace
+npx only-allow pnpm
+bunx only-allow pnpm
+bun x only-allow pnpm
+yarn dlx only-allow pnpm
+npx nx affected -t build test
+bunx nx affected -t build test
+npx skills add levonk/skills-releases
+```
+
+This rule applies to **every** consumer of this knowledge base — skills,
+workflows, agents, prompts, rules, templates, and generated documentation. When
+a third-party tool's docs suggest `npx <tool>`, `bunx <tool>`, or
+`yarn dlx <tool>`, translate it to `pnpm dlx <tool>` (or `pnpm exec <tool>` if
+the tool is a workspace dep) before writing it into any artifact produced by
+this repo. This holds even when the upstream project you're contributing to
+uses bun or yarn as its package manager — `pnpm dlx` runs the package
+identically regardless of the target project's package manager.
+
+### Container Exception — `bunx` inside containers
+
+**Inside a Docker container**, the rule inverts: use **`bunx <pkg>`** and
+**never** install or invoke pnpm (`pnpm dlx`, `pnpm exec`) inside a container.
+Containers use bun as their runtime — pnpm's content-addressable store and
+symlinked `node_modules` are host-developer-workflow optimizations that add
+weight and complexity inside an image without benefit.
+
+This exception applies to:
+
+- **`Dockerfile`s** — `RUN bunx <pkg> ...` is correct; `RUN pnpm dlx <pkg> ...`
+  is wrong.
+- **Container entrypoint scripts** — scripts that run inside the container
+  image (e.g. `entrypoint.sh`, `docker-entrypoint.sh`).
+- **Any script whose execution environment is the container** — even if the
+  script file lives in the source repo, if it's only ever executed inside the
+  container, it uses `bunx`.
+
+```dockerfile
+# ✅ Correct — inside a Dockerfile
+FROM oven/bun:1
+RUN bunx <pkg> <args>
+
+# ❌ Wrong — never install pnpm in a container
+FROM oven/bun:1
+RUN npm install -g pnpm && pnpm dlx <pkg> <args>
+```
+
+When in doubt about whether a script is "container-targeted", check whether it
+is executed by a `RUN`/`CMD`/`ENTRYPOINT` directive in a Dockerfile, or by a
+docker-compose service command. If yes → `bunx`. If it runs on the developer's
+host or in CI outside a container → `pnpm dlx`/`pnpm exec`.
+
 ### pnpm Workspaces
 
 ```yaml
@@ -137,7 +217,7 @@ Use `only-allow` to prevent other package managers:
 ```json
 {
   "scripts": {
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "pnpm dlx only-allow pnpm"
   }
 }
 ```
@@ -149,7 +229,7 @@ Use `only-allow` to prevent other package managers:
 - run: pnpm dlx turbo run build test --affected
 
 # After (Nx)
-- run: npx nx affected -t build test --parallel=3
+- run: pnpm exec nx affected -t build test --parallel=3
 ```
 
 ## Rationale
@@ -217,7 +297,8 @@ Use `only-allow` to prevent other package managers:
 5. Add `@nx/js` or `@nx/next` configuration to each JS/TS project — generate
    `project.json` or add `nx` key to existing `package.json`.
 6. Update package scripts to call `nx` commands instead of `turbo`.
-7. Update CI workflows to use `pnpm` and `npx nx ...`.
+7. Update CI workflows to use `pnpm` and `pnpm exec nx ...` (or `pnpm dlx nx`
+   if nx is not yet installed). Never `npx`.
 8. Add `preinstall` script with `only-allow pnpm`.
 9. Remove `turbo.json` (keep as reference for historical ADR).
 10. For Docker projects: install `@nx/docker` plugin and configure

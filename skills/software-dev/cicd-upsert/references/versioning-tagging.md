@@ -80,7 +80,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npx semantic-release
+      - run: pnpm dlx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```

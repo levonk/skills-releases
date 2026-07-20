@@ -58,7 +58,7 @@ description: Self-update requirement template for AI guidance files to track usa
 ---
 
 ---
-description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up. Also resolves the canonical ad-hoc runner for an ecosystem (python/node/rust/go) via --runner.
 ---
 
 ### CLI Tool Discovery
@@ -68,6 +68,12 @@ detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
 accounts for the project's tech stack — all in one pass. **Never give up on
 the first `command -v` failure.**
+
+For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
+install`), use `--runner <ecosystem>` instead of resolving the binary and
+hardcoding the invocation. The runner mode is the single source of truth for
+"how do I invoke an ad-hoc command in ecosystem X?" — it pairs the binary
+resolution with the canonical invocation pattern from the tech-stack table.
 
 #### Get the script
 
@@ -89,6 +95,9 @@ cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
 
 # Resolve and exec — runs the tool through the right wrapper/path, never returns
 cli-tool-discovery.sh -- <tool-name> [args...]
+
+# Resolve the ad-hoc runner for an ecosystem (JSON only)
+cli-tool-discovery.sh --runner <python|node|rust|go>
 ```
 
 #### Output (resolve mode)
@@ -103,12 +112,63 @@ In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 
+#### Output (runner mode)
+
+`--runner <ecosystem>` emits JSON only:
+
+```json
+{
+  "ecosystem": "python",
+  "binary": "uv",
+  "binary_status": "found",
+  "binary_path": "/usr/local/bin/uv",
+  "wrapper": "",
+  "script": "uv run --script",
+  "package": "uvx",
+  "fallback": "pip install + python3",
+  "fallback_runner": "python3",
+  "recommendation": ""
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `binary` | The canonical binary for the ecosystem (`uv`, `pnpm`/`bun`, `cargo`, `go`) |
+| `binary_status` | `found` (use `binary_path`), `wrapper` (use `wrapper`), `not_found` (use `fallback`/`recommendation`) |
+| `script` | The runner for inline-metadata scripts (PEP 723). Empty for ecosystems without an equivalent. |
+| `package` | The runner for ad-hoc package execution (`uvx`, `pnpm dlx`, `bunx`, `cargo binstall -y`, `go install`) |
+| `fallback` | The fallback approach when the binary is not found (e.g. `pip install + python3`). Empty if no fallback exists. |
+| `fallback_runner` | The command to use for the fallback. Empty if no fallback exists. |
+| `recommendation` | When `binary_status` is `not_found`: either "add to devbox.json", "use fallback", or "install manually". Empty otherwise. |
+
+Ecosystem mapping:
+
+| Ecosystem | Binary | Script runner | Package runner | Fallback |
+|-----------|--------|---------------|----------------|----------|
+| `python` | `uv` | `uv run --script` | `uvx` | `pip install + python3` |
+| `node` (host) | `pnpm` | — | `pnpm dlx` | none (install pnpm) |
+| `node` (container) | `bun` | — | `bunx` | none |
+| `rust` | `cargo` | — | `cargo binstall -y` | `cargo install` |
+| `go` | `go` | — | `go install` | none |
+
+Container detection for `node`: checks `/.dockerenv`, `$DOCKER_CONTAINER`, or
+container markers in `/proc/1/cgroup`. This matches the tech-stack table's
+"inside a container → bunx" rule.
+
+The Python include (`cli-tool-discovery.py.tmpl`) provides `resolve_runner(ecosystem)`
+returning the same dict shape, for use inside Python scripts that need to
+discover the runner programmatically.
+
 #### When to Use
 
 - **Always**, before reporting a tool as "not found" or "not installed"
 - When a build/test/lint command fails with "command not found"
 - When a skill or workflow script needs a tool that isn't on PATH
 - When the user reports a tool "should be installed" but `command -v` fails
+- **For ad-hoc package execution**, use `--runner <ecosystem>` instead of
+  hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` — the
+  runner mode keeps the binary resolution and the invocation pattern paired
+  and consistent with the tech-stack table
 
 #### Anti-Patterns
 
@@ -116,6 +176,115 @@ is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 - **Installing a tool without asking** — always confirm before adding packages
 - **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
   likely inside devbox, not on the bare shell
+- **Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install`** — use
+  `--runner <ecosystem>` instead so the binary and invocation stay paired
+  and the policy lives in one place (the tech-stack table, mirrored by the
+  runner mode)
+
+
+---
+description: Shared reference resolution — run scripts/resolve-reference.sh to resolve links to other skills and knowledge bundles in any deploy context
+---
+
+### Reference Resolution
+
+When a skill or knowledge bundle needs content from another skill or knowledge
+bundle, do **not** use bare relative paths like `../../knowledge/foo/overview.md`
+or `../other-bundle/overview.md`. Those paths break the moment the artifact is
+installed standalone via `pnpm dlx skills add`.
+
+Instead, use the three-tier fallback resolver: `scripts/resolve-reference.sh`.
+It tries three resolution strategies in order:
+
+1. **Local relative path** — finds the target file in the source tree
+   (`src/<ref>` or `<ref>`) by walking up from the current directory. Works in
+   development and full-profile installs.
+2. **Remote fetch** — downloads the target file from the published distribution
+   repo (`levonk/skills-releases` for public content, `levonk/skills-private`
+   for private content). Works for online standalone installs.
+3. **Materialized copy** — reads the target file from
+   `references/included/<ref>` inside the current skill/bundle. Populated at
+   build time with the templater's `includeTree` function. Works for offline
+   standalone installs.
+
+#### Use in skills
+
+For skills that reference knowledge bundles or other skills:
+
+1. Add `scripts/resolve-reference.sh` to the skill by creating a
+   `scripts/resolve-reference.sh.tmpl` file containing a single include directive
+   using the project's `/` delimiters. In rendered guidance this is shown
+   with `{{`/`}}` to avoid delimiter leakage:
+
+   ```
+   {{ include "includes/resolve-reference.sh" . }}
+   ```
+
+2. If the skill's workflow needs the referenced content at runtime (offline,
+   no network), materialize the dependency with `includeTree`:
+
+   ```
+   {{ includeTree "knowledge/<bundle-name>/" . }}
+   ```
+
+   This copies the bundle under
+   `<skill>/references/included/knowledge/<bundle-name>/` at build time. The
+   resolver checks this location as tier 3.
+
+3. Reference the dependency through the resolver:
+
+   ```bash
+   scripts/resolve-reference.sh knowledge/<bundle-name>/overview.md
+   ```
+
+#### Use in knowledge bundles
+
+Knowledge bundles do not have a `scripts/` directory. Cross-bundle links should
+be rewritten to published URLs at build time. Intra-bundle links (e.g.
+`overview.md` → `mermaidjs.md`) remain relative and work in all deploy contexts.
+
+#### Using the resolver from markdown
+
+When authoring a skill, replace relative links with resolver calls or links to
+the materialized copy. Examples:
+
+- Old (broken after standalone install):
+  `[diagram practices](knowledge/documentation-diagram-practices/overview.md)`
+- With `includeTree` (recommended for runtime content):
+  Add `{{ includeTree "knowledge/documentation-diagram-practices/" . }}` to
+  the SKILL.md, then link to the materialized copy:
+  `[diagram practices](references/included/knowledge/documentation-diagram-practices/overview.md)`
+- Direct resolver call (for scripts):
+  `bash scripts/resolve-reference.sh knowledge/documentation-diagram-practices/overview.md`
+
+#### Resolver syntax
+
+```bash
+# Print content to stdout
+scripts/resolve-reference.sh knowledge/foo/overview.md
+
+# Force a specific tier (useful for testing)
+scripts/resolve-reference.sh knowledge/foo/overview.md --tier 3
+
+# Write content to a file
+scripts/resolve-reference.sh knowledge/foo/overview.md --out /tmp/foo.md
+```
+
+#### When to materialize with includeTree
+
+- The skill's workflow applies the dependency's content at runtime (e.g. the
+  AUTHOR phase reads syntax conventions from the bundle).
+- The dependency is small and stable.
+- The user may run the skill offline.
+
+Do **not** materialize when:
+
+- The reference is attribution-only ("this skill is related to that bundle").
+- The dependency is huge and the skill only points at it for background.
+- The user is always online and the URL fallback is sufficient.
+
+For attribution-only references, use a URL to the published repo instead:
+`https://github.com/levonk/skills-releases/blob/main/knowledge/<bundle-name>/overview.md`.
 
 
 ---
@@ -1086,7 +1255,7 @@ description: Shared script materialization guidance — materialize shared scrip
 When creating a new artifact, shared scripts that the artifact needs at runtime
 must be materialized into the artifact's own directory tree — not referenced from
 an external location. This ensures the artifact is self-contained after
-installation (via `npx skills add` or copy).
+installation (via `pnpm dlx skills add` or copy).
 
 #### Skills (have `scripts/` directories)
 
@@ -1109,6 +1278,7 @@ automatically for `cli-tool-discovery.sh`.
 |--------|-------------|
 | `cli-tool-discovery.sh` | Always — any skill may need to resolve a CLI tool through wrappers |
 | `scan-artifacts.sh` | Only for skills that generate scripts/files committed to a repo — catches identity leaks (resolved `$HOME`, username, hostname, WiFi SSID, DNS domain) before committing |
+| `resolve-reference.sh` | For skills that reference knowledge bundles or other skills — provides three-tier fallback resolution (local relative path → URL → materialized copy) so the skill works in all deploy contexts |
 
 **Location matters — include vs materialize:**
 
@@ -1145,295 +1315,7 @@ Do not reference scripts via relative paths like `../../includes/` or
 includes/ directory is not bundled with the artifact.
 
 
-# Embedded Script Standards
-
-> This file is shared with `ai-skill-upsert` via a relative include
-> (`../../software-dev/cli-tool-upsert/references/embedded-script-standards.md`).
-> It is the single source of truth for CLI scripts bundled inside skills and
-> projects. Changes here propagate to both skills at build time.
-
-## What Is an Embedded Script?
-
-An embedded script is a CLI script bundled inside a skill's `scripts/`
-directory or a project's `scripts/` directory. It is:
-
-- **Single-file** — no project structure, no `Cargo.toml`, no `package.json`
-- **Invoked by name** — `uv run --script scripts/foo.py` or `./scripts/foo.sh`
-- **Agent-facing** — called by AI agents during skill workflows or project
-  automation
-- **Short-lived** — runs to completion and exits, no daemon, no server
-
-Contrast with **full CLI tools** (scaffolded from boilerplate, multi-file,
-distributed as packages). See `references/cli-best-practices.md` — Full CLI
-Tool Scaffolding for that path.
-
-## Table of Contents
-
-1. [Language Selection](#language-selection)
-2. [PEP 723 and uv (Python)](#pep-723-and-uv-python)
-3. [Bash Standards](#bash-standards)
-4. [AXI Output Contract](#axi-output-contract)
-5. [XDG Paths for Embedded Scripts](#xdg-paths-for-embedded-scripts)
-6. [Error Handling](#error-handling)
-7. [Exit Codes](#exit-codes)
-8. [Script Output Contract](#script-output-contract)
-
-## Language Selection
-
-| Scenario | Language | Rationale |
-|----------|----------|-----------|
-| <50 lines, no external deps, glue code | Bash | Fastest, no runtime dep, universal |
-| Substantive logic, needs a library, >50 lines | Python (uv/PEP 723) | Self-contained via uv, rich stdlib |
-| Performance-critical, called frequently | Python (uv/PEP 723) | Good enough for most; Rust if truly CPU-bound |
-| Caller specifies another language | Caller's choice | The skill adapts — see `references/language-templates.md` |
-
-**Default**: Python (uv/PEP 723) for substantive scripts, bash for tiny glue.
-Bash is not dogma — if in doubt, use Python. Python's stdlib (argparse, json,
-pathlib, subprocess) covers most CLI needs without third-party deps.
-
-## PEP 723 and uv (Python)
-
-Every Python embedded script MUST include a [PEP 723](https://peps.python.org/pep-0723/)
-inline script metadata header. This lets `uv run --script <file>.py` provision
-an ephemeral environment with declared dependencies automatically — no
-virtualenv, no `pip install`, no build step.
-
-**Minimal header (stdlib-only):**
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# ///
-```
-
-**Header with dependencies:**
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "requests>=2.31.0",
-# ]
-# ///
-```
-
-**Rules:**
-- Pin `requires-python` to `>=3.11` unless newer syntax is needed
-- Declare all third-party deps in the `dependencies` array — never `pip install`
-  at runtime
-- Prefer stdlib; omit `dependencies` when no third-party packages are needed
-- When `uv` is unavailable, `python script.py` works for stdlib-only scripts
-  (PEP 723 block is a comment Python ignores)
-- Do NOT inline `pip install` or mutate the environment — `uv run` handles it
-
-See `references/script-execution-standards.md` in `ai-skill-upsert` for the
-full devbox/rtk detection patterns that accompany the PEP 723 header.
-
-## Bash Standards
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-```
-
-- **`set -e`** — exit on error
-- **`set -u`** — error on undefined variables
-- **`set -o pipefail`** — pipe failures propagate
-- Use `[[ ]]` for tests (not `[ ]` — safer with empty strings)
-- Quote all variable expansions: `"${var}"`
-- Use `local` in functions
-- No `eval` — ever
-- Check dependencies: `command -v curl >/dev/null 2>&1 || { echo "ERROR: curl is required" >&2; exit 1; }`
-
-## AXI Output Contract
-
-Embedded scripts follow a subset of AXI principles. See
-`references/axi-principles.md` for the full list with tier markings.
-
-### Required for all embedded scripts:
-
-1. **Output discipline** — results to stdout, logs/progress/diagnostics to
-   stderr. Agents read stdout; stderr is for humans and debug.
-2. **Structured errors** — errors go to stdout in a parseable format with an
-   actionable suggestion. Never leak stack traces or raw dependency errors.
-   ```
-   error: --title is required
-   help: Run with --title "..." to specify the title
-   ```
-3. **Definitive empty states** — when there are no results, say so explicitly.
-   ```
-   items: 0 items found matching filter "closed"
-   ```
-4. **No interactive prompts** — every operation completable with flags alone.
-   Missing required values fail immediately with a clear error.
-5. **Idempotent mutations** — don't error when the desired state already exists.
-   Exit 0 for no-ops.
-6. **Exit codes** — 0 success (including no-ops), 1 error, 2 usage error.
-
-### Required when output is a list:
-
-7. **Pre-computed aggregates** — include total count, not just the page size.
-   ```
-   count: 30 of 847 total
-   ```
-8. **Minimal schemas** — 3-4 fields per item by default, not 10. Offer
-   `--fields` to request more.
-   ```
-   $ fetch-transcripts list --fields id,title,duration,segments
-   ```
-
-### Required when output is data-heavy (>500 tokens of structured data):
-
-9. **TOON output format** — use [TOON](https://toonformat.dev/) for
-   token-efficient structured output. ~40% savings over JSON. Convert at
-   the output boundary, keep internal logic in JSON.
-   ```
-   transcripts[2]{id,title,duration}:
-     "abc123",Intro to Rust,12:30
-     "def456",Advanced Clap,45:00
-   ```
-10. **`--fields` flag** — let agents request additional fields explicitly.
-    Validate field names against available fields. Default schema is 3-4
-    fields; `--fields` expands it.
-
-### Required when output has large text fields:
-
-11. **Content truncation** — truncate by default (500-1500 chars), show total
-    size, suggest `--full` escape hatch. Never omit entirely.
-
-## XDG Paths for Embedded Scripts
-
-Embedded scripts that need to cache or persist data use XDG paths:
-
-| Data type | Path | Env var fallback |
-|-----------|------|------------------|
-| Transient cache | `${XDG_CACHE_HOME:-$HOME/.cache}/<tool>/` | `~/.cache/<tool>/` |
-| Persistent state | `${XDG_DATA_HOME:-$HOME/.local/share}/<tool>/` | `~/.local/share/<tool>/` |
-| Config | `${XDG_CONFIG_HOME:-$HOME/.config}/<tool>/` | `~/.config/<tool>/` |
-
-**Python resolution:**
-```python
-import os
-from pathlib import Path
-
-def cache_dir(tool: str) -> Path:
-    return Path(os.environ.get("XDG_CACHE_HOME", "~/.cache")).expanduser() / tool
-
-def data_dir(tool: str) -> Path:
-    return Path(os.environ.get("XDG_DATA_HOME", "~/.local/share")).expanduser() / tool
-
-def config_dir(tool: str) -> Path:
-    return Path(os.environ.get("XDG_CONFIG_HOME", "~/.config")).expanduser() / tool
-```
-
-**Bash resolution:**
-```bash
-CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/<tool>"
-DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/<tool>"
-CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/<tool>"
-mkdir -p "$CACHE_DIR" "$DATA_DIR"
-```
-
-**Rules:**
-- Cache = can be deleted without data loss (API response caches, temp downloads)
-- Data = persistent state the user would not want to lose (history, databases)
-- Config = user-edited settings
-- Always `mkdir -p` before writing — the dir may not exist on first run
-- Never write outside XDG paths — no `/tmp`, no `~/.<tool>rc`, no `/var`
-
-## Error Handling
-
-### Structured error format
-
-```
-error: <description>
-help: <actionable suggestion>
-```
-
-- One-line description of what went wrong
-- One-line suggestion of how to fix it
-- Reference the script's own flags/commands, not underlying tools
-- Never leak dependency names, stack traces, or raw API errors
-
-### Python pattern
-
-```python
-import sys
-
-def fail(msg: str, suggestion: str = "", exit_code: int = 1) -> None:
-    """Print structured error to stdout and exit."""
-    print(f"error: {msg}")
-    if suggestion:
-        print(f"help: {suggestion}")
-    sys.exit(exit_code)
-
-# Usage:
-if not args.title:
-    fail("--title is required", 'Run with --title "..." to specify the title', exit_code=2)
-```
-
-### Bash pattern
-
-```bash
-fail() {
-    echo "error: $1"
-    if [[ -n "${2:-}" ]]; then
-        echo "help: $2"
-    fi
-    exit "${3:-1}"
-}
-
-# Usage:
-[[ -n "$TITLE" ]] || fail "--title is required" 'Run with --title "..." to specify the title' 2
-```
-
-## Exit Codes
-
-| Code | Meaning | When to use |
-|------|---------|-------------|
-| 0 | Success | Operation completed, including no-ops |
-| 1 | Generic error | Runtime failure, unexpected state |
-| 2 | Usage error | Missing required args, invalid flags, unknown subcommand |
-
-For scripts that need more granularity:
-- 3 = network error
-- 4 = validation error
-- 5 = file not found
-- 6 = permission denied
-- 130 = SIGINT (Ctrl-C)
-
-**Always use exit code 2 for usage errors** — this lets agents distinguish "I
-ran it wrong" from "it ran but failed".
-
-## Script Output Contract
-
-All embedded scripts must follow this output contract so the calling AI can
-function efficiently without reading the script source:
-
-- **Quiet by default**: emit only the minimum output the calling AI needs to
-  make its next decision (exit code, a single status line, or compact JSON).
-  Suppress intermediate command output, progress indicators, and verbose
-  diagnostics unless `--verbose` is passed.
-- **`--verbose` mode**: when passed, emit full detail — every command run,
-  intermediate results, diagnostic messages. Use for debugging.
-- **`--dry-run` mode**: when passed, print what would happen without making
-  changes. Output should be human-readable and show specific operations.
-
-```bash
-# Quiet (default) — AI gets just what it needs
-scripts/check-status.sh
-# Output: "ok" or "failed"
-
-# Verbose — user wants to understand what happened
-scripts/check-status.sh --verbose
-# Output: full curl command, API response, parsed result
-
-# Dry-run — user wants to preview before committing
-scripts/deploy.sh --dry-run
-# Output: "Would deploy to production"
-#         "Would run health check on https://..."
-```
-
+references/included/skills/software-dev/cli-tool-upsert/references/
 
 # Skill Creator
 
@@ -1657,6 +1539,12 @@ is warranted.
    
    Then add a workflow step that runs `scripts/scan-artifacts.sh` on the generated files before committing. The script resolves this machine's actual identity values (`$HOME`, `whoami`, `hostname`, WiFi SSID, DNS domain) and scans for those specific strings — catching identity leaks that review feedback would otherwise catch. If the user says the files are for private use, the step should pass `--private` to ease scrutiny. See `includes/scan-artifacts.md` for the full guidance.
 
+   **Add `resolve-reference.sh` for skills that reference knowledge bundles or other skills**: If the skill's workflow depends on content from another skill or knowledge bundle, the skill must be self-contained after standalone install. `init_skill.py` adds `scripts/resolve-reference.sh` automatically; verify it exists. Use `includeTree` in SKILL.md to materialize referenced bundles at build time:
+   ```
+   {{ includeTree "knowledge/<bundle-name>/" . }}
+   ```
+   Then link to the materialized copy or call `scripts/resolve-reference.sh <ref>` from scripts. See `includes/resolve-reference.md` for the three-tier fallback (local → URL → materialized) and attribution-only vs runtime-content decisions.
+
 5. **Move heavy detail to references**: Any detail that would clutter the step overview goes into `references/<topic>.md`. When a reference contains multiple variant code blocks (e.g., per-language or per-tool templates), split each variant into its own file under a subdirectory — do not embed multiple variant code blocks in one markdown file. When in skills-src, use the templater's `include` directives (see the project's `src/current/skills/AGENTS.md` for the exact syntax) for shared headers/boilerplate across variant files. See `references/progressive-disclosure.md` for patterns (high-level guide with references, domain-specific organization, variant-specific organization, conditional details, step overview) and anti-patterns to avoid (duplicating information, deeply nested references, unclear references, step-numbered filenames, embedded variant code in monolithic template files, monolithic SKILL.md). See `references/anatomy.md` — Template Files for the independent-files-per-variant pattern and DRY include usage.
 
 6. **Add the base-ai-guidance and trigger-guard includes**: Add `---
@@ -1675,7 +1563,7 @@ description: Self-update requirement template for AI guidance files to track usa
 ---
 
 ---
-description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up. Also resolves the canonical ad-hoc runner for an ecosystem (python/node/rust/go) via --runner.
 ---
 
 ### CLI Tool Discovery
@@ -1685,6 +1573,12 @@ detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
 accounts for the project's tech stack — all in one pass. **Never give up on
 the first `command -v` failure.**
+
+For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
+install`), use `--runner <ecosystem>` instead of resolving the binary and
+hardcoding the invocation. The runner mode is the single source of truth for
+"how do I invoke an ad-hoc command in ecosystem X?" — it pairs the binary
+resolution with the canonical invocation pattern from the tech-stack table.
 
 #### Get the script
 
@@ -1706,6 +1600,9 @@ cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
 
 # Resolve and exec — runs the tool through the right wrapper/path, never returns
 cli-tool-discovery.sh -- <tool-name> [args...]
+
+# Resolve the ad-hoc runner for an ecosystem (JSON only)
+cli-tool-discovery.sh --runner <python|node|rust|go>
 ```
 
 #### Output (resolve mode)
@@ -1720,12 +1617,63 @@ In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 
+#### Output (runner mode)
+
+`--runner <ecosystem>` emits JSON only:
+
+```json
+{
+  "ecosystem": "python",
+  "binary": "uv",
+  "binary_status": "found",
+  "binary_path": "/usr/local/bin/uv",
+  "wrapper": "",
+  "script": "uv run --script",
+  "package": "uvx",
+  "fallback": "pip install + python3",
+  "fallback_runner": "python3",
+  "recommendation": ""
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `binary` | The canonical binary for the ecosystem (`uv`, `pnpm`/`bun`, `cargo`, `go`) |
+| `binary_status` | `found` (use `binary_path`), `wrapper` (use `wrapper`), `not_found` (use `fallback`/`recommendation`) |
+| `script` | The runner for inline-metadata scripts (PEP 723). Empty for ecosystems without an equivalent. |
+| `package` | The runner for ad-hoc package execution (`uvx`, `pnpm dlx`, `bunx`, `cargo binstall -y`, `go install`) |
+| `fallback` | The fallback approach when the binary is not found (e.g. `pip install + python3`). Empty if no fallback exists. |
+| `fallback_runner` | The command to use for the fallback. Empty if no fallback exists. |
+| `recommendation` | When `binary_status` is `not_found`: either "add to devbox.json", "use fallback", or "install manually". Empty otherwise. |
+
+Ecosystem mapping:
+
+| Ecosystem | Binary | Script runner | Package runner | Fallback |
+|-----------|--------|---------------|----------------|----------|
+| `python` | `uv` | `uv run --script` | `uvx` | `pip install + python3` |
+| `node` (host) | `pnpm` | — | `pnpm dlx` | none (install pnpm) |
+| `node` (container) | `bun` | — | `bunx` | none |
+| `rust` | `cargo` | — | `cargo binstall -y` | `cargo install` |
+| `go` | `go` | — | `go install` | none |
+
+Container detection for `node`: checks `/.dockerenv`, `$DOCKER_CONTAINER`, or
+container markers in `/proc/1/cgroup`. This matches the tech-stack table's
+"inside a container → bunx" rule.
+
+The Python include (`cli-tool-discovery.py.tmpl`) provides `resolve_runner(ecosystem)`
+returning the same dict shape, for use inside Python scripts that need to
+discover the runner programmatically.
+
 #### When to Use
 
 - **Always**, before reporting a tool as "not found" or "not installed"
 - When a build/test/lint command fails with "command not found"
 - When a skill or workflow script needs a tool that isn't on PATH
 - When the user reports a tool "should be installed" but `command -v` fails
+- **For ad-hoc package execution**, use `--runner <ecosystem>` instead of
+  hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` — the
+  runner mode keeps the binary resolution and the invocation pattern paired
+  and consistent with the tech-stack table
 
 #### Anti-Patterns
 
@@ -1733,6 +1681,115 @@ is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 - **Installing a tool without asking** — always confirm before adding packages
 - **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
   likely inside devbox, not on the bare shell
+- **Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install`** — use
+  `--runner <ecosystem>` instead so the binary and invocation stay paired
+  and the policy lives in one place (the tech-stack table, mirrored by the
+  runner mode)
+
+
+---
+description: Shared reference resolution — run scripts/resolve-reference.sh to resolve links to other skills and knowledge bundles in any deploy context
+---
+
+### Reference Resolution
+
+When a skill or knowledge bundle needs content from another skill or knowledge
+bundle, do **not** use bare relative paths like `../../knowledge/foo/overview.md`
+or `../other-bundle/overview.md`. Those paths break the moment the artifact is
+installed standalone via `pnpm dlx skills add`.
+
+Instead, use the three-tier fallback resolver: `scripts/resolve-reference.sh`.
+It tries three resolution strategies in order:
+
+1. **Local relative path** — finds the target file in the source tree
+   (`src/<ref>` or `<ref>`) by walking up from the current directory. Works in
+   development and full-profile installs.
+2. **Remote fetch** — downloads the target file from the published distribution
+   repo (`levonk/skills-releases` for public content, `levonk/skills-private`
+   for private content). Works for online standalone installs.
+3. **Materialized copy** — reads the target file from
+   `references/included/<ref>` inside the current skill/bundle. Populated at
+   build time with the templater's `includeTree` function. Works for offline
+   standalone installs.
+
+#### Use in skills
+
+For skills that reference knowledge bundles or other skills:
+
+1. Add `scripts/resolve-reference.sh` to the skill by creating a
+   `scripts/resolve-reference.sh.tmpl` file containing a single include directive
+   using the project's `/` delimiters. In rendered guidance this is shown
+   with `{{`/`}}` to avoid delimiter leakage:
+
+   ```
+   {{ include "includes/resolve-reference.sh" . }}
+   ```
+
+2. If the skill's workflow needs the referenced content at runtime (offline,
+   no network), materialize the dependency with `includeTree`:
+
+   ```
+   {{ includeTree "knowledge/<bundle-name>/" . }}
+   ```
+
+   This copies the bundle under
+   `<skill>/references/included/knowledge/<bundle-name>/` at build time. The
+   resolver checks this location as tier 3.
+
+3. Reference the dependency through the resolver:
+
+   ```bash
+   scripts/resolve-reference.sh knowledge/<bundle-name>/overview.md
+   ```
+
+#### Use in knowledge bundles
+
+Knowledge bundles do not have a `scripts/` directory. Cross-bundle links should
+be rewritten to published URLs at build time. Intra-bundle links (e.g.
+`overview.md` → `mermaidjs.md`) remain relative and work in all deploy contexts.
+
+#### Using the resolver from markdown
+
+When authoring a skill, replace relative links with resolver calls or links to
+the materialized copy. Examples:
+
+- Old (broken after standalone install):
+  `[diagram practices](knowledge/documentation-diagram-practices/overview.md)`
+- With `includeTree` (recommended for runtime content):
+  Add `{{ includeTree "knowledge/documentation-diagram-practices/" . }}` to
+  the SKILL.md, then link to the materialized copy:
+  `[diagram practices](references/included/knowledge/documentation-diagram-practices/overview.md)`
+- Direct resolver call (for scripts):
+  `bash scripts/resolve-reference.sh knowledge/documentation-diagram-practices/overview.md`
+
+#### Resolver syntax
+
+```bash
+# Print content to stdout
+scripts/resolve-reference.sh knowledge/foo/overview.md
+
+# Force a specific tier (useful for testing)
+scripts/resolve-reference.sh knowledge/foo/overview.md --tier 3
+
+# Write content to a file
+scripts/resolve-reference.sh knowledge/foo/overview.md --out /tmp/foo.md
+```
+
+#### When to materialize with includeTree
+
+- The skill's workflow applies the dependency's content at runtime (e.g. the
+  AUTHOR phase reads syntax conventions from the bundle).
+- The dependency is small and stable.
+- The user may run the skill offline.
+
+Do **not** materialize when:
+
+- The reference is attribution-only ("this skill is related to that bundle").
+- The dependency is huge and the skill only points at it for background.
+- The user is always online and the URL fallback is sufficient.
+
+For attribution-only references, use a URL to the published repo instead:
+`https://github.com/levonk/skills-releases/blob/main/knowledge/<bundle-name>/overview.md`.
 
 
 ---
@@ -2296,7 +2353,7 @@ If this skill is triggered but the question is a poor fit for it — for example
 **Why this guard exists:** Skills with "pushy" descriptions over-trigger on questions they can't add value to. The guard prevents wasted effort (running a 5-advisor council on "what's the capital of France") while respecting explicit user intent — if the user wants the heavy process run anyway, one word gets it done.
 ` right after it so over-triggering doesn't waste effort (the guard answers without the skill, explains why, and offers a rerun on `go`).
 
-7. **Ensure all scripts include PEP 723, devbox, and rtk detection patterns**: All bundled scripts must include the PEP 723 inline script metadata header (Python) and devbox/rtk detection patterns at the top. See `references/script-execution-standards.md` for full detection code, wrapper patterns (bash and python), and the combined Python template.
+7. **Ensure all scripts include PEP 723, devbox, rtk, and uv detection patterns**: All bundled scripts must include the PEP 723 inline script metadata header (Python), devbox/rtk detection patterns, and a uv fallback at the top. When `uv` is not available, scripts should fall back to `pip` and ensure `uv` is added to the nearest `devbox.json`. The `init_skill.py` script adds `uv` to `devbox.json` automatically when creating a skill; verify this for manually created skills. See `references/script-execution-standards.md` for full detection code, wrapper patterns (bash and python), and the combined Python template.
 
 8. **Review security**: Ensure no secrets, keys, or sensitive paths are exposed. See `references/security.md`.
 
@@ -2350,7 +2407,9 @@ user explicitly says "skip research".
 
 ### Script Execution Standards
 
-All scripts created by or bundled with a skill must include the PEP 723 inline script metadata header (for uv) and devbox/rtk detection patterns. See `references/script-execution-standards.md` for the full combined template, detection code, wrapper patterns (bash and python), and guidance on applying these standards when the AI agent runs bundled scripts directly.
+All scripts created by or bundled with a skill must include the PEP 723 inline script metadata header (for uv) and devbox/rtk/uv detection patterns. See `references/script-execution-standards.md` for the full combined template, detection code, wrapper patterns (bash and python), and guidance on applying these standards when the AI agent runs bundled scripts directly.
+
+For CLI scripts specifically, see the materialized [`embedded-script-standards.md`](references/included/skills/software-dev/cli-tool-upsert/references/embedded-script-standards.md) from `cli-tool-upsert` — the single source of truth for scripts bundled inside skills and projects.
 
 ### Progressive Disclosure
 

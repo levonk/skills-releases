@@ -33,11 +33,11 @@ abstraction, package verification, and reproducible builds. It does **not**
 cover:
 
 - Devbox/direnv/just workflow — see
-  [dev-environment-practices](../dev-environment-practices/overview.md).
+  [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 - CI/CD pipeline configuration — see
-  [cicd-testing-practices](../cicd-testing-practices/overview.md).
+  [cicd-testing-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/overview.md).
 - Container build patterns — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 
 ## Sources
 
@@ -47,11 +47,11 @@ cover:
 
 ## Related Knowledge Bundles
 
-- [dev-environment-practices](../dev-environment-practices/overview.md) —
+- [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md) —
   Workflow practices using devbox/direnv/just
-- [cicd-testing-practices](../cicd-testing-practices/overview.md) — CI uses Nix
+- [cicd-testing-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/overview.md) — CI uses Nix
   for reproducible builds
-- [container-best-practices](../container-best-practices/overview.md) —
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) —
   Container builds on Nix base images
 
 ## Citations

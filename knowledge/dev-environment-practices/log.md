@@ -1,5 +1,11 @@
 # Directory Update Log
 
+## 2026-07-20
+
+* **Creation**: Authored [async-prime-internal.md](async-prime-internal.md) — documents the two-phase prime pattern: Phase 1 (sync) git checkpoint commit (no push, follows pre-task-commit-checkpoint protocol from git-repository-management skill, skippable via PRIME_SKIP_CHECKPOINT=1); Phase 2 (async, fire-and-forget) cache-warming jobs (package downloads, build, recipe list, API doc generation) in parallel. Verification gates (typecheck/test/validate) stay synchronous and blocking. Includes the `.envrc` async trigger (gated by direnv allow + `DEVBOX_SHELL_ENABLED` check) and the sync/async split rule.
+* **Update**: Updated [standard-developer-ux-flow.md](standard-developer-ux-flow.md) — added Prime Flow section documenting the two-phase pattern (sync checkpoint + async warmup) and the rule that verification gates stay synchronous.
+* **Update**: Updated [internal-vs-normal-targets.md](internal-vs-normal-targets.md) — clarified `prime`/`prime-internal` as sync checkpoint + async warmup (not just "code indexing") with cross-link to async-prime-internal.md.
+
 ## 2026-07-17
 
 * **Initialization**: Created the `dev-environment-practices` knowledge bundle to consolidate developer environment practices from three ADRs in levonk-base-boilerplate.

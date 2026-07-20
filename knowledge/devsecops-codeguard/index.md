@@ -9,7 +9,7 @@ rules that prevent the most common security defects from reaching production.
 Each concept captures a specific class of vulnerability or misconfiguration
 and the practice that eliminates it, sourced from real codeguard rules and
 security audit playbooks. Container-specific hardening and Dockerfile practices
-live in the [container-best-practices](../container-best-practices/index.md)
+live in the [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/index.md)
 bundle.
 
 ## Concepts

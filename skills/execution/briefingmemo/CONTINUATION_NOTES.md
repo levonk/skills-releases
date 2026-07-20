@@ -1,12 +1,12 @@
 # BriefingMemo Skill - Continuation Notes
 
 ## Current Status
-The BriefingMemo skill has been created at `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/skills/execution/briefingmemo/`
+The BriefingMemo skill has been created at `src/current/skills/execution/briefingmemo/`
 
 ## Pending Work
 
 ### 1. Enhance with Committee Patterns
-Based on existing committees in `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/committees/`:
+Based on existing committees in `src/current/committees/`:
 
 #### Changes to Implement:
 - Add YAML frontmatter structure following committee pattern
@@ -39,22 +39,22 @@ Create bidirectional references:
 ## Files to Modify
 
 ### Primary Files:
-1. `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/skills/execution/briefingmemo/SKILL.md`
+1. `src/current/skills/execution/briefingmemo/SKILL.md`
    - Add YAML frontmatter
    - Update process flow
    - Add cross-references section
 
-2. `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/skills/execution/briefingmemo/config/committee.yaml`
+2. `src/current/skills/execution/briefingmemo/config/committee.yaml`
    - Add deliberation_protocol field
    - Add conflict_resolution field
    - Add leadership_style dimensions to members
 
-3. `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/skills/execution/briefingmemo/scripts/orchestrate_deliberation.py`
+3. `src/current/skills/execution/briefingmemo/scripts/orchestrate_deliberation.py`
    - Implement different deliberation protocols
    - Add conflict resolution methods
    - Enhance agent personas with leadership styles
 
-4. `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/skills/execution/briefingmemo/scripts/generate_memo.py`
+4. `src/current/skills/execution/briefingmemo/scripts/generate_memo.py`
    - Make output format extensible
    - Add dynamic section creation
    - Reference committee templates
@@ -154,8 +154,8 @@ Create bidirectional references:
 5. Test the enhanced skill functionality
 
 ## Contact Points
-- Skill location: `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/skills/execution/briefingmemo/`
-- Committees location: `~/p/gh/levonk/dotfiles/home/current/.chezmoitemplates/config/ai/committees/`
+- Skill location: `src/current/skills/execution/briefingmemo/`
+- Committees location: `src/current/committees/`
 - Reference the Pi CEO Agents note in Obsidian for context on multi-agent systems
 
 ---

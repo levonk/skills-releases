@@ -1,4 +1,5 @@
 
+
 # {project name}
 
 {project-overview}
@@ -83,6 +84,7 @@ just graph
 **Note**: Always use `just` commands. NX is called internally by justfile recipes.
 
 ## Project Structure
+
 
 ```
 .

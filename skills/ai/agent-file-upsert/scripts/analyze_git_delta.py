@@ -186,12 +186,48 @@ def _search_dirs() -> list[Path]:
     return dirs
 
 
+def ensure_devbox_package(pkg: str) -> bool:
+    """Ensure a package is listed in the nearest devbox.json."""
+    devbox_dir = _walk_up_find("devbox.json")
+    if not devbox_dir:
+        return False
+    devbox_json = devbox_dir / "devbox.json"
+    try:
+        with open(devbox_json, "r") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return False
+    packages = data.get("packages", {})
+    if isinstance(packages, dict):
+        if pkg not in packages:
+            packages[pkg] = ""
+            data["packages"] = packages
+        else:
+            return True
+    elif isinstance(packages, list):
+        if pkg not in packages:
+            packages.append(pkg)
+            data["packages"] = packages
+        else:
+            return True
+    else:
+        return False
+    try:
+        with open(devbox_json, "w") as f:
+            json.dump(data, f, indent=2)
+            f.write("\n")
+    except OSError:
+        return False
+    return True
+
+
 def resolve_tool(tool: str) -> dict:
     """Resolve a CLI tool. Returns a dict with 'status' and 'path' or 'wrapper'.
 
     Return values:
         {"status": "found", "path": "/usr/local/bin/go"}
         {"status": "wrapper", "wrapper": "devbox run --"}
+        {"status": "fallback", "fallback": "pip", "runner": "..."}
         {"status": "not_found"}
     """
     # 1. Already on PATH?
@@ -250,6 +286,27 @@ def resolve_tool(tool: str) -> dict:
         except FileNotFoundError:
             pass
 
+    # 5. uv fallback: ensure uv is recorded in devbox.json, then fall back to pip.
+    if tool == "uv":
+        ensure_devbox_package("uv")
+        pip_cmd = None
+        if shutil.which("pip3"):
+            pip_cmd = "pip3"
+        elif shutil.which("pip"):
+            pip_cmd = "pip"
+        elif shutil.which("python3"):
+            pip_cmd = "python3 -m pip"
+        if pip_cmd:
+            return {
+                "status": "fallback",
+                "fallback": "pip",
+                "runner": pip_cmd,
+                "message": (
+                    "uv not found; pip is available as a fallback for Python "
+                    f"package operations. Consider installing uv with '{pip_cmd} install --user uv'."
+                ),
+            }
+
     return {"status": "not_found"}
 
 
@@ -264,6 +321,15 @@ def run_tool(tool: str, args: list[str], **kwargs) -> subprocess.CompletedProces
 
     if status == "found":
         return subprocess.run([result["path"], *args], **kwargs)
+    elif status == "fallback":
+        if tool == "uv" and result.get("fallback") == "pip":
+            runner = result.get("runner", "pip3")
+            print(f"[cli-tool-discovery] uv not found; installing uv via {runner}", file=sys.stderr)
+            subprocess.run([*runner.split(), "install", "--user", "uv"], check=False)
+            if shutil.which("uv"):
+                return subprocess.run(["uv", *args], **kwargs)
+            raise FileNotFoundError(f"uv could not be installed; {runner} is available as fallback")
+        raise FileNotFoundError(f"Tool not found: {tool}")
     elif status == "wrapper":
         wrapper = result["wrapper"]
         if wrapper == "devbox run --":
@@ -298,6 +364,15 @@ def run_tool_exec(tool: str, args: list[str]) -> None:
 
     if status == "found":
         os.execv(result["path"], [tool, *args])
+    elif status == "fallback":
+        if tool == "uv" and result.get("fallback") == "pip":
+            runner = result.get("runner", "pip3")
+            print(f"[cli-tool-discovery] uv not found; installing uv via {runner}", file=sys.stderr)
+            subprocess.run([*runner.split(), "install", "--user", "uv"], check=False)
+            if shutil.which("uv"):
+                os.execvp("uv", ["uv", *args])
+            raise FileNotFoundError(f"uv could not be installed; {runner} is available as fallback")
+        raise FileNotFoundError(f"Tool not found: {tool}")
     elif status == "wrapper":
         wrapper = result["wrapper"]
         if wrapper == "devbox run --":
@@ -359,6 +434,132 @@ def rtk_wrap(tool: str, *args: str, **kwargs) -> subprocess.CompletedProcess:
     if _rtk_supports(tool, list(args)):
         return devbox_run(["rtk", tool, *args], **kwargs)
     return devbox_run([tool, *args], **kwargs)
+
+
+# --- Runner mode: resolve the ad-hoc runner for an ecosystem ---
+# Mirrors `cli-tool-discovery.sh --runner <ecosystem>`. Returns a dict with
+# the binary, the script runner (for PEP 723-style inline-metadata files),
+# the package runner (for ad-hoc package execution), the fallback, and a
+# recommendation when the binary is not found.
+#
+# Supported ecosystems: python, node, rust, go.
+# The mapping is the single source of truth for "how do I invoke an ad-hoc
+# command in ecosystem X?" — detect-package-manager.py (future) and the
+# python-services-practices/standalone-scripts.md knowledge page both
+# delegate to this.
+
+def _in_container() -> bool:
+    """Detect whether we are inside a container. Used by runner mode to pick
+    bunx (container) vs pnpm dlx (host) for node."""
+    if Path("/.dockerenv").exists():
+        return True
+    if os.environ.get("DOCKER_CONTAINER"):
+        return True
+    cgroup = Path("/proc/1/cgroup")
+    if cgroup.is_file():
+        try:
+            text = cgroup.read_text()
+            if any(marker in text for marker in ("docker", "containerd", "lxc", "kubepods")):
+                return True
+        except OSError:
+            pass
+    return False
+
+
+_RUNNER_MAP = {
+    "python": {
+        "binary": "uv",
+        "script": "uv run --script",
+        "package": "uvx",
+        "fallback": "pip install + python3",
+        "fallback_runner": "python3",
+    },
+    "node": {
+        # node is special: the binary and package runner depend on container vs host.
+        # _resolve_node_runner below handles the split; this entry is a placeholder.
+        "binary": "",
+        "script": "",
+        "package": "",
+        "fallback": "",
+        "fallback_runner": "",
+    },
+    "rust": {
+        "binary": "cargo",
+        "script": "",
+        "package": "cargo binstall -y",
+        "fallback": "cargo install",
+        "fallback_runner": "cargo",
+    },
+    "go": {
+        "binary": "go",
+        "script": "",
+        "package": "go install",
+        "fallback": "",
+        "fallback_runner": "",
+    },
+}
+
+
+def resolve_runner(ecosystem: str) -> dict:
+    """Resolve the ad-hoc runner for an ecosystem. Returns a dict with:
+        ecosystem, binary, binary_status, binary_path, wrapper,
+        script, package, fallback, fallback_runner, recommendation.
+
+    binary_status is one of: found, wrapper, not_found.
+    When not_found, recommendation tells the caller what to do (add to
+    devbox.json, use fallback, or install manually).
+    """
+    eco = ecosystem.lower()
+    if eco not in _RUNNER_MAP:
+        raise ValueError(
+            f"Unknown ecosystem: {ecosystem} (supported: {', '.join(_RUNNER_MAP)})"
+        )
+
+    # node: container vs host split
+    if eco == "node":
+        if _in_container():
+            spec = {"binary": "bun", "script": "", "package": "bunx",
+                    "fallback": "", "fallback_runner": ""}
+        else:
+            spec = {"binary": "pnpm", "script": "", "package": "pnpm dlx",
+                    "fallback": "", "fallback_runner": ""}
+    else:
+        spec = _RUNNER_MAP[eco]
+
+    binary = spec["binary"]
+    result = resolve_tool(binary)
+    binary_status = result["status"]
+    # The bash version treats FALLBACK (uv→pip) as not_found for runner purposes;
+    # the caller uses fallback/fallback_runner instead of the binary.
+    if binary_status == "fallback":
+        binary_status = "not_found"
+
+    binary_path = result.get("path", "") if binary_status == "found" else ""
+    wrapper = result.get("wrapper", "") if binary_status == "wrapper" else ""
+
+    recommendation = ""
+    if binary_status == "not_found":
+        if _walk_up_find("devbox.json"):
+            recommendation = f"add {binary} to devbox.json (run: devbox add {binary})"
+        elif spec.get("fallback_runner"):
+            recommendation = f"use {spec['fallback_runner']} as fallback"
+        else:
+            recommendation = (
+                f"{binary} not found; install before running {eco} ad-hoc commands"
+            )
+
+    return {
+        "ecosystem": eco,
+        "binary": binary,
+        "binary_status": binary_status,
+        "binary_path": binary_path,
+        "wrapper": wrapper,
+        "script": spec["script"],
+        "package": spec["package"],
+        "fallback": spec["fallback"],
+        "fallback_runner": spec["fallback_runner"],
+        "recommendation": recommendation,
+    }
 
 
 

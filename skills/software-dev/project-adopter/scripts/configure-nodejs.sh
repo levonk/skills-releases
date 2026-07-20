@@ -125,7 +125,7 @@ add_standardize_package_json_scripts() {
         fi
 
         # Base scripts for all Node.js projects (from boilerplate)
-        yq eval '.scripts += {"preinstall": "npx only-allow pnpm"}' "$project_path/package.json" -i
+        yq eval '.scripts += {"preinstall": "pnpm dlx only-allow pnpm"}' "$project_path/package.json" -i
         yq eval '.scripts += {"dev": "next dev --turbopack"}' "$project_path/package.json" -i
         yq eval '.scripts += {"build": "next build"}' "$project_path/package.json" -i
         yq eval '.scripts += {"start": "next start"}' "$project_path/package.json" -i
@@ -178,8 +178,8 @@ add_standardize_package_json_scripts() {
 
         # Database scripts (if applicable)
         if [[ -f "$project_path/drizzle.config.ts" ]] || [[ -f "$project_path/package.json" ]] && grep -q "drizzle" "$project_path/package.json" 2>/dev/null; then
-            yq eval '.scripts += {"db:setup": "npx tsx lib/db/setup.ts"}' "$project_path/package.json" -i
-            yq eval '.scripts += {"db:seed": "npx tsx lib/db/seed.ts"}' "$project_path/package.json" -i
+            yq eval '.scripts += {"db:setup": "pnpm exec tsx lib/db/setup.ts"}' "$project_path/package.json" -i
+            yq eval '.scripts += {"db:seed": "pnpm exec tsx lib/db/seed.ts"}' "$project_path/package.json" -i
             yq eval '.scripts += {"db:generate": "drizzle-kit generate"}' "$project_path/package.json" -i
             yq eval '.scripts += {"db:migrate": "drizzle-kit migrate"}' "$project_path/package.json" -i
             yq eval '.scripts += {"db:studio": "drizzle-kit studio"}' "$project_path/package.json" -i
@@ -394,7 +394,7 @@ create_package_json() {
   "description": "A Next.js TypeScript project",
   "type": "module",
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
+    "preinstall": "pnpm dlx only-allow pnpm",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",

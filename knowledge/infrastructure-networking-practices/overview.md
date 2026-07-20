@@ -33,11 +33,11 @@ architecture, connectivity patterns, and infrastructure topology management. It
 does **not** cover:
 
 - Container runtime hardening — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 - Dev environment setup — see
-  [dev-environment-practices](../dev-environment-practices/overview.md).
+  [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 - Security audit practices — see
-  [devsecops-codeguard](../devsecops-codeguard/overview.md).
+  [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md).
 
 ## Sources
 
@@ -47,13 +47,13 @@ does **not** cover:
 
 ## Related Knowledge Bundles
 
-- [container-best-practices](../container-best-practices/overview.md) — Containers
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) — Containers
   run on the network infrastructure
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — Security practices
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — Security practices
   for networked services
-- [secrets-egress-security](../secrets-egress-security/overview.md) — Secret
+- [secrets-egress-security](https://github.com/levonk/skills-releases/blob/main/knowledge/secrets-egress-security/overview.md) — Secret
   management across network infrastructure
-- [cloud-provider-essentials](../cloud-provider-essentials/overview.md) — Cloud
+- [cloud-provider-essentials](https://github.com/levonk/skills-releases/blob/main/knowledge/cloud-provider-essentials/overview.md) — Cloud
   provider infrastructure best practices (AWS, Azure, GCP, OCI) including VPC,
   VNet, and VCN networking configurations that complement these networking
   patterns.

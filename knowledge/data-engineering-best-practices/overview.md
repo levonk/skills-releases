@@ -112,15 +112,15 @@ Future concept candidates (not yet in the bundle):
 
 ## Related Knowledge Bundles
 
-- [container-best-practices](../container-best-practices/overview.md) —
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) —
   container authoring, layered images, and runtime hardening used by Airflow
   and Spark deployments.
-- [java-best-practices](../java-best-practices/overview.md) — Spark and other
+- [java-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/java-best-practices/overview.md) — Spark and other
   JVM data processing tools build on Java packaging and JVM tuning practices.
-- [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md)
+- [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md)
   — TypeScript data access layers (Drizzle ORM, CQRS) and monorepo conventions
   used by data products.
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — pipeline
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — pipeline
   security, credential handling, and container hardening for data platforms.
 
 ## Citations

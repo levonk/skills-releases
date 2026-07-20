@@ -75,12 +75,13 @@ All boilerplate projects MUST include:
 - `build`, `test`, `lint`, `dev`, `typecheck` (normal)
 - `build-internal`, `test-internal`, `lint-internal`, `dev-internal` (internal)
 - `bootstrap`, `bootstrap-internal` (initialization)
-- `prime`, `prime-internal` (code indexing)
+- `prime`, `prime-internal` (async warmup: downloads + build + list + API docs; see [Async Prime Internal](async-prime-internal.md))
 - `doctor`, `clean` (health and cleanup)
 
 ## Related Concepts
 
 - [Standard Developer UX Flow](standard-developer-ux-flow.md) — The three-flow pattern
+- [Async Prime Internal](async-prime-internal.md) — The async warmup job set and fire-and-forget pattern
 - [Just Over Makefiles](just-over-makefiles.md) — Why just is the task runner
 
 ## Citations

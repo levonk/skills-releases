@@ -18,11 +18,16 @@ specific subsystems like theming, terminal state, and tool detection.
 ```
 philosophy → project-structure → data-access → configuration → distribution
                                 ↓
-                  theme → terminal-state → tool-detection → adding-tools → auth-env
+       root-cause-first → tech-decision-risk → ai-human-timelines
+                                ↓
+                  theme → terminal-state → tool-detection → adding-tools → indexed-ast-tools → auth-env
 ```
 
 | Concern | Practice | Prevents |
 |---------|----------|----------|
+| Discipline | [Root-Cause First](root-cause-first.md) | Workaround stacks, contradictory documents, silent guards, band-aids that outlive the bug |
+| Decisions | [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) | Gut-feel choices, single-axis arguments, treating a new constant and a new public API as equally scary |
+| Estimates | [AI + Human Timeline Estimates](ai-human-timeline-estimates.md) | Pre-AI "human days" estimates that overstate AI-cheap work and understate unbounded tail risk |
 | Philosophy | [Architecture Philosophy](philosophy.md) | Cross-domain leakage, untestable modules, refactoring risk |
 | Structure | [Project Structure](project-structure.md) | Flat package sprawl, scattered feature code, unclear ownership |
 | Data | [Data Access Layer](data-access-layer.md) | Duplicated data logic, missing auth checkpoints, debugging pain |
@@ -32,6 +37,7 @@ philosophy → project-structure → data-access → configuration → distribut
 | Terminal | [Terminal State Management](terminal-state.md) | Buffer clearing, input races, corrupted terminal state |
 | Detection | [Tool Detection Architecture](tool-detection.md) | Brittle PATH assumptions, missing tools, slow re-detection |
 | Extensibility | [Adding New Tools](adding-tools.md) | Inconsistent CLI surfaces, scattered wiring, missing tests/docs |
+| Intelligence | [Indexed AST Tool Selection](indexed-ast-tools.md) | Defaulting to one indexed AST tool for every workload; losing the ~58% tool-call reduction by picking the wrong sweet spot; adopting a PolyForm-NC tool for business use without a license |
 | Auth/Env | [Authentication and Environment Management](auth-env.md) | Browser auth in headless, duplicated env detection, silent auth failures |
 
 ## Scope
@@ -41,13 +47,13 @@ decisions and subsystem patterns that keep a codebase modular, maintainable,
 and extensible. It does **not** cover:
 
 - Build orchestration (Nx, Turborepo) — see
-  [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md).
+  [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md).
 - Container build environments — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 - Cloud provider infrastructure — see
-  [cloud-provider-essentials](../cloud-provider-essentials/overview.md).
+  [cloud-provider-essentials](https://github.com/levonk/skills-releases/blob/main/knowledge/cloud-provider-essentials/overview.md).
 - Developer environment setup — see
-  [dev-environment-practices](../dev-environment-practices/overview.md).
+  [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 
 ## Compounding
 
@@ -57,14 +63,17 @@ concerns, scaling thresholds — should be filed as new concept pages. Append to
 
 ## Related Knowledge Bundles
 
-- [dev-environment-practices](../dev-environment-practices/overview.md) —
+- [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md) —
   Environment setup that hosts the architecture.
-- [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md)
+- [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md)
   — Monorepo structure conventions that implement project-structure.md.
-- [cloud-provider-essentials](../cloud-provider-essentials/overview.md) —
+- [cloud-provider-essentials](https://github.com/levonk/skills-releases/blob/main/knowledge/cloud-provider-essentials/overview.md) —
   Cloud infrastructure that the distribution practice deploys to.
-- [container-best-practices](../container-best-practices/overview.md) —
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) —
   Container packaging that implements the distribution practice.
+- [api-auth-payment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/api-auth-payment-practices/overview.md) —
+  Worked example: the auth-provider-selection decision applies the
+  tech-decision-risk hierarchy and the AI + human timeline estimate format.
 
 ## Sources
 

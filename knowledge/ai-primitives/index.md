@@ -46,3 +46,8 @@ prompts, memory, rules, hooks, and the upsert skills that produce them.
 
 * [Templater](build-system/templater.md) - Go text/template renderer with custom delimiters
 * [Build-Time vs Runtime Dependencies](build-system/dependencies.md) - What gets inlined vs what consumers must install
+
+### Cross-Domain Principles (cross-links)
+
+* [Tech Decision Risk Assessment](cross-domain/tech-decision-risk-assessment.md) - Cross-link to canonical risk hierarchy in software-architecture-essentials; applies to AI agents choosing between tech paths
+* [AI + Human Timeline Estimates](cross-domain/ai-human-timeline-estimates.md) - Cross-link to canonical four-axis estimate format; applies to AI agents estimating and reporting work

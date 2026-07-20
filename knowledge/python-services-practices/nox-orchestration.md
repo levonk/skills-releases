@@ -1,8 +1,8 @@
 ---
 type: Practice
 title: nox Orchestration
-description: nox as primary orchestration for Python test/lint pipelines across projects. Discovers pyproject.toml, installs -e .[dev], provides tests and lint sessions. Turborepo handles Node tasks.
-tags: [python, nox, orchestration, turborepo, monorepo, ci-cd]
+description: nox as primary orchestration for Python test/lint pipelines across projects. Discovers pyproject.toml, installs -e .[dev], provides tests and lint sessions. Nx handles Node/Docker/polyglot tasks at the monorepo root.
+tags: [python, nox, orchestration, nx, monorepo, ci-cd]
 timestamp: 2026-07-17T00:00:00Z
 ---
 
@@ -27,12 +27,18 @@ across projects.
   - `tests`: run pytest for all projects with `tests/`
   - `lint`: run ruff + mypy for `app/` and `tests/`
 
-### Turborepo Integration
+### Nx Integration
 
-- Turborepo remains the orchestrator for Node/TypeScript tasks
-- May invoke Python service commands via `package.json` scripts
-- Does **not** replace Python's build system
-- Possible future: `turbo test` invoking `nox -s tests`
+- Nx is the unified orchestrator for Node/TypeScript, Docker, Rust, and other
+  polyglot tasks at the monorepo root (see
+  [typescript-monorepo-best-practices/pnpm-nx-monorepo.md](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/pnpm-nx-monorepo.md)).
+- Nx may invoke Python service commands via `package.json` scripts or
+  `project.json` targets that shell out to `nox -s tests` / `nox -s lint`.
+- Nx does **not** replace Python's build system — nox remains the Python-side
+  orchestrator.
+- Possible future: an `nx run-many -t test` target that delegates to
+  `nox -s tests` for Python projects, so a single `nx affected -t test` command
+  covers both Node and Python.
 
 ### Why nox Over Bazel/Pants
 

@@ -27,7 +27,7 @@ Go's default `{{`/`}}`.
 
 ## Template Functions
 
-Helm/chezmoi-compatible functions:
+Helm-compatible functions:
 - `default`, `lower`, `upper`, `replace`, `split`, `join`, `indent`
 - `env`, `now`, `date`
 - `list`, `dict`, `hasKey`

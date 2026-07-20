@@ -167,14 +167,14 @@ nx-affected:
   steps:
     - uses: actions/checkout@v4
       with: { fetch-depth: 0 }
-    - run: npx nx affected -t lint test build --base=origin/main
+    - run: pnpm exec nx affected -t lint test build --base=origin/main
 
 # Turborepo
 turbo-affected:
   runs-on: ubuntu-latest
   steps:
     - uses: actions/checkout@v4
-    - run: npx turbo run lint test build --filter=...[origin/main]
+    - run: pnpm dlx turbo run lint test build --filter=...[origin/main]
 ```
 
 ## Tool Recommendations

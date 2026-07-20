@@ -86,9 +86,28 @@ accumulate into the current commit.
 
 **Commit order matters.** The script commits in the order the `COMMIT:` blocks
 appear in STDIN, each one stacking on top of the previous. Order the batch
-**least-complicated → most-complicated** (see Phase 2, Step 7) so that a
+**least-complicated → most-complicated** (see Phase 3, Step 7) so that a
 rollback of a later, complicated commit leaves the simpler, well-isolated
 commits beneath it intact.
+
+### Dry-Run Mode (Validation Without Committing)
+
+`git-commit-batch.sh --dry-run` parses the batch, validates each commit
+message (including the mandatory body check and the body-quality heuristic),
+and prints what WOULD be staged per commit — without creating any commits
+or pre/post tags. Use it to catch mistakes before any commits land.
+
+```
+printf 'COMMIT:Add files\\n\\n- Add file1\nFILES:file1.txt\n' \
+  | ./scripts/git-commit-batch.sh --dry-run --slug my-batch
+```
+
+Output per commit: `PROCESSING_COMMIT:N`, `MESSAGE:...`, `FILES:...`, and
+`WOULD_STAGE:<file>` for each file. Exits 0 if all blocks validate, non-zero
+on any validation error (bodyless commit, missing file, amend-with-multiple-
+commits). No `AUTO_TAG_PRE`/`AUTO_TAG_POST` markers are emitted in dry-run
+mode. Pair with `--dry-run` after drafting a large batch to catch
+rename-absorption or body-quality issues before they hit git history.
 
 **Commit messages MUST include a body** (see Mandatory Commit Bodies above).
 Use `\n` literals to separate the subject from the body and to separate body
@@ -105,6 +124,44 @@ COMMIT:Update API documentation\n\n- Document the new /auth/login endpoint\n- Ad
 FILES:docs/api/authentication.md
 FILES:README.md
 ```
+
+### Renames (CRITICAL)
+
+A renamed file must appear as **TWO `FILES:` lines in the same COMMIT block**:
+one for the old path (so `git add` stages the deletion) and one for the new
+path (so `git add` stages the addition). Git detects the rename
+automatically at commit time when both sides are staged together.
+
+If you list only the new path, the old path stays tracked and unstaged —
+the rename is split across commits (deletion leaks into a later commit or
+hangs around as a dirty `D` entry). If you list only the old path, the new
+file is left untracked and the rename is lost.
+
+**Worked example** — renaming `src/auth/login.py` to `src/auth/session.py`:
+```
+COMMIT:Rename login module to session module\n\n- Rename src/auth/login.py to src/auth/session.py to reflect broader scope\n- Update import sites in a follow-up commit
+FILES:src/auth/login.py
+FILES:src/auth/session.py
+```
+
+Both lines go in the **same** COMMIT block. The order does not matter
+(`git add` stages both halves of the rename), but listing old-then-new is
+the conventional reading order.
+
+**Detecting renames during planning:** `git status` may show a rename as a
+paired `R` line when the rename is already staged, or as separate `D` and
+`??` entries when it is not. `git diff --diff-filter=R` and
+`git diff -M` (similarity-based rename detection) help confirm pairs. When
+in doubt, list both paths — listing an extra path that is already clean is
+harmless (git stages nothing new for it), while omitting a path leaves the
+rename incomplete.
+
+**`git mv` note:** If you used `git mv` to perform the rename, the index
+already has both halves staged. The `git-commit-batch.sh` script runs
+`git reset --mixed HEAD` at start (see [Pre-staged file handling]), so the
+rename is unstaged before the batch begins — you MUST still list both paths
+in the COMMIT block to re-stage them. This is why listing both paths is the
+safe default regardless of how the rename was performed.
 
 ## AI Commit Guidelines
 
@@ -140,6 +197,46 @@ This applies to ALL commits made through this skill, in ALL repositories, withou
 - **NO exceptions**: If the commit is too trivial to warrant a body, the body should say so: `"Trivial: fix whitespace\n\n- Remove trailing whitespace in config.toml"`
 
 The script validates this before staging files. If validation fails, fix the message and re-run.
+
+### Body Quality Heuristic (WARNING, not failure)
+
+The script also runs an **advisory** body-quality check after the mandatory
+body check. It emits `WARNING:BODY_LOOKS_LIKE_FILE_LISTING` (to stdout) when
+the body appears to be a file listing rather than prose — but it does NOT
+reject the commit. The warning is advisory to preserve back-compat with
+existing batches; the mandatory body check above is the hard gate.
+
+**Heuristic:** a body is flagged when more than 50% of its non-empty lines
+look like file paths. A line is "path-like" when it:
+- matches `^[a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+$` (a filename with extension), or
+- contains `/` and has no spaces (a path with no prose), or
+- is a single token (no whitespace) containing `.` or `/`
+
+Leading bullet markers (`-`, `*`, `•`) are stripped before the check, so
+`- src/auth/login.py` still counts as path-like.
+
+**Why a warning and not a failure:** the [Significant-Change Titles](#significant-change-titles-critical)
+guidance already covers this anti-pattern in prose; a hard mechanical gate
+would risk blocking legitimate commits where a file list IS the body (e.g.
+a chore commit that genuinely just moves files). Treat the warning as a
+prompt to reconsider the body, not a stop signal.
+
+**Example that triggers the warning:**
+```
+COMMIT:Add files\n\nfile1.txt\nfile2.txt\nfile3.txt
+FILES:file1.txt
+FILES:file2.txt
+FILES:file3.txt
+```
+The body is three path-like lines, no prose — flagged.
+
+**Example that does NOT trigger the warning:**
+```
+COMMIT:Add files\n\n- Add file1 to support new feature X\n- Needed because the prior approach did not handle edge case Y
+FILES:file1.txt
+```
+The body lines contain prose ("Add file1 to support...", "Needed because...")
+with verbs and rationale — not flagged.
 
 ### Artifact References in Commit Bodies (DRY)
 

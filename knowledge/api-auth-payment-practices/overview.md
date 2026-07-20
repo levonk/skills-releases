@@ -16,24 +16,36 @@ that ensure secure auth, reliable billing, and tenant data isolation.
 ## The Auth-Payment Stack
 
 ```
-auth → multi-tenant-rls → payment-provider → token-storage → tier-gating → webhooks
+auth-provider-selection → multi-tenant-rls → payment-provider → token-storage → tier-gating → webhooks
 ```
 
 | Phase | Practice | Prevents |
 |-------|----------|----------|
-| Auth | [Supabase Auth Pattern](supabase-auth-pattern.md) | Inconsistent auth, session management issues, OAuth misconfiguration |
+| Auth | [Auth Provider Selection](auth-provider-selection.md) | Auth migration on paying users, missing passkey-first onboarding, vendor lock-in |
 | Isolation | [Multi-Tenant RLS](multi-tenant-rls.md) | Cross-tenant data leakage, shared schema contamination |
 | Payment | [Payment Provider Interface](payment-provider-interface.md) | Stripe lock-in, billing rewrite for new providers |
 | Secrets | [Encrypted Token Storage](encrypted-token-storage.md) | Token leakage, credential exposure in logs/client |
 | Tiers | [Tier Feature Gating](tier-feature-gating.md) | Ungated features, no trial flow, missing dunning |
 | Webhooks | [Webhook Idempotency](webhook-idempotency.md) | Duplicate processing, missing audit trail, unverified signatures |
 
+> **Note**: [supabase-auth-pattern.md](supabase-auth-pattern.md) is the
+> historical auth pattern. It has been superseded by
+> [auth-provider-selection.md](auth-provider-selection.md), which chooses
+> better-auth as the auth provider while keeping Supabase Postgres for
+> storage-engine RLS via session variables. The historical page is retained
+> for context on why the original PRD specified Supabase Auth.
+
 ## Hard Constraints
 
 - **No third-party AI APIs** for client financial data (FTC Safeguards Rule)
-- **Multi-tenant from day one** — Supabase RLS on every table
+- **Multi-tenant from day one** — Postgres RLS on every table, enforced at the
+  storage engine via session variables (see
+  [Auth Provider Selection](auth-provider-selection.md))
 - **Plaid/Stripe access_tokens encrypted at rest**, never logged, never exposed to client
 - **No CPA-reserved activities** — no audited/certified financial statements
+- **Passkey-first auth preference** — passkey-first > passkey > Google/Apple
+  OAuth > local password + 2FA > local password only; email always collected
+  for recovery (see [Auth Provider Selection](auth-provider-selection.md))
 
 ## Scope
 
@@ -41,11 +53,11 @@ This bundle covers **SaaS auth, payment, and tenant isolation**. It does **not**
 cover:
 
 - Frontend stack conventions — see
-  [frontend-stack-practices](../frontend-stack-practices/overview.md).
+  [frontend-stack-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/frontend-stack-practices/overview.md).
 - Dev environment setup — see
-  [dev-environment-practices](../dev-environment-practices/overview.md).
+  [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 - Secret management infrastructure — see
-  [secrets-egress-security](../secrets-egress-security/overview.md).
+  [secrets-egress-security](https://github.com/levonk/skills-releases/blob/main/knowledge/secrets-egress-security/overview.md).
 
 ## Sources
 
@@ -55,12 +67,15 @@ cover:
 
 ## Related Knowledge Bundles
 
-- [secrets-egress-security](../secrets-egress-security/overview.md) —
+- [secrets-egress-security](https://github.com/levonk/skills-releases/blob/main/knowledge/secrets-egress-security/overview.md) —
   Infrastructure-level secret management
-- [frontend-stack-practices](../frontend-stack-practices/overview.md) —
+- [frontend-stack-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/frontend-stack-practices/overview.md) —
   Frontend conventions for auth/payment UI
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — Security audit
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — Security audit
   practices for auth/payment code
+- [software-architecture-essentials](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/overview.md)
+  — Tech decision risk hierarchy and AI + human timeline estimates that
+  drove the auth-provider-selection decision
 
 ## Citations
 

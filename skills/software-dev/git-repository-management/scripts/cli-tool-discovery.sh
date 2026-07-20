@@ -4,26 +4,48 @@
 # Usage:
 #   cli-tool-discovery.sh <tool-name> [--json]          # resolve only, print result
 #   cli-tool-discovery.sh -- <tool-name> [args...]      # resolve and exec the tool
+#   cli-tool-discovery.sh --runner <ecosystem>          # resolve the ad-hoc runner for an ecosystem
 #
 # Output (resolve mode, text): FOUND: <path> | WRAPPER: <wrapper-cmd> | NOT_FOUND: <tool>
 # Output (resolve mode, json): {"status":"found|wrapper|not_found", "path": "...", "wrapper": "...", "tool": "..."}
 # Output (exec mode): the tool's own stdout/stderr/exit code
+# Output (runner mode, json only):
+#   {"ecosystem":"python","binary":"uv","binary_status":"found|wrapper|not_found",
+#    "binary_path":"...","wrapper":"...","script":"uv run --script","package":"uvx",
+#    "fallback":"...","fallback_runner":"...","recommendation":"..."}
 #
-# Resolution order:
+# Resolution order (resolve/exec mode):
 #   1. Already on PATH (command -v)
 #   2. Environment wrappers (devbox, mise, flox, direnv, nix) — walks up from cwd
 #   3. Tech-stack-aware standard PATH locations (30+ dirs)
 #   4. Package manager lookup (brew, mise, asdf)
 #   5. Reports NOT_FOUND with what was checked
+#
+# Runner mode (--runner <ecosystem>):
+#   Resolves the canonical ad-hoc runner for an ecosystem per the tech-stack table.
+#   Supported ecosystems: python, node, rust, go.
+#   - python: uv (script: `uv run --script`, package: `uvx`); fallback pip+python3
+#   - node:   pnpm on host (`pnpm dlx`), bun in container (`bunx`); no fallback (install pnpm)
+#   - rust:   cargo (`cargo binstall` preferred, `cargo install` fallback); no fallback
+#   - go:     go (`go install <pkg>@latest`); no fallback
+#   When the binary is not_found and a devbox.json exists up the tree, the
+#   `recommendation` field tells the caller to add the binary to devbox.json.
 set -euo pipefail
 
-# --- Parse args: exec mode vs resolve mode ---
+# --- Parse args: runner mode vs exec mode vs resolve mode ---
 exec_mode=0
 json_output=0
+runner_mode=0
+runner_ecosystem=""
 tool=""
 tool_args=()
 
-if [[ "${1:-}" == "--" ]]; then
+if [[ "${1:-}" == "--runner" ]]; then
+    runner_mode=1
+    shift
+    runner_ecosystem="${1:?Usage: cli-tool-discovery.sh --runner <python|node|rust|go>}"
+    shift
+elif [[ "${1:-}" == "--" ]]; then
     exec_mode=1
     shift
     tool="${1:?Usage: cli-tool-discovery.sh -- <tool-name> [args...]}"
@@ -34,7 +56,7 @@ elif [[ "${1:-}" == "--json" ]]; then
     shift
     tool="${1:?Usage: cli-tool-discovery.sh --json <tool-name>}"
 else
-    tool="${1:?Usage: cli-tool-discovery.sh <tool-name> [--json] | -- <tool-name> [args...]}"
+    tool="${1:?Usage: cli-tool-discovery.sh <tool-name> [--json] | -- <tool-name> [args...] | --runner <ecosystem>}"
     shift
     [[ "${1:-}" == "--json" ]] && json_output=1
 fi
@@ -54,6 +76,187 @@ walk_up() {
         dir="$(dirname "$dir")"
     done
     return 1
+}
+
+# --- Ensure a package is listed in devbox.json, walking up from cwd ---
+# Uses `devbox add` if devbox is on PATH, otherwise falls back to a Python
+# or jq edit. Idempotent — does nothing if the package is already present.
+# Returns 0 if devbox.json was found and updated (or already contains pkg),
+# 1 if no devbox.json was found.
+ensure_devbox_package() {
+    local pkg="$1"
+    local devbox_dir
+    if ! devbox_dir="$(walk_up devbox.json)"; then
+        return 1
+    fi
+    local devbox_json="$devbox_dir/devbox.json"
+
+    # If devbox is available, prefer `devbox add` (idempotent in devbox).
+    if command -v devbox >/dev/null 2>&1; then
+        (cd "$devbox_dir" && devbox add "$pkg" >/dev/null 2>&1) || true
+        return 0
+    fi
+
+    # Fallback: edit devbox.json in place.
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - "$pkg" "$devbox_json" <<'PY'
+import json, sys, os
+pkg, path = sys.argv[1], sys.argv[2]
+with open(path, 'r') as f:
+    data = json.load(f)
+packages = data.get('packages', {})
+if isinstance(packages, dict):
+    if pkg not in packages:
+        packages[pkg] = ""
+        data['packages'] = packages
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+            f.write('\n')
+elif isinstance(packages, list):
+    if pkg not in packages:
+        packages.append(pkg)
+        data['packages'] = packages
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+            f.write('\n')
+PY
+        return 0
+    fi
+
+    # Last resort: simple grep check, then append (assumes trailing object/map).
+    if ! grep -qE "\"$pkg\"|'$pkg'" "$devbox_json" 2>/dev/null; then
+        # Insert before the final closing brace. This is a best-effort edit.
+        local tmp
+        tmp="$(mktemp)"
+        if tail -c 20 "$devbox_json" | grep -q '}' 2>/dev/null; then
+            python3 -c "
+import json, sys
+with open('$devbox_json', 'r') as f: data=json.load(f)
+pkgs = data.setdefault('packages', {})
+if isinstance(pkgs, dict) and '$pkg' not in pkgs: pkgs['$pkg'] = ''
+if isinstance(pkgs, list) and '$pkg' not in pkgs: pkgs.append('$pkg')
+with open('$devbox_json', 'w') as f: json.dump(data, f, indent=2); f.write('\n')
+" 2>/dev/null || return 0
+        fi
+        rm -f "$tmp"
+    fi
+    return 0
+}
+
+# --- Detect whether we are inside a container ---
+# Used by runner mode to pick bunx (container) vs pnpm dlx (host) for node.
+# Signals: /.dockerenv file, $DOCKER_CONTAINER env var, or cgroup v1/v2 container markers.
+in_container() {
+    [[ -f /.dockerenv ]] && return 0
+    [[ -n "${DOCKER_CONTAINER:-}" ]] && return 0
+    if [[ -f /proc/1/cgroup ]]; then
+        if grep -qE '(docker|containerd|lxc|kubepods)' /proc/1/cgroup 2>/dev/null; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# --- Resolve the ad-hoc runner for an ecosystem (runner mode) ---
+# Prints JSON to stdout describing the binary, the script runner, the package
+# runner, the fallback, and a recommendation when the binary is not found.
+#
+# Ecosystems: python, node, rust, go. See the script header for the mapping.
+resolve_runner() {
+    local eco="$1"
+    local binary="" script_runner="" package_runner="" fallback="" fallback_runner=""
+    case "$eco" in
+        python)
+            binary="uv"
+            script_runner="uv run --script"
+            package_runner="uvx"
+            fallback="pip install + python3"
+            fallback_runner="python3"
+            ;;
+        node)
+            if in_container; then
+                binary="bun"
+                package_runner="bunx"
+                script_runner=""
+                fallback=""
+                fallback_runner=""
+            else
+                binary="pnpm"
+                package_runner="pnpm dlx"
+                script_runner=""
+                fallback=""
+                fallback_runner=""
+            fi
+            ;;
+        rust)
+            binary="cargo"
+            script_runner=""
+            package_runner="cargo binstall -y"
+            fallback="cargo install"
+            fallback_runner="cargo"
+            ;;
+        go)
+            binary="go"
+            script_runner=""
+            package_runner="go install"
+            fallback=""
+            fallback_runner=""
+            ;;
+        *)
+            echo "ERROR: unknown ecosystem: $eco (supported: python, node, rust, go)" >&2
+            exit 2
+            ;;
+    esac
+
+    # Resolve the binary via the existing resolve_tool path.
+    # Temporarily set $tool so resolve_tool picks it up.
+    tool="$binary"
+    local result status value
+    result="$(resolve_tool)" || true
+    status="${result%%:*}"
+    value="${result#*:}"
+
+    local binary_status="" binary_path="" wrapper=""
+    case "$status" in
+        FOUND)
+            binary_status="found"
+            binary_path="$value"
+            ;;
+        WRAPPER)
+            binary_status="wrapper"
+            wrapper="$value"
+            ;;
+        FALLBACK)
+            # uv → pip fallback already resolved by resolve_tool.
+            # Treat as not_found for runner purposes; the caller uses
+            # fallback/fallback_runner instead of the binary.
+            binary_status="not_found"
+            ;;
+        NOT_FOUND)
+            binary_status="not_found"
+            ;;
+    esac
+
+    # Build recommendation when the binary is not found.
+    local recommendation=""
+    if [[ "$binary_status" == "not_found" ]]; then
+        if walk_up devbox.json >/dev/null 2>&1; then
+            recommendation="add ${binary} to devbox.json (run: devbox add ${binary})"
+        elif [[ -n "$fallback_runner" ]]; then
+            recommendation="use ${fallback_runner} as fallback"
+        else
+            recommendation="${binary} not found; install before running ${eco} ad-hoc commands"
+        fi
+    fi
+
+    # Emit JSON. Empty fields are emitted as empty strings; callers can check
+    # binary_status to decide which field to use.
+    # Escape any double quotes in paths/recommendation (rare but safe).
+    local esc_path="${binary_path//\"/\\\"}"
+    local esc_rec="${recommendation//\"/\\\"}"
+    printf '{"ecosystem":"%s","binary":"%s","binary_status":"%s","binary_path":"%s","wrapper":"%s","script":"%s","package":"%s","fallback":"%s","fallback_runner":"%s","recommendation":"%s"}\n' \
+        "$eco" "$binary" "$binary_status" "$esc_path" "$wrapper" \
+        "$script_runner" "$package_runner" "$fallback" "$fallback_runner" "$esc_rec"
 }
 
 # --- Resolve tool: prints "FOUND: <path>" or "WRAPPER: <cmd>" to stdout, returns 0/1 ---
@@ -221,12 +424,45 @@ resolve_tool() {
         fi
     fi
 
-    # 5. Not found
+    # 5. uv fallback: if uv is not found, ensure it is recorded in
+    # devbox.json (so devbox can provide it next time) and fall back to
+    # pip/pip3/python3 -m pip for Python package operations.
+    if [[ "$tool" == "uv" ]]; then
+        # Add uv to the nearest devbox.json if one exists.
+        ensure_devbox_package uv >/dev/null 2>&1 || true
+
+        # Fall back to pip if available.
+        local pip_cmd=""
+        for candidate in pip3 pip "python3 -m pip"; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+                pip_cmd="$candidate"
+                break
+            fi
+        done
+        # For the compound command "python3 -m pip", command -v on the whole
+        # string fails. Check its components separately.
+        if [[ -z "$pip_cmd" ]]; then
+            if command -v python3 >/dev/null 2>&1; then
+                pip_cmd="python3 -m pip"
+            fi
+        fi
+        if [[ -n "$pip_cmd" ]]; then
+            echo "FALLBACK:pip:$pip_cmd"
+            return 0
+        fi
+    fi
+
+    # 6. Not found
     echo "NOT_FOUND:"
     return 1
 }
 
 # --- Main ---
+if [[ "$runner_mode" -eq 1 ]]; then
+    resolve_runner "$runner_ecosystem"
+    exit 0
+fi
+
 result="$(resolve_tool)" || true
 status="${result%%:*}"
 value="${result#*:}"
@@ -248,6 +484,25 @@ if [[ "$exec_mode" -eq 1 ]]; then
                 *) echo "Unknown wrapper: $value" >&2; exit 1 ;;
             esac
             ;;
+        FALLBACK)
+            # Fallback mode: for uv with pip fallback, install uv then exec it.
+            if [[ "$tool" == "uv" ]]; then
+                local pip_cmd="${value#pip:}"
+                if [[ -n "$pip_cmd" ]]; then
+                    echo "[cli-tool-discovery] uv not found; installing uv via $pip_cmd" >&2
+                    $pip_cmd install --user uv >/dev/null 2>&1 || true
+                    # Try to find uv again after install
+                    if path="$(command -v uv 2>/dev/null || true)" && [[ -n "$path" ]]; then
+                        exec "$path" "${tool_args[@]}"
+                    fi
+                    # If install failed or uv still not on PATH, try pip directly
+                    echo "[cli-tool-discovery] uv install failed; running through pip directly is not supported" >&2
+                    exit 127
+                fi
+            fi
+            echo "NOT_FOUND: $tool" >&2
+            exit 127
+            ;;
         NOT_FOUND)
             echo "NOT_FOUND: $tool" >&2
             echo "Checked: PATH, devbox, mise, flox, direnv, nix, standard locations, package managers" >&2
@@ -268,6 +523,23 @@ else
                 printf '{"status":"wrapper","wrapper":"%s","tool":"%s"}\n' "$value $tool" "$tool"
             else
                 echo "WRAPPER: $value $tool"
+            fi
+            ;;
+        FALLBACK)
+            # Fallback mode: uv → pip
+            if [[ "$tool" == "uv" ]]; then
+                local pip_cmd="${value#pip:}"
+                if [[ "$json_output" -eq 1 ]]; then
+                    printf '{"status":"fallback","tool":"%s","fallback":"pip","runner":"%s","message":"uv not found; %s is available as a fallback for Python package operations. Consider running `devbox install` or `%s install --user uv` to install uv."}\n' "$tool" "$pip_cmd" "$pip_cmd" "$pip_cmd"
+                else
+                    echo "FALLBACK: pip ($pip_cmd) — uv not found; use pip for Python package operations or install uv with '$pip_cmd install --user uv'"
+                fi
+            else
+                if [[ "$json_output" -eq 1 ]]; then
+                    printf '{"status":"fallback","tool":"%s","fallback":"%s"}\n' "$tool" "$value"
+                else
+                    echo "FALLBACK: $value"
+                fi
             fi
             ;;
         NOT_FOUND)

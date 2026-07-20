@@ -31,9 +31,18 @@ Checks:
    12. Commands referenced in README.md exist in Justfile/Makefile/package.json
    13. Directories named in README.md Project Structure exist on disk
 
+Greenfield mode (--greenfield or auto-detected: no .git/ OR fewer than 10
+tracked files AND no README.md at invocation start):
+   - Skips internal-docs/oos/ and internal-docs/adr/ link checks
+   - Skips AGENTS.md cross-checks if AGENTS.md does not exist
+   - Still enforces required README sections and internal link integrity
+   - Prints a "greenfield mode" banner so the agent knows which checks
+     were relaxed
+
 Usage:
     uv run --script verify_consistency.py /path/to/project
     uv run --script verify_consistency.py /path/to/project --verbose
+    uv run --script verify_consistency.py /path/to/project --greenfield
     python verify_consistency.py /path/to/project
 """
 
@@ -346,13 +355,45 @@ README_ONLY_SECTIONS = {
 }
 
 
+GREENFIELD_FILE_THRESHOLD = 10  # fewer than this many tracked files => greenfield
+
+
 def has_section(text: str, section_name: str) -> bool:
     """Check if a section header exists in the text (case-insensitive)."""
     pattern = re.compile(rf"^#{{1,3}}\s+{re.escape(section_name)}\s*$", re.IGNORECASE | re.MULTILINE)
     return bool(pattern.search(text))
 
 
-def verify(project_root: Path, verbose: bool) -> list[str]:
+def count_tracked_files(project_root: Path) -> int:
+    """Best-effort count of git-tracked files. Returns 0 if no .git or git fails."""
+    git_dir = project_root / ".git"
+    if not git_dir.exists():
+        return 0
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(project_root), "ls-files"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            return 0
+        return len([line for line in result.stdout.splitlines() if line.strip()])
+    except Exception:
+        return 0
+
+
+def detect_greenfield(project_root: Path, readme_existed_at_start: bool) -> bool:
+    """Auto-detect greenfield: no README AND (no .git OR < threshold tracked files)."""
+    if readme_existed_at_start:
+        return False
+    if not (project_root / ".git").exists():
+        return True
+    return count_tracked_files(project_root) < GREENFIELD_FILE_THRESHOLD
+
+
+def verify(project_root: Path, verbose: bool, greenfield: bool) -> list[str]:
     """Run all consistency checks. Returns list of issue strings."""
     issues: list[str] = []
 
@@ -408,6 +449,8 @@ def verify(project_root: Path, verbose: bool) -> list[str]:
             issues.append(f"  internal-docs/oos/ exists but README.md doesn't link to it")
         elif verbose:
             print(f"  [ok] README.md links to internal-docs/oos/")
+    elif greenfield and verbose:
+        print(f"  [skip-greenfield] internal-docs/oos/ does not exist — check relaxed")
 
     # 6. Links to internal-docs/adr/ if it exists
     if adr_dir.exists():
@@ -415,11 +458,16 @@ def verify(project_root: Path, verbose: bool) -> list[str]:
             issues.append(f"  internal-docs/adr/ exists but README.md doesn't link to it")
         elif verbose:
             print(f"  [ok] README.md links to internal-docs/adr/")
+    elif greenfield and verbose:
+        print(f"  [skip-greenfield] internal-docs/adr/ does not exist — check relaxed")
 
     # --- Cross-checks against AGENTS.md ---
 
     if not root_agents.exists():
-        if verbose:
+        if greenfield:
+            if verbose:
+                print(f"  [skip-greenfield] no AGENTS.md found — cross-checks relaxed (caller may not have run agent-file-upsert yet)")
+        elif verbose:
             print(f"  [skip] no AGENTS.md found — cross-checks skipped (run agent-file-upsert first)")
         # Still run code-vs-docs checks even without AGENTS.md
         issues.extend(check_command_existence(readme, project_root, verbose))
@@ -476,6 +524,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Verify README.md consistency and cross-check against AGENTS.md")
     parser.add_argument("project_root", type=Path, help="Path to the project root to verify")
     parser.add_argument("--verbose", "-v", action="store_true", help="Print passing checks too")
+    parser.add_argument(
+        "--greenfield",
+        action="store_true",
+        help="Relax checks for greenfield projects: skip internal-docs/oos/ and "
+             "internal-docs/adr/ link checks, skip AGENTS.md cross-checks if "
+             "AGENTS.md does not exist. Auto-detected if no README.md AND (no .git/ "
+             "OR fewer than 10 tracked files).",
+    )
     args = parser.parse_args()
 
     project_root = args.project_root.resolve()
@@ -483,8 +539,17 @@ def main() -> int:
         print(f"ERROR: {project_root} is not a directory", file=sys.stderr)
         return 2
 
+    # Auto-detect greenfield if the flag wasn't explicitly set
+    readme_existed_at_start = (project_root / "README.md").exists()
+    greenfield = args.greenfield or detect_greenfield(project_root, readme_existed_at_start)
+
     print(f"Verifying README.md consistency in: {project_root}")
-    issues = verify(project_root, args.verbose)
+    if greenfield:
+        print("GREENFIELD MODE — relaxing internal-docs/oos/, internal-docs/adr/, and AGENTS.md cross-checks")
+    else:
+        print("BROWNFIELD MODE — full consistency checks")
+
+    issues = verify(project_root, args.verbose, greenfield)
 
     if issues:
         print(f"\nFAILED — {len(issues)} issue(s) found:", file=sys.stderr)

@@ -2,7 +2,7 @@
 
 # git-commit-batch.sh - Execute batch of commits with AI-provided decisions
 # Purpose: Single handoff to execute multiple commits with their messages and file groups
-# Usage: git-commit-batch.sh [--amend] [--slug <slug>] [repo_root]
+# Usage: git-commit-batch.sh [--amend] [--dry-run] [--slug <slug>] [repo_root]
 # Input: STDIN with commit specifications in format:
 #   COMMIT:<commit_message>
 #   FILES:<file1>
@@ -14,6 +14,9 @@
 # because the entire line after "FILES:" is treated as a single path.
 # With --amend: exactly one COMMIT block; stages files and amends HEAD
 # instead of creating a new commit. Pre/post auto-tags still fire.
+# With --dry-run: parse and validate the batch WITHOUT committing or
+# creating tags. Prints PROCESSING_COMMIT/MESSAGE/FILES/WOULD_STAGE per
+# commit. Exits 0 if all blocks validate, non-zero on any validation error.
 # Output: Execution results for each commit
 
 set -euo pipefail
@@ -203,36 +206,227 @@ validate_commit_message() {
     return 1
 }
 
+# Heuristic body-quality check: warn (NOT fail) when the body looks like a
+# file listing rather than prose. A body where >50% of non-empty lines look
+# like file paths (a path-like token with no verbs) is almost certainly
+# restating the diff instead of explaining the why.
+#
+# Emits "WARNING:BODY_LOOKS_LIKE_FILE_LISTING" to stdout and returns 0
+# always — this is advisory, not a hard failure, to preserve back-compat.
+#
+# Heuristic for "path-like line":
+#   - matches ^[a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+$ (a filename with extension), OR
+#   - contains "/" and has no spaces (a path with no prose), OR
+#   - is a single token with no whitespace and at least one of . or /
+validate_commit_message_quality() {
+    local msg="$1"
+    # Extract body (text after the first blank line)
+    [[ "$msg" == *$'\n\n'* ]] || return 0
+    local body="${msg#*$'\n\n'}"
+
+    local total=0 pathlike=0
+    while IFS= read -r line; do
+        # Trim leading/trailing whitespace
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        [[ -z "$line" ]] && continue
+        total=$((total + 1))
+        # Strip leading bullet markers (-, *, •) for the heuristic
+        local stripped="${line#-}"
+        stripped="${stripped#*}"
+        stripped="${stripped#•}"
+        stripped="${stripped#"${stripped%%[![:space:]]*}"}"
+        # Path-like if: filename-with-extension, or contains "/" with no spaces,
+        # or single token with "." and no spaces
+        if [[ "$stripped" =~ ^[a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+$ ]] \
+            || { [[ "$stripped" == */* ]] && [[ "$stripped" != *' '* ]]; } \
+            || { [[ "$stripped" != *' '* ]] && [[ "$stripped" == *.* || "$stripped" == */* ]]; }; then
+            pathlike=$((pathlike + 1))
+        fi
+    done <<< "$body"
+
+    if [[ "$total" -gt 0 ]] && [[ $((pathlike * 2)) -gt $total ]]; then
+        echo "WARNING:BODY_LOOKS_LIKE_FILE_LISTING"
+        echo "  Body appears to be a file listing rather than prose. Consider" >&2
+        echo "  explaining the why (rationale, decisions, context) instead of" >&2
+        echo "  restating which files changed — the diff already shows that." >&2
+    fi
+    return 0
+}
+
 main() {
-    local slug="" target_path="." amend=0
+    local slug="" target_path="." amend=0 dry_run=0
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --slug) slug="$2"; shift 2 ;;
             --slug=*) slug="${1#--slug=}"; shift ;;
             --amend) amend=1; shift ;;
+            --dry-run) dry_run=1; shift ;;
             *) target_path="$1"; shift ;;
         esac
     done
     export AMEND="$amend"
+    export DRY_RUN="$dry_run"
 
     local repo_root
     repo_root=$(discover_repo_root "$target_path")
     cd "$repo_root"
 
     # Derive slug from branch name if not provided (strip path prefix: chore/foo-bar → foo-bar)
+    # On an unborn branch (no commits yet), `git rev-parse --abbrev-ref HEAD`
+    # fails because HEAD doesn't resolve. Fall back to `git symbolic-ref --short
+    # HEAD`, which works on unborn branches and returns the configured branch
+    # name (e.g. "main" or "master"). Final fallback is the literal "run".
     if [[ -z "$slug" ]]; then
-        slug=$(git_cmd rev-parse --abbrev-ref HEAD 2>/dev/null || echo "run")
+        slug=$(git_cmd symbolic-ref --short HEAD 2>/dev/null \
+               || git_cmd rev-parse --abbrev-ref HEAD 2>/dev/null \
+               || echo "run")
         slug="${slug##*/}"
     fi
 
+    # In dry-run mode, do NOT create pre/post tags or modify repo state.
+    # Parse the batch, validate messages, and print what WOULD happen.
+    if [[ "$dry_run" -eq 1 ]]; then
+        echo "=== BATCH_COMMIT_DRY_RUN_START ==="
+        local current_message=""
+        local current_files=()
+        local commit_count=0
+        local validation_failed=0
+
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+            if [[ "$line" =~ ^COMMIT:(.*)$ ]]; then
+                # Capture the commit message immediately — inner [[ ]] tests
+                # below reset BASH_REMATCH, so we must grab it before any
+                # subsequent conditional.
+                local new_message="${BASH_REMATCH[1]}"
+                if [[ -n "$current_message" ]] && [[ ${#current_files[@]} -gt 0 ]]; then
+                    current_message="$(expand_message "$current_message")"
+                    if ! validate_commit_message "$current_message"; then
+                        echo "COMMIT_FAILED:NO_BODY"
+                        echo "ERROR: Commit message must include a body after a blank line." >&2
+                        echo "ERROR: Got: $current_message" >&2
+                        validation_failed=1
+                    else
+                        echo "PROCESSING_COMMIT:$((commit_count + 1))"
+                        echo "MESSAGE:$current_message"
+                        echo "FILES:${current_files[*]}"
+                        validate_commit_message_quality "$current_message" || true
+                        # Show what `git add` WOULD stage for each file
+                        for file in "${current_files[@]}"; do
+                            if stageable "$file"; then
+                                local would_stage
+                                would_stage=$(git_cmd add --dry-run -- "$file" 2>/dev/null || echo "WOULD_STAGE:$file (untracked or new)")
+                                echo "WOULD_STAGE:$file"
+                            else
+                                echo "ERROR: Path not found and not tracked by git: $file" >&2
+                                echo "COMMIT_FAILED:FILE_NOT_FOUND"
+                                validation_failed=1
+                            fi
+                        done
+                        commit_count=$((commit_count + 1))
+                    fi
+                    current_message=""
+                    current_files=()
+                elif [[ -n "$current_message" ]] && [[ ${#current_files[@]} -eq 0 ]]; then
+                    echo "COMMIT_FAILED:NO_FILES"
+                    echo "ERROR: Commit block ended with no FILES: lines." >&2
+                    validation_failed=1
+                    current_message=""
+                fi
+                current_message="$new_message"
+                if [[ "$amend" -eq 1 ]] && [[ "$commit_count" -gt 0 ]]; then
+                    echo "COMMIT_FAILED:AMEND_MULTIPLE_COMMITS"
+                    validation_failed=1
+                fi
+            elif [[ "$line" =~ ^FILES:(.*)$ ]]; then
+                current_files+=("${BASH_REMATCH[1]}")
+            fi
+        done
+
+        # Final commit
+        if [[ -n "$current_message" ]] && [[ ${#current_files[@]} -gt 0 ]]; then
+            current_message="$(expand_message "$current_message")"
+            if ! validate_commit_message "$current_message"; then
+                echo "COMMIT_FAILED:NO_BODY"
+                echo "ERROR: Commit message must include a body after a blank line." >&2
+                echo "ERROR: Got: $current_message" >&2
+                validation_failed=1
+            else
+                echo "PROCESSING_COMMIT:$((commit_count + 1))"
+                echo "MESSAGE:$current_message"
+                echo "FILES:${current_files[*]}"
+                validate_commit_message_quality "$current_message" || true
+                for file in "${current_files[@]}"; do
+                    if stageable "$file"; then
+                        echo "WOULD_STAGE:$file"
+                    else
+                        echo "ERROR: Path not found and not tracked by git: $file" >&2
+                        echo "COMMIT_FAILED:FILE_NOT_FOUND"
+                        validation_failed=1
+                    fi
+                done
+                commit_count=$((commit_count + 1))
+            fi
+        elif [[ -n "$current_message" ]] && [[ ${#current_files[@]} -eq 0 ]]; then
+            echo "COMMIT_FAILED:NO_FILES"
+            echo "ERROR: Final commit block ended with no FILES: lines." >&2
+            validation_failed=1
+        fi
+
+        echo "BATCH_COMMIT_DRY_RUN_COMPLETE:$commit_count"
+        echo "=== BATCH_COMMIT_DRY_RUN_END ==="
+        if [[ "$validation_failed" -ne 0 ]]; then
+            exit 1
+        fi
+        exit 0
+    fi
+
+    # Detect unborn HEAD (root-commit / initial-commit case).
+    # `git rev-parse --verify HEAD` fails when HEAD points to nothing — i.e.
+    # the repo was just `git init`'d and no commit exists yet. In that state:
+    #   - `git tag -a <tag> <sha>` cannot work (no commit-ish to tag)
+    #   - `git reset --mixed HEAD` cannot work (no HEAD to reset to)
+    # We skip the pre-tag (emitting a SKIPPED marker so callers can detect it)
+    # and clear the index with `git read-tree --empty` instead of `git reset`.
+    # The post-tag still fires — by the time we reach it, the first commit
+    # has created HEAD.
+    local head_unborn=0
+    if ! git_cmd rev-parse --verify HEAD >/dev/null 2>&1; then
+        head_unborn=1
+    fi
+
     # Capture pre-run SHA and create pre-tag before any commits
-    local pre_sha
-    pre_sha=$(git_cmd rev-parse HEAD)
     local tag_prefix
     tag_prefix="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
-    local pre_tag="${tag_prefix}-${slug}-pre"
-    git_cmd tag -a "$pre_tag" "$pre_sha" -m "Pre-run checkpoint: ${slug}"
-    echo "AUTO_TAG_PRE:$pre_tag"
+    if [[ "$head_unborn" -eq 0 ]]; then
+        local pre_sha
+        pre_sha=$(git_cmd rev-parse HEAD)
+        local pre_tag="${tag_prefix}-${slug}-pre"
+        git_cmd tag -a "$pre_tag" "$pre_sha" -m "Pre-run checkpoint: ${slug}"
+        echo "AUTO_TAG_PRE:$pre_tag"
+    else
+        echo "AUTO_TAG_PRE:SKIPPED_UNBORN_HEAD"
+    fi
+
+    # Unstage anything currently staged so each commit contains EXACTLY the
+    # FILES: listed in its COMMIT block — no more, no less. Without this, a
+    # pre-existing index (e.g. from a prior `git mv`, `git add`, or a partial
+    # `git add -p`) would be absorbed into commit 1, producing a horizontal-
+    # grouping anti-pattern where unrelated staged changes leak into the first
+    # commit. The pre-tag above already captured the pre-run SHA (when HEAD
+    # exists), so rollback is unaffected. `--mixed` (the default) resets the
+    # index but leaves the worktree untouched, so uncommitted file content is
+    # preserved. On an unborn HEAD, `git reset --mixed HEAD` fails (no HEAD),
+    # so we clear the index with `git read-tree --empty` — same effect (empty
+    # index, worktree untouched).
+    if [[ "$head_unborn" -eq 0 ]]; then
+        git_cmd reset --mixed HEAD >/dev/null
+    else
+        git_cmd read-tree --empty
+    fi
+    echo "INDEX_RESET:mixed"
 
     if [[ "$amend" -eq 1 ]]; then
         echo "AMEND_MODE:enabled"
@@ -249,6 +443,10 @@ main() {
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
         if [[ "$line" =~ ^COMMIT:(.*)$ ]]; then
+            # Capture the commit message immediately — validate_commit_message_quality
+            # below uses =~ which resets BASH_REMATCH, so grab it before any
+            # subsequent regex match.
+            local new_message="${BASH_REMATCH[1]}"
             # Process previous commit if exists
             if [[ -n "$current_message" ]] && [[ ${#current_files[@]} -gt 0 ]]; then
                 # Expand \n literals to real newlines
@@ -266,6 +464,8 @@ main() {
                 echo "PROCESSING_COMMIT:$((commit_count + 1))"
                 echo "MESSAGE:$current_message"
                 echo "FILES:${current_files[*]}"
+                # Advisory body-quality check (warns, does not fail)
+                validate_commit_message_quality "$current_message" || true
 
                 # Stage files
                 for file in "${current_files[@]}"; do
@@ -313,7 +513,7 @@ main() {
             fi
 
             # Set new message
-            current_message="${BASH_REMATCH[1]}"
+            current_message="$new_message"
 
             # In amend mode, only one COMMIT block is allowed
             if [[ "$amend" -eq 1 ]] && [[ "$commit_count" -gt 0 ]]; then
@@ -347,6 +547,7 @@ main() {
         echo "PROCESSING_COMMIT:$((commit_count + 1))"
         echo "MESSAGE:$current_message"
         echo "FILES:${current_files[*]}"
+        validate_commit_message_quality "$current_message" || true
 
         for file in "${current_files[@]}"; do
             if stageable "$file"; then

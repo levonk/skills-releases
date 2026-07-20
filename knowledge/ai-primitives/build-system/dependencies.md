@@ -89,7 +89,7 @@ list them so consumers know what else to add.
 
 ```bash
 # Install all public skills from the releases repo
-npx skills add levonk/skills-releases
+pnpm dlx skills add levonk/skills-releases
 ```
 
 ## Self-Contained After Build

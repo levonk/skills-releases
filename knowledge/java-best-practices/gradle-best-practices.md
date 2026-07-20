@@ -60,4 +60,4 @@ on every invocation. Container builds re-download the Gradle distribution.
 ## Citations
 
 [1] [infrahub gradle-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar) — multi-stage Gradle 8.5 sidecar
-[2] [skills-src project-adopter configure-java.sh](../../skills/software-dev/project-adopter/scripts/configure-java.sh) — Maven/Gradle project configuration
+[2] [skills-src project-adopter configure-java.sh](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/project-adopter/scripts/configure-java.sh) — Maven/Gradle project configuration

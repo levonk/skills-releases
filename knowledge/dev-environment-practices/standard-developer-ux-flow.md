@@ -70,8 +70,32 @@ without the devbox run wrapper.
 cd project
 # direnv auto-activates devbox
 # devbox init_hook calls bootstrap-internal
-# bootstrap calls prime-internal for code indexing
+# .envrc async-triggers prime-internal (fire-and-forget warmup)
+# bootstrap calls prime-internal for cache warming
 ```
+
+### Prime Flow (sync checkpoint + async warmup)
+
+`prime-internal` has two phases. See [Async Prime Internal](async-prime-internal.md)
+for the full pattern.
+
+**Phase 1 (sync): Git checkpoint** — commits any pending work as a single
+checkpoint commit (no push) so there's a safe rollback point before warmup.
+Follows the `pre-task-commit-checkpoint` protocol from the
+`git-repository-management` skill. Skippable via `PRIME_SKIP_CHECKPOINT=1`.
+
+**Phase 2 (async, fire-and-forget): Cache warmup** — kicks off cache-warming
+jobs in parallel:
+
+- **Download packages** (`cargo fetch`, `pnpm install --frozen-lockfile`, `uv sync --frozen`) — warms package cache
+- **Build** (`just build-internal`) — warms compiler/build cache
+- **List** (`just --list`) — discovers recipes for AI agent context
+- **Generate API doc** (if `has_docs`) — warms doc cache
+
+Verification gates (typecheck, test, validate) are NOT run in prime — they
+stay synchronous and blocking. The rule: if a failure means the agent should
+stop and fix it, it's synchronous; if a failure just means the cache didn't
+warm, it's async.
 
 ### Devbox Scripts Configuration
 
@@ -81,6 +105,7 @@ cd project
     "bootstrap": "just bootstrap-internal",
     "prime": "just prime-internal",
     "doctor": "just doctor-internal",
+    "clean": "just clean-internal",
     "clean": "just clean-internal",
     "build": "just build-internal",
     "lint": "just lint-internal",
@@ -96,6 +121,7 @@ already in the devbox environment — no need for the normal target wrapper.
 ## Related Concepts
 
 - [Internal vs Normal Targets](internal-vs-normal-targets.md) — Target naming convention
+- [Async Prime Internal](async-prime-internal.md) — The async warmup pattern (downloads + build + list + docs in parallel; verification gates stay sync)
 - [Just Over Makefiles](just-over-makefiles.md) — Why just is the task runner
 - [Mandatory Testing Workflow](mandatory-testing-workflow.md) — Testing gates for all flows
 

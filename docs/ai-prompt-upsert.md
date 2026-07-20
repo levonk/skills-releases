@@ -25,9 +25,10 @@ Create new AI prompts, modify and improve existing prompts, and scaffold reusabl
 - **agent-upsert** (skill, sibling) — Full lifecycle management for agent files. Use when the target is an agent definition, not a prompt.
 - **ai-skill-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a prompt.
 - **ai-workflow-upsert** (skill, sibling) — Full lifecycle management for workflows. Use when the target is a workflow, not a prompt.
+- **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 
 ---
 
 - **Full skill**: [`skills/ai/prompt-upsert/SKILL.md`](skills/ai/prompt-upsert/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z

@@ -36,11 +36,11 @@ the targets, structure, and scripting patterns that standardize how projects
 are built, tested, and deployed. It does **not** cover:
 
 - Dev environment setup — see
-  [dev-environment-practices](../dev-environment-practices/overview.md).
+  [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 - CI/CD pipeline configuration — see
-  [cicd-testing-practices](../cicd-testing-practices/overview.md).
+  [cicd-testing-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/overview.md).
 - Container build environments — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 
 ## Build System Principles
 
@@ -81,9 +81,9 @@ standardized targets, documentation-driven help — apply equally to both.
 
 ## Related Knowledge Bundles
 
-- [dev-environment-practices](../dev-environment-practices/overview.md) — Dev
+- [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md) — Dev
   environment setup that build systems run inside of.
-- [cicd-testing-practices](../cicd-testing-practices/overview.md) — CI/CD
+- [cicd-testing-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/overview.md) — CI/CD
   integration that invokes build system targets in pipelines.
 
 ## Sources

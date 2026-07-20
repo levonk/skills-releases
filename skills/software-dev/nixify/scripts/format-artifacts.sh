@@ -7,7 +7,8 @@
 # prints a note and exits 0 — most Nix-only projects don't have one.
 #
 # This prevents review feedback like "run our formatter on the file you created"
-# (e.g. yusukebe/ax#27 asked for `bunx oxfmt --write .github/workflows/nix.yml`).
+# (e.g. yusukebe/ax#27 asked for `bunx oxfmt --write .github/workflows/nix.yml` —
+# we would run `pnpm dlx oxfmt --write` instead; never use npx/bunx on host).
 #
 # Runs BEFORE lint-artifacts.sh so the linter sees already-formatted files.
 # The massive-change guard in lint-artifacts.sh (run after this script) checks
@@ -41,14 +42,10 @@ run_formatter() {
   # oxfmt — .oxfmtrc.json or oxfmt in package.json
   if [ -f .oxfmtrc.json ] || \
      { [ -f "$pkg_json" ] && grep -q '"oxfmt"' "$pkg_json" 2>/dev/null; }; then
-    if command -v bunx >/dev/null 2>&1; then
-      cmd=(bunx oxfmt --write)
-    elif command -v pnpm >/dev/null 2>&1; then
+    if command -v pnpm >/dev/null 2>&1; then
       cmd=(pnpm dlx oxfmt --write)
-    elif command -v npx >/dev/null 2>&1; then
-      cmd=(npx --yes oxfmt --write)
     else
-      echo "oxfmt detected but no bunx/pnpm/npx available, skipping" >&2
+      echo "oxfmt detected but pnpm not available, skipping (never use npx/bunx on host)" >&2
       return 0
     fi
     echo "formatter: oxfmt"
@@ -59,14 +56,10 @@ run_formatter() {
   # prettier — .prettierrc* or prettier in package.json
   if ls .prettierrc* >/dev/null 2>&1 || [ -f .prettierignore ] || \
      { [ -f "$pkg_json" ] && grep -q '"prettier"' "$pkg_json" 2>/dev/null; }; then
-    if command -v bunx >/dev/null 2>&1; then
-      cmd=(bunx prettier --write)
-    elif command -v pnpm >/dev/null 2>&1; then
+    if command -v pnpm >/dev/null 2>&1; then
       cmd=(pnpm dlx prettier --write)
-    elif command -v npx >/dev/null 2>&1; then
-      cmd=(npx --yes prettier --write)
     else
-      echo "prettier detected but no bunx/pnpm/npx available, skipping" >&2
+      echo "prettier detected but pnpm not available, skipping (never use npx/bunx on host)" >&2
       return 0
     fi
     echo "formatter: prettier"
@@ -76,14 +69,10 @@ run_formatter() {
 
   # biome — biome.json or biome.jsonc
   if [ -f biome.json ] || [ -f biome.jsonc ]; then
-    if command -v bunx >/dev/null 2>&1; then
-      cmd=(bunx biome format --write)
-    elif command -v pnpm >/dev/null 2>&1; then
+    if command -v pnpm >/dev/null 2>&1; then
       cmd=(pnpm dlx @biomejs/biome format --write)
-    elif command -v npx >/dev/null 2>&1; then
-      cmd=(npx --yes @biomejs/biome format --write)
     else
-      echo "biome detected but no bunx/pnpm/npx available, skipping" >&2
+      echo "biome detected but pnpm not available, skipping (never use npx/bunx on host)" >&2
       return 0
     fi
     echo "formatter: biome"

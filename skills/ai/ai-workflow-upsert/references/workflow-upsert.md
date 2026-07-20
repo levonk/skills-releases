@@ -20,7 +20,7 @@ When the target workflow wrapper already exists (i.e., `config/ai/workflows/<cat
    - **Frontmatter** (see `references/anatomy.md`): required `workflow`, `slug`, `description`, `use`, `date` block (`created`, `updated`, `last-used`), `tags`, `see-also` relationships. Flag missing or stale fields.
    - **Description/use quality**: Does `use` state clearly when to invoke the workflow? Is `description` specific enough to distinguish from sibling workflows? Does it front-load the leading action?
    - **Step structure**: Are the phases clear (Initialize, Plan, Apply, Verify, Deliver)? Are steps in the right order? Is there unnecessary nesting or ambiguity?
-   - **Template/Wrapper integrity**: Does the wrapper's `includeTemplate` call point at an existing content template? Does the content template exist and match the wrapper's expectations? Run `chezmoi execute-template` on the wrapper to verify.
+   - **Template/Wrapper integrity**: Does the wrapper's `includeTemplate` call point at an existing content template? Does the content template exist and match the wrapper's expectations? Run `just validate` (or `just build current`) to verify the include resolves.
    - **Context declaration**: Is there a Context Declaration section at the bottom with file paths, external resources, and project info? Are paths indirect (not hardcoded user-specific paths)?
    - **Includes**: Does the wrapper include `base-workflow-guidance.md.tmpl` if it should inherit the shared framework?
    - **Stale or contradictory text**: References to deleted files, outdated workflows, rules that were superseded, paths that moved.

@@ -51,6 +51,42 @@ devbox run -- just doctor-internal
 - API: `apps/api/` -> [Guide](apps/api/AGENTS.md)
 - Developer Guide: [`.agents/knowledge/developer.md`](.agents/knowledge/developer.md) - Workflows, repo structure, code style, boundaries, and PR checklist for developers working on this project
 
+## Knowledge Bundles
+
+Canonical practice bundles from [levonk/skills-releases](https://github.com/levonk/skills-releases/knowledge) are copied into [`.agents/knowledge/bundles/`](.agents/knowledge/bundles/) for offline agent access. Domain-specific bundles are URL-referenced and fetched on demand only when the task touches that domain.
+
+### Installed (offline-ready)
+
+| Bundle | Applies when |
+|--------|--------------|
+| [software-architecture-essentials](.agents/knowledge/bundles/software-architecture-essentials/) | Universal — any project |
+| [dev-environment-practices](.agents/knowledge/bundles/dev-environment-practices/) | Universal — any project |
+| [devsecops-codeguard](.agents/knowledge/bundles/devsecops-codeguard/) | Universal — any project |
+| [cicd-testing-practices](.agents/knowledge/bundles/cicd-testing-practices/) | Universal — any project |
+| [build-system-essentials](.agents/knowledge/bundles/build-system-essentials/) | Universal — any project |
+| [typescript-monorepo-best-practices](.agents/knowledge/bundles/typescript-monorepo-best-practices/) | TypeScript / Node.js detected |
+| [rust-development-practices](.agents/knowledge/bundles/rust-development-practices/) | Rust detected |
+| [python-services-practices](.agents/knowledge/bundles/python-services-practices/) | Python detected |
+| [java-best-practices](.agents/knowledge/bundles/java-best-practices/) | Java detected |
+| [frontend-stack-practices](.agents/knowledge/bundles/frontend-stack-practices/) | Frontend web detected |
+| [nix-build-practices](.agents/knowledge/bundles/nix-build-practices/) | Nix-heavy build detected |
+| [container-best-practices](.agents/knowledge/bundles/container-best-practices/) | Docker / Kubernetes detected |
+| [data-engineering-best-practices](.agents/knowledge/bundles/data-engineering-best-practices/) | Data pipelines detected |
+
+### URL-referenced (fetched on demand)
+
+| Bundle | Read when working on… |
+|--------|-----------------------|
+| [api-auth-payment-practices](https://github.com/levonk/skills-releases/knowledge/api-auth-payment-practices) | Auth, payments, billing |
+| [infrastructure-networking-practices](https://github.com/levonk/skills-releases/knowledge/infrastructure-networking-practices) | Network topology, VPN, DNS |
+| [secrets-egress-security](https://github.com/levonk/skills-releases/knowledge/secrets-egress-security) | Secrets management, egress firewalls |
+| [cloud-provider-essentials](https://github.com/levonk/skills-releases/knowledge/cloud-provider-essentials) | AWS / Azure / GCP / OCI |
+| [web-resource-catalog](https://github.com/levonk/skills-releases/knowledge/web-resource-catalog) | UI components, stock media, color palettes |
+| [upstream-contribution-practices](https://github.com/levonk/skills-releases/knowledge/upstream-contribution-practices) | Contributing to upstream OSS |
+| [ai-primitives](https://github.com/levonk/skills-releases/knowledge/ai-primitives) | AI tooling, prompt engineering |
+
+**Installation**: Run `uv run --script scripts/install-knowledge-bundles.py <project-root>` (from the `project-adopter` skill) to populate `.agents/knowledge/bundles/`. Universal bundles install by default; pass `--bundles <name1>,<name2>` for stack-matched bundles.
+
 ## Out of Scope
 For information about what this repo does NOT do, see [`internal-docs/oos/`](internal-docs/oos/).
 

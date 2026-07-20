@@ -41,11 +41,11 @@ This bundle covers **Rust package and CLI development** — structure, tooling,
 testing, security, and deployment. It does **not** cover:
 
 - Devbox/Nix environment setup — see
-  [dev-environment-practices](../dev-environment-practices/overview.md).
+  [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 - Container runtime hardening — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 - Monorepo build orchestration — see
-  [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md).
+  [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md).
 
 ## Sources
 
@@ -54,11 +54,11 @@ testing, security, and deployment. It does **not** cover:
 
 ## Related Knowledge Bundles
 
-- [dev-environment-practices](../dev-environment-practices/overview.md) —
+- [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md) —
   Environment management for Rust projects
-- [container-best-practices](../container-best-practices/overview.md) — Container
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) — Container
   patterns for Rust binaries
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — Security practices
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — Security practices
   for Rust code
 
 ## Citations

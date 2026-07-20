@@ -105,4 +105,4 @@ RUN ln -sf /opt/gradle/bin/gradle /usr/local/bin/gradle
 [2] [infrahub gradle-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar) — multi-stage with `openjdk17-jre` runtime
 [3] [Eclipse Temurin images](https://hub.docker.com/_/eclipse-temurin) — official OpenJDK Docker images
 [4] [Docker multi-stage build documentation](https://docs.docker.com/build/building/multi-stage/)
-[5] [container-best-practices: multi-stage-builds](../container-best-practices/multi-stage-builds.md) — general multi-stage pattern
+[5] [container-best-practices: multi-stage-builds](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/multi-stage-builds.md) — general multi-stage pattern

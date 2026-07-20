@@ -63,11 +63,11 @@ yet cover. Append to `log.md` when adding.
 These contribution practices apply whenever filing new concepts into any of the
 domain bundles produced by the upsert skills:
 
-- [container-best-practices](../container-best-practices/overview.md)
-- [java-best-practices](../java-best-practices/overview.md)
-- [data-engineering-best-practices](../data-engineering-best-practices/overview.md)
-- [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md)
-- [devsecops-codeguard](../devsecops-codeguard/overview.md)
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md)
+- [java-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/java-best-practices/overview.md)
+- [data-engineering-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/data-engineering-best-practices/overview.md)
+- [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md)
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md)
 
 # Citations
 

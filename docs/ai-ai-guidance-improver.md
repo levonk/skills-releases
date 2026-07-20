@@ -61,9 +61,10 @@ Provides real-time suggestions and improvements for prompts users are actively w
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
+- **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 
 ---
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z

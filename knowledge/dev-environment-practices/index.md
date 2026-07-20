@@ -19,6 +19,7 @@ project migrations.
 * [Standard Developer UX Flow](standard-developer-ux-flow.md) - direnv → devbox → just (*-internal) → [build tool]; three flows for agents, novices, and power users
 * [Just Over Makefiles](just-over-makefiles.md) - No .PHONY, simple syntax, better errors, command-runner focus; why just replaced Make
 * [Internal vs Normal Targets](internal-vs-normal-targets.md) - *-internal suffix for actual implementation; normal targets wrap devbox run for environment guarantee
+* [Async Prime Internal](async-prime-internal.md) - prime-internal kicks off cache-warming jobs (downloads, build, list, API docs) in parallel as fire-and-forget; verification gates stay synchronous
 * [Devbox Script Generation Bug](devbox-script-generation-bug.md) - Known v0.14.x regression; workarounds using just directly or devbox shell + *-internal
 * [Mandatory Testing Workflow](mandatory-testing-workflow.md) - TDD, regression tests for bug fixes, quality gates before completion; enforced via pre-commit and CI
 * [Shell Scripting Best Practices](shell-scripting-best-practices.md) - Strict mode, PATH guards, git gates, dry-runs, logging, and shellcheck/shfmt/bats verification for safe shell scripts

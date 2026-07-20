@@ -1,8 +1,8 @@
 ---
 type: Practice
 title: Node.js Frontend Setup
-description: Frontend development with Node.js — mise toolchain, webpack bundling, ESLint and Prettier, testing, production builds, and deployment pipeline.
-tags: [nodejs, frontend, mise, webpack, eslint, prettier, testing, deployment, toolchain]
+description: Frontend development with Node.js — mise toolchain, webpack bundling, ESLint as the unified linter/formatter (no separate Prettier), Vitest testing, production builds, and deployment pipeline.
+tags: [nodejs, frontend, mise, webpack, eslint, vitest, testing, deployment, toolchain]
 timestamp: 2026-07-18T00:00:00Z
 ---
 
@@ -31,7 +31,7 @@ bun init --yes
 ### Install essential development dependencies
 
 ```bash
-bun add -d webpack webpack-cli webpack-dev-server babel-loader @babel/core @babel/preset-env eslint prettier
+bun add -d webpack webpack-cli webpack-dev-server babel-loader @babel/core @babel/preset-env eslint
 ```
 
 ### Set up project structure
@@ -49,18 +49,18 @@ touch src/index.js src/index.html
 touch webpack.config.js
 ```
 
-### Set up ESLint and Prettier
+### Set up ESLint (unified linter + formatter)
 
 ```bash
-bunx eslint --init
-touch .prettierrc
+pnpm dlx eslint --init
 ```
 
-> **Note:** For ESLint config composition patterns (direct usage, options-based,
-> full composition with file-specific rules), see
-> [ESLint Composition API](eslint-composition-api.md). For formatting rules
-> (double quotes, 2-space indent, semicolons, kebab-case filenames), see
-> [Code Style Conventions](code-style-conventions.md).
+> **Note:** Formatting (double quotes, 2-space indent, semicolons, kebab-case
+> filenames) is enforced **through the ESLint config**, not via a separate
+> Prettier step. For ESLint config composition patterns (direct usage,
+> options-based, full composition with file-specific rules), see
+> [ESLint Composition API](eslint-composition-api.md). For the full style
+> rule set, see [Code Style Conventions](code-style-conventions.md).
 
 ### Start development server
 
@@ -73,7 +73,7 @@ bun run dev
 ### Install testing framework
 
 ```bash
-bun add -d jest @testing-library/react @testing-library/jest-dom
+bun add -d vitest @testing-library/react @testing-library/jest-dom
 ```
 
 ### Run tests
@@ -82,9 +82,10 @@ bun add -d jest @testing-library/react @testing-library/jest-dom
 bun run test
 ```
 
-> **Note:** For TypeScript projects, prefer Vitest over Jest — see
-> [Vitest Testing Framework](vitest-testing-framework.md) for the unified
-> unit, integration, and E2E testing approach.
+> **Note:** Vitest is the standard test runner for all TypeScript projects —
+> see [Vitest Testing Framework](vitest-testing-framework.md) for the unified
+> unit, integration, and E2E testing approach, including the `.test.mts`
+> extension rule and project-based testing config. Jest is not used.
 
 ## Building for Production
 
@@ -97,7 +98,7 @@ bun run build
 ### Preview production build
 
 ```bash
-bunx serve -s dist
+pnpm dlx serve -s dist
 ```
 
 ## Deployment
@@ -137,10 +138,10 @@ For detailed patterns and best practices, see the platform-specific guides:
 
 - [ESLint Composition API](eslint-composition-api.md) — Three-level ESLint
   config customization for this setup
-- [Vitest Testing Framework](vitest-testing-framework.md) — Preferred test
+- [Vitest Testing Framework](vitest-testing-framework.md) — Standard test
   runner for TypeScript frontend projects
 - [Code Style Conventions](code-style-conventions.md) — Formatting and naming
-  standards enforced by Prettier and ESLint
+  standards enforced by the ESLint config (no separate Prettier step)
 - [CSS Fundamentals](css-fundamentals.md) — CSS architecture and patterns for
   the styles directory
 - [Tailwind v4 Features](tailwind-v4-features.md) — Utility-first CSS framework

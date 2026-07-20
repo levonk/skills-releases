@@ -211,57 +211,28 @@ echo "💡 Run 'just --list' to see available commands"
 
 ### README.md Structure
 
-Update or create `README.md`:
+README.md creation and update is **delegated to the readme-upsert skill**. Do NOT hand-write README content in `adopt-project.sh` or `configure-*.sh` — that duplicates readme-upsert's template, required-sections list, and consistency checks, and diverges over time.
 
-```markdown
-# Project Name
-
-## Development Setup
-
-### Prerequisites
-
-- Install [Devbox](https://www.jetify.com/devbox/docs/installing-devbox)
-- Install [direnv](https://direnv.net/docs/installation.html)
-
-### Quick Start
+**Invocation** (run AFTER AGENTS.md is in place so the README can link to it and `verify_consistency.py` can check name/section agreement):
 
 ```bash
-# Clone and enter project
-git clone <repository-url>
-cd project-name
-
-# Allow direnv (first time only)
-direnv allow
-
-# Bootstrap environment
-just bootstrap
-
-# Start development
-just dev
+# Delegate to readme-upsert — it handles both greenfield and brownfield cases:
+#   Greenfield: creates README from references/README-project-root-template.md.tmpl
+#   Brownfield: preserves accurate sections, updates stale ones
+# Then runs scripts/verify_consistency.py {REPO_ROOT} to check README<->AGENTS.md agreement
+# See <readme-upsert>/SKILL.md for the full 5-phase workflow.
 ```
 
-### Development Commands
+**Required sections** (owned by readme-upsert, not by this skill):
+- Project name + overview (1-2 paragraphs)
+- Quick Start (copy-paste ready setup commands)
+- Build/Test Commands
+- Project Structure
+- AI Agent Documentation (link to `AGENTS.md`)
 
-```bash
-just dev      # Start development server
-just build    # Build for production
-just test     # Run tests
-just lint     # Run linting
-just clean    # Clean build artifacts
-```
+**Optional sections** (included by readme-upsert if relevant): Development Workflow, Testing, Package Management, Troubleshooting, Contributing, License.
 
-### Architecture
-
-Brief description of project structure and key components.
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
-```
+For the canonical README template, see [`<readme-upsert>/references/README-project-root-template.md.tmpl`](../../../ai/readme-upsert/references/README-project-root-template.md.tmpl).
 
 ### Docker Configuration
 
@@ -443,42 +414,31 @@ updates:
       interval: weekly
 ```
 
-### .gitignore Updates
+### Ignore File Generation (Delegated to ignorefile-manager)
 
-Update `.gitignore`:
+Ignore file generation is **delegated to the [ignorefile-manager](../../../general/ignorefile-manager/SKILL.md) skill**. Do NOT hand-write `.gitignore` (or `.dockerignore`, `.codeiumignore`, `.cursorignore`, `.aiexclude`, `.npmignore`, VS Code excludes, ripgrep config) — that duplicates ignorefile-manager's modular concern sources and diverges over time.
 
-```gitignore
-# Dependencies
-node_modules/
-target/
-dist/
-build/
-__pycache__/
-.venv/
+ignorefile-manager generates all outputs from small concern files in `assets/concerns/` (secrets, build-artifacts, os-files, editor-files, dependencies, ai-generated, dev-local, binaries, vcs-meta, logs, lockfiles) composed via `assets/outputs.yaml`. It covers git, docker, jj (`.jj/` is in `vcs-meta.ignorefile`), AI indexing tools (`.codeiumignore`, `.cursorignore`, `.aiexclude`), npm packaging, VS Code, and ripgrep.
 
-# Environment
-.env
-.env.local
-.envrc
+**Adoption workflow** (run between configuration and the final commit):
 
-# Tooling
-.devbox/
-.nix-profile/
+```bash
+# 1. Reconcile — harvest orphan patterns from any existing deployed ignore files
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py reconcile --target . --auto-assign
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# 2. Audit — check which outputs are missing or stale
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py audit --target .
 
-# OS
-.DS_Store
-Thumbs.db
+# 3. Generate — dry-run first, then apply
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py generate --target . --dry-run
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py generate --target .
 
-# Logs
-*.log
-logs/
+# 4. (Optional) Update VS Code workspace files and ripgrep config
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py workspace --target .
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py ripgrep
 ```
+
+The `<ignorefile-manager>` path is resolved by the consumer's skill installer; this skill does not hardcode it. Generated content is wrapped between `# ===== BEGIN GENERATED CONTENT =====` and `# ===== END GENERATED CONTENT =====` markers so project-specific entries above the marker are preserved across re-runs.
 
 ## Examples
 
@@ -506,8 +466,9 @@ devbox add rustc cargo just
 # 3. Configure .envrc
 # (Skill creates direnv configuration)
 
-# 4. Update README
-# (Skill adds development setup section)
+# 4. Generate or update README (delegated to readme-upsert)
+# (readme-upsert creates from template for greenfield, preserves accurate
+#  sections for brownfield, then runs verify_consistency.py)
 ```
 
 ## Quality Checklist
@@ -516,12 +477,15 @@ devbox add rustc cargo just
 - [ ] Devbox configuration created with appropriate packages
 - [ ] Justfile with standard targets (ADR 20260131001 compliant)
 - [ ] direnv configuration (.envrc)
-- [ ] README.md updated with development setup
+- [ ] AGENTS.md integrates with ai-development-loop skill
+- [ ] README.md generated or updated via readme-upsert (greenfield: from template; brownfield: preserve accurate sections, update stale ones); verify_consistency.py passes (README<->AGENTS.md name match, no content duplication, no wrong sections)
 - [ ] Docker configuration (if needed)
 - [ ] LICENSE.md (Proprietary)
-- [ ] AGENTS.md integrates with ai-development-loop skill
 - [ ] Dependencies configured correctly
 - [ ] GitHub workflows set up
-- [ ] .gitignore updated
+- [ ] Ignore files generated via ignorefile-manager (reconcile → audit → generate; covers .gitignore, .dockerignore, .codeiumignore, .cursorignore, .aiexclude, .npmignore, VS Code excludes, ripgrep config)
+- [ ] Git repo initialized (if needed) via git-repository-management `git-repo-init.bash`
+- [ ] Adoption changeset committed via git-repository-management `git-commit-batch.sh --slug project-adoption` (with pre/post auto-tags for rollback safety)
+- [ ] Remote push via git-repository-management `git-push.sh` (if remote configured)
 - [ ] Project follows standard UX flow
 - [ ] Ready for ai-development-loop systematic workflow

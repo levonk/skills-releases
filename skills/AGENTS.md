@@ -31,12 +31,21 @@ just validate
 ✅ **DO**: Add "Do NOT trigger on..." clause to descriptions
 ✅ **DO**: Wire in `trigger-guard` for pushy descriptions
 ✅ **DO**: Use `git mv` when moving skill directories
+✅ **DO**: Materialize shared scripts and knowledge bundles a skill depends on
+  at build time — `scripts/resolve-reference.sh.tmpl` containing
+  `{{{ include "includes/resolve-reference.sh" . }}}` and
+  `{{{ includeTree "knowledge/<bundle>/" . }}}` for offline bundle content
+✅ **DO**: Link to materialized bundle content at
+  `references/included/knowledge/<bundle>/...` in SKILL.md
 
 ❌ **DON'T**: Inline script code in SKILL.md — call scripts by name
 ❌ **DON'T**: Hardcode paths — use indirect references + Context Declaration
 ❌ **DON'T**: Exceed ~500 lines in SKILL.md body
 ❌ **DON'T**: Use `{{`/`}}` — always `{{{`/`}}}`
 ❌ **DON'T**: Put runtime dependencies in includes — includes are build-time only
+❌ **DON'T**: Use bare `../` paths to `knowledge/` or `skills/` directories —
+  those break when the skill is installed standalone; use the resolver and
+  `includeTree` instead
 
 ## Key Directories
 
@@ -84,3 +93,9 @@ rg -l 'ai/skill' src/current/skills/ --glob "SKILL.md"
   runtime (consumer must install separately)
 - The `init_skill.py` scaffolder creates example files in `scripts/`,
   `references/`, `assets/` — customize or delete them
+- `init_skill.py` materializes `cli-tool-discovery.sh.tmpl` and
+  `resolve-reference.sh.tmpl` into new skills, adds `uv` to `devbox.json` when
+  present, and makes `example.py` fall back from `uv` to `pip` / `python3 -m pip`
+- Knowledge-bundle references that are needed offline should be materialized
+  with `includeTree`; `resolve-reference.sh` provides runtime three-tier fallback
+  for the rest

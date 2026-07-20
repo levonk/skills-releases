@@ -123,24 +123,24 @@ Future concept candidates (not yet in the bundle):
 
 ## Related Knowledge Bundles
 
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — code-level security
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — code-level security
   rules (credential detection, crypto governance, certificate validation, SSH
   hardening) that complement this bundle's runtime and build-time guidance.
   Container-specific concepts formerly in devsecops-codeguard have been
   consolidated here.
-- [java-best-practices](../java-best-practices/overview.md) — Java/JVM
+- [java-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/java-best-practices/overview.md) — Java/JVM
   container packaging, JRE vs JDK, and Alpine compatibility for Java
   applications.
-- [data-engineering-best-practices](../data-engineering-best-practices/overview.md)
+- [data-engineering-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/data-engineering-best-practices/overview.md)
   — Airflow layered images and Kubernetes deployment patterns that build on
   the container practices here.
-- [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md)
+- [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md)
   — Node.js containerization and package conventions that intersect with
   Dockerfile best practices.
 
 ## Citations
 
 [1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [docker-standards.md workflow](../../workflows/software-dev/devops/containers/docker-standards.md) — existing project standard
-[3] [container-image-build skill](../../skills/software-dev/container-image-build/SKILL.md) — image build automation
-[4] [container-service-deploy skill](../../skills/software-dev/container-service-deploy/SKILL.md) — compose/Ansible deployment
+[2] [docker-standards.md workflow](https://github.com/levonk/skills-releases/blob/main/workflows/software-dev/devops/containers/docker-standards.md) — existing project standard
+[3] [container-image-build skill](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/container-image-build/SKILL.md) — image build automation
+[4] [container-service-deploy skill](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/container-service-deploy/SKILL.md) — compose/Ansible deployment

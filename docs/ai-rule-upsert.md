@@ -25,9 +25,10 @@ Create new AI agent rules or audit and update existing rules. Scaffolds new rule
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **audit-methodology** (template, shared-include) — Shared audit methodology — propose-confirm-apply discipline for updates
+- **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 
 ---
 
 - **Full skill**: [`skills/ai/rule-upsert/SKILL.md`](skills/ai/rule-upsert/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z

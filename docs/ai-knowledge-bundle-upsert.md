@@ -49,14 +49,16 @@ OKF bundles operate within a three-layer architecture:
 - **prompt-upsert** (skill, sibling) — Same upsert family — handles prompt creation and updates
 - **readme-upsert** (skill, sibling) — Same upsert family — handles README.md creation and updates
 - **template-upsert** (skill, sibling) — Same upsert family — handles template creation and updates
+- **project-adopter** (skill, consumer) — Installs built knowledge bundles into consumer projects via scripts/install-knowledge-bundles.py — use to populate .agents/knowledge/bundles/ with universal and stack-matched bundles during project adoption
 - **** (, example) — Canonical OKF bundle for container authoring and runtime practices
 - **** (, example) — Canonical OKF bundle for Java/JVM practices
 - **** (, example) — Canonical OKF bundle for data engineering practices
 - **** (, example) — Canonical OKF bundle for TypeScript monorepo conventions
 - **** (, example) — Canonical OKF bundle for DevSecOps codeguard rules
+- **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 
 ---
 
 - **Full skill**: [`skills/ai/knowledge-bundle-upsert/SKILL.md`](skills/ai/knowledge-bundle-upsert/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z

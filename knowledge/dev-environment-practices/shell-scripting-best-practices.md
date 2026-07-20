@@ -15,10 +15,9 @@ Use when: editing or creating shell scripts, CI jobs, or local helpers.
 
 ## Project Integration & Structure
 
-- Respect repository structure. Shared, shell-agnostic logic belongs in
-  `home/current/dot_config/shells/shared/{util,prompt,env}`. Keep per-shell
-  hooks/activation in `.../zsh/{util,prompt,env}` or
-  `.../bash/{util,prompt,env}`.
+- Respect repository structure. Shared, shell-agnostic logic belongs in a
+  `shared/{util,prompt,env}` directory. Keep per-shell hooks/activation in
+  `.../zsh/{util,prompt,env}` or `.../bash/{util,prompt,env}`.
 - Do not refactor across shells unless explicitly asked. Keep compatibility.
 - Do not change dependencies/configs unless explicitly tasked.
 
@@ -52,12 +51,11 @@ Use when: editing or creating shell scripts, CI jobs, or local helpers.
 Before any destructive or stateful action, confirm tools and environment:
 
 - Validate required tools; exit with a clear message if missing:
-  - Required: `git`, `chezmoi`, `timeout`.
+  - Required: `git`, `timeout`.
   - Optional (log presence): `strace`, `lsof`, `fuser`.
 - Print versions for traceability:
-  - `git --version`, `chezmoi --version`, `timeout --version`.
-- Detect and report running processes and lock holders when relevant (example:
-  chezmoi persistent-state DB):
+  - `git --version`, `timeout --version`.
+- Detect and report running processes and lock holders when relevant:
   - Use `pgrep`, `lsof -F`, and `fuser -v` when available.
 - Provide an interactive pause only when a TTY exists.
 
@@ -130,8 +128,7 @@ fi
 ### Safety Guards for State/Workspace
 
 - Refuse destructive operations when the target/source resolves to the current
-  repo working tree (e.g., `chezmoi purge` when `chezmoi source-path` equals
-  CWD).
+  repo working tree (e.g., refuse to purge when the source path equals CWD).
 - Decouple destructive commands from the repo CWD when possible (e.g., run purge
   from `$HOME`).
 
@@ -236,9 +233,8 @@ If tests fail:
 #### 5) Optional environment checks (if applicable)
 
 ```sh
-# chezmoi health (if this repo integrates with chezmoi)
-~/.local/bin/chezmoi doctor || true
-~/.local/bin/chezmoi apply --dry-run --verbose || true
+# Repo health check
+scripts/repo-health.sh --quick || true
 ```
 
 #### 6) Git cleanliness gate

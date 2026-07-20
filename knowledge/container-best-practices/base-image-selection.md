@@ -74,4 +74,4 @@ compare build time, final size, and whether native deps resolve without
 [1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
 [2] [musl libc](https://musl.libc.org/)
 [3] [glibc](https://www.gnu.org/software/libc/)
-[4] [docker-standards.md workflow](../../workflows/software-dev/devops/containers/docker-standards.md) — existing project standard (alpine-for-infra)
+[4] [docker-standards.md workflow](https://github.com/levonk/skills-releases/blob/main/workflows/software-dev/devops/containers/docker-standards.md) — existing project standard (alpine-for-infra)

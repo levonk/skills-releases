@@ -340,7 +340,7 @@ Present the best existing skill(s) with:
 
 Then ask the user:
 1. **Install the existing skill?** — Provide the install command (e.g.,
-   `npx skills add owner/repo` for skills.sh skills, or `git clone` for
+   `pnpm dlx skills add owner/repo` for skills.sh skills, or `git clone` for
    GitHub repos).
 2. **Still create a new skill?** — The user may have reasons to create their
    own (customization, learning, different constraints). Respect their choice

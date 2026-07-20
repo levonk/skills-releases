@@ -129,7 +129,7 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm ci
 See [buildkit-secrets](/buildkit-secrets.md)
 for why credentials must never appear in image layers. For credential
 detection patterns in source code, see the
-[devsecops-codeguard hardcoded-credentials-detection](../devsecops-codeguard/hardcoded-credentials-detection.md)
+[devsecops-codeguard hardcoded-credentials-detection](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/hardcoded-credentials-detection.md)
 concept.
 
 ## Implementation Checklist

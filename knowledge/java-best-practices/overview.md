@@ -108,19 +108,19 @@ Future concept candidates (not yet in the bundle):
 
 ## Related Knowledge Bundles
 
-- [container-best-practices](../container-best-practices/overview.md) —
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) —
   multi-stage builds, base image selection, and runtime hardening for Java
   container packaging.
-- [data-engineering-best-practices](../data-engineering-best-practices/overview.md)
+- [data-engineering-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/data-engineering-best-practices/overview.md)
   — data pipeline tooling that often runs on the JVM (Spark) or uses Java-based
   orchestration patterns.
-- [devsecops-codeguard](../devsecops-codeguard/overview.md) — dependency
+- [devsecops-codeguard](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/overview.md) — dependency
   scanning, SAST, and secure coding practices that apply to Java applications.
 
 ## Citations
 
 [1] [infrahub java-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar) — real OpenJDK 17 Alpine sidecar
 [2] [infrahub gradle-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar) — real multi-stage Gradle build
-[3] [project-adopter skill configure-java.sh](../../skills/software-dev/project-adopter/scripts/configure-java.sh) — Java project configuration automation
-[4] [project-detection skill](../../skills/software-dev/project-detection/references/detection-capabilities.md) — Maven/Gradle build system detection
+[3] [project-adopter skill configure-java.sh](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/project-adopter/scripts/configure-java.sh) — Java project configuration automation
+[4] [project-detection skill](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/project-detection/references/detection-capabilities.md) — Maven/Gradle build system detection
 [5] [2ndbrain BigDecimal article](https://igorstechnoclub.com/java-bigdecimal/) — Igor's Techno Club, 2024-06-19

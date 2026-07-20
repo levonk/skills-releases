@@ -15,7 +15,7 @@ hardcoded credentials that leak secrets, deprecated crypto algorithms that
 break confidentiality, misconfigured certificates that fail TLS, and SSH
 daemons that accept weak authentication. Container-specific hardening and
 Dockerfile practices have been moved to the
-[container-best-practices](../container-best-practices/overview.md) bundle,
+[container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) bundle,
 which covers runtime hardening, Node.js in containers, and Dockerfile best
 practices in greater depth.
 
@@ -42,12 +42,12 @@ This bundle covers **code-level security and runtime security audits** — the
 practices that ship in source code, SSH configurations, and Ansible audit
 playbooks. Container-specific hardening (runtime controls, Dockerfile
 patterns, Node.js in containers) lives in the
-[container-best-practices](../container-best-practices/overview.md) bundle. It
+[container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) bundle. It
 does **not** cover:
 
 - Container runtime hardening, Dockerfile best practices, or Node.js container
   production hardening — see
-  [container-best-practices](../container-best-practices/overview.md).
+  [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
 - Application-level authentication and authorization patterns (OAuth flows,
   RBAC design) — separate bundle.
 - Network security architecture (zero-trust, segmentation) — separate bundle.
@@ -101,13 +101,13 @@ Future concept candidates (not yet in the bundle):
 
 ## Related Knowledge Bundles
 
-- [container-best-practices](../container-best-practices/overview.md) —
+- [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) —
   Dockerfile best practices and container runtime hardening that complement
   the codeguard container rules.
-- [typescript-monorepo-best-practices](../typescript-monorepo-best-practices/overview.md)
+- [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md)
   — TypeScript project conventions that interact with credential detection,
   crypto usage, and ESLint security rules.
-- [java-best-practices](../java-best-practices/overview.md) — Java security
+- [java-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/java-best-practices/overview.md) — Java security
   practices (dependency scanning, SAST, JEP 411) that complement codeguard rules.
 
 ## Citations

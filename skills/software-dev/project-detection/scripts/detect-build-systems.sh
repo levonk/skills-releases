@@ -304,11 +304,52 @@ detect_systems() {
         fi
     done
 
+    # Package manager — refine the lockfile-based detection above by consulting
+    # the shared detect-package-manager.sh (materialized into this skill's
+    # scripts/ dir at build time). It honors the `packageManager` field in
+    # package.json, which is more authoritative than lockfile presence alone
+    # (e.g. a pnpm repo may not yet have committed pnpm-lock.yaml).
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local pkg_manager_script="$script_dir/detect-package-manager.sh"
+    if [[ -f "package.json" ]] && [[ -x "$pkg_manager_script" ]]; then
+        local pm_resolved
+        pm_resolved="$("$pkg_manager_script" "$repo_path" 2>/dev/null || true)"
+        if [[ -n "$pm_resolved" ]]; then
+            # Remove any conflicting package managers already detected via
+            # lockfile (npm/pnpm/yarn/bun/deno) so the final list reflects
+            # the authoritative answer.
+            local conflicting="npm pnpm yarn bun deno"
+            local c
+            local filtered=()
+            for s in "${detected[@]}"; do
+                local keep=1
+                for c in $conflicting; do
+                    if [[ "$s" == "$c" && "$c" != "$pm_resolved" ]]; then
+                        keep=0
+                        break
+                    fi
+                done
+                [[ "$keep" -eq 1 ]] && filtered+=("$s")
+            done
+            detected=("${filtered[@]}")
+            # Ensure the resolved manager is present
+            local already=0
+            for s in "${detected[@]}"; do
+                [[ "$s" == "$pm_resolved" ]] && already=1 && break
+            done
+            if [[ "$already" -eq 0 ]]; then
+                detected+=("$pm_resolved")
+                if [[ "$verbose" == "true" ]]; then
+                    echo "✓ $pm_resolved (via detect-package-manager.sh)"
+                fi
+            fi
+        fi
+    fi
+
     # Environment wrappers (devbox, mise, flox, direnv, nix) — detected by
     # cli-tool-discovery.sh, the single source of truth. It walks up from cwd
     # and checks "already inside" env vars. No duplicate file checks here.
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local cli_discovery="$script_dir/cli-tool-discovery.sh"
     if [[ -f "$cli_discovery" ]]; then
         local result

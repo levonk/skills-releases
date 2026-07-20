@@ -1,13 +1,13 @@
 ---
 name: project-adopter
 description: Adopt and establish best practices for projects by overwriting existing preferences with standardized developer UX flow. Use when onboarding a new project to standard tooling, setting up devbox/just/direnv, establishing CI/CD, or applying ADR-compliant project structure. Triggers on 'adopt project', 'set up dev environment', 'standardize project', 'apply best practices', or 'project adoption'.
-version: 2.0.0
+version: 2.2.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-02-01"
-  updated: "2026-07-02"
-  last-used: "2026-07-02"
+  updated: "2026-07-19"
+  last-used: "2026-07-19"
 tags: ["ai/skill", "software-development", "project-management", "best-practices", "development-experience", "project-adoption", "preference-overwrite"]
 see-also:
   - skill: project-configuration
@@ -25,6 +25,15 @@ see-also:
   - skill: ai-development-loop
     relationship: "optional"
     description: "Optional for systematic development workflow integration"
+  - skill: git-repository-management
+    relationship: "dependency"
+    description: "Required for initializing new repos and committing the adoption changeset (init + collect + batch-commit + push)"
+  - skill: ignorefile-manager
+    relationship: "dependency"
+    description: "Required for generating .gitignore, .dockerignore, .codeiumignore, .cursorignore, .aiexclude, .npmignore, VS Code excludes, and ripgrep config from modular concern sources"
+  - skill: readme-upsert
+    relationship: "dependency"
+    description: "Required for creating or updating README.md (human-facing entry point). Handles both greenfield (create from template) and brownfield (preserve accurate sections, update stale ones). Runs the README↔AGENTS.md consistency checker after AGENTS.md is in place."
   - skill: base-ai-guidance
     relationship: "base-framework"
     description: "Base AI guidance framework for all AI skills"
@@ -38,6 +47,15 @@ dependencies:
   - type: skill
     name: surgical-config
     reason: "Required for non-destructive configuration file editing"
+  - type: skill
+    name: git-repository-management
+    reason: "Required for initializing new repos (git-repo-init.bash) and committing the adoption changeset (git-collect.sh + git-commit-batch.sh + git-push.sh)"
+  - type: skill
+    name: ignorefile-manager
+    reason: "Required for all ignore file generation (.gitignore, .dockerignore, .codeiumignore, .cursorignore, .aiexclude, .npmignore, VS Code excludes, ripgrep config) from modular concern sources"
+  - type: skill
+    name: readme-upsert
+    reason: "Required for creating or updating README.md — the human-facing entry point. Handles greenfield (template-based creation) and brownfield (preserve accurate sections, update stale ones). Runs verify_consistency.py to check README↔AGENTS.md agreement."
   - type: skill
     name: repository-health-review
     reason: "Optional for pre/post-adoption health assessment"
@@ -75,7 +93,7 @@ description: Self-update requirement template for AI guidance files to track usa
 ---
 
 ---
-description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up. Also resolves the canonical ad-hoc runner for an ecosystem (python/node/rust/go) via --runner.
 ---
 
 ### CLI Tool Discovery
@@ -85,6 +103,12 @@ detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
 accounts for the project's tech stack — all in one pass. **Never give up on
 the first `command -v` failure.**
+
+For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
+install`), use `--runner <ecosystem>` instead of resolving the binary and
+hardcoding the invocation. The runner mode is the single source of truth for
+"how do I invoke an ad-hoc command in ecosystem X?" — it pairs the binary
+resolution with the canonical invocation pattern from the tech-stack table.
 
 #### Get the script
 
@@ -106,6 +130,9 @@ cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
 
 # Resolve and exec — runs the tool through the right wrapper/path, never returns
 cli-tool-discovery.sh -- <tool-name> [args...]
+
+# Resolve the ad-hoc runner for an ecosystem (JSON only)
+cli-tool-discovery.sh --runner <python|node|rust|go>
 ```
 
 #### Output (resolve mode)
@@ -120,12 +147,63 @@ In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 
+#### Output (runner mode)
+
+`--runner <ecosystem>` emits JSON only:
+
+```json
+{
+  "ecosystem": "python",
+  "binary": "uv",
+  "binary_status": "found",
+  "binary_path": "/usr/local/bin/uv",
+  "wrapper": "",
+  "script": "uv run --script",
+  "package": "uvx",
+  "fallback": "pip install + python3",
+  "fallback_runner": "python3",
+  "recommendation": ""
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `binary` | The canonical binary for the ecosystem (`uv`, `pnpm`/`bun`, `cargo`, `go`) |
+| `binary_status` | `found` (use `binary_path`), `wrapper` (use `wrapper`), `not_found` (use `fallback`/`recommendation`) |
+| `script` | The runner for inline-metadata scripts (PEP 723). Empty for ecosystems without an equivalent. |
+| `package` | The runner for ad-hoc package execution (`uvx`, `pnpm dlx`, `bunx`, `cargo binstall -y`, `go install`) |
+| `fallback` | The fallback approach when the binary is not found (e.g. `pip install + python3`). Empty if no fallback exists. |
+| `fallback_runner` | The command to use for the fallback. Empty if no fallback exists. |
+| `recommendation` | When `binary_status` is `not_found`: either "add to devbox.json", "use fallback", or "install manually". Empty otherwise. |
+
+Ecosystem mapping:
+
+| Ecosystem | Binary | Script runner | Package runner | Fallback |
+|-----------|--------|---------------|----------------|----------|
+| `python` | `uv` | `uv run --script` | `uvx` | `pip install + python3` |
+| `node` (host) | `pnpm` | — | `pnpm dlx` | none (install pnpm) |
+| `node` (container) | `bun` | — | `bunx` | none |
+| `rust` | `cargo` | — | `cargo binstall -y` | `cargo install` |
+| `go` | `go` | — | `go install` | none |
+
+Container detection for `node`: checks `/.dockerenv`, `$DOCKER_CONTAINER`, or
+container markers in `/proc/1/cgroup`. This matches the tech-stack table's
+"inside a container → bunx" rule.
+
+The Python include (`cli-tool-discovery.py.tmpl`) provides `resolve_runner(ecosystem)`
+returning the same dict shape, for use inside Python scripts that need to
+discover the runner programmatically.
+
 #### When to Use
 
 - **Always**, before reporting a tool as "not found" or "not installed"
 - When a build/test/lint command fails with "command not found"
 - When a skill or workflow script needs a tool that isn't on PATH
 - When the user reports a tool "should be installed" but `command -v` fails
+- **For ad-hoc package execution**, use `--runner <ecosystem>` instead of
+  hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` — the
+  runner mode keeps the binary resolution and the invocation pattern paired
+  and consistent with the tech-stack table
 
 #### Anti-Patterns
 
@@ -133,6 +211,115 @@ is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 - **Installing a tool without asking** — always confirm before adding packages
 - **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
   likely inside devbox, not on the bare shell
+- **Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install`** — use
+  `--runner <ecosystem>` instead so the binary and invocation stay paired
+  and the policy lives in one place (the tech-stack table, mirrored by the
+  runner mode)
+
+
+---
+description: Shared reference resolution — run scripts/resolve-reference.sh to resolve links to other skills and knowledge bundles in any deploy context
+---
+
+### Reference Resolution
+
+When a skill or knowledge bundle needs content from another skill or knowledge
+bundle, do **not** use bare relative paths like `../../knowledge/foo/overview.md`
+or `../other-bundle/overview.md`. Those paths break the moment the artifact is
+installed standalone via `pnpm dlx skills add`.
+
+Instead, use the three-tier fallback resolver: `scripts/resolve-reference.sh`.
+It tries three resolution strategies in order:
+
+1. **Local relative path** — finds the target file in the source tree
+   (`src/<ref>` or `<ref>`) by walking up from the current directory. Works in
+   development and full-profile installs.
+2. **Remote fetch** — downloads the target file from the published distribution
+   repo (`levonk/skills-releases` for public content, `levonk/skills-private`
+   for private content). Works for online standalone installs.
+3. **Materialized copy** — reads the target file from
+   `references/included/<ref>` inside the current skill/bundle. Populated at
+   build time with the templater's `includeTree` function. Works for offline
+   standalone installs.
+
+#### Use in skills
+
+For skills that reference knowledge bundles or other skills:
+
+1. Add `scripts/resolve-reference.sh` to the skill by creating a
+   `scripts/resolve-reference.sh.tmpl` file containing a single include directive
+   using the project's `/` delimiters. In rendered guidance this is shown
+   with `{{`/`}}` to avoid delimiter leakage:
+
+   ```
+   {{ include "includes/resolve-reference.sh" . }}
+   ```
+
+2. If the skill's workflow needs the referenced content at runtime (offline,
+   no network), materialize the dependency with `includeTree`:
+
+   ```
+   {{ includeTree "knowledge/<bundle-name>/" . }}
+   ```
+
+   This copies the bundle under
+   `<skill>/references/included/knowledge/<bundle-name>/` at build time. The
+   resolver checks this location as tier 3.
+
+3. Reference the dependency through the resolver:
+
+   ```bash
+   scripts/resolve-reference.sh knowledge/<bundle-name>/overview.md
+   ```
+
+#### Use in knowledge bundles
+
+Knowledge bundles do not have a `scripts/` directory. Cross-bundle links should
+be rewritten to published URLs at build time. Intra-bundle links (e.g.
+`overview.md` → `mermaidjs.md`) remain relative and work in all deploy contexts.
+
+#### Using the resolver from markdown
+
+When authoring a skill, replace relative links with resolver calls or links to
+the materialized copy. Examples:
+
+- Old (broken after standalone install):
+  `[diagram practices](knowledge/documentation-diagram-practices/overview.md)`
+- With `includeTree` (recommended for runtime content):
+  Add `{{ includeTree "knowledge/documentation-diagram-practices/" . }}` to
+  the SKILL.md, then link to the materialized copy:
+  `[diagram practices](references/included/knowledge/documentation-diagram-practices/overview.md)`
+- Direct resolver call (for scripts):
+  `bash scripts/resolve-reference.sh knowledge/documentation-diagram-practices/overview.md`
+
+#### Resolver syntax
+
+```bash
+# Print content to stdout
+scripts/resolve-reference.sh knowledge/foo/overview.md
+
+# Force a specific tier (useful for testing)
+scripts/resolve-reference.sh knowledge/foo/overview.md --tier 3
+
+# Write content to a file
+scripts/resolve-reference.sh knowledge/foo/overview.md --out /tmp/foo.md
+```
+
+#### When to materialize with includeTree
+
+- The skill's workflow applies the dependency's content at runtime (e.g. the
+  AUTHOR phase reads syntax conventions from the bundle).
+- The dependency is small and stable.
+- The user may run the skill offline.
+
+Do **not** materialize when:
+
+- The reference is attribution-only ("this skill is related to that bundle").
+- The dependency is huge and the skill only points at it for background.
+- The user is always online and the URL fallback is sufficient.
+
+For attribution-only references, use a URL to the published repo instead:
+`https://github.com/levonk/skills-releases/blob/main/knowledge/<bundle-name>/overview.md`.
 
 
 ---
@@ -691,17 +878,53 @@ When adopting best practices for a project (per ADR 20260131001 Standard Develop
 7. **Add** shared quality scripts (per ADR 20251218002)
 8. **Configure** testing framework (Vitest for TypeScript per ADR 20251106002)
 9. **Set up** GitHub Actions CI/CD (per ADR 20251106014)
-10. **Update** README.md with development setup
+10. **Set up** AGENTS.md for AI workflow (run **agent-file-upsert** if available; otherwise create a minimal AGENTS.md that references ai-development-loop). README generation in step 10b requires AGENTS.md to exist first so the README can link to it and the consistency checker can verify name/section agreement.
 11. **Add** docker-compose.yml if needed
 12. **Create** LICENSE.md (Proprietary)
-13. **Set up** AGENTS.md for AI workflow
-14. **Configure** dependencies and tooling using surgical-config skill
-15. **Integrate** with ai-development-loop for systematic workflow
-16. **Post-Adoption Validation** - Run repository health review to verify improvements
+13. **Generate or update README.md** - Delegate to the **readme-upsert** skill: it creates a README from `references/README-project-root-template.md.tmpl` for greenfield projects, or preserves accurate sections and updates stale ones for brownfield projects, then runs `scripts/verify_consistency.py {REPO_ROOT}` to check README↔AGENTS.md agreement (project name match, no content duplication, no wrong sections in either file). Do NOT hand-write README content or inline heredocs in `configure-*.sh` / `adopt-project.sh` — that duplicates readme-upsert's template, required-sections list, and consistency checks, and diverges over time.
+14. **Install knowledge bundles** - Run `uv run --script scripts/install-knowledge-bundles.py .` with stack-matched bundles based on project-detection output (universal bundles installed by default; add `--bundles typescript-monorepo-best-practices,container-best-practices` etc. for detected stacks)
+15. **Configure** dependencies and tooling using surgical-config skill
+16. **Generate ignore files** - Delegate to the **ignorefile-manager** skill: run `generate_ignores.py reconcile --target .` then `audit --target .` then `generate --target .` to produce `.gitignore`, `.dockerignore`, `.codeiumignore`, `.cursorignore`, `.aiexclude`, `.npmignore`, VS Code excludes, and ripgrep config from modular concern sources (covers git, docker, jj `.jj/`, AI tool exhaust, etc.). Do NOT hand-write `.gitignore` — that duplicates ignorefile-manager and diverges over time.
+17. **Initialize git repo and commit adoption changeset** - Delegate to the **git-repository-management** skill: run `git-collect.sh` (emits `NOT_A_GIT_REPO` + exit 2 if the dir isn't a repo yet) → if so, run `git-repo-init.bash` (full CREATE or `--no-init-structure` mode based on directory contents) → re-collect → analyze → `git-commit-batch.sh --slug project-adoption` to commit the adoption changeset as one logical commit with pre/post auto-tags for rollback safety → optionally `git-push.sh` if a remote is configured. Do NOT call `git init` / `git add` / `git commit` directly — that bypasses the secret-scanning, vertical-grouping, and rollback-safety guarantees of git-repository-management.
+18. **Integrate** with ai-development-loop for systematic workflow
+19. **Post-Adoption Validation** - Run repository health review to verify improvements
 
 ## Integration with Other Skills
 
 This skill integrates with project-detection, ai-development-loop, project-configuration, surgical-config, repository-health-review, quality scripts, testing framework, and CI/CD. For detailed integration descriptions, usage examples, health review reports, and loop prevention details, see [Skill Integrations](references/skill-integrations.md).
+
+## Repository & Ignore File Management
+
+This skill **delegates** three concerns to dedicated skills rather than reimplementing them:
+
+| Concern | Delegated To | Why |
+|---------|--------------|-----|
+| Ignore file generation (`.gitignore`, `.dockerignore`, `.codeiumignore`, `.cursorignore`, `.aiexclude`, `.npmignore`, VS Code excludes, ripgrep config) | **ignorefile-manager** | Single source of truth for ignore patterns across git, docker, jj (`.jj/`), AI indexing tools, npm packaging, IDE, and search. Hand-writing `.gitignore` duplicates concern sources and diverges over time. ignorefile-manager reconciles, audits, and generates from modular concern files. |
+| Repository initialization + committing the adoption changeset | **git-repository-management** | Provides `git-repo-init.bash` (with `NOT_A_GIT_REPO` signal + AI-decides scope), `git-collect.sh` (structured data + quality checks), `git-commit-batch.sh` (vertical grouping, mandatory body validation, pre/post auto-tags for rollback safety), and `git-push.sh` (handles divergence automatically). Calling `git init` / `git add` / `git commit` directly bypasses secret scanning and rollback safety. |
+| README.md creation or update (human-facing entry point) | **readme-upsert** | Owns the README template (`references/README-project-root-template.md.tmpl`), the required-sections list (Project name + overview, Quick Start, Build/Test Commands, Project Structure, AI Agent Documentation), and the README↔AGENTS.md consistency checker (`scripts/verify_consistency.py`). Hand-writing README content via heredocs in `adopt-project.sh` / `configure-*.sh` duplicates the template and bypasses the consistency check; the two copies diverge over time. readme-upsert handles both greenfield (create from template) and brownfield (preserve accurate sections, update stale ones) cases. |
+
+**Invocation pattern** (see Quick Start steps 13, 16, 17):
+
+```bash
+# 1. Generate or update README.md (readme-upsert) — run AFTER AGENTS.md exists
+#    (greenfield: creates from template; brownfield: preserves accurate sections)
+#    The skill's verify_consistency.py checks README↔AGENTS.md agreement.
+#    See <readme-upsert>/SKILL.md for the full workflow.
+
+# 2. Generate ignore files (ignorefile-manager)
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py reconcile --target . --auto-assign
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py audit --target .
+uv run --script <ignorefile-manager>/scripts/generate_ignores.py generate --target .
+
+# 3. Init repo + commit adoption changeset (git-repository-management)
+./<git-repository-management>/scripts/git-collect.sh .                         # emits NOT_A_GIT_REPO + exit 2 if not a repo
+bash ./<git-repository-management>/scripts/git-repo-init.bash .                # if NOT_A_GIT_REPO fired
+./<git-repository-management>/scripts/git-collect.sh .                         # re-collect after init
+./<git-repository-management>/scripts/git-commit-batch.sh --slug project-adoption .
+./<git-repository-management>/scripts/git-push.sh .                            # optional, if remote configured
+```
+
+The `<readme-upsert>`, `<ignorefile-manager>`, and `<git-repository-management>` paths are resolved by the consumer's skill installer (e.g. `pnpm dlx skills add ...`); this skill does not hardcode them.
 
 ## Enhanced Workflow Integration
 
@@ -713,7 +936,34 @@ This skill sets up the foundation per **ADR 20260131001 Standard Developer UX Fl
 
 For the technology-specific build tools table, see [Technology Build Tools](references/technology-build-tools.md).
 
-For detailed devbox setup, justfile configuration, direnv configuration, README.md structure, Docker configuration, LICENSE.md, AGENTS.md configuration, dependency management, GitHub configuration, .gitignore updates, examples, and quality checklist, see [Developer UX Flow](references/developer-ux-flow.md).
+For detailed devbox setup, justfile configuration, direnv configuration, Docker configuration, LICENSE.md, AGENTS.md configuration, dependency management, GitHub configuration, .gitignore updates, examples, and quality checklist, see [Developer UX Flow](references/developer-ux-flow.md). README.md structure and content are owned by the **readme-upsert** skill — see [Skill Integrations](references/skill-integrations.md) for the delegation contract.
+
+## Knowledge Bundle Installation
+
+Knowledge bundles from `levonk/skills-releases` are copied into `.agents/knowledge/bundles/` so the project has offline access to canonical practices. The `install-knowledge-bundles.py` script shallow-clones the distribution repo, copies the requested bundles, and leaves the project with self-contained, version-pinned knowledge.
+
+### Bundle Tiers
+
+| Tier | Bundles | When |
+|------|---------|------|
+| Universal | `software-architecture-essentials`, `dev-environment-practices`, `devsecops-codeguard`, `cicd-testing-practices`, `build-system-essentials` | Installed by default (no `--bundles` flag) |
+| Stack-matched | `typescript-monorepo-best-practices` (TypeScript/Node.js), `rust-development-practices` (Rust), `python-services-practices` (Python), `java-best-practices` (Java), `frontend-stack-practices` (Frontend web), `nix-build-practices` (Nix-heavy), `container-best-practices` (Docker/K8s), `data-engineering-best-practices` (Data pipelines) | Added via `--bundles` based on project-detection output |
+| Domain-specific | `api-auth-payment-practices`, `infrastructure-networking-practices`, `cloud-provider-essentials`, `web-resource-catalog`, `upstream-contribution-practices`, `ai-primitives` | NOT installed by default — URL-referenced in AGENTS.md by the agent-file-upsert skill so agents fetch them on demand only when the task touches that domain |
+
+### Example Commands
+
+```bash
+# Universal bundles only (default)
+uv run --script scripts/install-knowledge-bundles.py .
+
+# Stack-matched (TypeScript + containers detected)
+uv run --script scripts/install-knowledge-bundles.py . --bundles typescript-monorepo-best-practices,container-best-practices
+
+# Private distribution repo
+uv run --script scripts/install-knowledge-bundles.py . --private --bundles secrets-egress-security
+```
+
+> **Note**: Domain-specific bundles (api-auth-payment-practices, infrastructure-networking-practices, cloud-provider-essentials, web-resource-catalog, upstream-contribution-practices, ai-primitives) are NOT installed by default — they are URL-referenced in AGENTS.md by the agent-file-upsert skill so agents fetch them on demand only when the task touches that domain.
 
 ## References
 
@@ -725,15 +975,18 @@ For ADR references and detailed configuration links, see [ADR References](refere
 
 ### File Paths
 - Main skill: `config/ai/skills/software-dev/project-adopter/SKILL.md`
-- Scripts: `scripts/adopt-project.sh`
+- Scripts: `scripts/adopt-project.sh`, `scripts/install-knowledge-bundles.py`
 - References: `references/skill-integrations.md`, `references/developer-ux-flow.md`, `references/technology-build-tools.md`, `references/adr-references.md`
-- Related skills: `config/ai/skills/software-dev/project-detection/SKILL.md`, `config/ai/skills/software-dev/project-configuration/SKILL.md`
+- Related skills: `config/ai/skills/software-dev/project-detection/SKILL.md`, `config/ai/skills/software-dev/project-configuration/SKILL.md`, `config/ai/skills/ai/readme-upsert/SKILL.md`
 - Boilerplates reference: https://github.com/lrepo52/job-aide/tree/main/boilerplate
 
 ### Related Skills
 - project-configuration (alternative-approach)
 - project-detection (dependency)
 - surgical-config (dependency)
+- git-repository-management (dependency — repo init + commit adoption changeset)
+- ignorefile-manager (dependency — all ignore file generation)
+- readme-upsert (dependency — README.md creation or update, greenfield + brownfield)
 - repository-health-review (optional)
 - ai-development-loop (optional)
 - base-ai-guidance (base-framework)

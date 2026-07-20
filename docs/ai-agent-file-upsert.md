@@ -59,9 +59,10 @@ Example:
 - **ai-guidance-improver** (skill, complement) — Cross-file analysis and system-wide consistency for AI guidance — use when agent-file-upsert surfaces conflicts that span multiple guidance files
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts and anti-patterns before creating or improving
+- **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 
 ---
 
 - **Full skill**: [`skills/ai/agent-file-upsert/SKILL.md`](skills/ai/agent-file-upsert/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z

@@ -110,7 +110,7 @@ Never store credentials in source code. Use secure alternatives:
    runtime, never bake them into images or commit them to `.env` files.
 3. **BuildKit secret mounts**: Use `--mount=type=secret` in Dockerfiles so
    credentials never bake into image layers (see
-   [buildkit-secrets](../container-best-practices/buildkit-secrets.md) in the
+   [buildkit-secrets](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/buildkit-secrets.md) in the
    container-best-practices bundle).
 4. **Ansible vault**: Store secrets in encrypted vault files, never in
    plaintext group_vars (see [security-audit-playbook](/security-audit-playbook.md)).

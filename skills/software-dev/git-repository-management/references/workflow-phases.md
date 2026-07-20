@@ -23,15 +23,47 @@ for script in "${required_scripts[@]}"; do
 done
 ```
 
-### Phase 1: Data Collection (Single Script Call)
+### Phase 1: Repository Initialization (Conditional)
+
+Only runs when `git-collect.sh` detects the target is not inside a git
+repository. The script emits a structured `NOT_A_GIT_REPO` signal (text or JSON)
+and exits with code 2. The AI agent then decides whether to initialize the
+directory via the bundled `scripts/git-repo-init.bash` before re-running
+collection. For existing repositories, this phase is a no-op and the workflow
+proceeds directly to Phase 2.
+
+- **Step 1**: Call `git-collect.sh` on the target path.
+  - If the target is a git repo → proceeds to Phase 2 (Data Collection).
+  - If the target is NOT a git repo → emits `NOT_A_GIT_REPO` signal, exits 2.
+- **Step 2** (only if the signal fired): Decide whether to init.
+  - Consider the user's intent, the directory contents, and whether a dependent
+    skill needs a repo to checkpoint against. When in doubt, ask the user.
+  - Pick the init scope: full CREATE mode (default) or init-only. Run
+    `git-repo-init.bash --dry-run -v` first for non-empty dirs.
+- **Step 3** (only if init ran): Re-run `git-collect.sh` on the now-initialized
+  target. The directory is now a git repo, so Phase 1 passes through to Phase 2.
+
+See [Repository Initialization](repository-initialization.md) for the full
+signal format, the three AI decision points (whether to init, which scope,
+re-collection), the bundled script's configuration, and security notes.
+
+### Phase 2: Data Collection (Single Script Call)
 - **Step 1**: Call `git-collect.sh` - ONE handoff to get ALL data
   - Repository metadata (branch, upstream, root)
   - All change data (staged, unstaged, untracked files)
-  - Diff stats and context
-  - Quality check results (lint, test, format)
+  - Diff stats and context — `FULL_DIFF` includes staged + unstaged + untracked
+    file contents, bounded by `FULL_DIFF_MAX_BYTES` (default 200KB) with a
+    truncation notice when exceeded. For per-file diffs beyond the bound, run
+    `git diff HEAD -- <path>` yourself (token-efficiency tradeoff).
+  - Quality check results (lint, test, format, `just` targets)
+  - Pass `--json` for a single JSON object with a stable schema
+    (`repo_root`, `branch`, `upstream`, `available_tools`, `recent_log[]`,
+    `staged[]`, `unstaged[]`, `untracked[]`, `diff_stats`, `full_diff`,
+    `quality_checks{eslint, prettier, tests, just[]}`). Useful when delegating
+    analysis to parallel subagents — each subagent gets a slice of the JSON.
 - **Step 2**: Script returns structured data for AI analysis
 
-### Phase 2: AI Analysis & Planning (AI Agent)
+### Phase 3: AI Analysis & Planning (AI Agent)
 - **Step 3**: Analyze collected data to understand change context.
 - **Step 4**: Group changes into coherent commits by functionality (VERTICAL grouping)
   - **CRITICAL**: NEVER DELETE UNTRACKED FILES UNLESS YOU CREATED THEM AS TEMPORARY FILES! YOU MUST COMMIT USEFUL FILES!
@@ -59,6 +91,48 @@ done
     3. `test: Add unit tests for auth helpers` (3 files, test-only)
     4. `feat: Add JWT auth with middleware and tests` (8 files, new behavior, touches shared middleware)
     5. `refactor: Rework connection pooling across all DB callers` (15 files, cross-cutting, highest risk)
+
+### Parallel Subagent Delegation for Batch Message Drafting
+
+When a batch contains **N≥3 independent logical change groups**, drafting
+commit messages sequentially (one group at a time in the orchestrator's
+context) is slow and pollutes the orchestrator context with per-group diff
+details. Instead, dispatch one background subagent per change group in
+parallel, then assemble the results into a single batch file and run
+`git-commit-batch.sh` once.
+
+**When to use:**
+- Batches with N≥3 independent logical change groups
+- Change groups are independent (no dependency requiring sequential decisions)
+- The orchestrator context is getting large and per-group diffs are noise
+
+**When NOT to use:**
+- Small batches (N<3) — the dispatch overhead exceeds the parallelism gain
+- Change groups have dependencies requiring sequential decisions (e.g. group
+  B's message depends on what group A decided to call a concept)
+- The diffs are tiny and the orchestrator can draft all messages in one pass
+
+**How:**
+1. After Phase 2 collection and Phase 3 grouping, identify the N change groups
+2. For each group, dispatch a background subagent with:
+   - The specific diff for that group (`git diff HEAD -- <files>` output)
+   - The commit-message format from `commit-organization.md` (subject + body,
+     mandatory body, no AI signatures, significant-change titles)
+   - The no-AI-signatures rule (permanent, non-negotiable)
+   - The vertical-grouping context (which files belong to this group)
+3. Each subagent returns a `COMMIT:<subject>\n\n<body>` + `FILES:` block
+4. Assemble the returned blocks into a single batch file, ordered
+   least-complicated → most-complicated (Step 7 above)
+5. Optionally run `git-commit-batch.sh --dry-run` to validate the assembled
+   batch before committing
+6. Run `git-commit-batch.sh` once with the assembled batch
+
+**Context front-loading:** each subagent is stateless — front-load all
+context it needs (the diff, the format rules, the no-signatures rule) in the
+dispatch prompt. Do not assume the subagent can see the orchestrator's
+context. See the `subagent-delegation` include for the general
+front-load-context / review-results / choose-serialization-vs-parallelization
+guidance; this subsection is the batch-message-drafting specialization.
 
 ### CRITICAL: Git Submodule Handling
 
@@ -89,7 +163,7 @@ done
 
 **SUBMODULE-SECURITY AWARENESS**: Client submodules often contain private client-specific information. Converting them to regular directories can expose secrets and break security isolation.
 
-### Phase 3: Execution (Single Script Call)
+### Phase 4: Execution (Single Script Call)
 - **Step 8**: **Create pre-run tag** (see Automatic Run Tagging below)
   - Tag the current state BEFORE any commits are made
   - This is automatic and does NOT require user permission
@@ -119,7 +193,7 @@ done
     `git pull` manually bypasses that backup and defeats the rollback safety
     the script provides. The only correct way to push is through the script.
 
-### Phase 4: Documentation & Summary (AI Agent)
+### Phase 5: Documentation & Summary (AI Agent)
 - **Step 12**: Update project documentation (changelog, architecture, status)
 - **Step 13**: Generate commit summary and statistics
 - **Step 14**: Suggest follow-up skills based on what was committed:
@@ -135,7 +209,7 @@ done
     skills list before suggesting. State the suggestion as a recommendation,
     not an automatic invocation.
 
-### Phase 5: Tagging (Optional, On User Request)
+### Phase 6: Tagging (Optional, On User Request)
 Only run when the user explicitly asks to tag HEAD (e.g. "tag this", "cut a tag", "mark this release"). Never tag autonomously.
 
 - **Step 12**: Decide the tag path.

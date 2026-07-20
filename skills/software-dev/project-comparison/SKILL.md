@@ -94,7 +94,7 @@ description: Self-update requirement template for AI guidance files to track usa
 ---
 
 ---
-description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up
+description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and run tools through environment wrappers and standard PATH locations before giving up. Also resolves the canonical ad-hoc runner for an ecosystem (python/node/rust/go) via --runner.
 ---
 
 ### CLI Tool Discovery
@@ -104,6 +104,12 @@ detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
 accounts for the project's tech stack — all in one pass. **Never give up on
 the first `command -v` failure.**
+
+For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
+install`), use `--runner <ecosystem>` instead of resolving the binary and
+hardcoding the invocation. The runner mode is the single source of truth for
+"how do I invoke an ad-hoc command in ecosystem X?" — it pairs the binary
+resolution with the canonical invocation pattern from the tech-stack table.
 
 #### Get the script
 
@@ -125,6 +131,9 @@ cli-tool-discovery.sh <tool-name> --json   # JSON output (for scripts)
 
 # Resolve and exec — runs the tool through the right wrapper/path, never returns
 cli-tool-discovery.sh -- <tool-name> [args...]
+
+# Resolve the ad-hoc runner for an ecosystem (JSON only)
+cli-tool-discovery.sh --runner <python|node|rust|go>
 ```
 
 #### Output (resolve mode)
@@ -139,12 +148,63 @@ In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 
+#### Output (runner mode)
+
+`--runner <ecosystem>` emits JSON only:
+
+```json
+{
+  "ecosystem": "python",
+  "binary": "uv",
+  "binary_status": "found",
+  "binary_path": "/usr/local/bin/uv",
+  "wrapper": "",
+  "script": "uv run --script",
+  "package": "uvx",
+  "fallback": "pip install + python3",
+  "fallback_runner": "python3",
+  "recommendation": ""
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `binary` | The canonical binary for the ecosystem (`uv`, `pnpm`/`bun`, `cargo`, `go`) |
+| `binary_status` | `found` (use `binary_path`), `wrapper` (use `wrapper`), `not_found` (use `fallback`/`recommendation`) |
+| `script` | The runner for inline-metadata scripts (PEP 723). Empty for ecosystems without an equivalent. |
+| `package` | The runner for ad-hoc package execution (`uvx`, `pnpm dlx`, `bunx`, `cargo binstall -y`, `go install`) |
+| `fallback` | The fallback approach when the binary is not found (e.g. `pip install + python3`). Empty if no fallback exists. |
+| `fallback_runner` | The command to use for the fallback. Empty if no fallback exists. |
+| `recommendation` | When `binary_status` is `not_found`: either "add to devbox.json", "use fallback", or "install manually". Empty otherwise. |
+
+Ecosystem mapping:
+
+| Ecosystem | Binary | Script runner | Package runner | Fallback |
+|-----------|--------|---------------|----------------|----------|
+| `python` | `uv` | `uv run --script` | `uvx` | `pip install + python3` |
+| `node` (host) | `pnpm` | — | `pnpm dlx` | none (install pnpm) |
+| `node` (container) | `bun` | — | `bunx` | none |
+| `rust` | `cargo` | — | `cargo binstall -y` | `cargo install` |
+| `go` | `go` | — | `go install` | none |
+
+Container detection for `node`: checks `/.dockerenv`, `$DOCKER_CONTAINER`, or
+container markers in `/proc/1/cgroup`. This matches the tech-stack table's
+"inside a container → bunx" rule.
+
+The Python include (`cli-tool-discovery.py.tmpl`) provides `resolve_runner(ecosystem)`
+returning the same dict shape, for use inside Python scripts that need to
+discover the runner programmatically.
+
 #### When to Use
 
 - **Always**, before reporting a tool as "not found" or "not installed"
 - When a build/test/lint command fails with "command not found"
 - When a skill or workflow script needs a tool that isn't on PATH
 - When the user reports a tool "should be installed" but `command -v` fails
+- **For ad-hoc package execution**, use `--runner <ecosystem>` instead of
+  hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` — the
+  runner mode keeps the binary resolution and the invocation pattern paired
+  and consistent with the tech-stack table
 
 #### Anti-Patterns
 
@@ -152,6 +212,115 @@ is inside a wrapper, it execs through the wrapper. If not found, exits 127.
 - **Installing a tool without asking** — always confirm before adding packages
 - **Ignoring environment wrappers** — if a `devbox.json` exists, the tool is
   likely inside devbox, not on the bare shell
+- **Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install`** — use
+  `--runner <ecosystem>` instead so the binary and invocation stay paired
+  and the policy lives in one place (the tech-stack table, mirrored by the
+  runner mode)
+
+
+---
+description: Shared reference resolution — run scripts/resolve-reference.sh to resolve links to other skills and knowledge bundles in any deploy context
+---
+
+### Reference Resolution
+
+When a skill or knowledge bundle needs content from another skill or knowledge
+bundle, do **not** use bare relative paths like `../../knowledge/foo/overview.md`
+or `../other-bundle/overview.md`. Those paths break the moment the artifact is
+installed standalone via `pnpm dlx skills add`.
+
+Instead, use the three-tier fallback resolver: `scripts/resolve-reference.sh`.
+It tries three resolution strategies in order:
+
+1. **Local relative path** — finds the target file in the source tree
+   (`src/<ref>` or `<ref>`) by walking up from the current directory. Works in
+   development and full-profile installs.
+2. **Remote fetch** — downloads the target file from the published distribution
+   repo (`levonk/skills-releases` for public content, `levonk/skills-private`
+   for private content). Works for online standalone installs.
+3. **Materialized copy** — reads the target file from
+   `references/included/<ref>` inside the current skill/bundle. Populated at
+   build time with the templater's `includeTree` function. Works for offline
+   standalone installs.
+
+#### Use in skills
+
+For skills that reference knowledge bundles or other skills:
+
+1. Add `scripts/resolve-reference.sh` to the skill by creating a
+   `scripts/resolve-reference.sh.tmpl` file containing a single include directive
+   using the project's `/` delimiters. In rendered guidance this is shown
+   with `{{`/`}}` to avoid delimiter leakage:
+
+   ```
+   {{ include "includes/resolve-reference.sh" . }}
+   ```
+
+2. If the skill's workflow needs the referenced content at runtime (offline,
+   no network), materialize the dependency with `includeTree`:
+
+   ```
+   {{ includeTree "knowledge/<bundle-name>/" . }}
+   ```
+
+   This copies the bundle under
+   `<skill>/references/included/knowledge/<bundle-name>/` at build time. The
+   resolver checks this location as tier 3.
+
+3. Reference the dependency through the resolver:
+
+   ```bash
+   scripts/resolve-reference.sh knowledge/<bundle-name>/overview.md
+   ```
+
+#### Use in knowledge bundles
+
+Knowledge bundles do not have a `scripts/` directory. Cross-bundle links should
+be rewritten to published URLs at build time. Intra-bundle links (e.g.
+`overview.md` → `mermaidjs.md`) remain relative and work in all deploy contexts.
+
+#### Using the resolver from markdown
+
+When authoring a skill, replace relative links with resolver calls or links to
+the materialized copy. Examples:
+
+- Old (broken after standalone install):
+  `[diagram practices](knowledge/documentation-diagram-practices/overview.md)`
+- With `includeTree` (recommended for runtime content):
+  Add `{{ includeTree "knowledge/documentation-diagram-practices/" . }}` to
+  the SKILL.md, then link to the materialized copy:
+  `[diagram practices](references/included/knowledge/documentation-diagram-practices/overview.md)`
+- Direct resolver call (for scripts):
+  `bash scripts/resolve-reference.sh knowledge/documentation-diagram-practices/overview.md`
+
+#### Resolver syntax
+
+```bash
+# Print content to stdout
+scripts/resolve-reference.sh knowledge/foo/overview.md
+
+# Force a specific tier (useful for testing)
+scripts/resolve-reference.sh knowledge/foo/overview.md --tier 3
+
+# Write content to a file
+scripts/resolve-reference.sh knowledge/foo/overview.md --out /tmp/foo.md
+```
+
+#### When to materialize with includeTree
+
+- The skill's workflow applies the dependency's content at runtime (e.g. the
+  AUTHOR phase reads syntax conventions from the bundle).
+- The dependency is small and stable.
+- The user may run the skill offline.
+
+Do **not** materialize when:
+
+- The reference is attribution-only ("this skill is related to that bundle").
+- The dependency is huge and the skill only points at it for background.
+- The user is always online and the URL fallback is sufficient.
+
+For attribution-only references, use a URL to the published repo instead:
+`https://github.com/levonk/skills-releases/blob/main/knowledge/<bundle-name>/overview.md`.
 
 
 ---

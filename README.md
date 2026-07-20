@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `838659baee8ee22e7e879fd846e33377965c9126` · Branch: `env/dev` · Generated: 2026-07-18T08:27:30Z
+> Commit: `c64bddd3e30a41980ed590b68797921da9ba871a` · Branch: `env/dev` · Generated: 2026-07-20T22:00:35Z
 
 ## Overview
 
@@ -24,7 +24,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
 | knowledge-bundle-upsert | Create and maintain OKF knowledge bundles through four operations: create a new bundle from scrat... | [Synopsis](ai-knowledge-bundle-upsert.md) |
 | prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
-| readme-upsert | Generate or update a project's README.md for human developers. Use when onboarding a human to an ... | [Synopsis](ai-readme-upsert.md) |
+| readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](ai-readme-upsert.md) |
 | rule-upsert | Create new AI agent rules or audit and update existing rules. Scaffolds new rules from the rule t... | [Synopsis](ai-rule-upsert.md) |
 | template-upsert | Create new reusable templates, modify and improve existing templates, and audit template contract... | [Synopsis](ai-template-upsert.md) |
 
@@ -48,6 +48,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
+| diagram-upsert | Create and embed diagrams in technical documentation (ADR, design docs, README, knowledge bundles... | [Synopsis](content-diagram-upsert.md) |
 | youtube-content-analysis | Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video trans... | [Synopsis](content-youtube.md) |
 
 ### execution

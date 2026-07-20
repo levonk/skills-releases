@@ -29,5 +29,5 @@ Extract and analyze YouTube video transcripts and metadata. Use when needing to 
 ---
 
 - **Full skill**: [`skills/content/youtube/SKILL.md`](skills/content/youtube/SKILL.md)
-- **Install**: `npx skills add levonk/skills-releases`
-- **Generated**: 2026-07-18T08:27:30Z
+- **Install**: `pnpm dlx skills add levonk/skills-releases`
+- **Generated**: 2026-07-20T22:00:35Z
