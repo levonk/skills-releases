@@ -5,7 +5,7 @@
 
 > Category: **execution** · Status:  · Version: 1.2.0
 
->-
+Generic project execution controller that drives feature implementation from request to completion through a PRD → tasks → execute pipeline. Assesses request size, creates a PRD if one doesn't exist (for large requests), breaks the PRD into parallelizable task stories, executes each story via subagents, updates the PRD and task files when scope changes, and updates project documentation as the final phase. Runs as much as possible: when a story is blocked, marks it [!] Blocked with the reason in the index and proceeds to the next runnable story, then presents a final blocker report with the question, the options, the recommendation, and why it was recommended. Use when users want to implement a feature or change that is large enough to warrant structured planning, when they say "execute", "implement this feature", "build this project", "run the project executor", "drive this to completion", or reference a PRD or task list they want executed. Do NOT trigger on quick fixes, single-file edits, bug fixes with a known root cause, or questions about how something works — this skill is for multi-step project execution, not trivial changes.
 
 ## Metadata
 
@@ -44,4 +44,4 @@ intelligence to:
 
 - **Full skill**: [`skills/execution/execute-upsert/SKILL.md`](skills/execution/execute-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-30T10:21:17Z
+- **Generated**: 2026-07-30T19:45:30Z

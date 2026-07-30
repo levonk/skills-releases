@@ -5,7 +5,7 @@
 
 > Category: **general** · Status:  · Version: 1.0.0
 
->-
+Generate, reconcile, and audit ignore files (.gitignore, .codeiumignore, .cursorignore, .dockerignore, .npmignore, VS Code exclude settings, ripgrep config) from modular concern sources. Use when users want to create or update ignore files across multiple tools, find patterns that have diverged between .gitignore and .codeiumignore, harvest missing patterns from deployed files into the source-of-truth concerns, add a new ignore pattern to all relevant outputs at once, set up ignore files for a new project, update *.code-workspace files with proper exclude settings across a directory tree, or update ripgrep config to keep search results clean. Also use when the git-repository-management skill needs to update .gitignore as part of a commit workflow. Do NOT trigger on general git questions, single-file edits to one .gitignore (just edit it directly), or questions about what a specific ignore pattern does.
 
 ## Metadata
 
@@ -52,4 +52,4 @@ alphabetized. Comments explaining *why* a pattern exists are missing.
 
 - **Full skill**: [`skills/general/ignorefile-manager/SKILL.md`](skills/general/ignorefile-manager/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-30T10:21:17Z
+- **Generated**: 2026-07-30T19:45:30Z

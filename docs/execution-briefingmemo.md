@@ -5,7 +5,7 @@
 
 > Category: **execution** · Status:  · Version: 1.0.0
 
->-
+Use when making high-stakes business decisions, strategic choices, partnership evaluations, or any decision requiring structured committee deliberation. Triggers on requests like 'help me decide', 'strategic decision', 'briefing memo', 'committee deliberation', or 'evaluate this decision'. Strategic decision-making system using multi-agent committee deliberation that transforms strategic questions into well-researched decisions through a structured committee process: (1) Create structured brief with required sections, (2) Research phase where committee requests additional information, (3) Committee deliberation with parallel debate and optional blind peer review, (4) CSO final decision memo with one concrete next step, (5) Post-decision review by specialized agents. 17-member committee includes dedicated Partnership & Opportunities Agent for strategic partnerships, government contracts, funding opportunities, and growth synergies, plus an Outsider member who catches curse-of-knowledge blind spots. Do NOT trigger on fast pressure-tests or "council this" requests (use think-assist instead), factual questions with one right answer, pure creation tasks, or summary/processing tasks.
 
 ## Metadata
 
@@ -31,4 +31,4 @@ This skill implements a deterministic multi-agent decision-making system that tr
 
 - **Full skill**: [`skills/execution/briefingmemo/SKILL.md`](skills/execution/briefingmemo/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-30T10:21:17Z
+- **Generated**: 2026-07-30T19:45:30Z

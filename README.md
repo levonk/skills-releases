@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `5de2d66e88f965a749da65a09b02b98279e387f5` · Branch: `env/dev` · Generated: 2026-07-30T10:21:17Z
+> Commit: `e194e9bf262fc132ada9ef1ef2e619401e9a9ae9` · Branch: `env/dev` · Generated: 2026-07-30T19:45:30Z
 
 ## Overview
 
@@ -56,16 +56,16 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
-| briefingmemo | >- | [Synopsis](execution-briefingmemo.md) |
-| execute-upsert | >- | [Synopsis](execution-execute-upsert.md) |
+| briefingmemo | Use when making high-stakes business decisions, strategic choices, partnership evaluations, or an... | [Synopsis](execution-briefingmemo.md) |
+| execute-upsert | Generic project execution controller that drives feature implementation from request to completio... | [Synopsis](execution-execute-upsert.md) |
 
 ### general
 
 | Skill | Description | Details |
 |-------|-------------|---------|
-| ignorefile-manager | >- | [Synopsis](general-ignorefile-manager.md) |
-| peer-review | >- | [Synopsis](general-peer-review.md) |
-| think-assist | >- | [Synopsis](general-think-assist.md) |
+| ignorefile-manager | Generate, reconcile, and audit ignore files (.gitignore, .codeiumignore, .cursorignore, .dockerig... | [Synopsis](general-ignorefile-manager.md) |
+| peer-review | Run an anonymous (blind) peer-review round over a set of responses, designs, documents, code diff... | [Synopsis](general-peer-review.md) |
+| think-assist | Thinking-method library and light multi-advisor council for pressure-testing decisions, ideas, an... | [Synopsis](general-think-assist.md) |
 
 ### software-dev
 
@@ -88,7 +88,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | monorepo-extractor | Safely extract projects from monorepos while preserving git history and ensuring team coordinatio... | [Synopsis](software-dev-monorepo-extractor.md) |
 | nixify | Add Nix flake support to a project so it can be installed via nix run github:... or nix profile a... | [Synopsis](software-dev-nixify.md) |
 | project-adopter | Adopt and establish best practices for projects by overwriting existing preferences with standard... | [Synopsis](software-dev-project-adopter.md) |
-| project-comparison | >- | [Synopsis](software-dev-project-comparison.md) |
+| project-comparison | Compare multiple software projects to determine whether they belong to the same category, map wha... | [Synopsis](software-dev-project-comparison.md) |
 | project-configuration | Configure existing projects with compatible preferences without overwriting established workflows... | [Synopsis](software-dev-project-configuration.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
 | readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](software-dev-readme-upsert.md) |
