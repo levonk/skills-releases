@@ -36,6 +36,58 @@ Check the existing file for compliance with the type-specific guidelines. The
 audit checklist for each type lives in the consumer's own reference file — this
 step is where type-specific knowledge is applied. Flag every issue found.
 
+#### Delegating the Audit to a Subagent
+
+Steps 2–4 (audit, prioritize, propose) are the most context-heavy part of
+the update workflow — the subagent reads the full skill, checks every
+checklist item, and produces the lettered findings list. This is a strong
+`[fork]` candidate per the `subagent-delegation` include. When delegating:
+
+**Front-load to the subagent** (it starts with a fresh context — it does
+NOT inherit the inlined includes the orchestrator has in its SKILL.md):
+
+- **Goal**: "Audit the skill at `<path>` against the skill guidelines and
+  return a lettered findings list. Propose only — do not apply."
+- **Inputs**: exact file paths — `SKILL.md`, frontmatter, `scripts/`,
+  `references/`, `assets/`, `evals/`. Don't make it search for what you
+  already know.
+- **The audit checklist**: copy the type-specific checklist from the
+  consumer's reference file (e.g. `skill-upsert.md` Step 2 for skills,
+  `workflow-upsert.md` for workflows). The subagent won't have the
+  reference file in context.
+- **The lettered-findings format**: tell it explicitly — "Each finding
+  gets a stable uppercase letter (`A)`, `B)`, `C)`, …) + one-line title +
+  before/after + tier (`Critical` / `Important` / `Nice to have`). Group
+  by tier first, then letter within tier." The subagent won't have
+  Step 4's format spec in context.
+- **Constraints**: "Propose only. Do not modify any files. Return the
+  findings list in the lettered format."
+- **What to return**: the lettered findings list (same shape the
+  orchestrator would present to the user per Step 4).
+
+**The orchestrator keeps** (these are orchestrator-user interactions;
+the subagent never sees the user):
+
+- **Step 5 (Confirm)**: the ack-rule (`Go` = apply all) is an
+  orchestrator-user interaction. The subagent proposes; the orchestrator
+  presents to the user; the user acknowledges; the orchestrator applies.
+- **Step 6 (Apply)**: the orchestrator applies approved changes (or
+  delegates the apply to a second subagent with the approved subset).
+- **Step 9 (Reflect & Promote)**: the reflection asks "what did *I*
+  have to research/do?" — the "I" is the orchestrator, who reviewed the
+  subagent's work and decided to apply it. The subagent's work is an
+  *input* to the reflection, not the reflection itself. Feed the
+  subagent's findings into the reflection's Q1.
+
+**Review the subagent's work** (per `subagent-delegation` — delegation is
+not abdication):
+
+1. Verify the findings list covers every checklist item (not just the
+   obvious ones).
+2. Check that letters are stable and unambiguous.
+3. Run the smallest check that would fail if the audit is wrong — spot
+   one finding against the actual file.
+
 #### Step 3: Prioritize
 
 Not all issues are equally important. Group findings into three tiers:
@@ -53,12 +105,46 @@ Present a prioritized list of specific, actionable changes. For each change,
 show the before/after so the author can see exactly what will change and why.
 Do not modify the file at this stage.
 
+**Letter every finding.** Each proposed change gets a stable uppercase letter
+(`A)`, `B)`, `C)`, `D)`, …) in addition to its tier label, so the author can
+cherry-pick by letter in a subsequent reply (e.g. `Go A C F` or `1A, 2C, 3B`).
+Reuse the option format from `clarifying-questions.md` — letter + one-line
+title + before/after + tier (`Critical` / `Important` / `Nice to have`). When
+the list is long, group by tier first, then letter within tier. The letters
+are the contract: a subsequent reply that references letters resolves
+unambiguously to these findings.
+
+Example findings list:
+
+```text
+Critical:
+  A) Add missing `date.knowledge-basis` to frontmatter
+     before: (field absent)
+     after:  `knowledge-basis: "2026-07-27"`
+
+Important:
+  B) Move the 200-line script-inlining block to `scripts/foo.py`
+     before: <inline code in SKILL.md body>
+     after:  `scripts/foo.py` + one-line call site in SKILL.md
+
+Nice to have:
+  C) Add `see-also: skill: cli-tool-upsert` (sibling relationship)
+```
+
 #### Step 5: Confirm Before Applying
 
 Present the proposed changes and ask whether to proceed. Let the author:
 - Accept all changes
-- Accept a subset (cherry-pick)
+- Accept a subset (cherry-pick by letter, e.g. `Go A C F` or `1A, 2C, 3B`)
 - Reject entirely
+
+**Bare acknowledgements mean "apply all".** A reply that is just `Go`, `Run`,
+`Yes`, `y`, `continue`, `resume`, `proceed`, `ok`, `do it`, or any other
+bare acknowledgement with no letter references is treated as **accept all
+proposed changes** — the author is approving the entire findings list, not
+asking the agent to pick. Apply every finding from Step 4 in this case. Only
+an explicit letter subset (`Go A C F`), an explicit rejection (`No` / `Stop`
+/ `Cancel`), or a custom instruction changes that default.
 
 Do not modify the file until the author confirms. The author may have
 intentionally deviated from a guideline — propose, explain the benefit, and let
@@ -73,7 +159,7 @@ revertable.
 
 #### Step 7: Update Dates
 
-Update `date.updated` and `date.last-used` in the frontmatter when changes are
+Update `date.knowledge-basis` and `date.last-used` in the frontmatter when changes are
 applied. Set both to the current date (YYYY-MM-DD).
 
 #### Step 8: Validate
@@ -85,6 +171,36 @@ After applying improvements:
 3. **Test Go text/templates** render correctly (if `.tmpl` files were modified)
 4. **Run `just validate`** to check for leaked delimiters and frontmatter issues
 5. **Run `just build`** to confirm the build succeeds
+
+#### Step 9: Reflect & Promote
+
+After validation passes, run the post-task reflection pass. The full
+protocol is the **Post-Task Reflection** section already inlined into
+every guidance skill via `base-ai-guidance.md.tmpl` — run it now. It
+asks three questions (what did I have to research/do? is any of it
+generic across guidance types? does the include already exist and is
+this skill written to consume it?) and produces a short **Reflection**
+section appended to the audit summary. The reflection is mandatory
+after every apply; if it surfaces nothing to promote, the section is a
+single `Reflection: nothing to promote.` line. Do not skip the section
+— its presence is the contract that the reflection ran.
+
+This step is the post-task mirror of `research-phase.md`'s pre-task
+search: research-phase asks "what already exists that I should reuse?",
+Step 9 asks "what did I just do that someone else will have to redo
+unless I promote it to a shared include?"
+
+> The protocol is not re-included here. `base-ai-guidance.md.tmpl`
+> already inlines `post-task-reflection.md` into every skill that
+> includes it (which is every guidance skill, including every upsert
+> skill that also includes this audit methodology). Re-including it
+> here would duplicate the full protocol in SKILL.md for the 6 upsert
+> skills that inline `audit-methodology` directly. If you are reading
+> this audit methodology in a context that did NOT also include
+> `base-ai-guidance`, load `references/included/...` or the published
+> `post-task-reflection.md` via the three-tier resolver — but in
+> practice every consumer of this include also consumes
+> `base-ai-guidance`, so the protocol is already in context.
 
 #### Never Silently Overwrite
 
@@ -204,8 +320,8 @@ description: <string>            # What this does and when to use it (100-200 wo
 version: <string>                 # Semantic version (e.g., 1.0.0)
 status: <enum>                    # draft | ready | deprecated | archived
 date:
-  created: <YYYY-MM-DD>           # Creation date
-  updated: <YYYY-MM-DD>           # Last modification date
+  created: <YYYY-MM-DD>           # Creation date (never changed after creation)
+  knowledge-basis: <YYYY-MM-DD>   # Last verification of 3rd-party tech refs (omit if none)
   last-used: <YYYY-MM-DD>         # Last usage date (for maintenance tracking)
 
 # Ownership and metadata
@@ -434,7 +550,7 @@ name: skill-name
 description: ...
 date:
   created: "2026-01-01"
-  updated: "2026-01-01"
+  knowledge-basis: "2026-01-01"
   last-used: "2026-01-01"
 ---
 ```
@@ -465,8 +581,8 @@ description: <string>            # What this does and when to use it (100-200 wo
 version: <string>                 # Semantic version (e.g., 1.0.0)
 status: <enum>                    # draft | ready | deprecated | archived
 date:
-  created: <YYYY-MM-DD>           # Creation date
-  updated: <YYYY-MM-DD>           # Last modification date
+  created: <YYYY-MM-DD>           # Creation date (never changed after creation)
+  knowledge-basis: <YYYY-MM-DD>   # Last verification of 3rd-party tech refs (omit if none)
   last-used: <YYYY-MM-DD>         # Last usage date (for maintenance tracking)
 
 # Ownership and metadata

@@ -3,7 +3,10 @@ type: Practice
 title: Tailwind v4 Features
 description: Tailwind CSS v4 guidance — Oxide engine, @theme directive, container queries, 3D transforms, arbitrary values, data attributes, and project-wide configuration.
 tags: [tailwind, css, utility-first, oxide, container-queries, design-tokens, frontend]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Tailwind v4 Features

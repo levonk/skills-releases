@@ -3,7 +3,20 @@ type: Practice
 title: Java Sidecar Pattern — Development Sidecars with Shared Caches
 description: Package Java and Gradle as development sidecars that share Maven and Gradle cache volumes, depend on a base sidecar, and provide isolated tooling without bloating the main service image.
 tags: [java, gradle, sidecar, containers, development, caching, multi-stage]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: infrahub-java-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar
+    title: infrahub java-sidecar Dockerfile
+  - id: infrahub-gradle-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar
+    title: infrahub gradle-sidecar Dockerfile
+  - id: infrahub-artifact-docker-compose
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/docker-compose.artifact.yml
+    title: infrahub artifact docker-compose
 ---
 
 # Java Sidecar Pattern
@@ -68,9 +81,3 @@ Each sidecar has a simple health check:
   environments.
 - Production images should use multi-stage builds and ship only the JRE + built
   artifact.
-
-## Citations
-
-[1] [infrahub java-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar)
-[2] [infrahub gradle-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar)
-[3] [infrahub artifact docker-compose](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/docker-compose.artifact.yml) — cache volume definitions

@@ -3,7 +3,15 @@ type: Practice
 title: Cargo Configuration
 description: Required Cargo.toml metadata, dependency version pinning, feature flags for optional functionality, and workspace configuration for monorepo integration.
 tags: [rust, cargo, cargo-toml, dependencies, features, workspace]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Cargo Configuration
@@ -67,7 +75,3 @@ thiserror = "1.0"
 
 - [Project Structure](project-structure.md) — Directory layout for the package
 - [Security and Auditing](security-auditing.md) — cargo audit for dependencies
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

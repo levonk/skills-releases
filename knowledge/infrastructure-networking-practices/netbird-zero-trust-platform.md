@@ -3,7 +3,14 @@ type: Practice
 title: NetBird Zero-Trust Platform
 description: NetBird as primary zero-trust networking platform with cloud-hosted control plane in Docker. Chosen over Headscale and Netmaker for complete platform, cross-platform support, and active development.
 tags: [netbird, zero-trust, vpn, wireguard, docker, networking, tailscale, headscale]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-001-netbird-cloud-controlplane
+    resource: shared/active/08-docs/adr/adr-001-netbird-cloud-controlplane.md
+    title: infrahub
 ---
 
 # NetBird Zero-Trust Platform
@@ -55,7 +62,3 @@ release cycle (5 days vs 3 weeks) and stronger community (25.4k vs 11.6k stars).
   backup to NetBird
 - [Multi-Exit Node Architecture](multi-exit-node-architecture.md) — Exit nodes
   on top of the VPN platform
-
-## Citations
-
-[1] `shared/active/08-docs/adr/adr-001-netbird-cloud-controlplane.md` — infrahub

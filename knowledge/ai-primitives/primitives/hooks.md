@@ -4,7 +4,14 @@ title: Hooks
 description: Event-driven scripts that fire at specific points in the AI agent lifecycle (pre/post read/write/run), receiving JSON via stdin and returning exit codes.
 resource: src/current/hooks/
 tags: [ai-primitives, hooks, event-driven, guardrails, validation, security]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: hooks-directory
+    resource: src/current/hooks/
+    title: "Hooks directory"
 ---
 
 # Hooks
@@ -152,7 +159,3 @@ src/current/hooks/
 
 No dedicated `hook-upsert` skill. Hooks are authored by hand following the
 pattern of existing hook files. Use `ai-guidance-improver` to audit them.
-
-# Citations
-
-[1] [Hooks directory](src/current/hooks/)

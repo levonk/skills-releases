@@ -46,28 +46,28 @@ Projects are detected as Python when they contain:
 
 ## justfile Changes
 
-### Language-Specific *-internal Targets
+### Language-Specific *_impl Targets
 ```just
 # Python-specific implementations
-dev-internal:
+dev_impl:
     poetry run python main.py
 
-build-internal:
+build_impl:
     poetry build
 
-test-internal:
+test_impl:
     poetry run pytest
 
-lint-internal:
+lint_impl:
     poetry run ruff check .
 
-typecheck-internal:
+typecheck_impl:
     poetry run mypy src/
 
-clean-internal:
+clean_impl:
     rm -rf dist/ build/ *.egg-info/ __pycache__/ .pytest_cache/
 
-bootstrap-internal:
+bootstrap_impl:
     poetry install
     echo "Python development environment ready!"
 ```

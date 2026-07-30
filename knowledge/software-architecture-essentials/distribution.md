@@ -3,7 +3,10 @@ type: Practice
 title: Distribution & Packaging
 description: Single-binary distributions for CLIs, prebuilt binaries via NPM, and tracking of install/update/offline behavior.
 tags: [architecture, distribution, packaging, cli, npm]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Distribution & Packaging
@@ -12,6 +15,15 @@ timestamp: 2026-07-18T00:00:00Z
 - For NPM delivery of native apps, ship prebuilt binaries plus thin wrappers.
 - Track compressed and unpacked sizes; optimize with platform splits and stripping.
 - Document install paths, update strategy, and offline behavior.
+
+## See Also
+
+- [CDN and DNS](cdn-and-dns.md) — the distribution mechanism for web-delivered
+  content at scale.
+- [Load Balancing and Reverse Proxy](load-balancing-and-proxy.md) — traffic
+  distribution across multiple origin servers.
+- [Cost-Aware System Design](cost-aware-system-design.md) — distribution cost
+  (CDN egress, data transfer) is a first-class constraint.
 
 ## Sources
 

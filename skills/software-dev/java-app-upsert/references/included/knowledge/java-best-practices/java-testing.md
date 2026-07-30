@@ -3,7 +3,17 @@ type: Practice
 title: Java Testing — JUnit 5, Mockito, Testcontainers, and the Surefire/Failsafe Split
 description: Use JUnit 5 with AssertJ and Mockito, run unit tests with surefire and integration tests with failsafe, and use Testcontainers for real database/service integration in tests.
 tags: [java, testing, junit, mockito, testcontainers, surefire, failsafe]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: junit-5-documentation
+    resource: https://junit.org/junit5/docs/current/user-guide/
+    title: JUnit 5 documentation
+  - id: testcontainers-java
+    resource: https://java.testcontainers.org/
+    title: Testcontainers Java
 ---
 
 # Java Testing
@@ -52,8 +62,3 @@ the runtime environment.
   Docker socket. Prefer a dedicated `integrationTest` CI job that runs on a
   Docker-enabled runner over trying to run integration tests inside the app
   container at startup.
-
-## Citations
-
-[1] [JUnit 5 documentation](https://junit.org/junit5/docs/current/user-guide/)
-[2] [Testcontainers Java](https://java.testcontainers.org/)

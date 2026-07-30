@@ -4,7 +4,17 @@ title: Templater
 description: Go text/template renderer with custom delimiters that renders .tmpl files and inlines includes at build time.
 resource: src/current/templater/
 tags: [build-system, templater, go, text-template, rendering]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-12"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: templater-source
+    resource: src/current/templater/
+    title: "Templater source"
+  - id: developer-guide
+    resource: .agents/knowledge/developer.md
+    title: "Developer guide"
 ---
 
 # Templater
@@ -81,8 +91,3 @@ just validate           # render to temp dir, check leaked delimiters + frontmat
 just test               # templater tests (go test ./...)
 just catalog            # generate README.md catalogs
 ```
-
-# Citations
-
-[1] [Templater source](src/current/templater/)
-[2] [Developer guide](.agents/knowledge/developer.md)

@@ -70,11 +70,11 @@ emit the feature matrix.
 - **repository-health-review** (skill, dependency) — Provides per-project health score for the maintainability axis
 - **tech-maturity** (skill, complement) — Provides per-project maturity scoring (42 capabilities, 6 dimensions) for deep maintainability assessment
 - **** (, output-format) — Defines the output format for the feature matrix (icons, meta-features, table layout)
-- **comparison-methodology** (template, shared-methodology) — Shared comparison methodology (category discovery, coverage mapping, matrix output) — also used by ai-skill-upsert
+- **comparison-methodology** (template, shared-methodology) — Shared comparison methodology (category discovery, coverage mapping, matrix output) — also used by ai-upsert
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 
 ---
 
 - **Full skill**: [`skills/software-dev/project-comparison/SKILL.md`](skills/software-dev/project-comparison/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

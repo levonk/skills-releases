@@ -4,7 +4,14 @@ title: readme-upsert
 description: Generates and updates project README.md documentation for human developers.
 resource: src/current/skills/ai/readme-upsert/
 tags: [upsert-skills, readme, documentation, brownfield]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: readme-upsert-skill-md
+    resource: src/current/skills/ai/readme-upsert/SKILL.md.tmpl
+    title: "readme-upsert SKILL.md"
 ---
 
 # readme-upsert
@@ -43,7 +50,3 @@ or refreshing a stale README.
 
 README.md files — human-facing project documentation. Not agent documentation
 (use `agent-file-upsert` for AGENTS.md).
-
-# Citations
-
-[1] [readme-upsert SKILL.md](src/current/skills/ai/readme-upsert/SKILL.md.tmpl)

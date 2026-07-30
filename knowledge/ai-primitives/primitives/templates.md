@@ -4,7 +4,17 @@ title: Templates
 description: Reusable content structures with variable schemas, used by workflows, skills, and agents for output generation.
 resource: src/current/templates/
 tags: [ai-primitives, templates, reusable, variable-schema, structure]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: templates-directory
+    resource: src/current/templates/
+    title: "Templates directory"
+  - id: templates-agents-md
+    resource: src/current/templates/AGENTS.md
+    title: "Templates AGENTS.md"
 ---
 
 # Templates
@@ -43,7 +53,7 @@ variables:
       description: <what it is>
 date:
   created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+  knowledge-basis: "YYYY-MM-DD"
 ```
 
 ### Key Frontmatter Fields
@@ -138,8 +148,3 @@ No — templates are static structures. No planning or reasoning.
 
 [`template-upsert`](../upsert-skills/template-upsert.md) — creates, updates,
 and audits templates.
-
-# Citations
-
-[1] [Templates directory](src/current/templates/)
-[2] [Templates AGENTS.md](src/current/templates/AGENTS.md)

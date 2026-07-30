@@ -66,28 +66,28 @@ clean:
     devbox shell clean
 ```
 
-### Language-Specific *-internal Targets
+### Language-Specific *_impl Targets
 ```just
 # Rust-specific implementations
-dev-internal:
+dev_impl:
     cargo run
 
-build-internal:
+build_impl:
     cargo build
 
-test-internal:
+test_impl:
     cargo test
 
-lint-internal:
+lint_impl:
     cargo clippy -- -D warnings
 
-typecheck-internal:
+typecheck_impl:
     cargo check
 
-clean-internal:
+clean_impl:
     cargo clean
 
-bootstrap-internal:
+bootstrap_impl:
     cargo build
     echo "Rust development environment ready!"
 ```

@@ -4,7 +4,14 @@ title: Prompts
 description: Precision-crafted, structured instruction sets created via the Levonk methodology (DECONSTRUCT, DIAGNOSE, DEVELOP, DELIVER).
 resource: internal-docs/prompts/
 tags: [ai-primitives, prompts, instructions, methodology, levonk]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: prompt-upsert-skill
+    resource: src/current/skills/ai/prompt-upsert/SKILL.md.tmpl
+    title: "Prompt upsert skill"
 ---
 
 # Prompts
@@ -35,7 +42,7 @@ use: <When to use this prompt>
 version: <semver>
 date:
   created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+  knowledge-basis: "YYYY-MM-DD"
 tags: [<categorization tags>]
 ```
 
@@ -108,7 +115,3 @@ can encourage reasoning within the prompt execution.)
 
 [`prompt-upsert`](../upsert-skills/prompt-upsert.md) — creates, updates, and
 audits prompts.
-
-# Citations
-
-[1] [Prompt upsert skill](src/current/skills/ai/prompt-upsert/SKILL.md.tmpl)

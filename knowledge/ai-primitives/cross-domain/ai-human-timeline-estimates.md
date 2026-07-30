@@ -3,7 +3,10 @@ type: Cross-Link
 title: AI + Human Timeline Estimates (cross-link)
 description: Cross-link to the canonical AI + human timeline estimate format in software-architecture-essentials. Applies to AI agents estimating and reporting work.
 tags: [estimation, timelines, cross-link, ai-assisted-dev]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 canonical: ../software-architecture-essentials/ai-human-timeline-estimates.md
 ---
 

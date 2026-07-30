@@ -261,8 +261,10 @@ nix fmt --check  # Check formatting without modifying
 name: Nix flake
 
 # Validates the flake (flake.nix). For most nixify targets Nix is a side
-# concern, so this job is path-filtered to the flake files — it fires only
-# when they change, not on every source/docs commit.
+# concern and the full build can take 10+ minutes, so this workflow runs
+# only on manual dispatch or when a release is published — not on every
+# push or PR. If the project wants per-PR validation, add a `pull_request`
+# trigger with `paths:` filtered to flake files (see customization notes).
 #
 # Steps, in order of what they catch:
 #   1. nix flake check --all-systems  — every system's outputs evaluate
@@ -277,20 +279,12 @@ name: Nix flake
 #      does not expose a #source output.
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - "flake.nix"
-      - "flake.lock"
-      - "**/*.nix"
-      - ".github/workflows/nix.yml"
-  pull_request:
-    branches: [master]
-    paths:
-      - "flake.nix"
-      - "flake.lock"
-      - "**/*.nix"
-      - ".github/workflows/nix.yml"
+  # Manual trigger — run before cutting a release or after significant
+  # flake changes.
+  workflow_dispatch: {}
+  # Auto-run on published releases only.
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -342,8 +336,46 @@ jobs:
 ```
 
 **Customization notes:**
-- Adjust `branches: [master]` if the project uses a different default branch (e.g., `main`).
-- The `paths:` filter (include) is preferred over `paths-ignore:` (exclude) for nixify targets — Nix is usually a side concern and should not run on every source/docs commit. Add more paths only if the project has non-`.nix` files the flake reads.
+- **Trigger policy**: The default is `workflow_dispatch` + `release: published` only — Nix is usually a side concern and the full build takes 10+ minutes. If the project wants per-PR validation, add a `pull_request` trigger with `paths:` filtered to flake files:
+  ```yaml
+  pull_request:
+    branches: [main]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "**/*.nix"
+      - ".github/workflows/nix.yml"
+  ```
+  Adjust `branches: [main]` to match the project's default branch.
+- **Lockfile path-filter (source-build flakes — MANDATORY)**: When the flake exposes a `#source` output that builds from source via a fixed-output derivation (FOD) keyed on a lockfile hash, **the lockfile MUST be in the `paths:` filter**. A lockfile change invalidates the FOD's `outputHash`, but if the lockfile isn't in the path filter, the Nix CI never runs on dependency bumps and the breakage reaches users instead of being caught in CI. Add the project's lockfile(s) to the `paths:` list:
+  - Bun: `bun.lock`
+  - npm: `package-lock.json`
+  - pnpm: `pnpm-lock.yaml`
+  - Cargo: `Cargo.lock`
+  - Go: `go.sum`
+  - Python (uv): `uv.lock`
+  - Python (pip): `requirements.txt`
+  - Maven: `pom.xml`
+  Example with Bun:
+  ```yaml
+  pull_request:
+    branches: [main]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "**/*.nix"
+      - ".github/workflows/nix.yml"
+      - "bun.lock"
+  ```
+  This was a declining reason on Archon PR #2131: `bun.lock` changed 16 times in 60 days but was not in the nix.yml path filter, so dependency bumps never triggered Nix CI and the `#source` FOD hash rot reached users silently.
+- **Cross-platform matrix (recommended for prebuilt tarball flakes)**: The default workflow runs on `ubuntu-latest` only. `nix flake check --all-systems --no-build` evaluates every system's outputs without realising fetchurl derivations, so a fetch-hash mismatch on `x86_64-darwin` or `aarch64-darwin` is invisible. To catch cross-platform hash mismatches and Darwin-specific build failures, add a matrix that builds on multiple runners:
+  ```yaml
+  strategy:
+    matrix:
+      runner: [ubuntu-latest, macos-13, macos-14]
+  runs-on: ${{ matrix.runner }}
+  ```
+  `macos-13` is Intel (x86_64-darwin), `macos-14` is ARM (aarch64-darwin). This is the only way CI can catch the class of hash mismatch that the Archon PR #2131 ASSET_MAP omission caused.
 - Replace `--version` with the project's actual smoke command (e.g. `--help`, `--version`, or a no-op subcommand). The point is to exec the patched binary end-to-end.
 - The `#source` build step uses `jq` to detect whether the output exists before building. If the project's runner doesn't have `jq`, install it first or replace the check with `nix build .#source 2>/dev/null || true` (less precise but functional).
 - Pin `actions/checkout` and `nix-installer-action` to commit SHAs (with `# vX.Y.Z` comments) if the project's existing workflows do so — match the repo's convention.
@@ -476,6 +508,46 @@ jobs:
                   continue
               sys_, sub = line.split("|", 1)
               asset_map[sys_.strip()] = sub.strip()
+          # Reverse-check guard: detect release assets that look like platform
+          # binaries but are NOT in ASSET_MAP. If a project ships for 4 platforms
+          # but ASSET_MAP only lists 3, the omitted platform's hash goes stale
+          # while its URL still gets the version bump — users on that platform
+          # get a hash mismatch. This catches the omission class of bug that
+          # CI cannot see (nix flake check --all-systems --no-build evaluates
+          # without realising fetchurl derivations, and nix build only runs on
+          # the runner's own system). See Archon PR #2131 feedback.
+          known_platforms = {"x86_64-linux", "aarch64-linux",
+                             "x86_64-darwin", "aarch64-darwin"}
+          matched_subs = set(asset_map.values())
+          unmatched = []
+          for name in names:
+              # Skip non-binary assets (checksums, source tarballs, .deb, .rpm, etc.)
+              if not (name.endswith(".tar.gz") or name.endswith(".zip")):
+                  continue
+              if any(sub in name for sub in matched_subs):
+                  continue
+              # Check if the asset name contains a platform identifier
+              for plat in known_platforms:
+                  # Match common platform naming patterns in asset filenames
+                  plat_patterns = {
+                      "x86_64-linux": ["x86_64-linux", "x86_64-unknown-linux", "linux-x64", "linux-x86_64", "x64-linux"],
+                      "aarch64-linux": ["aarch64-linux", "aarch64-unknown-linux", "linux-arm64", "linux-aarch64", "arm64-linux"],
+                      "x86_64-darwin": ["x86_64-darwin", "x86_64-apple-darwin", "darwin-x64", "darwin-x86_64", "macos-x64", "x64-darwin", "x64-macos"],
+                      "aarch64-darwin": ["aarch64-darwin", "aarch64-apple-darwin", "darwin-arm64", "darwin-aarch64", "macos-arm64", "arm64-darwin", "arm64-macos"],
+                  }
+                  if any(p in name.lower() for p in plat_patterns[plat]):
+                      if plat not in asset_map:
+                          unmatched.append((plat, name))
+                      break
+          if unmatched:
+              plats = ", ".join(f"{p} ({n})" for p, n in unmatched)
+              raise SystemExit(
+                  f"RELEASE ASSET COMPLETENESS CHECK FAILED: release {tag} has "
+                  f"binary assets for platforms not in ASSET_MAP: {plats}. "
+                  f"Add them to ASSET_MAP or the hash for those platforms will "
+                  f"go stale while the URL gets the version bump — users on the "
+                  f"omitted platform get a hash mismatch. ASSET_MAP currently "
+                  f"covers: {sorted(asset_map.keys())}")
           src = open("flake.nix").read()
           src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
           if n != 1:
@@ -516,8 +588,8 @@ jobs:
             hashes by prefetching the new release assets.
 
             Note: PRs opened by `GITHUB_TOKEN` do not trigger downstream workflow runs (e.g. CI),
-            so this PR will show no checks. The diff is a 5-line hash bump with no source changes —
-            safe to merge as-is.
+            so this PR will show no checks. Review the diff before merging — it should be a
+            version bump plus per-platform hash refresh with no source changes.
 ```
 
 ### Template B: `release: published` (only if releases are created with a PAT/App token)
@@ -577,6 +649,36 @@ jobs:
               asset_map[sys_.strip()] = sub.strip()
           names = {a["name"] for a in event["release"]["assets"]
                    if not a["name"].endswith(".sha256")}
+          # Reverse-check guard: detect release assets that look like platform
+          # binaries but are NOT in ASSET_MAP. See Template A for full rationale.
+          known_platforms = {"x86_64-linux", "aarch64-linux",
+                             "x86_64-darwin", "aarch64-darwin"}
+          matched_subs = set(asset_map.values())
+          unmatched = []
+          for name in names:
+              if not (name.endswith(".tar.gz") or name.endswith(".zip")):
+                  continue
+              if any(sub in name for sub in matched_subs):
+                  continue
+              for plat in known_platforms:
+                  plat_patterns = {
+                      "x86_64-linux": ["x86_64-linux", "x86_64-unknown-linux", "linux-x64", "linux-x86_64", "x64-linux"],
+                      "aarch64-linux": ["aarch64-linux", "aarch64-unknown-linux", "linux-arm64", "linux-aarch64", "arm64-linux"],
+                      "x86_64-darwin": ["x86_64-darwin", "x86_64-apple-darwin", "darwin-x64", "darwin-x86_64", "macos-x64", "x64-darwin", "x64-macos"],
+                      "aarch64-darwin": ["aarch64-darwin", "aarch64-apple-darwin", "darwin-arm64", "darwin-aarch64", "macos-arm64", "arm64-darwin", "arm64-macos"],
+                  }
+                  if any(p in name.lower() for p in plat_patterns[plat]):
+                      if plat not in asset_map:
+                          unmatched.append((plat, name))
+                      break
+          if unmatched:
+              plats = ", ".join(f"{p} ({n})" for p, n in unmatched)
+              raise SystemExit(
+                  f"RELEASE ASSET COMPLETENESS CHECK FAILED: release {tag} has "
+                  f"binary assets for platforms not in ASSET_MAP: {plats}. "
+                  f"Add them to ASSET_MAP or the hash for those platforms will "
+                  f"go stale while the URL gets the version bump. ASSET_MAP "
+                  f"currently covers: {sorted(asset_map.keys())}")
           repo = os.environ["GITHUB_REPOSITORY"]
           src = open("flake.nix").read()
           src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
@@ -617,15 +719,17 @@ jobs:
 ```
 
 **Customization notes (both templates):**
-- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). Inspect the project's release assets to fill this in — it is the only project-specific input. Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases).
+- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects binary assets (`.tar.gz`/`.zip`) for a platform not in ASSET_MAP — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch).
 - `base: master`: change to `main` if the project's default branch is `main`.
 - `if: github.repository == '<owner>/<repo>'` (Template A): prevents the scheduled job from running on forks. Replace with the upstream owner/repo.
 - The script targets the `assets = { "<system>" = { file = ...; sha256 = ...; }; }` shape from the Prebuilt Tarball Flake template. For other flake shapes, adapt the regex.
 - Hashes are written in SRI form (`sha256-...=`), which modern Nix accepts in the `sha256` field.
 - `nix store prefetch-file` requires Nix >= 2.20; `cachix/install-nix-action@v31` installs a recent release.
-- PRs opened by `GITHUB_TOKEN` (both templates) do not trigger downstream CI workflows. The diff is a 5-line hash bump with no source changes — safe to merge without checks. If CI on the bump PR is required, use a PAT for `peter-evans/create-pull-request` (but that reintroduces secret-management burden).
-- To make it fully hands-off, add a final `gh pr merge --merge --auto` step (with `env: GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}`) or enable auto-merge on the branch via repository settings.
+- PRs opened by `GITHUB_TOKEN` (both templates) do not trigger downstream CI workflows. The diff is a version bump plus per-platform hash refresh with no source changes. **Review the diff before merging** — do not self-declare "safe to merge as-is" in the PR body. If CI on the bump PR is required, use a PAT for `peter-evans/create-pull-request` (but that reintroduces secret-management burden).
+- To make it fully hands-off, add a final `gh pr merge --merge --auto` step (with `env: GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}`) or enable auto-merge on the branch via repository settings. **Only do this if the project explicitly accepts auto-merged hash bumps** — some maintainers consider unreviewed merges a security concern (Archon PR #2131 feedback cited the `contents: write` + `pull-requests: write` self-declared unreviewed-merge path as a declining reason).
 - Pin actions to commit SHAs (with `# vX.Y.Z` comments) if the project's existing workflows do so — match the repo's convention.
+
+**CI blind spot — cross-platform hash validation:** `nix flake check --all-systems --no-build` evaluates every system's outputs without realising fetchurl derivations, so a fetch-hash mismatch is invisible at evaluation time. `nix build .#default` only runs on the runner's own system (typically `ubuntu-latest`), so it cannot catch a hash mismatch on `x86_64-darwin` or `aarch64-darwin`. The reverse-check guard in the hash automation script is the primary defense against omitted platforms. For projects that need stronger cross-platform validation, add a matrix build to `nix.yml` that runs `nix build .#default` on `macos-13` (Intel) and `macos-14` (ARM) in addition to `ubuntu-latest`. This catches hash mismatches and Darwin-specific build failures that `--all-systems --no-build` cannot see.
 
 **How it addresses maintainer objections:** the maintainer cuts a release exactly as they do today; the workflow opens a PR with the bumped `flake.nix`. Reviewing a 5-line diff (version + 4 hashes) needs no Nix knowledge. Merge -> `nix run github:<owner>/<repo>` serves the new release. The scheduled variant (Template A) adds no PAT, no release-pipeline edits, and no per-release manual step of any kind.
 

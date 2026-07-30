@@ -3,7 +3,20 @@ type: Practice
 title: Package Naming Convention
 description: Packages follow packages/{active|icebox}/{category}/{platform}/{domain}/{package-name}/{language} — status, category (core/features/services/ui), platform (node/web/shared), domain, name, and language are all explicit in the path.
 tags: [typescript, monorepo, package-naming, directory-structure, conventions]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: architecture-md
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'ARCHITECTURE.md — Package Structure section'
+  - id: adr-20251014001-refined-package-organization
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251014001-refined-package-organization.md
+    title: 'ADR-20251014001: Refined Package Organization'
+  - id: adr-20251016001-package-path-modifier
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251016001-package-path-modifier.md
+    title: 'ADR-20251016001: Package Path Modifier'
 ---
 
 # Package Naming Convention
@@ -86,8 +99,4 @@ packages/{active|icebox}/{category}/{platform}/{domain}/{package-name}/{language
 - [pnpm and Nx](/pnpm-nx-monorepo.md) — workspace globs consume
   this directory structure.
 
-## Citations
 
-[1] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — Package Structure section
-[2] [ADR-20251014001: Refined Package Organization](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251014001-refined-package-organization.md)
-[3] [ADR-20251016001: Package Path Modifier](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251016001-package-path-modifier.md)

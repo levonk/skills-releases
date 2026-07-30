@@ -1,9 +1,19 @@
 ---
 type: Practice
 title: Async Prime Internal
-description: prime-internal runs a sync git checkpoint (no push, follows pre-task-commit-checkpoint protocol) then kicks off cache-warming jobs (package downloads, build, recipe list, API doc generation) in parallel as fire-and-forget background tasks. Verification gates (typecheck/test/validate) stay synchronous. Triggered async by .envrc on directory entry, gated by direnv allow and DEVBOX_SHELL_ENABLED.
+description: prime_impl runs a sync git checkpoint (no push, follows pre-task-commit-checkpoint protocol) then kicks off cache-warming jobs (package downloads, build, recipe list, API doc generation) in parallel as fire-and-forget background tasks. Verification gates (typecheck/test/validate) stay synchronous. Triggered async by .envrc on directory entry, gated by direnv allow and DEVBOX_SHELL_ENABLED.
 tags: [developer-experience, direnv, devbox, just, async, background-tasks, warmup, caching, git-checkpoint]
-timestamp: 2026-07-20T00:00:00Z
+date:
+  created: "2026-07-20"
+  knowledge-basis: "2026-07-20"
+  last-used: "2026-07-20"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md
+    title: levonk-base-boilerplate
+  - id: skills-src-git-repository-management-skill
+    resource: includes/pre-task-commit-checkpoint.md.tmpl
+    title: skills-src `git-repository-management` skill
 ---
 
 # Async Prime Internal
@@ -17,7 +27,7 @@ This adds seconds-to-minutes of latency to the first `just build`, `just test`,
 or `just typecheck` — and worse, AI agents waste context window waiting for
 serial warmup steps that could have overlapped.
 
-A second failure mode: starting warmup jobs (especially `just build-internal`)
+A second failure mode: starting warmup jobs (especially `just build_impl`)
 when the working tree has uncommitted changes means generated artifacts,
 formatter rewrites, or compiler output could intermix with the user's
 in-progress work. Without a checkpoint commit on HEAD, there's no clean
@@ -30,7 +40,7 @@ and blocking — only warmup belongs in the async phase.
 
 ## Practice
 
-`prime-internal` has two phases:
+`prime_impl` has two phases:
 
 1. **Phase 1 (sync): Git checkpoint** — commit any pending work as a single
    checkpoint commit so there's a safe rollback point before warmup jobs
@@ -47,7 +57,7 @@ and blocking — only warmup belongs in the async phase.
 |-------|-----|-------------------|------------|
 | 1 | Git checkpoint (`git add -A && git commit`) | Safe rollback point before warmup; follows pre-task-commit-checkpoint protocol | **Sync** (fast, must complete before warmup) |
 | 2 | Download packages (`cargo fetch`, `pnpm install --frozen-lockfile`, `uv sync --frozen`) | Warms the package cache so the first `just build` doesn't stall on network | Async (network-bound; independent of build) |
-| 2 | Build (`just build-internal`) | Warms the compiler/build cache so the first `just test` / `just typecheck` skips redundant compilation | Async (CPU-bound but independent of downloads) |
+| 2 | Build (`just build_impl`) | Warms the compiler/build cache so the first `just test` / `just typecheck` skips redundant compilation | Async (CPU-bound but independent of downloads) |
 | 2 | List (`just --list`) | Discovers available recipes for AI agent context — the agent knows what targets exist without a round-trip | Async (trivial; instant) |
 | 2 | Generate API doc (`cargo doc --no-deps`, `pnpm docs`, `uv run pdoc`) | Warms the doc cache so `just docs` is instant on demand; only runs if `has_docs` is set | Async (CPU-bound but independent of build) |
 
@@ -65,7 +75,7 @@ synchronous. If a failure just means the cache didn't warm, it's async.**
 
 ### Phase 1: Git checkpoint (sync, no push)
 
-Before kicking off any warmup jobs, `prime-internal` checks whether the working
+Before kicking off any warmup jobs, `prime_impl` checks whether the working
 tree is dirty (staged changes, unstaged changes, or untracked files). If dirty,
 it commits everything as a single checkpoint commit. If clean, it skips.
 
@@ -75,6 +85,7 @@ This follows the `pre-task-commit-checkpoint` protocol from the
 1. Check `git status --porcelain` — if empty, tree is clean, skip.
 2. If dirty, commit: `git add -A && git commit -m "checkpoint: pre-prime warmup" -m "- Pre-prime checkpoint: commit pending work before async warmup jobs start"`
 3. The checkpoint commit hash is on HEAD — roll back with `git reset HEAD~1` if
+   the warmup jobs produce unwanted side effects.
    the warmup jobs produce unwanted side effects.
 
 **No push**: the checkpoint is local-only. Pushing is a separate, explicit
@@ -86,17 +97,17 @@ auto-committed (e.g., debugging a tricky issue and cd-ing in and out of the
 directory).
 
 **Relationship to the `git-repository-management` skill**: the checkpoint step
-in `prime-internal` uses plain git commands (no dependency on the skill's
+in `prime_impl` uses plain git commands (no dependency on the skill's
 script install path). When the `git-repository-management` skill is installed,
 the AI agent can alternatively run the skill's checkpoint entry point
 (`git-commit-batch.sh --slug pre-prime-checkpoint`) before invoking
 `just prime` — this adds pre/post auto-tags for rollback safety and vertical
-grouping validation. The inline git commands in `prime-internal` are the
+grouping validation. The inline git commands in `prime_impl` are the
 fallback that works without the skill installed.
 
 ### Phase 2: Async warmup (fire-and-forget)
 
-After the checkpoint completes (or is skipped), `prime-internal` kicks off
+After the checkpoint completes (or is skipped), `prime_impl` kicks off
 cache-warming jobs in parallel as `nohup ... &` background tasks:
 
 ```just
@@ -104,7 +115,7 @@ cache-warming jobs in parallel as `nohup ... &` background tasks:
     @nohup cargo fetch >/dev/null 2>&1 &
 
     # --- Build (warm the build cache / compiler) ---
-    @nohup just build-internal >/dev/null 2>&1 &
+    @nohup just build_impl >/dev/null 2>&1 &
 
     # --- List (recipe inventory for AI agent context discovery) ---
     @nohup just --list >/dev/null 2>&1 &
@@ -117,7 +128,7 @@ cache-warming jobs in parallel as `nohup ... &` background tasks:
 
 ### Async .envrc trigger
 
-`.envrc` kicks off `just prime-internal` in the background on every directory
+`.envrc` kicks off `just prime_impl` in the background on every directory
 entry. Async, quiet, non-blocking via `nohup ... > /dev/null 2>&1 &`. Gated by
 two checks:
 
@@ -128,10 +139,10 @@ two checks:
    Prevents re-triggering prime when nesting shells.
 
 ```bash
-# Async prime-internal trigger (per dev-environment-practices/async-prime-internal.md)
+# Async prime_impl trigger (per dev-environment-practices/async-prime-internal.md)
 if [ -f devbox.json ] && command -v just >/dev/null 2>&1; then
   if [ "$DEVBOX_SHELL_ENABLED" != "1" ]; then
-    nohup devbox run -- just prime-internal > /dev/null 2>&1 &
+    nohup devbox run -- just prime_impl > /dev/null 2>&1 &
   fi
 fi
 ```
@@ -144,12 +155,12 @@ work in progress that you don't want auto-committed, set
 
 ### Three entry paths, one target
 
-All three paths that trigger prime go through `prime-internal`, which has the
+All three paths that trigger prime go through `prime_impl`, which has the
 same two-phase structure. No duplicated logic:
 
-- `just prime` (manual) → `devbox run prime` → `just prime-internal` → checkpoint + async jobs
-- `.envrc` async trigger → `devbox run -- just prime-internal` → checkpoint + async jobs
-- `just bootstrap` → `bootstrap-internal` → `prime-internal` → checkpoint + async jobs (if
+- `just prime` (manual) → `_devbox prime_impl` → (in devbox) `just prime_impl` → checkpoint + async jobs
+- `.envrc` async trigger → `devbox run -- just prime_impl` → checkpoint + async jobs
+- `just bootstrap` → `bootstrap_impl` → `prime_impl` → checkpoint + async jobs (if
   bootstrap calls prime; project-specific)
 
 ## Why fire-and-forget for warmup (not capture-and-surface)
@@ -168,7 +179,7 @@ directory, warm caches in the background, proceed with work.
 ## Why the checkpoint is sync (not async)
 
 The checkpoint commit must complete before any warmup jobs start. If
-`just build-internal` runs in the background while `git add -A` is staging
+`just build_impl` runs in the background while `git add -A` is staging
 files, the build might generate artifacts (in gitignored dirs, but still)
 that intermix with the staging operation. By making the checkpoint sync and
 the warmup async, we guarantee: checkpoint completes → tree is clean → warmup
@@ -190,11 +201,6 @@ The sync/async split is:
 ## Related Concepts
 
 - [Standard Developer UX Flow](standard-developer-ux-flow.md) — The three-flow pattern; prime is part of the bootstrap → prime → work sequence
-- [Internal vs Normal Targets](internal-vs-normal-targets.md) — `prime` (normal) wraps `devbox run prime` → `prime-internal` (implementation)
+- [Auto-Detecting Devbox Targets](internal-vs-normal-targets.md) — `prime` (auto-detecting) delegates to `_devbox prime_impl` → `prime_impl` (implementation)
 - [direnv Auto-Activation](direnv-auto-activation.md) — The `.envrc` async trigger rides on direnv's directory-entry hook
 - `git-repository-management` skill — The `pre-task-commit-checkpoint` protocol that Phase 1 follows; the skill's checkpoint entry point (`git-commit-batch.sh --slug pre-prime-checkpoint`) is the preferred invocation when the skill is installed
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md` — levonk-base-boilerplate
-[2] `includes/pre-task-commit-checkpoint.md.tmpl` — skills-src `git-repository-management` skill

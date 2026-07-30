@@ -4,7 +4,14 @@ title: agent-file-upsert
 description: Generates and updates hierarchical AGENTS.md documentation for AI agents working in codebases.
 resource: src/current/skills/ai/agent-file-upsert/
 tags: [upsert-skills, agents-md, documentation, brownfield, hierarchical]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: agent-file-upsert-skill-md
+    resource: src/current/skills/ai/agent-file-upsert/SKILL.md.tmpl
+    title: "agent-file-upsert SKILL.md"
 ---
 
 # agent-file-upsert
@@ -53,7 +60,3 @@ tells AI agents how to work in a specific codebase.
 | Produces | AGENTS.md documentation files | Agent definition files |
 | Purpose | Tell agents how to work in a codebase | Define an agent's personality and capabilities |
 | Location | Target codebase root + subtrees | `internal-docs/agents/` |
-
-# Citations
-
-[1] [agent-file-upsert SKILL.md](src/current/skills/ai/agent-file-upsert/SKILL.md.tmpl)

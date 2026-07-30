@@ -3,7 +3,10 @@ type: Practice
 title: Diagram Tool Selection
 description: Pick the right diagram tool (Mermaid, PlantUML, Excalidraw) by output type, version-control needs, and rendering environment — text-based tools for diffability, Excalidraw for whiteboard sketching, PlantUML for precise UML.
 tags: [documentation, diagrams, tool-selection, mermaid, plantuml, excalidraw]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-19"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Diagram Tool Selection

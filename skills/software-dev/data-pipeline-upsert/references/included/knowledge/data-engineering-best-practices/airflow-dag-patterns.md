@@ -3,7 +3,27 @@ type: Practice
 title: Airflow DAG Patterns — Idempotency, Task Boundaries, and XCom Discipline
 description: Author Airflow DAGs with idempotent tasks, clear task boundaries, small XCom only, and deterministic retries to ensure safe reruns and backfills.
 tags: [data-engineering, airflow, dag, idempotency, xcom, orchestration]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: airflow-documentation-xcoms
+    resource: "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/xcoms.html"
+    title: "Airflow documentation — XComs"
+  - id: airflow-documentation-dynamic-task-mapping
+    resource: "https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dynamic-task-mapping.html"
+    title: "Airflow documentation — Dynamic Task Mapping"
+  - id: airflow-documentation-task-retry-and-timeout
+    resource: "https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dags.html"
+    title: "Airflow documentation — Task Retry and Timeout"
+  - id: executor-choice-affects-task-isolation
+    resource: "/airflow-on-kubernetes.md"
+    title: "executor choice affects task isolation"
+  - id: task-base-images-for-kubernetespodoperator
+    resource: "/airflow-layered-images.md"
+    title: "task base images for KubernetesPodOperator"
 ---
 
 # Airflow DAG Patterns — Idempotency, Task Boundaries, and XCom Discipline
@@ -69,11 +89,3 @@ Airflow 2.3+ supports dynamic task mapping (`expand` / `expand_kwargs`) which
 fan-outs tasks at runtime based on upstream output. This replaces fragile
 dynamic-DAG-generation patterns. Use it for partitioned processing where the
 number of partitions is known only at runtime.
-
-## Citations
-
-[1] [Airflow documentation — XComs](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/xcoms.html)
-[2] [Airflow documentation — Dynamic Task Mapping](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dynamic-task-mapping.html)
-[3] [Airflow documentation — Task Retry and Timeout](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dags.html)
-[4] [Airflow on Kubernetes](/airflow-on-kubernetes.md) — executor choice affects task isolation
-[5] [Airflow Layered Images](/airflow-layered-images.md) — task base images for KubernetesPodOperator

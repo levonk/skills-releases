@@ -3,7 +3,10 @@ type: Practice
 title: Tool Detection Architecture
 description: Detect tools via PATH first, verify with --version, cache results, and treat detection as I/O with clear error messages and retries.
 tags: [architecture, tool-detection, cli, path, caching]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Tool Detection Architecture

@@ -3,7 +3,10 @@ type: Practice
 title: Shell Scripting Best Practices
 description: Critical rules to write, change, and run shell scripts safely — strict mode, PATH guards, git gates, dry-runs, logging, testing, and verification workflow.
 tags: [shell, bash, scripting, safety, testing, shellcheck, shfmt, bats, dry-run, git]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Shell Scripting Best Practices

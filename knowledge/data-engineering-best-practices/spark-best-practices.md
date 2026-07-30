@@ -3,7 +3,18 @@ type: Practice
 title: Spark Best Practices — Partitioning, Caching, and Memory Tuning
 description: Partition data by query pattern, cache only reused DataFrames, broadcast small dimension tables, reduce shuffle, and tune executor/driver memory with off-heap awareness.
 tags: [data-engineering, spark, performance, partitioning, caching, shuffle, memory]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: spark-tuning-guide
+    resource: "https://spark.apache.org/docs/latest/tuning.html"
+    title: "Spark Tuning Guide"
+  - id: spark-performance-faq
+    resource: "https://spark.apache.org/docs/latest/sql-performance-tuning.html"
+    title: "Spark Performance FAQ"
 ---
 
 # Spark Best Practices
@@ -55,8 +66,3 @@ shuffles, and memory settings ignore off-heap and container limits.
 - Set `spark.executor.memory` together with `spark.executor.memoryOverhead` and
   `spark.executor.memoryFraction`.
 - In containers, set `spark.kubernetes.memoryOverheadFactor` appropriately.
-
-## Citations
-
-[1] [Spark Tuning Guide](https://spark.apache.org/docs/latest/tuning.html)
-[2] [Spark Performance FAQ](https://spark.apache.org/docs/latest/sql-performance-tuning.html)

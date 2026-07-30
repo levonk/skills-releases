@@ -3,7 +3,14 @@ type: Practice
 title: Vault Troubleshooting
 description: Common vault corruption issues (odd-length hex strings, mixed format, wrong password), git history recovery, Docker-based vault editing with directory mount for atomic replace.
 tags: [ansible-vault, troubleshooting, corruption, recovery, docker, git-history]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: vault-troubleshooting-and-agent-workflow-sections
+    resource: Infrahub AGENTS.md
+    title: 'vault troubleshooting and agent workflow sections'
 ---
 
 # Vault Troubleshooting
@@ -72,6 +79,4 @@ busy`). Mounting the directory lets the atomic replace work normally.
   usage patterns
 - [Hybrid Vault Storage](hybrid-vault-storage.md) — Where vault files live
 
-## Citations
 
-[1] Infrahub AGENTS.md — vault troubleshooting and agent workflow sections

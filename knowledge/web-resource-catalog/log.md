@@ -1,5 +1,8 @@
 # Directory Update Log
 
+## 2026-07-26
+* **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md, migrated `# Citations` body sections to `sources` frontmatter with footnote attribution per §13.1, migrated `timestamp` to `generated` (typescript-monorepo only).
+
 ## 2026-07-11
 * **Initialization**: Created the web-resource-catalog knowledge bundle with 6 category concepts and an IP logger deny list.
 * **Creation**: Established [Overview](overview.md) with TOON format rationale and maintenance workflow.

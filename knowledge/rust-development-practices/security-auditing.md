@@ -3,7 +3,15 @@ type: Practice
 title: Security and Auditing
 description: Regular cargo audit for dependency vulnerabilities, secrecy crate for secret handling, zeroize for secure memory clearing, input validation, and safe FFI practices.
 tags: [rust, security, cargo-audit, secrecy, zeroize, ffi, input-validation]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Security and Auditing
@@ -44,7 +52,3 @@ cargo outdated # Check for outdated dependencies
 - [Cargo Configuration](cargo-configuration.md) — Dependency management
 - [Quality Gates](quality-gates.md) — CI runs cargo audit
 - [Container Support](container-support.md) — Non-root container
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

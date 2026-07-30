@@ -3,8 +3,16 @@ type: Practice
 title: Shared Dockerized Quality Scripts
 description: Single Docker-based quality script per boilerplate that both pre-commit hooks and GitHub Actions invoke. Configurable scanners, environment variables for fast/full mode, Copier-generated.
 tags: [docker, quality, scripts, pre-commit, ci-cd, scanners, trivy, checkov]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251218002-shared-quality-scripts
+    resource: "internal-docs/adr/adr-20251218002-shared-quality-scripts.md"
+    title: "levonk-base-boilerplate"
 ---
+
 
 # Shared Dockerized Quality Scripts
 
@@ -57,7 +65,3 @@ pre-commit hooks and GitHub Actions invoke.
 - [Pre-Commit CI Parity](pre-commit-ci-parity.md) — This script enables parity
 - [Accessibility Testing](accessibility-testing.md) — axe-core runs through this
   script
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251218002-shared-quality-scripts.md` — levonk-base-boilerplate

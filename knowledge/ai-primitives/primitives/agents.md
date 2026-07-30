@@ -4,7 +4,23 @@ title: Agents
 description: Autonomous orchestrators that channel specific domain expertise and work autonomously using workflows, prompts, and templates.
 resource: src/current/agents/
 tags: [ai-primitives, agents, orchestrator, autonomy, expertise]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-28"
+  last-used: "2026-07-28"
+sources:
+  - id: agents-directory
+    resource: src/current/agents/
+    title: "Agents directory"
+  - id: agent-template
+    resource: src/current/templates/meta/agent-template.md.tmpl
+    title: "Agent template"
+  - id: agent-structure-reference
+    resource: src/current/skills/ai/agent-upsert/references/agent-structure.md
+    title: "Agent structure reference"
+  - id: eve-filesystem-agents
+    resource: https://github.com/vercel/eve
+    title: "vercel/eve — filesystem-first framework for durable AI agents"
 ---
 
 # Agents
@@ -134,13 +150,16 @@ expertise).
 - `agents/software-dev/code-reviewer.md` — Reviews code
 - `agents/software-dev/senior-software-engineer.md` — Senior eng expertise
 
+## Real-World Reference
+
+[vercel/eve](../cross-domain/eve-filesystem-agents.md) is a production
+filesystem-first framework for durable AI agents. It implements the agent
+primitive using path-as-name conventions: `agent/instructions.md` (always-on
+prompt), `agent/tools/` (typed capabilities), `agent/skills/` (on-demand
+procedures — direct match), and `agent/subagents/` (delegation). See the
+cross-domain page for the full layout mapping and design lessons.
+
 ## Producer Skill
 
 [`agent-upsert`](../upsert-skills/agent-upsert.md) — creates, updates, and
 audits agent definitions.
-
-# Citations
-
-[1] [Agents directory](src/current/agents/)
-[2] [Agent template](src/current/templates/meta/agent-template.md.tmpl)
-[3] [Agent structure reference](src/current/skills/ai/agent-upsert/references/agent-structure.md)

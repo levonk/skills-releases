@@ -3,7 +3,14 @@ type: Practice
 title: Tech Decision Risk Assessment
 description: Ordered risk hierarchy for evaluating technology decisions. Risk from highest to lowest: novel work > end-user impact > public API impact > tech-giant-only territory > modifying 3rd-party source > running 3rd-party service > new SaaS integration > others-have-done-it > new internal service > changing integrations > new 3rd-party package > using 3rd-party package directly > using more of an existing package > facade-wrapped package > new internal app > new internal micro-service > updating internal API > new internal package > new internal module > new internal algorithm > new internal class > new data structure > new exception > new interface > new function > nested conditional > new conditional > short circuit > new error/critical assertion > new statement > warning assertion > debug-time assertion > new constant > dependency updates (major > minor; security > capability > drift-avoidance).
 tags: [risk, decision-making, architecture, evaluation, dependencies, anti-patterns]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
+sources:
+  - id: bookkeeping-saas-mvp
+    resource: internal-docs/feature/2026/07/bookkeeping-saas-mvp/
+    title: "bookkeep-saas decision dialogue (better-auth vs. Supabase Auth, PocketBase evaluation)"
 ---
 
 # Tech Decision Risk Assessment
@@ -201,8 +208,3 @@ for the full decision.
   axis that interacts with this risk axis
 - [Auth Provider Selection](https://github.com/levonk/skills-releases/blob/main/knowledge/api-auth-payment-practices/auth-provider-selection.md)
   — Worked example of this hierarchy in action
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/` — bookkeep-saas
-    decision dialogue (better-auth vs. Supabase Auth, PocketBase evaluation)

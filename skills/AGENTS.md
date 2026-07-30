@@ -21,7 +21,11 @@ just validate
 
 ## Patterns & Conventions
 
-✅ **DO**: Include `base-ai-guidance` via `{{{ include "includes/base-ai-guidance.md" . }}}`
+✅ **DO**: Include `base-ai-guidance` via `{{{ includeForCache "includes/base-ai-guidance.md" . }}}`
+  in the header block (between frontmatter and first `# ` heading). Use plain
+  `{{{ include "..." . }}}` for body-level includes (after the first heading).
+  The `ForCache` variant marks the include as eligible for cache-ordering
+  optimization — it maximizes cross-skill prefix overlap for LLM context caches.
 ✅ **DO**: Use progressive disclosure (metadata → body → references)
 ✅ **DO**: Extract deterministic phases into `scripts/` (one script per AI→script handoff)
 ✅ **DO**: Put detailed guidance in `references/` with topic-named files
@@ -51,7 +55,7 @@ just validate
 
 | Path | Category |
 |------|----------|
-| `ai/` | AI guidance upsert skills (ai-skill-upsert, ai-workflow-upsert, agent-file-upsert, readme-upsert, ai-guidance-improver, prompt-upsert, template-upsert, agent-upsert, knowledge-bundle-upsert, rule-upsert, handoff) |
+| `ai/` | AI guidance upsert skills (ai-upsert, ai-workflow-upsert, agent-file-upsert, readme-upsert, ai-guidance-improver, prompt-upsert, template-upsert, agent-upsert, rule-upsert, handoff) |
 | `software-dev/` | Software development skills |
 | `business/` | Business skills |
 | `commerce/` | Commerce skills |
@@ -64,8 +68,11 @@ just validate
 
 - **Frontmatter**: `name`, `description`, `version`, `date`, `tags`, `see-also`
   in each `SKILL.md` — the `description` is the primary trigger mechanism
-- **Includes**: `{{{ include "includes/..." . }}}` — resolved at build time,
-  inlined into the output
+- **Includes**: `{{{ includeForCache "includes/..." . }}}` in the header block
+  (between frontmatter and first `# ` heading) and `{{{ include "includes/..." . }}}`
+  in the body (after the first heading) — both resolved at build time, inlined
+  into the output. The `ForCache` variant marks header-block includes for
+  cache-ordering optimization; body-level includes stay as plain `include`
 - **Scripts**: `scripts/*.py` — must have PEP 723 headers, run via `uv run --script`
 - **References**: `references/*.md` — detailed guidance loaded on demand
 

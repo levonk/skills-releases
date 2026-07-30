@@ -3,7 +3,10 @@ type: Practice
 title: Build Target Conventions
 description: Mandatory, preferred, and potential Makefile targets — clean, build, test, lint, format, deploy, and more — with their responsibilities and naming conventions.
 tags: [build-system, makefile, targets, conventions, build, test, lint, deploy]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Build Target Conventions

@@ -3,8 +3,19 @@ type: Practice
 title: Security Audit Playbook — Final Validation for Cloud Server Deployments
 description: Run a final security audit playbook that checks SSH, firewall, fail2ban, Docker daemon hardening, automatic updates, and container image age before considering a deployment complete.
 tags: [devsecops, security, audit, ansible, cloud, ssh, firewall, docker]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: infrahub-final-audit-yml
+    resource: "https://github.com/levonk/infrahub/blob/main/shared/active/02-config/ansible/playbooks/final-audit.yml"
+    title: "infrahub final-audit.yml"
+  - id: infrahub-agents-md-security-audit-guidelines
+    resource: "https://github.com/levonk/infrahub/blob/main/AGENTS.md"
+    title: "infrahub AGENTS.md Security Audit Guidelines"
 ---
+
 
 # Security Audit Playbook
 
@@ -60,8 +71,3 @@ drift, forgotten steps, or configuration mistakes leave security gaps.
 - Warnings should be tracked and remediated in a follow-up task.
 - Audit results should be logged and optionally published to a security
   dashboard.
-
-## Citations
-
-[1] [infrahub final-audit.yml](https://github.com/levonk/infrahub/blob/main/shared/active/02-config/ansible/playbooks/final-audit.yml)
-[2] [infrahub AGENTS.md Security Audit Guidelines](https://github.com/levonk/infrahub/blob/main/AGENTS.md)

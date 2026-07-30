@@ -3,8 +3,16 @@ type: Practice
 title: Pre-Commit CI Parity
 description: Same checks run locally and in CI via shared Dockerized quality script. FAST_MODE for local, FULL_MODE for CI. Eliminates "works on my machine" and ensures consistent enforcement.
 tags: [pre-commit, ci-cd, parity, quality, docker, consistency]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251218002-shared-quality-scripts
+    resource: "internal-docs/adr/adr-20251218002-shared-quality-scripts.md"
+    title: "levonk-base-boilerplate"
 ---
+
 
 # Pre-Commit CI Parity
 
@@ -47,7 +55,3 @@ hooks, then CI fails unexpectedly.
   parity
 - [Vitest Unified Runner](vitest-unified-runner.md) — Tests run through this
   parity pipeline
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251218002-shared-quality-scripts.md` — levonk-base-boilerplate

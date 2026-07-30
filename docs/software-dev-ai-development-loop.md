@@ -64,7 +64,7 @@ When starting development work, use the AI Development Loop script which handles
 
 - ticketr CLI documentation: `tkr help`
 - Project AGENTS.md for specific patterns
-- ai-skill-upsert for codifying discovered patterns
+- ai-upsert for codifying discovered patterns
 - Workflow templates in `.windsurf/workflows/`
 
 ---
@@ -82,4 +82,4 @@ When starting development work, use the AI Development Loop script which handles
 
 - **Full skill**: [`skills/software-dev/ai-development-loop/SKILL.md`](skills/software-dev/ai-development-loop/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

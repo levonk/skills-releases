@@ -1,14 +1,15 @@
 ---
-okf_version: "0.1"
+okf_version: "0.2"
 ---
 
 # Frontend Stack Practices
 
 A compounding knowledge base documenting practices for the TypeScript/React
 frontend stack — file extensions, path aliases, ESLint composition, testing with
-Vitest, code style conventions, CSS fundamentals, Tailwind v4 features, and
-Node.js frontend setup. Each concept captures specific standards sourced from
-real project ADRs and rule files.
+Vitest, code style conventions, CSS fundamentals, Tailwind v4 features,
+Node.js frontend setup, and HTMX hypermedia-first interaction design. Each
+concept captures specific standards sourced from real project ADRs and rule
+files.
 
 ## Concepts
 
@@ -21,3 +22,4 @@ real project ADRs and rule files.
 * [css-fundamentals](css-fundamentals.md) - CSS architecture, reset/base, responsive design, layout systems, positioning, custom properties, animations, BEM, preprocessors, performance
 * [tailwind-v4-features](tailwind-v4-features.md) - Tailwind v4 guidance: Oxide engine, @theme directive, container queries, 3D transforms, arbitrary values, data attributes
 * [nodejs-frontend-setup](nodejs-frontend-setup.md) - Node.js frontend setup with mise toolchain, webpack, ESLint, Prettier, testing, building, and deployment
+* [htmx-hypermedia-first](htmx-hypermedia-first.md) - Prefer HTMX server-rendered hypermedia over client-side JS; reach for a JS/React SPA only when an interaction exceeds hypermedia's expressiveness

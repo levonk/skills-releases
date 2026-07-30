@@ -3,7 +3,18 @@ type: Practice
 title: CQRS and Caching — Separate Read and Write Models with Delayed Reads
 description: Use Command Query Responsibility Segregation (CQRS) to separate write-optimized and read-optimized models, and implement delayed reads that check cache first before falling back to the source of truth.
 tags: [data-engineering, cqrs, caching, read-model, write-model, delayed-read, performance]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: job-aide-ai-resume-analyzer-data-access-patterns
+    resource: "https://github.com/lrepo52/job-aide/blob/main/apps/active/job/ai-resume-analyzer/web/typescript/internal-docs/features/todo/"
+    title: "job-aide ai-resume-analyzer data access patterns"
+  - id: microsoft-cqrs-pattern
+    resource: "https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs"
+    title: "Microsoft CQRS pattern"
 ---
 
 # CQRS and Caching
@@ -54,8 +65,3 @@ underlying data.
 - Simple CRUD applications with low read/write asymmetry.
 - When strong consistency is required for reads and the cost of eventual
   consistency outweighs the benefit.
-
-## Citations
-
-[1] [job-aide ai-resume-analyzer data access patterns](https://github.com/lrepo52/job-aide/blob/main/apps/active/job/ai-resume-analyzer/web/typescript/internal-docs/features/todo/)
-[2] [Microsoft CQRS pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs)

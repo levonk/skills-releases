@@ -3,7 +3,10 @@ type: Practice
 title: Azure Best Practices
 description: Azure best practices for storage, database, networking, compute, and security services across prototyping, testing, and production configurations.
 tags: [cloud, azure, best-practices, devops, infrastructure, cost-optimization, storage, database, networking, compute, security]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Azure Best Practices

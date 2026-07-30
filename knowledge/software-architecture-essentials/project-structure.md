@@ -3,7 +3,10 @@ type: Practice
 title: Project Structure
 description: Domain-first hierarchical package structure with vertical slicing for scalable, cohesive monorepo organization.
 tags: [architecture, project-structure, monorepo, vertical-slicing, packages]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Project Structure

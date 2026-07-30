@@ -3,7 +3,21 @@ type: Practice
 title: Data Quality Testing — Schema, Freshness, and Pipeline Gates
 description: Validate data before and after transformation with schema checks, freshness tests, uniqueness/referential integrity assertions, and Great Expectations or Soda as pipeline gates.
 tags: [data-engineering, data-quality, testing, great-expectations, soda, schema, freshness]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: dbt-tests
+    resource: "https://docs.getdbt.com/docs/build/tests"
+    title: "dbt tests"
+  - id: great-expectations
+    resource: "https://greatexpectations.io/"
+    title: "Great Expectations"
+  - id: soda
+    resource: "https://docs.soda.io/"
+    title: "Soda"
 ---
 
 # Data Quality Testing
@@ -53,9 +67,3 @@ stale sources are not detected until dashboards show wrong numbers.
 
 - For integration tests, use Testcontainers with Postgres/Mysql/Kafka to test
   pipeline code against real dependencies.
-
-## Citations
-
-[1] [dbt tests](https://docs.getdbt.com/docs/build/tests)
-[2] [Great Expectations](https://greatexpectations.io/)
-[3] [Soda](https://docs.soda.io/)

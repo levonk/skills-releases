@@ -3,7 +3,15 @@ type: Practice
 title: Data Warehouse Design — Star Schema, SCD, and Fact Table Grain
 description: Design warehouses around star schemas with explicit fact table grain, slowly changing dimensions (SCD1/SCD2), and surrogate keys for stable joins.
 tags: [data-engineering, data-warehouse, star-schema, snowflake-schema, scd, fact-tables, dimension-tables]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: kimball-group-dimensional-modeling
+    resource: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/"
+    title: "Kimball Group — Dimensional Modeling"
 ---
 
 # Data Warehouse Design
@@ -55,7 +63,3 @@ Use dbt snapshots for SCD2 implementation.
 - Use integer or hash surrogate keys for dimensions, not natural keys.
 - Natural keys (e.g. `customer_email`) can change and are not stable.
 - Surrogate keys isolate the warehouse from source system changes.
-
-## Citations
-
-[1] [Kimball Group — Dimensional Modeling](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)

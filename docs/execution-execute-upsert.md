@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **execution** · Status:  · Version: 1.1.0
+> Category: **execution** · Status:  · Version: 1.2.0
 
 >-
 
@@ -13,7 +13,7 @@
 |-------|-------|
 | Name | `execute-upsert` |
 | Category | `execution` |
-| Version | `1.1.0` |
+| Version | `1.2.0` |
 | Status | `` |
 | Owner |  |
 
@@ -34,13 +34,14 @@ intelligence to:
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **trigger-guard** (template, over-triggering-guard) — Prevents triggering on requests that don't need the full pipeline
-- **** (, prd-creation) — Workflow for generating a PRD from a brief feature prompt — used when no PRD exists
-- **** (, task-breakdown) — Workflow for breaking a PRD into parallelizable task stories — used when no task files exist
-- **** (, task-execution) — Workflow for processing task stories — delegates to subagents for each story
-- **git-repository-management** (skill, dependency) — Provides the commit checkpoint protocol used before each subagent dispatch — shared via pre-task-commit-checkpoint include
+- **** (, complement) — Source workflow for PRD creation — content inlined at build time into references/greenfield-prd.md (not a runtime dependency; workflows are not published to distribution repos)
+- **** (, complement) — Source workflow for task breakdown — content inlined at build time into references/tasks-from-prd.md (not a runtime dependency; workflows are not published to distribution repos)
+- **** (, complement) — Source workflow for task execution — content inlined at build time into references/tasks-processor.md (not a runtime dependency; workflows are not published to distribution repos)
+- **git-repository-management** (skill, dependency) — Provides the commit checkpoint protocol used before each subagent dispatch — shared via pre-task-commit-checkpoint include. Execute-upsert also runs it at story start (to flush any dirty repo state before the story begins) and at story finish (to commit the story's work), and adds per-story tags under tags/auto/execute-upsert/YYYY/MM/{story-id+slug}-{pre,post} via git-tag.sh so the story boundaries are greppable separately from the grm skill's own tags/auto/grm/... tags
+- **handoff** (skill, dependency) — Invoked when execution stops with work remaining (blocked stories, context limit, user pause) — captures context so a fresh session can resume from the task index. Shared via disruption-handoff include
 
 ---
 
 - **Full skill**: [`skills/execution/execute-upsert/SKILL.md`](skills/execution/execute-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

@@ -15,10 +15,33 @@
 #    "fallback":"...","fallback_runner":"...","recommendation":"..."}
 #
 # Resolution order (resolve/exec mode):
-#   1. Already on PATH (command -v)
-#   2. Environment wrappers (devbox, mise, flox, direnv, nix) — walks up from cwd
-#   3. Tech-stack-aware standard PATH locations (30+ dirs)
-#   4. Package manager lookup (brew, mise, asdf)
+#   1. Devbox shell check (DEVBOX_SHELL / IN_DEVBOX_SHELL) — first, because
+#      if true it simplifies all downstream logic: devbox binaries are on
+#      PATH, no wrapper detection needed.
+#      a. command -v (PATH — devbox-managed binaries are here)
+#      b. Path-exhaustion (standard locations + package managers)
+#      c. `devbox add <tool>` then retry (a) and (b)
+#      d. If still not found, skip other wrappers, go to nix/uv fallback
+#   2. Not in devbox shell — if devbox is available AND a devbox.json exists
+#      up the tree, verify the tool exists inside the devbox environment
+#      (`devbox run -- command -v <tool>`). If not found, try `devbox add`
+#      and recheck. If confirmed available, return WRAPPER:devbox run --.
+#      If still not found inside devbox, fall through to step 3.
+#   3. Normal flow (no devbox involved):
+#      a. Already on PATH (command -v)
+#      b. Other environment wrappers (mise, flox, direnv, nix) — walks up from cwd
+#      c. Tech-stack-aware standard PATH locations (30+ dirs)
+#      d. Package manager lookup (brew, mise, asdf)
+#      e. Repo-root fallback dirs ($repo_root/bin, scripts/, .local/bin) —
+#         LAST and least secure: a cloned repo could contain malicious
+#         executables in bin/. Covers Hermit shims and similar project-local
+#         tool layouts.
+#   4. nix/uv fallback (common exit from both branches):
+#      a. If tool == uv: uv→pip fallback (ensure_devbox_package + pip)
+#      b. nix: is nix available? search nixpkgs for <tool>. If found,
+#         `nix profile install` and recheck PATH.
+#      c. uv: is uv available? search PyPI for <tool>. If found,
+#         `uv tool install` and recheck PATH.
 #   5. Reports NOT_FOUND with what was checked
 #
 # Runner mode (--runner <ecosystem>):
@@ -76,6 +99,35 @@ walk_up() {
         dir="$(dirname "$dir")"
     done
     return 1
+}
+
+# --- Hang-safe devbox run ---
+# Run `devbox run -- <cmd>` with a timeout. If devbox hangs (broken wrapper
+# recursion, nix store issues), kill it and return 124 (timeout). This prevents
+# the resolver from hanging forever when devbox is broken.
+# Override timeout via DEVBOX_PROBE_TIMEOUT_SECS (default 15).
+devbox_run_timed() {
+    local _timeout="${DEVBOX_PROBE_TIMEOUT_SECS:-15}"
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$_timeout" devbox run -- "$@"
+    elif command -v gtimeout >/dev/null 2>&1; then
+        gtimeout "$_timeout" devbox run -- "$@"
+    else
+        # No timeout(1) available — fall back to background + kill pattern.
+        devbox run -- "$@" &
+        local _pid=$!
+        local _elapsed=0
+        while kill -0 "$_pid" 2>/dev/null; do
+            if [[ "$_elapsed" -ge "$_timeout" ]]; then
+                kill -9 "$_pid" 2>/dev/null
+                wait "$_pid" 2>/dev/null || true
+                return 124
+            fi
+            sleep 1
+            _elapsed=$((_elapsed + 1))
+        done
+        wait "$_pid"
+    fi
 }
 
 # --- Ensure a package is listed in devbox.json, walking up from cwd ---
@@ -259,66 +311,10 @@ resolve_runner() {
         "$script_runner" "$package_runner" "$fallback" "$fallback_runner" "$esc_rec"
 }
 
-# --- Resolve tool: prints "FOUND: <path>" or "WRAPPER: <cmd>" to stdout, returns 0/1 ---
-resolve_tool() {
-    # 1. Already on PATH?
-    if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
-        echo "FOUND:$path"
-        return 0
-    fi
-
-    # 2. Environment wrappers
-    # devbox
-    if command -v devbox >/dev/null 2>&1; then
-        if [[ -z "${DEVBOX_SHELL:-}" && -z "${IN_DEVBOX_SHELL:-}" ]]; then
-            if walk_up devbox.json >/dev/null 2>&1; then
-                echo "WRAPPER:devbox run --"
-                return 0
-            fi
-        fi
-    fi
-    # mise
-    if command -v mise >/dev/null 2>&1; then
-        if [[ -z "${MISE_SHELL:-}" ]]; then
-            if walk_up .mise.toml .mise/config.toml mise.toml >/dev/null 2>&1; then
-                echo "WRAPPER:mise exec --"
-                return 0
-            fi
-        fi
-    fi
-    # flox
-    if command -v flox >/dev/null 2>&1; then
-        if [[ -z "${FLOX_ACTIVE:-}" ]]; then
-            if walk_up flox.nix >/dev/null 2>&1; then
-                echo "WRAPPER:flox activate --"
-                return 0
-            fi
-        fi
-    fi
-    # direnv
-    if command -v direnv >/dev/null 2>&1; then
-        if [[ -z "${DIRENV_DIR:-}" ]]; then
-            if walk_up .envrc >/dev/null 2>&1; then
-                echo "WRAPPER:direnv export &&"
-                return 0
-            fi
-        fi
-    fi
-    # nix
-    if command -v nix >/dev/null 2>&1; then
-        if [[ -z "${IN_NIX_SHELL:-}" ]]; then
-            if nix_root="$(walk_up shell.nix flake.nix 2>/dev/null)"; then
-                if [[ -f "$nix_root/flake.nix" ]]; then
-                    echo "WRAPPER:nix develop --command"
-                else
-                    echo "WRAPPER:nix-shell --run"
-                fi
-                return 0
-            fi
-        fi
-    fi
-
-    # 3. Tech-stack-aware directory search
+# --- Path-exhaustion search: standard PATH locations + package managers ---
+# Prints "FOUND:<path>" to stdout and returns 0 if the tool is found, returns 1
+# otherwise. Called by resolve_tool() and by the devbox-aware retry path.
+search_standard_paths() {
     local arch=""
     arch="$(uname -m 2>/dev/null || true)"
     local search_dirs=()
@@ -384,7 +380,12 @@ resolve_tool() {
         if [[ -f "$repo_root/composer.json" ]]; then
             search_dirs+=("$repo_root/vendor/bin")
         fi
-        search_dirs+=("$repo_root/bin" "$repo_root/scripts" "$repo_root/.local/bin")
+        # NOTE: Unconditional $repo_root/bin is searched LAST (after package
+        # managers below) because a cloned repo could contain malicious
+        # executables in bin/. Tech-stack-specific dirs above (node_modules/.bin,
+        # target/release, .venv/bin, vendor/bin, etc.) are build-system-managed
+        # and stay here. Covers Hermit's bin/ shims and similar project-local
+        # tool layouts — but only as a last resort.
     fi
     for d in "${search_dirs[@]}"; do
         [[ -z "$d" ]] && continue
@@ -394,7 +395,7 @@ resolve_tool() {
         fi
     done
 
-    # 4. Package manager lookup
+    # Package manager lookup
     if command -v brew >/dev/null 2>&1; then
         if brew list "$tool" >/dev/null 2>&1; then
             local prefix
@@ -424,9 +425,156 @@ resolve_tool() {
         fi
     fi
 
-    # 5. uv fallback: if uv is not found, ensure it is recorded in
-    # devbox.json (so devbox can provide it next time) and fall back to
-    # pip/pip3/python3 -m pip for Python package operations.
+    # Repo-root fallback dirs — searched LAST (least secure: a cloned repo
+    # could contain malicious executables in bin/). Covers Hermit's bin/ shims
+    # and similar project-local tool layouts that aren't caught by the
+    # tech-stack-specific dirs above.
+    if [[ -n "$repo_root" ]]; then
+        for d in "$repo_root/bin" "$repo_root/scripts" "$repo_root/.local/bin"; do
+            if [[ -x "$d/$tool" ]]; then
+                echo "FOUND:$d/$tool"
+                return 0
+            fi
+        done
+    fi
+
+    return 1
+}
+
+# --- Resolve tool: prints "FOUND: <path>" or "WRAPPER: <cmd>" to stdout, returns 0/1 ---
+resolve_tool() {
+    # 1. Devbox shell check — FIRST, because if true it simplifies all
+    #    downstream logic: devbox-managed binaries are on PATH, no wrapper
+    #    detection needed (skip mise/flox/direnv/nix).
+    local in_devbox_shell=0
+    if [[ -n "${DEVBOX_SHELL:-}" || -n "${IN_DEVBOX_SHELL:-}" ]]; then
+        in_devbox_shell=1
+    fi
+
+    if [[ "$in_devbox_shell" -eq 1 ]]; then
+        # We're inside `devbox shell` — devbox-managed binaries are on PATH.
+        # a. command -v (PATH — devbox binaries are here)
+        if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
+            echo "FOUND:$path"
+            return 0
+        fi
+        # b. Path-exhaustion (standard locations + package managers)
+        local found
+        if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
+            echo "$found"
+            return 0
+        fi
+        # c. `devbox add <tool>` then retry — install into the project's
+        #    devbox environment. devbox add is idempotent; failures are
+        #    non-fatal (the tool may not be a nixpkgs package under this name).
+        local devbox_json_dir
+        devbox_json_dir="$(walk_up devbox.json 2>/dev/null || true)"
+        if [[ -n "$devbox_json_dir" ]] && command -v devbox >/dev/null 2>&1; then
+            (cd "$devbox_json_dir" && devbox add "$tool" >/dev/null 2>&1) || true
+            if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
+                echo "FOUND:$path"
+                return 0
+            fi
+            if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
+                echo "$found"
+                return 0
+            fi
+        fi
+        # d. Still not found — skip other wrappers (we're in devbox), go
+        #    directly to uv fallback / NOT_FOUND (common exit below).
+    else
+        # 2. Not in devbox shell — if devbox is available AND a devbox.json
+        #    exists up the tree, verify the tool exists inside the devbox
+        #    environment before returning WRAPPER. If not found inside devbox,
+        #    try `devbox add` and recheck. If still not found, fall through
+        #    to normal flow and nix/uv fallback.
+        if command -v devbox >/dev/null 2>&1; then
+            local devbox_json_dir
+            devbox_json_dir="$(walk_up devbox.json 2>/dev/null || true)"
+            if [[ -n "$devbox_json_dir" ]]; then
+                # 2a. On PATH inside devbox? (devbox run -- command -v)
+                # Use devbox_run_timed for hang-safety — if devbox hangs, fall
+                # through to normal flow instead of blocking the resolver.
+                if (cd "$devbox_json_dir" && devbox_run_timed command -v "$tool" >/dev/null 2>&1); then
+                    echo "WRAPPER:devbox run --"
+                    return 0
+                fi
+                # 2b. devbox add + recheck inside devbox
+                (cd "$devbox_json_dir" && devbox add "$tool" >/dev/null 2>&1) || true
+                if (cd "$devbox_json_dir" && devbox_run_timed command -v "$tool" >/dev/null 2>&1); then
+                    echo "WRAPPER:devbox run --"
+                    return 0
+                fi
+                # Still not found inside devbox — fall through to normal flow
+                # and nix/uv fallback (don't return WRAPPER for a tool that
+                # isn't available inside devbox).
+            fi
+        fi
+
+        # 3. Normal flow (no devbox involved)
+        # a. Already on PATH?
+        if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
+            echo "FOUND:$path"
+            return 0
+        fi
+        # b. Other environment wrappers (mise, flox, direnv, nix)
+        # mise
+        if command -v mise >/dev/null 2>&1; then
+            if [[ -z "${MISE_SHELL:-}" ]]; then
+                if walk_up .mise.toml .mise/config.toml mise.toml >/dev/null 2>&1; then
+                    echo "WRAPPER:mise exec --"
+                    return 0
+                fi
+            fi
+        fi
+        # flox
+        if command -v flox >/dev/null 2>&1; then
+            if [[ -z "${FLOX_ACTIVE:-}" ]]; then
+                if walk_up flox.nix >/dev/null 2>&1; then
+                    echo "WRAPPER:flox activate --"
+                    return 0
+                fi
+            fi
+        fi
+        # direnv
+        if command -v direnv >/dev/null 2>&1; then
+            if [[ -z "${DIRENV_DIR:-}" ]]; then
+                if walk_up .envrc >/dev/null 2>&1; then
+                    echo "WRAPPER:direnv export &&"
+                    return 0
+                fi
+            fi
+        fi
+        # nix
+        if command -v nix >/dev/null 2>&1; then
+            if [[ -z "${IN_NIX_SHELL:-}" ]]; then
+                if nix_root="$(walk_up shell.nix flake.nix 2>/dev/null)"; then
+                    if [[ -f "$nix_root/flake.nix" ]]; then
+                        echo "WRAPPER:nix develop --command"
+                    else
+                        echo "WRAPPER:nix-shell --run"
+                    fi
+                    return 0
+                fi
+            fi
+        fi
+
+        # c. Global path-exhaustion (standard locations + package managers)
+        local found
+        if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
+            echo "$found"
+            return 0
+        fi
+    fi
+
+    # 4. nix/uv fallback (common exit — reached from both devbox and non-devbox
+    #    branches). Tries to install the not-found tool via available package
+    #    managers, searching the repo first before attempting install.
+    #
+    # a. uv→pip fallback (special case for tool == uv):
+    #    if uv is not found, ensure it is recorded in devbox.json (so devbox
+    #    can provide it next time) and fall back to pip/pip3/python3 -m pip
+    #    for Python package operations.
     if [[ "$tool" == "uv" ]]; then
         # Add uv to the nearest devbox.json if one exists.
         ensure_devbox_package uv >/dev/null 2>&1 || true
@@ -452,7 +600,49 @@ resolve_tool() {
         fi
     fi
 
-    # 6. Not found
+    # b. nix fallback: is nix available? Search nixpkgs for <tool>. If a
+    #    package exists, install it via `nix profile install` and recheck PATH.
+    if command -v nix >/dev/null 2>&1; then
+        # Search: check if the package exists in nixpkgs (fast, non-destructive).
+        # nix eval succeeds if the package exists, fails otherwise.
+        if nix eval nixpkgs#"${tool}".meta.mainProgram >/dev/null 2>&1; then
+            # Package exists — install it.
+            nix profile install nixpkgs#"${tool}" >/dev/null 2>&1 || true
+            # Recheck PATH after install.
+            if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
+                echo "FOUND:$path"
+                return 0
+            fi
+            local found
+            if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
+                echo "$found"
+                return 0
+            fi
+        fi
+    fi
+
+    # c. uv fallback: is uv available? Search PyPI for <tool>. If a package
+    #    exists, install it via `uv tool install` and recheck PATH.
+    #    (uv tool install fails fast if the package doesn't exist on PyPI,
+    #    so the install attempt itself serves as the search.)
+    if command -v uv >/dev/null 2>&1; then
+        # Try to install the tool from PyPI via uv.
+        # uv tool install fails fast if the package doesn't exist.
+        if uv tool install "${tool}" >/dev/null 2>&1; then
+            # Recheck PATH after install.
+            if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
+                echo "FOUND:$path"
+                return 0
+            fi
+            local found
+            if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
+                echo "$found"
+                return 0
+            fi
+        fi
+    fi
+
+    # 5. Not found
     echo "NOT_FOUND:"
     return 1
 }

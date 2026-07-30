@@ -22,7 +22,7 @@ Required fields:
 - **use**: When to invoke the workflow
 - **date**:
   - **created**: Creation date (YYYY-MM-DD)
-  - **updated**: Last modification date (YYYY-MM-DD)
+  - **knowledge-basis**: Last tech verification date (YYYY-MM-DD)
   - **last-used**: Last usage date (YYYY-MM-DD) — update on each use
 
 **Example**:
@@ -34,7 +34,7 @@ description: "Create expert agents that channel specific expertise"
 use: "When needing an agent for specialized tasks"
 date:
   created: "2025-12-20"
-  updated: "2026-06-25"
+  knowledge-basis: "2026-06-25"
   last-used: "2026-06-25"
 ---
 ```
@@ -50,3 +50,32 @@ The wrapper file in `config/ai/workflows/<category>/<name>.md.tmpl` contains fro
 1. `<dir>/<name>.md.tmpl` — wrapper with frontmatter TODOs and `includeTemplate` call
 2. `config/ai/templates/<category>/<name>-template.md` — content template with section headers
 3. Prints next-steps guidance for filling in the placeholders
+
+## Project-Local Workflows (No Templater)
+
+Not all workflows go through the skills-src build pipeline. Project-specific
+workflows deployed directly in a project's `.agents/workflows/` directory are
+**plain `.md` files** — no `.tmpl` extension, no `includeTemplate` call, no
+Template/Wrapper split. The entire workflow (frontmatter + body) lives in a
+single `.md` file.
+
+This pattern is used when:
+
+- The workflow is specific to one project and will never be distributed
+- The project does not use the skills-src templater
+- The workflow references project-local files and skills by path
+
+**Key differences from templated workflows:**
+
+| Aspect | Templated (`.md.tmpl`) | Project-local (`.md`) |
+|--------|------------------------|-----------------------|
+| Extension | `.md.tmpl` | `.md` |
+| File split | Wrapper + content template | Single file |
+| `includeTemplate` | Required | Not used |
+| Build pipeline | `just build current` | None — edited directly |
+| Distribution | Via `skills-releases` | Travels with the project repo |
+
+When auditing a project-local `.md` workflow, skip the Template/Wrapper
+integrity checks (no `includeTemplate` call to verify, no content template to
+check). All other audit items (frontmatter, step structure, context
+declaration, stale text, dates) still apply.

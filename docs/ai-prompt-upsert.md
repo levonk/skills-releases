@@ -23,7 +23,7 @@ Create new AI prompts, modify and improve existing prompts, and scaffold reusabl
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **template-upsert** (skill, sibling) — Full lifecycle management for templates. Use when the target is a reusable template, not a prompt.
 - **agent-upsert** (skill, sibling) — Full lifecycle management for agent files. Use when the target is an agent definition, not a prompt.
-- **ai-skill-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a prompt.
+- **ai-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a prompt.
 - **ai-workflow-upsert** (skill, sibling) — Full lifecycle management for workflows. Use when the target is a workflow, not a prompt.
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 
@@ -31,4 +31,4 @@ Create new AI prompts, modify and improve existing prompts, and scaffold reusabl
 
 - **Full skill**: [`skills/ai/prompt-upsert/SKILL.md`](skills/ai/prompt-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

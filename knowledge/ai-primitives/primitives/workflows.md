@@ -4,7 +4,17 @@ title: Workflows
 description: Multi-step repeatable processes using the Template/Wrapper pattern, lighter than skills with no bundled subdirectories.
 resource: src/current/workflows/
 tags: [ai-primitives, workflows, commands, multi-step, template-wrapper]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: workflows-directory
+    resource: src/current/workflows/
+    title: "Workflows directory"
+  - id: workflows-agents-md
+    resource: src/current/workflows/AGENTS.md
+    title: "Workflows AGENTS.md"
 ---
 
 # Workflows (Commands)
@@ -46,7 +56,7 @@ status: <ready | draft | deprecated>
 visibility: <public | internal>
 date:
   created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+  knowledge-basis: "YYYY-MM-DD"
 tags: [<categorization tags>]
 ```
 
@@ -121,7 +131,7 @@ open-endedly.
 | Purpose | Multi-step procedures | Full lifecycle with bundled resources |
 
 If a workflow needs scripts or references, convert it to a skill (see
-`ai-workflow-upsert` Mode B or `ai-skill-upsert` Mode B).
+`ai-workflow-upsert` Mode B or `ai-upsert` Mode B).
 
 ## Examples
 
@@ -133,8 +143,3 @@ If a workflow needs scripts or references, convert it to a skill (see
 
 [`ai-workflow-upsert`](../upsert-skills/ai-workflow-upsert.md) — creates,
 updates, and converts workflows.
-
-# Citations
-
-[1] [Workflows directory](src/current/workflows/)
-[2] [Workflows AGENTS.md](src/current/workflows/AGENTS.md)

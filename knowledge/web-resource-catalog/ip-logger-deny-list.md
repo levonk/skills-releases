@@ -3,7 +3,17 @@ type: Deny List
 title: IP Logger Deny List
 description: Stable IP logger domains denied in the Devin CLI config to prevent IP harvesting via fetched URLs.
 tags: ['deny-list', 'ip-logger', 'security', 'anti-tracking']
-timestamp: 2026-07-11T16:30:00Z
+date:
+  created: "2026-07-12"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: toon-format
+    resource: https://toonformat.dev/
+    title: TOON Format
+  - id: devin-cli-config
+    resource: https://github.com/levonk/dotfiles/blob/main/home/current/dot_config/devin/config.json
+    title: Devin CLI config
 ---
 
 # IP Logger Deny List
@@ -33,7 +43,3 @@ stable enough to maintain a static deny list.
   for a static list and are better handled by DNS-level filtering
 - See [Overview](overview.md) for format details and maintenance workflow
 
-# Citations
-
-[1] [TOON Format](https://toonformat.dev/)
-[2] [Devin CLI config](https://github.com/levonk/dotfiles/blob/main/home/current/dot_config/devin/config.json)

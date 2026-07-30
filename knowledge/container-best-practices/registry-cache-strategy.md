@@ -3,7 +3,27 @@ type: Practice
 title: Registry Cache Strategy — persisting BuildKit cache across CI runs
 description: Export and import BuildKit layer cache to a registry, local volume, or GitHub Actions cache so CI rebuilds reuse layers instead of starting cold every run.
 tags: [docker, registry, cache, buildx, buildkit, ci, github-actions, multi-arch]
-timestamp: 2026-07-17T19:00:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: cache-storage-backends-docker-docs
+    resource: "https://docs.docker.com/build/cache/backends/"
+    title: "Cache storage backends — Docker Docs"
+  - id: cache-management-with-github-actions-docker-docs
+    resource: "https://docs.docker.com/build/ci/github-actions/cache/"
+    title: "Cache management with GitHub Actions — Docker Docs"
+  - id: docker-buildx-build-reference-docker-docs
+    resource: "https://docs.docker.com/reference/cli/docker/buildx/build/"
+    title: "docker buildx build reference — Docker Docs"
+  - id: inline-cache-backend-docker-docs
+    resource: "https://docs.docker.com/build/cache/backends/inline/"
+    title: "Inline cache backend — Docker Docs"
+  - id: registry-as-a-pull-through-cache-cncf-distribution
+    resource: "https://distribution.github.io/distribution/recipes/mirror/"
+    title: "Registry as a pull through cache — CNCF Distribution"
 ---
 
 # Registry Cache Strategy — persisting BuildKit cache across CI runs
@@ -134,11 +154,3 @@ upstreams use a proxy like `rpardini/docker-registry-proxy`.
   stages, not just the final image.
 - [build-context-hygiene](/build-context-hygiene.md) — smaller context means
   faster cache-key computation and fewer invalidations from stray files.
-
-## Citations
-
-[1] [Cache storage backends — Docker Docs](https://docs.docker.com/build/cache/backends/)
-[2] [Cache management with GitHub Actions — Docker Docs](https://docs.docker.com/build/ci/github-actions/cache/)
-[3] [docker buildx build reference — Docker Docs](https://docs.docker.com/reference/cli/docker/buildx/build/)
-[4] [Inline cache backend — Docker Docs](https://docs.docker.com/build/cache/backends/inline/)
-[5] [Registry as a pull through cache — CNCF Distribution](https://distribution.github.io/distribution/recipes/mirror/)

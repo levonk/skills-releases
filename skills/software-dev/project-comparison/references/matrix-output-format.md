@@ -21,7 +21,7 @@ description: Shared comparison methodology — category discovery, coverage mapp
 
 Shared methodology for comparing multiple items to determine category membership,
 map what parts of a category each item addresses, and produce a feature matrix.
-Included by `project-comparison` (software projects) and `ai-skill-upsert`
+Included by `project-comparison` (software projects) and `ai-upsert`
 research phase (AI skills). Domain-specific metadata gathering, search tactics,
 and meta-features stay in each skill's own reference files.
 

@@ -3,7 +3,14 @@ type: Practice
 title: Iron-Proxy Egress Firewall
 description: CI pipeline egress firewall using iron-proxy-action. Intercepts all outbound network traffic, validates against allowlist, warn mode for testing, enforce mode for blocking. Domain summary in CI output.
 tags: [iron-proxy, egress, firewall, ci-cd, security, allowlist, supply-chain]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: iron-proxy-egress-security-section
+    resource: Boilerplate AGENTS.md
+    title: 'iron-proxy egress security section'
 ---
 
 # Iron-Proxy Egress Firewall
@@ -53,6 +60,4 @@ allowlist.
 - [Hybrid Vault Storage](hybrid-vault-storage.md) — Secrets that egress firewall
   protects
 
-## Citations
 
-[1] Boilerplate AGENTS.md — iron-proxy egress security section

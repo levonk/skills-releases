@@ -3,8 +3,19 @@ type: Practice
 title: Crypto Algorithm Governance — Banned Algorithms and Deprecated APIs
 description: Ban broken algorithms (MD5, SHA-1, RC4, DES, 3DES, Blowfish), replace deprecated OpenSSL APIs (AES_encrypt, RSA_new, SHA1_Init) with EVP high-level APIs, and use SHA-256, AES-256-GCM, ChaCha20, ECDHE.
 tags: [devsecops, security, cryptography, openssl, aes, rsa, sha, evp, tls]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: codeguard-1-crypto-algorithms
+    resource: ".devin/rules/codeguard-1-crypto-algorithms.md"
+    title: "job-aide"
+  - id: codeguard-0-devops-ci-cd-containers
+    resource: ".devin/rules/codeguard-0-devops-ci-cd-containers.md"
+    title: "job-aide (toolchain hardening)"
 ---
+
 
 # Crypto Algorithm Governance — Banned Algorithms and Deprecated APIs
 
@@ -147,8 +158,3 @@ EVP_Q_MAC(NULL, "HMAC", NULL, "SHA256", NULL,
 - [ ] All crypto operations use EVP high-level APIs
 - [ ] Proper error handling for all crypto operations
 - [ ] Key material properly zeroed after use
-
-## Citations
-
-[1] `.devin/rules/codeguard-1-crypto-algorithms.md` — job-aide
-[2] `.devin/rules/codeguard-0-devops-ci-cd-containers.md` — job-aide (toolchain hardening)

@@ -30,15 +30,15 @@ All commands are automatically wrapped with the appropriate environment manager:
 
 **Command Examples by Environment:**
 ```bash
-# Devbox projects (preferred)
-devbox run -- just test
-devbox run -- cargo run -- build
+# Devbox projects (preferred — just auto-detects devbox via _devbox helper)
+just test
+just build
 direnv exec just test
 direnv exec npm test
 
-# Devbox projects (recommended)
-devbox run -- just test
-devbox run -- cargo run -- build
+# Devbox projects (recommended — just auto-detects devbox)
+just test
+just build
 
 # Mise projects (with warning)
 mise exec -- just test

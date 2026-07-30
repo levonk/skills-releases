@@ -3,7 +3,14 @@ type: Practice
 title: pyproject.toml as Single Source of Truth
 description: All Python apps and packages use pyproject.toml as the canonical manifest; requirements.txt is deprecated except for narrowly scoped tooling.
 tags: [python, pyproject-toml, pep621, dependencies, manifest]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # pyproject.toml as Single Source of Truth
@@ -43,7 +50,3 @@ dev = ["pytest", "pytest-asyncio", "httpx", "mypy", "ruff", "black", "isort"]
 
 - [FastAPI Service Layout](fastapi-service-layout.md) — Where pyproject.toml lives
 - [nox Orchestration](nox-orchestration.md) — nox installs from pyproject.toml dev extras
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

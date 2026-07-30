@@ -3,7 +3,17 @@ type: Practice
 title: direnv Auto-Activation
 description: Automatic environment loading on cd using direnv with devbox; watch_file for config changes, use_devbox pattern, and .envrc configuration.
 tags: [direnv, devbox, auto-activation, environment, developer-experience]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251226001-devbox-direnv-dev-environment
+    resource: internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md
+    title: levonk-base-boilerplate
+  - id: adr-20260131001-standard-developer-ux-flow
+    resource: internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md
+    title: levonk-base-boilerplate
 ---
 
 # direnv Auto-Activation
@@ -58,8 +68,3 @@ modern just equivalents:
 - [Devbox Over Raw Nix](devbox-over-raw-nix.md) — The environment direnv activates
 - [Standard Developer UX Flow](standard-developer-ux-flow.md) — The workflow that
   relies on auto-activation
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md` — levonk-base-boilerplate
-[2] `internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md` — levonk-base-boilerplate

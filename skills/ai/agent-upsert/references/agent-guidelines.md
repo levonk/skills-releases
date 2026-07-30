@@ -11,7 +11,7 @@ creation framework included via `base-ai-guidance`.
   and `capabilities` that define what it can do.
 - **Skill**: A packaged set of instructions, scripts, references, and assets
   that performs a specific task. No personality. Loaded by the model when
-  triggered. See `ai-skill-upsert`.
+  triggered. See `ai-upsert`.
 - **Workflow**: A multi-step procedure with clear phases (Initialize, Plan,
   Apply, Verify, Deliver). No personality. See `ai-workflow-upsert`.
 

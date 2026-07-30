@@ -1,6 +1,6 @@
 # Embedded Script Standards
 
-> This file is shared with `ai-skill-upsert` via a relative include
+> This file is shared with `ai-upsert` via a relative include
 > (`../../software-dev/cli-tool-upsert/references/embedded-script-standards.md`).
 > It is the single source of truth for CLI scripts bundled inside skills and
 > projects. Changes here propagate to both skills at build time.
@@ -79,7 +79,7 @@ virtualenv, no `pip install`, no build step.
   (PEP 723 block is a comment Python ignores)
 - Do NOT inline `pip install` or mutate the environment — `uv run` handles it
 
-See `references/script-execution-standards.md` in `ai-skill-upsert` for the
+See `references/script-execution-standards.md` in `ai-upsert` for the
 full devbox/rtk detection patterns that accompany the PEP 723 header.
 
 ## Bash Standards

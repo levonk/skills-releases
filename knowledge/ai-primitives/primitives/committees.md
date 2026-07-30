@@ -4,7 +4,17 @@ title: Committees
 description: Groups of agents that deliberate and synthesize multiple perspectives into integrated conclusions.
 resource: src/current/committees/
 tags: [ai-primitives, committees, agents, deliberation, multi-agent]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: committees-directory
+    resource: src/current/committees/
+    title: "Committees directory"
+  - id: legendary-ceos-council
+    resource: src/current/committees/legendary-ceos-council.md.tmpl
+    title: "Legendary CEOs Council"
 ---
 
 # Committees
@@ -126,8 +136,3 @@ reasoning (synthesis, conflict resolution).
 No dedicated `committee-upsert` skill exists yet. Committees are authored by
 hand, following the pattern of existing committee files. Use
 `ai-guidance-improver` to audit them.
-
-# Citations
-
-[1] [Committees directory](src/current/committees/)
-[2] [Legendary CEOs Council](src/current/committees/legendary-ceos-council.md.tmpl)

@@ -152,15 +152,15 @@ docker/
     "typescript"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl"
   }
 }
 ```
@@ -190,27 +190,27 @@ typecheck:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     pnpm install
     echo "✅ TypeScript environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     pnpm run build
 
-test-internal:
+test_impl:
     pnpm run test
 
-dev-internal:
+dev_impl:
     pnpm run dev
 
-lint-internal:
+lint_impl:
     pnpm run lint
 
-typecheck-internal:
+typecheck_impl:
     pnpm run typecheck
 
-clean-internal:
+clean_impl:
     rm -rf dist node_modules/.cache
 ```
 
@@ -270,15 +270,15 @@ direnv allow
     "rustfmt"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "clean": "just clean-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "clean": "just clean_impl"
   }
 }
 ```
@@ -305,24 +305,24 @@ lint:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     cargo build
     echo "✅ Rust environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     cargo build --release
 
-test-internal:
+test_impl:
     cargo test
 
-dev-internal:
+dev_impl:
     cargo run
 
-lint-internal:
+lint_impl:
     cargo clippy
 
-clean-internal:
+clean_impl:
     cargo clean
 ```
 
@@ -405,16 +405,16 @@ $ find . -name "*.py" | head -5
     "jupyter"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal",
-    "notebook": "just notebook-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl",
+    "notebook": "just notebook_impl"
   }
 }
 ```
@@ -447,31 +447,31 @@ notebook:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     poetry install
     echo "✅ Python data science environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     poetry build
 
-test-internal:
+test_impl:
     poetry run pytest
 
-dev-internal:
+dev_impl:
     poetry run python src/main.py
 
-lint-internal:
+lint_impl:
     poetry run ruff check
     poetry run black --check .
 
-typecheck-internal:
+typecheck_impl:
     poetry run mypy src/
 
-notebook-internal:
+notebook_impl:
     poetry run jupyter notebook
 
-clean-internal:
+clean_impl:
     rm -rf build dist .pytest_cache .coverage
 ```
 
@@ -504,15 +504,15 @@ my-monorepo/
     "typescript"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl"
   }
 }
 ```
@@ -542,27 +542,27 @@ typecheck:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     pnpm install
     echo "✅ Monorepo environment ready!"
 
-# Internal targets - use Turbo
-build-internal:
+# Implementation targets - use Turbo
+build_impl:
     pnpm turbo run build
 
-test-internal:
+test_impl:
     pnpm turbo run test
 
-dev-internal:
+dev_impl:
     pnpm turbo run dev --filter=web
 
-lint-internal:
+lint_impl:
     pnpm turbo run lint
 
-typecheck-internal:
+typecheck_impl:
     pnpm turbo run typecheck
 
-clean-internal:
+clean_impl:
     pnpm turbo run clean
     rm -rf node_modules/.cache
 ```
@@ -638,7 +638,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-    command: just dev-internal
+    command: just dev_impl
 
   # Add database if needed
   postgres:
@@ -711,19 +711,19 @@ jobs:
         uses: jetify-com/devbox-action@v0.10.0
 
       - name: Bootstrap project
-        run: just bootstrap-internal
+        run: just bootstrap_impl
 
       - name: Run typecheck
-        run: just typecheck-internal
+        run: just typecheck_impl
 
       - name: Run linting
-        run: just lint-internal
+        run: just lint_impl
 
       - name: Run tests
-        run: just test-internal
+        run: just test_impl
 
       - name: Build project
-        run: just build-internal
+        run: just build_impl
 
   security:
     runs-on: ubuntu-latest
@@ -737,7 +737,7 @@ jobs:
 
       - name: Run security scan
         run: |
-          just bootstrap-internal
+          just bootstrap_impl
           # Add security scanning tools here
           # npm audit, snyk, etc.
 ```
@@ -783,7 +783,7 @@ updates:
 just quality
 
 # Equivalent to:
-just lint-internal && just test-internal && just typecheck-internal
+just lint_impl && just test_impl && just typecheck_impl
 ```
 
 ### Pre-commit Hook Setup
@@ -801,9 +801,9 @@ if [[ -z "$DEVBOX_SHELL_ENABLED" ]]; then
 fi
 
 # Run quality checks
-just lint-internal
-just test-internal
-just typecheck-internal
+just lint_impl
+just test_impl
+just typecheck_impl
 
 echo "✅ All quality checks passed!"
 ```
@@ -871,7 +871,7 @@ detect_custom_language() {
     "erlang"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   }
 }
 ```

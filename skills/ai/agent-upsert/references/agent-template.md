@@ -7,7 +7,7 @@ synopsis: {Synopsis}
 authors: [{default to https://github.com/levonk}]
 date:
   created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+  knowledge-basis: "YYYY-MM-DD"
 version: {0.0.1 incremented on change start with 0.0.1}
 status: "proposed|accepted|rejected|superseded"
 aliases: []

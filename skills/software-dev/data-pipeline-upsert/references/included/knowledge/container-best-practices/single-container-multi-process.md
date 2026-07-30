@@ -3,7 +3,18 @@ type: Practice
 title: Single-Container Multi-Process — supervisord when it pays
 description: One process per container is a vibe, not a law. Use supervisord when a small app needs Nginx plus a backend and you're not at Kubernetes scale.
 tags: [docker, supervisord, nginx, multi-process, process-management, kubernetes]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: supervisord
+    resource: "http://supervisord.org/"
+    title: "supervisord"
 ---
 
 # Single-Container Multi-Process — supervisord when it pays
@@ -84,8 +95,3 @@ autorestart=true
 
 - [base-image-selection](/base-image-selection.md) — `slim` is the right base
   for a supervisord image (needs apt for nginx + supervisor).
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [supervisord](http://supervisord.org/)

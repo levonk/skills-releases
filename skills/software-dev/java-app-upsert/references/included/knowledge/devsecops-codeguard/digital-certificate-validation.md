@@ -3,8 +3,19 @@ type: Practice
 title: Digital Certificate Validation — X.509 Sanity Checks
 description: Validate X.509 certificates for expiration (notAfter), key strength (RSA≥2048, EC≥P-256), signature algorithm (SHA-2 only), and self-signed status before trusting them in production.
 tags: [devsecops, security, certificates, x509, tls, pki, openssl]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: codeguard-1-digital-certificates
+    resource: ".devin/rules/codeguard-1-digital-certificates.md"
+    title: "job-aide"
+  - id: codeguard-1-crypto-algorithms
+    resource: ".devin/rules/codeguard-1-crypto-algorithms.md"
+    title: "job-aide (banned signature algorithms)"
 ---
+
 
 # Digital Certificate Validation — X.509 Sanity Checks
 
@@ -124,8 +135,3 @@ cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
 > - Reason: RSA key with 1024-bit modulus.
 > - Impact: Vulnerable to modern cryptanalytic attacks.
 > - Action: Regenerate with at least 2048-bit RSA or a modern elliptic curve.
-
-## Citations
-
-[1] `.devin/rules/codeguard-1-digital-certificates.md` — job-aide
-[2] `.devin/rules/codeguard-1-crypto-algorithms.md` — job-aide (banned signature algorithms)

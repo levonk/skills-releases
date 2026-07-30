@@ -1,5 +1,5 @@
 ---
-okf_version: "0.1"
+okf_version: "0.2"
 ---
 
 # TypeScript Monorepo Best Practices
@@ -17,7 +17,8 @@ that prevents it.
 * [Explicit File Extensions](explicit-file-extensions.md) - Use `.mts` for ESM, `.cts` for CJS, `.tsx` for React, `.mjs`/`.cjs` for JS, `.d.ts` for declarations; ban ambiguous `.ts`/`.js`
 * [Path Alias Safety](path-alias-safety.md) - No bare `@/*`; use explicit category aliases like `@/core/*`, `@/features/*`, `@/components/*`, `@/lib/*`, `@/utils/*`, `@/types/*`
 * [ESLint Composition API](eslint-composition-api.md) - Three usage patterns for `@job-aide/tools-lint-eslint-config`: direct, with options, full composition
-* [pnpm and Nx Monorepo](pnpm-nx-monorepo.md) - pnpm workspaces, `workspace:*`, Nx polyglot task orchestration (JS/Docker/Python/Rust), `only-allow pnpm`, **never `npx`/`bunx`/`yarn dlx` — always `pnpm dlx` or `pnpm exec`**
+* [pnpm and Nx Monorepo](pnpm-nx-monorepo.md) - pnpm workspaces, `workspace:*` for internal packages, **`catalog:` for external dependency versions (centralized in `pnpm-workspace.yaml`, `catalogMode: strict`)**, Nx polyglot task orchestration (JS/Docker/Python/Rust), `only-allow pnpm`, **never `npx`/`bunx`/`yarn dlx` — always `pnpm dlx` or `pnpm exec`**
+* [pnpm Supply-Chain Hardening](pnpm-supply-chain.md) - `overrides` (transitive dep CVE remediation), `patchedDependencies` (install-time patches + path-traversal advisory), `onlyBuiltDependencies` (postinstall allowlist vs Shai-Hulud worm), `.pnpmfile.mjs` hooks, `packageExtensions` (fix broken peer deps)
 * [Vitest Testing](vitest-testing.md) - `.test.mts` extension, project-based testing (unit/integration), environment configuration
 * [Package Naming Convention](package-naming-convention.md) - `packages/{active|icebox}/{category}/{platform}/{domain}/{package-name}/{language}`
 * [Application Naming Convention](app-naming-convention.md) - `apps/{status}/{product-suite}/{app-name}/{platform}/{language}`

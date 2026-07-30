@@ -3,7 +3,14 @@ type: Practice
 title: Package Verification
 description: Always verify Nix packages exist, check available versions, and confirm correct attribute names via search.nixos.org before adding to devbox.json or flake.nix. Prevents non-existent, renamed, or version-mismatched packages.
 tags: [nix, packages, verification, search-nixos-org, devbox, attributes]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: project-convention
+    resource: "Project convention"
+    title: "package verification via search.nixos.org"
 ---
 
 # Package Verification
@@ -58,7 +65,3 @@ devbox search <package>
   packages are added
 - [Nix Flake Structure](nix-flake-structure.md) — Where verified packages are
   referenced
-
-## Citations
-
-[1] Project convention — package verification via search.nixos.org

@@ -3,7 +3,10 @@ type: Practice
 title: AWS Infrastructure Best Practices
 description: AWS best practices organized by the Well-Architected Framework pillars — VPC endpoints, cost optimization, security, tagging, and IaC patterns.
 tags: [cloud, aws, best-practices, devops, infrastructure, cost-optimization, networking, vpc, s3, pulumi, terraform, well-architected-framework, security, reliability, operational-excellence]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # AWS Infrastructure Best Practices

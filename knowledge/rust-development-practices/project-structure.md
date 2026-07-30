@@ -3,7 +3,15 @@ type: Practice
 title: Project Structure
 description: Standard directory layout for Rust packages — src/lib.rs for libraries, src/main.rs for binaries, tests/ for integration, benches/ for benchmarks, docs/ for architecture.
 tags: [rust, project-structure, directory-layout, modules, re-exports]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Project Structure
@@ -48,7 +56,3 @@ package/
 
 - [Cargo Configuration](cargo-configuration.md) — Manifest for this structure
 - [Testing Strategy](testing-strategy.md) — Tests live in tests/ and benches/
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

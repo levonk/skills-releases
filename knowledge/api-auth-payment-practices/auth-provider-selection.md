@@ -3,9 +3,26 @@ type: Practice
 title: Auth Provider Selection
 description: better-auth as the auth provider with Supabase Postgres for storage-engine RLS via session variables. Passkey-first preference ordering. Email always collected for account recovery.
 tags: [auth, better-auth, supabase, passkey, webauthn, rls, multi-tenant, saas, decision]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 supersedes: supabase-auth-pattern.md
+sources:
+  - id: feat-202607170936-bookkeeping-saas-mvp
+    resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md"
+    title: "bookkeep-saas PRD (NFR3, NFR8)"
+  - id: better-auth-passkey-plugin
+    resource: "https://better-auth.com/docs/plugins/passkey"
+    title: "better-auth passkey plugin"
+  - id: supabase-auth-passkeys-beta
+    resource: "https://supabase.com/docs/guides/auth/passkeys"
+    title: "Supabase Auth passkeys (beta)"
+  - id: supabase-auth-passkeys-beta-changelog
+    resource: "https://supabase.com/changelog/46458-passkeys-for-supabase-auth-beta"
+    title: "Supabase Auth passkeys beta changelog"
 ---
+
 
 # Auth Provider Selection
 
@@ -158,10 +175,3 @@ Flip back to Supabase Auth only if **all** of these are true:
   — The risk hierarchy that drove the "no migration" decision
 - [AI + Human Timeline Estimates](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/ai-human-timeline-estimates.md)
   — Why upfront cost was reassessed as bounded
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md` — bookkeep-saas PRD (NFR3, NFR8)
-[2] [better-auth passkey plugin](https://better-auth.com/docs/plugins/passkey)
-[3] [Supabase Auth passkeys (beta)](https://supabase.com/docs/guides/auth/passkeys)
-[4] [Supabase Auth passkeys beta changelog](https://supabase.com/changelog/46458-passkeys-for-supabase-auth-beta)

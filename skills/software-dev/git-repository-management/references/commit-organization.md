@@ -238,6 +238,44 @@ FILES:file1.txt
 The body lines contain prose ("Add file1 to support...", "Needed because...")
 with verbs and rationale — not flagged.
 
+### Banned Subject Patterns (ENFORCED)
+
+The `git-commit-batch.sh` script **hard-rejects** commit subjects that match
+banned vague/generic patterns, with `COMMIT_FAILED:BAD_SUBJECT`. Repositories
+that install the companion `commit-msg` hook also enforce this on direct
+`git commit` calls (bypass: `--no-verify`, emergency only).
+
+**Banned patterns:**
+
+| Pattern | Example | Why | Fix |
+|---------|---------|-----|-----|
+| Generic counters | `Update 4 files` | Restates the diff, not the change | `Fix overflow in sidebar menu` |
+| Version bump as `feat` | `feat: bump to v2.13.0` | Version bumps are `chore`, not `feat` | `feat(nixify): harden hash automation with ASSET_MAP reverse-check` |
+| Vague improvement phrases | `PR feedback improvements`, `various improvements`, `general improvements`, `misc improvements` | Doesn't say what improved | `Add ASSET_MAP reverse-check guard to hash automation` |
+| Vague change phrases | `various changes`, `misc changes`, `some changes`, `various fixes` | Doesn't say what changed | `Fix hash mismatch on darwin x86_64` |
+| Filler words | `oops`, `maybe fixed`, `stuff`, `things`, `misc` | Unprofessional, unsearchable | `Fix overflow in sidebar menu` |
+| Bare "Update X" (generic X) | `Update docs`, `Update code`, `Update files` | X is too generic to be useful | `Update README install instructions for Nix flakes` |
+
+**The test for a good subject:** can a developer scanning `git log --oneline`
+understand what changed and why, without reading the body or the diff? If not,
+the subject is too vague.
+
+**Examples:**
+
+```
+❌ feat(nixify): bump to v2.13.0 with PR feedback improvements and dual-platform validation
+✅ feat(nixify): harden hash automation with ASSET_MAP reverse-check and require ubuntu+darwin validation
+
+❌ Update 4 files
+✅ Fix overflow in sidebar menu on narrow viewports
+
+❌ various improvements
+✅ Add ASSET_MAP reverse-check guard to hash automation
+
+❌ feat: bump version to 2.0
+✅ chore: bump version to 2.0  (or describe the actual feature instead)
+```
+
 ### Artifact References in Commit Bodies (DRY)
 
 When the rationale for a commit is already captured in an existing artifact,

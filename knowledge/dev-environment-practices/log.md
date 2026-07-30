@@ -1,5 +1,17 @@
 # Directory Update Log
 
+## 2026-07-28
+
+* **Update**: Renamed `internal-vs-normal-targets.md` concept to "Auto-Detecting Devbox Targets" — replaced the two-tier `just build` / `just build-internal` / `devbox run build` pattern with a single-target auto-detection pattern using a DRY `_devbox` helper recipe. Implementation targets renamed from `*-internal` to `*_impl` (underscore-prefixed to hide from `just --list`). `doctor` is special-cased to run directly (it's the fallback when devbox is missing).
+* **Update**: Updated [standard-developer-ux-flow.md](standard-developer-ux-flow.md) — all three flows now use `just build` (auto-detecting). No more `devbox run -- just build-internal` in Flow 1. Added `_devbox` helper documentation.
+* **Update**: Updated [devbox-script-generation-bug.md](devbox-script-generation-bug.md) — added section explaining why auto-detection makes the script generation bug largely irrelevant (`just build` uses `devbox run --` raw form, not `devbox run <script>`).
+* **Update**: Updated [async-prime-internal.md](async-prime-internal.md) — renamed `prime-internal` → `prime_impl`, `build-internal` → `build_impl`, `bootstrap-internal` → `bootstrap_impl` throughout. Updated `.envrc` trigger and three-entry-paths section.
+* **Update**: Updated [just-over-makefiles.md](just-over-makefiles.md), [mandatory-testing-workflow.md](mandatory-testing-workflow.md), [devbox-over-raw-nix.md](devbox-over-raw-nix.md) — updated code examples to use `*_impl` targets and `just _devbox` pattern.
+
+## 2026-07-26
+* **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
+* **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
+
 ## 2026-07-20
 
 * **Creation**: Authored [async-prime-internal.md](async-prime-internal.md) — documents the two-phase prime pattern: Phase 1 (sync) git checkpoint commit (no push, follows pre-task-commit-checkpoint protocol from git-repository-management skill, skippable via PRIME_SKIP_CHECKPOINT=1); Phase 2 (async, fire-and-forget) cache-warming jobs (package downloads, build, recipe list, API doc generation) in parallel. Verification gates (typecheck/test/validate) stay synchronous and blocking. Includes the `.envrc` async trigger (gated by direnv allow + `DEVBOX_SHELL_ENABLED` check) and the sync/async split rule.

@@ -3,8 +3,19 @@ type: Practice
 title: SSH Hardening — PermitRootLogin, Key Types, and fail2ban
 description: Disable root password login, use ed25519-only host keys, enforce PasswordAuthentication no, and run fail2ban to reduce brute-force risk on cloud servers.
 tags: [devsecops, security, ssh, hardening, fail2ban, ed25519]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: infrahub-final-audit-yml
+    resource: "https://github.com/levonk/infrahub/blob/main/shared/active/02-config/ansible/playbooks/final-audit.yml"
+    title: "infrahub final-audit.yml"
+  - id: infrahub-agents-md-security-audit-guidelines
+    resource: "https://github.com/levonk/infrahub/blob/main/AGENTS.md"
+    title: "infrahub AGENTS.md Security Audit Guidelines"
 ---
+
 
 # SSH Hardening
 
@@ -56,8 +67,3 @@ HostKey /etc/ssh/ssh_host_ed25519_key
 The infrahub `final-audit.yml` playbook validates these settings as part of the
 security audit. Use Ansible `lineinfile` or a dedicated `sshd_config` template
 for enforcement.
-
-## Citations
-
-[1] [infrahub final-audit.yml](https://github.com/levonk/infrahub/blob/main/shared/active/02-config/ansible/playbooks/final-audit.yml) — security audit playbook
-[2] [infrahub AGENTS.md Security Audit Guidelines](https://github.com/levonk/infrahub/blob/main/AGENTS.md) — SSH hardening best practices

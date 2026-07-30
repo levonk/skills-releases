@@ -15,76 +15,85 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_TOOL_DISCOVERY="$SCRIPT_DIR/cli-tool-discovery.sh"
 
-# Devbox detection — use devbox run for environment-aware execution
-# when devbox is available and a devbox.json is present.
-if command -v devbox >/dev/null 2>&1 && [[ -f "devbox.json" ]]; then
-    DEVBOX_AVAILABLE=1
-else
-    DEVBOX_AVAILABLE=0
-fi
+# Optional tool availability flags (for AVAILABLE_TOOLS output).
+# The actual wrapping logic is handled by the shared includes below.
+if command -v jj >/dev/null 2>&1; then JJ_AVAILABLE=1; else JJ_AVAILABLE=0; fi
+if command -v difft >/dev/null 2>&1; then DIFFT_AVAILABLE=1; else DIFFT_AVAILABLE=0; fi
+if command -v delta >/dev/null 2>&1; then DELTA_AVAILABLE=1; else DELTA_AVAILABLE=0; fi
+if command -v hunk >/dev/null 2>&1; then HUNK_AVAILABLE=1; else HUNK_AVAILABLE=0; fi
+if command -v git-summary >/dev/null 2>&1; then GIT_EXTRAS_AVAILABLE=1; else GIT_EXTRAS_AVAILABLE=0; fi
 
-# Jujutsu (jj) — alternative VCS client with cleaner log/status output
-# See: https://github.com/martinvonz/jj
-if command -v jj >/dev/null 2>&1; then
-    JJ_AVAILABLE=1
-else
-    JJ_AVAILABLE=0
-fi
-
-# Difftastic — AST-aware structural diff (best for supported languages)
-# See: https://github.com/Wilfred/difftastic
-if command -v difft >/dev/null 2>&1; then
-    DIFFT_AVAILABLE=1
-else
-    DIFFT_AVAILABLE=0
-fi
-
-# Delta — syntax-highlighted diff pager (fallback for difftastic)
-# See: https://github.com/dandavison/delta
-if command -v delta >/dev/null 2>&1; then
-    DELTA_AVAILABLE=1
-else
-    DELTA_AVAILABLE=0
-fi
-
-# Hunk — review-first terminal diff viewer for agentic coders
-# See: https://github.com/modem-dev/hunk
-if command -v hunk >/dev/null 2>&1; then
-    HUNK_AVAILABLE=1
-else
-    HUNK_AVAILABLE=0
-fi
-
-# git-extras — convenience git subcommands (git summary, git effort, etc.)
-# See: https://github.com/tj/git-extras
-if command -v git-summary >/dev/null 2>&1; then
-    GIT_EXTRAS_AVAILABLE=1
-else
-    GIT_EXTRAS_AVAILABLE=0
-fi
+# Include shared wrapper helpers (probe_devbox, wrapper_prefix, devbox_run, run_command).
+# wrapper-helpers.sh — shared functions for environment wrapper detection
+#
+# Included by skills that need to wrap commands with environment wrappers
+# (devbox, mise, flox, direnv, nix). Provides:
+#   - probe_devbox():    hang-safe probe that disables devbox if it doesn't respond
+#   - wrapper_prefix():  resolve the wrapper prefix (e.g. "devbox run --")
+#   - devbox_run():      run a command through devbox when available, else directly
+#   - run_command():     run a command through the detected wrapper, else directly
+#
+# Depends on: cli-tool-discovery.sh materialized in the same scripts/ directory.
+#
+# Consumers:
+#   - shell-wrapper/scripts/wrap_command.sh.tmpl
+#   - git-repository-management/scripts/git-collect.sh.tmpl
+#   - git-repository-management/scripts/git-commit-batch.sh.tmpl
+#   - git-repository-management/scripts/git-push.sh.tmpl
+#   - git-repository-management/scripts/git-rollback.sh.tmpl
+#
+# Usage (in a .tmpl script, after defining SCRIPT_DIR and CLI_TOOL_DISCOVERY):
+#   Include this file via the templater's include directive.
+#
+# Optional override: set WRAPPER_DEVBOX_DISABLED=1 before including to make
+# wrapper_prefix() skip the devbox wrapper (also set by probe_devbox on hang).
 
 # Probe devbox: verify `devbox run` actually responds within a timeout.
 # Tests with the real command chain (rtk git / git) to catch wrapper recursion.
 # If it hangs (e.g. broken wrapper recursion, nix store issues), disable
 # devbox wrapping for the rest of the script and fall back to direct execution.
+#
+# Optional: set PROBE_DEVBOX_TIMEOUT_SECS to override the default 15s timeout.
+# Optional: set PROBE_DEVBOX_TEST_CMD to override the test command (default:
+#   "rtk git --version" if rtk is available, else "git --version").
+#
+# This function is idempotent — calling it multiple times is safe. After the
+# first call, WRAPPER_DEVBOX_DISABLED reflects the probe result and subsequent
+# calls return immediately.
 probe_devbox() {
-    if [[ "$DEVBOX_AVAILABLE" -ne 1 ]]; then
+    # If devbox was already disabled by a prior probe or caller, nothing to do.
+    if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
         return 0
     fi
-    # Test with the actual command path the script will use
+    # If cli-tool-discovery says we're already inside a devbox shell, no probe
+    # needed — devbox binaries are on PATH and no wrapper detection is required.
+    if [[ -n "${DEVBOX_SHELL:-}${IN_DEVBOX_SHELL:-}" ]]; then
+        return 0
+    fi
+    # If no devbox.json up the tree, no point probing.
+    if ! command -v devbox >/dev/null 2>&1; then
+        WRAPPER_DEVBOX_DISABLED=1
+        return 0
+    fi
+    local _timeout="${PROBE_DEVBOX_TIMEOUT_SECS:-15}"
     local _test_cmd=(git --version)
-    if [[ "$RTK_AVAILABLE" -eq 1 ]]; then
+    if command -v rtk >/dev/null 2>&1; then
         _test_cmd=(rtk git --version)
+    fi
+    # Honor caller override for the test command.
+    if [[ -n "${PROBE_DEVBOX_TEST_CMD:-}" ]]; then
+        # shellcheck disable=SC2206  # intentional word-splitting on caller's command
+        _test_cmd=(${PROBE_DEVBOX_TEST_CMD})
     fi
     devbox run -- "${_test_cmd[@]}" >/dev/null 2>&1 &
     local _pid=$!
     local _elapsed=0
     while kill -0 "$_pid" 2>/dev/null; do
-        if [[ "$_elapsed" -ge 15 ]]; then
+        if [[ "$_elapsed" -ge "$_timeout" ]]; then
             kill -9 "$_pid" 2>/dev/null
             wait "$_pid" 2>/dev/null || true
-            echo "⚠️ devbox run hung after 15s (likely broken wrapper), falling back to direct execution" >&2
-            DEVBOX_AVAILABLE=0
+            echo "⚠️ devbox run hung after ${_timeout}s (likely broken wrapper), falling back to direct execution" >&2
+            WRAPPER_DEVBOX_DISABLED=1
             return 1
         fi
         sleep 1
@@ -94,43 +103,11 @@ probe_devbox() {
     wait "$_pid" || _exit=$?
     if [[ "$_exit" -ne 0 ]]; then
         echo "⚠️ devbox run failed (exit $_exit), falling back to direct execution" >&2
-        DEVBOX_AVAILABLE=0
+        WRAPPER_DEVBOX_DISABLED=1
         return 1
     fi
     return 0
 }
-
-# Wrapper: run a command through devbox when available, otherwise directly
-devbox_run() {
-    if [[ "$DEVBOX_AVAILABLE" -eq 1 ]]; then
-        devbox run -- "$@"
-    else
-        "$@"
-    fi
-}
-
-# wrapper_prefix() and run_command() — shared via include.
-# If probe_devbox disabled devbox, set the flag so wrapper_prefix() skips it.
-if [[ "$DEVBOX_AVAILABLE" -ne 1 ]]; then
-    WRAPPER_DEVBOX_DISABLED=1
-fi
-# wrapper-helpers.sh — shared functions for environment wrapper detection
-#
-# Included by skills that need to wrap commands with environment wrappers
-# (devbox, mise, flox, direnv, nix). Provides wrapper_prefix() and run_command().
-#
-# Depends on: cli-tool-discovery.sh materialized in the same scripts/ directory.
-#
-# Consumers:
-#   - shell-wrapper/scripts/wrap_command.sh.tmpl
-#   - git-repository-management/scripts/git-collect.sh.tmpl
-#
-# Usage (in a .tmpl script, after defining SCRIPT_DIR and CLI_TOOL_DISCOVERY):
-#   Include this file via the templater's include directive.
-#
-# Optional override: set WRAPPER_DEVBOX_DISABLED=1 before including to make
-# wrapper_prefix() skip the devbox wrapper (used by git-collect.sh which has
-# its own probe_devbox that can disable devbox at runtime).
 
 # Resolve the environment wrapper for the current directory.
 # Prints the wrapper prefix (e.g. "devbox run --") or empty if none.
@@ -165,8 +142,10 @@ wrapper_prefix() {
     esac
 }
 
-# Run a command through the detected environment wrapper (if any), otherwise directly.
-run_command() {
+# Run a command through devbox when available, otherwise directly.
+# This is the simple wrapper — it does NOT probe. Call probe_devbox first if
+# you want hang-safety. wrapper_prefix() honors WRAPPER_DEVBOX_DISABLED.
+devbox_run() {
     local wrapper
     wrapper="$(wrapper_prefix)"
     if [[ -n "$wrapper" ]]; then
@@ -176,20 +155,31 @@ run_command() {
     fi
 }
 
+# Run a command through the detected environment wrapper (if any), otherwise directly.
+# Alias for devbox_run — kept for backward compatibility with existing callers.
+run_command() {
+    devbox_run "$@"
+}
 
-# rtk_available(), rtk_prefix(), rtk_wrap_command() — shared via include.
+
+# Include shared rtk helpers (rtk_available, rtk_prefix, git_cmd, rtk_wrap).
+# Must come after wrapper-helpers.sh since it depends on devbox_run/wrapper_prefix.
 # rtk-helpers.sh — shared functions for rtk (Rust Token Killer) wrapping
 #
-# Provides rtk_available(), rtk_prefix(), and rtk_wrap_command().
+# Provides rtk_available(), rtk_prefix(), rtk_wrap_command(), git_cmd(), and rtk_wrap().
 # rtk compresses CLI output by 60-90% for LLM context. Coverage is determined
 # by `rtk rewrite` — the single source of truth that rtk's own hooks use.
 # No hardcoded list of supported commands is maintained here.
 #
-# Depends on: cli-tool-discovery.sh materialized in the same scripts/ directory.
+# Depends on: cli-tool-discovery.sh and wrapper-helpers.sh materialized in the
+# same scripts/ directory. Include wrapper-helpers.sh BEFORE this file.
 #
 # Consumers:
 #   - shell-wrapper/scripts/wrap_command.sh.tmpl
 #   - git-repository-management/scripts/git-collect.sh.tmpl
+#   - git-repository-management/scripts/git-commit-batch.sh.tmpl
+#   - git-repository-management/scripts/git-push.sh.tmpl
+#   - git-repository-management/scripts/git-rollback.sh.tmpl
 #
 # Optional: set RTK_SKIP=1 before including to disable all rtk wrapping
 # (used by shell-wrapper's --raw flag and git-collect's probe failure).
@@ -265,16 +255,10 @@ rtk_wrap_command() {
     fi
 }
 
-
-# Set RTK_AVAILABLE for the AVAILABLE_TOOLS output and probe_devbox.
-if [[ -n "$(rtk_available)" ]]; then
-    RTK_AVAILABLE=1
-else
-    RTK_AVAILABLE=0
-fi
-
 # Wrapper: use 'rtk git' instead of 'git' when rtk supports it,
 # and run through devbox when available. Uses rtk_prefix() for coverage check.
+# This is the canonical git command wrapper — all git-repository-management
+# scripts use this instead of redefining their own git_cmd().
 git_cmd() {
     local rtk_p
     rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
@@ -287,6 +271,8 @@ git_cmd() {
 
 # Wrapper: use 'rtk <tool>' for supported commands, run through devbox when available.
 # Uses rtk_prefix() for coverage check — no longer wraps unconditionally.
+# This is the generic tool wrapper — all git-repository-management scripts use
+# this instead of redefining their own rtk_wrap().
 rtk_wrap() {
     local tool="$1"
     shift
@@ -299,8 +285,26 @@ rtk_wrap() {
     fi
 }
 
-# Run probe after function definitions so it can test the real command chain
+
+# Set RTK_AVAILABLE for the AVAILABLE_TOOLS output.
+# rtk_available() is provided by rtk-helpers.sh above.
+if [[ -n "$(rtk_available)" ]]; then
+    RTK_AVAILABLE=1
+else
+    RTK_AVAILABLE=0
+fi
+
+# Probe devbox after function definitions so it can test the real command chain.
+# This sets WRAPPER_DEVBOX_DISABLED=1 if devbox hangs, which wrapper_prefix()
+# and devbox_run() honor for the rest of the script.
 probe_devbox || true
+
+# Set DEVBOX_AVAILABLE for the AVAILABLE_TOOLS output based on probe result.
+if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 0 ]] && command -v devbox >/dev/null 2>&1; then
+    DEVBOX_AVAILABLE=1
+else
+    DEVBOX_AVAILABLE=0
+fi
 
 # Wrapper: use 'jj log' when jj is available, otherwise 'git log'
 # Produces cleaner, more structured log output for AI analysis

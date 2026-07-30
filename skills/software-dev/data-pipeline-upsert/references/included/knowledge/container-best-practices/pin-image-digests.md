@@ -3,7 +3,21 @@ type: Practice
 title: Pin Image Digests, Not Tags
 description: Tags can move; digests don't. Pin FROM lines to @sha256:<digest> for production images, especially internal ones where mistakes are more common.
 tags: [docker, dockerfile, supply-chain, digest, tag, pinning, reproducibility]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: docker-buildx-imagetools-inspect
+    resource: "https://docs.docker.com/reference/cli/docker/buildx/imagetools/inspect/"
+    title: "docker buildx imagetools inspect"
+  - id: open-container-initiative-image-spec-digests
+    resource: "https://github.com/opencontainers/image-spec/blob/main/descriptor.md#digests"
+    title: "Open Container Initiative Image Spec — Digests"
 ---
 
 # Pin Image Digests, Not Tags
@@ -61,9 +75,3 @@ FROM node:26-slim@sha256:0f4a7b1a3b2c...<full digest>
   image first, then pin its digest.
 - [dockerfile-linting](/dockerfile-linting.md) — `hadolint` flags unpinned
   `FROM` lines.
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [docker buildx imagetools inspect](https://docs.docker.com/reference/cli/docker/buildx/imagetools/inspect/)
-[3] [Open Container Initiative Image Spec — Digests](https://github.com/opencontainers/image-spec/blob/main/descriptor.md#digests)

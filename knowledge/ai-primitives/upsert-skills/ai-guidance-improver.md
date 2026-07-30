@@ -4,7 +4,14 @@ title: ai-guidance-improver
 description: Audits and improves existing AI guidance files of any type — skills, workflows, agents, prompts, AGENTS.md.
 resource: src/current/skills/ai/ai-guidance-improver/
 tags: [upsert-skills, guidance-improvement, quality-assurance, token-efficiency]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: ai-guidance-improver-skill-md
+    resource: src/current/skills/ai/ai-guidance-improver/SKILL.md.tmpl
+    title: "ai-guidance-improver SKILL.md"
 ---
 
 # ai-guidance-improver
@@ -42,7 +49,3 @@ This is the **cross-cutting** quality assurance skill. It doesn't produce
 a specific primitive — it audits and improves any AI guidance type. Use it
 to audit primitives that don't have a dedicated upsert skill (committees,
 hooks, snippets, context files).
-
-# Citations
-
-[1] [ai-guidance-improver SKILL.md](src/current/skills/ai/ai-guidance-improver/SKILL.md.tmpl)

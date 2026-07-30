@@ -3,7 +3,23 @@ type: Practice
 title: Path Alias Safety — Ban Ambiguous @/* Aliases
 description: No bare @/* path aliases; use explicit category-based aliases (@/core/*, @/features/*, @/components/*, @/utils/*, @/lib/*, @/types/*) or project-specific prefixes to avoid conflicts with npm scoped packages.
 tags: [typescript, monorepo, path-aliases, imports, eslint, tsconfig]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019002-ban-ambiguous-path-alias
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251019002-path-alias-safety.md
+    title: 'ADR-20251019002: Ban Ambiguous @ Path Alias'
+  - id: path-alias-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/PATH-ALIAS-RULES.md
+    title: 'PATH-ALIAS-RULES.md'
+  - id: typescript-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md
+    title: 'typescript-rules.md — Path Aliases section'
+  - id: architecture-md
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'ARCHITECTURE.md — TypeScript Path Aliases section'
 ---
 
 # Path Alias Safety — Ban Ambiguous @/* Aliases
@@ -115,9 +131,4 @@ This makes it immediately obvious whether an import crosses package boundaries.
 - [ESLint Composition API](/eslint-composition-api.md) — how to configure the
   `no-restricted-imports` rule via the shared config.
 
-## Citations
 
-[1] [ADR-20251019002: Ban Ambiguous @ Path Alias](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251019002-path-alias-safety.md)
-[2] [PATH-ALIAS-RULES.md](https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/PATH-ALIAS-RULES.md)
-[3] [typescript-rules.md](https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md) — Path Aliases section
-[4] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — TypeScript Path Aliases section

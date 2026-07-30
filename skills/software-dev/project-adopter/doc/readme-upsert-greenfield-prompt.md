@@ -37,7 +37,7 @@ mature codebase.
      README.md from scratch (greenfield) or update an existing one (brownfield).
      Use when creating a new project's README, onboarding a human to an
      existing codebase, or refreshing a stale README."
-   - Bump `version` (1.1.0 → 1.2.0) and update `date.updated` /
+   - Bump `version` (1.1.0 → 1.2.0) and update `date.knowledge-basis` /
      `date.last-used` to today (2026-07-19)
    - In `see-also`, add `project-adopter` with relationship `caller` and a
      description noting that project-adopter delegates README generation to
@@ -132,8 +132,8 @@ After the changes, run:
 
 ```bash
 cd /Users/micro/p/gh/levonk/skills-src
-devbox run -- just validate
-devbox run -- just build current
+just validate
+just build current
 ```
 
 Both must pass. Then verify the greenfield path manually:

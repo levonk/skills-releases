@@ -112,4 +112,4 @@ The assessment generates:
 - Date: 2026-06-05
 - Based on: Tech Maturity rubric v1.0
 - Capabilities: 42 total across 6 dimensions
-- Skill template: ai-skill-upsert
+- Skill template: ai-upsert

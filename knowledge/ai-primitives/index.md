@@ -1,5 +1,5 @@
 ---
-okf_version: "0.1"
+okf_version: "0.2"
 ---
 
 # AI Primitives Knowledge Bundle
@@ -30,13 +30,12 @@ prompts, memory, rules, hooks, and the upsert skills that produce them.
 ### Upsert Skills (Producers)
 
 * [Upsert Skills Family](upsert-skills/upsert-family.md) - Overview of the skill family that creates and maintains all primitives
-* [ai-skill-upsert](upsert-skills/ai-skill-upsert.md) - Creates, updates, converts, and benchmarks skills
+* [ai-upsert](upsert-skills/ai-upsert.md) - Creates, updates, converts, and benchmarks skills; creates and maintains OKF knowledge bundles
 * [ai-workflow-upsert](upsert-skills/ai-workflow-upsert.md) - Creates, updates, and converts workflows
 * [agent-upsert](upsert-skills/agent-upsert.md) - Creates, updates, and audits agent definitions
 * [agent-file-upsert](upsert-skills/agent-file-upsert.md) - Generates AGENTS.md hierarchy documentation
 * [prompt-upsert](upsert-skills/prompt-upsert.md) - Creates and improves AI prompts
 * [template-upsert](upsert-skills/template-upsert.md) - Creates and audits reusable templates
-* [knowledge-bundle-upsert](upsert-skills/knowledge-bundle-upsert.md) - Creates and maintains OKF knowledge bundles
 * [rule-upsert](upsert-skills/rule-upsert.md) - Creates and maintains AI agent rules
 * [readme-upsert](upsert-skills/readme-upsert.md) - Generates and updates README documentation
 * [ai-guidance-improver](upsert-skills/ai-guidance-improver.md) - Audits and improves existing AI guidance
@@ -51,3 +50,5 @@ prompts, memory, rules, hooks, and the upsert skills that produce them.
 
 * [Tech Decision Risk Assessment](cross-domain/tech-decision-risk-assessment.md) - Cross-link to canonical risk hierarchy in software-architecture-essentials; applies to AI agents choosing between tech paths
 * [AI + Human Timeline Estimates](cross-domain/ai-human-timeline-estimates.md) - Cross-link to canonical four-axis estimate format; applies to AI agents estimating and reporting work
+* [Eve Filesystem-First Agents](cross-domain/eve-filesystem-agents.md) - Cross-link to vercel/eve, a production filesystem-first agent framework that maps to the skills-src primitive system
+* [Agent Integration Standards](cross-domain/agent-integration-standards.md) - Cross-link to ADR-20260607001 §46–§48; how a CLI tool bridges into the primitive system via skill emission (--gen-skill), coding-agent hook wiring, and non-identifiable telemetry

@@ -3,7 +3,17 @@ type: Practice
 title: Gradle Best Practices — Wrapper, Version Catalogs, and Configuration Cache
 description: Use the Gradle wrapper, version catalogs for dependency centralization, configuration cache for faster builds, and a dedicated gradle-cache volume in containers.
 tags: [java, gradle, build, version-catalog, configuration-cache, caching, gradle-wrapper]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: infrahub-gradle-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar
+    title: infrahub gradle-sidecar Dockerfile
+  - id: mavengradle-project-configuration
+    resource: ../../skills/software-dev/project-adopter/scripts/configure-java.sh
+    title: Maven/Gradle project configuration
 ---
 
 # Gradle Best Practices
@@ -56,8 +66,3 @@ on every invocation. Container builds re-download the Gradle distribution.
 - Prefer `implementation(project(":core"))` over direct filesystem references.
 - Keep plugin configuration in convention plugins under `buildSrc` or
   `gradle/plugins`.
-
-## Citations
-
-[1] [infrahub gradle-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar) — multi-stage Gradle 8.5 sidecar
-[2] [skills-src project-adopter configure-java.sh](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/project-adopter/scripts/configure-java.sh) — Maven/Gradle project configuration

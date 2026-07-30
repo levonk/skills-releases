@@ -4,7 +4,14 @@ title: ai-workflow-upsert
 description: Creates, updates, and converts workflows. The producer skill for the workflow primitive.
 resource: src/current/skills/ai/ai-workflow-upsert/
 tags: [upsert-skills, workflow-creation, workflow-conversion]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: ai-workflow-upsert-skill-md
+    resource: src/current/skills/ai/ai-workflow-upsert/SKILL.md.tmpl
+    title: "ai-workflow-upsert SKILL.md"
 ---
 
 # ai-workflow-upsert
@@ -28,7 +35,7 @@ workflow primitive.
 ## Key Capabilities
 
 - Scaffold new workflows with the Template/Wrapper pattern (wrapper + content template)
-- Convert skills to workflows (reverse of `ai-skill-upsert` Mode B)
+- Convert skills to workflows (reverse of `ai-upsert` Mode B)
 - Edit or optimize workflow frontmatter or steps
 - Audit existing workflows
 
@@ -43,7 +50,3 @@ workflow primitive.
 ## Produces
 
 [Workflows](../primitives/workflows.md) — multi-step repeatable processes.
-
-# Citations
-
-[1] [ai-workflow-upsert SKILL.md](src/current/skills/ai/ai-workflow-upsert/SKILL.md.tmpl)

@@ -3,7 +3,15 @@ type: Practice
 title: Testing Strategy
 description: Multi-level Rust testing — inline unit tests, integration tests in tests/, doc tests in comments, benchmarks with criterion, and property-based testing with proptest.
 tags: [rust, testing, unit-tests, integration-tests, doc-tests, benchmarks, proptest]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Testing Strategy
@@ -66,7 +74,3 @@ pub fn setup_test_logger() {
 
 - [Quality Gates](quality-gates.md) — CI runs all test types
 - [Async Patterns](async-patterns.md) — Async test macro pattern
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

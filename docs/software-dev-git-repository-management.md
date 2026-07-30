@@ -90,4 +90,4 @@ The workflow consists of 7 phases: Script Discovery, Repository Initialization (
 
 - **Full skill**: [`skills/software-dev/git-repository-management/SKILL.md`](skills/software-dev/git-repository-management/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

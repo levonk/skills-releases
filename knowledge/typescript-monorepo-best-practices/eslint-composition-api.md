@@ -3,7 +3,23 @@ type: Practice
 title: ESLint Composition API — Three Usage Patterns
 description: Use @job-aide/tools-lint-eslint-config with three progressive patterns — direct re-export, options-based customization, and full composition with rest parameters for file-specific rules.
 tags: [typescript, monorepo, eslint, linting, plugin-composition, api-design]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019003-flexible-plugin-composition-api-for-eslint-config
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251019003-plugin-composition-api.md
+    title: 'ADR-20251019003: Flexible Plugin Composition API for ESLint Config'
+  - id: usage-examples-md
+    resource: https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/USAGE-EXAMPLES.md
+    title: 'USAGE-EXAMPLES.md'
+  - id: typescript-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md
+    title: 'typescript-rules.md — ESLint Configuration section'
+  - id: architecture-md
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'ARCHITECTURE.md — ESLint Configuration section'
 ---
 
 # ESLint Composition API — Three Usage Patterns
@@ -142,9 +158,4 @@ export default jobAideEslintConfig(
 - [Code Style](/code-style.md) — double quotes, semicolons, 2-space indent
   enforced via this config.
 
-## Citations
 
-[1] [ADR-20251019003: Flexible Plugin Composition API for ESLint Config](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251019003-plugin-composition-api.md)
-[2] [USAGE-EXAMPLES.md](https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/USAGE-EXAMPLES.md)
-[3] [typescript-rules.md](https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md) — ESLint Configuration section
-[4] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — ESLint Configuration section

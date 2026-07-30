@@ -3,7 +3,14 @@ type: Practice
 title: nox Orchestration
 description: nox as primary orchestration for Python test/lint pipelines across projects. Discovers pyproject.toml, installs -e .[dev], provides tests and lint sessions. Nx handles Node/Docker/polyglot tasks at the monorepo root.
 tags: [python, nox, orchestration, nx, monorepo, ci-cd]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # nox Orchestration
@@ -51,7 +58,3 @@ across projects.
 
 - [pyproject.toml Manifest](pyproject-toml-manifest.md) — nox installs from dev extras
 - [pytest Testing Baseline](pytest-testing-baseline.md) — nox runs pytest
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

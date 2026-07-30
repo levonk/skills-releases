@@ -3,7 +3,17 @@ type: Practice
 title: Vitest for TypeScript Testing
 description: Use Vitest as the standard test runner with .test.mts extension for test files, project-based testing for unit/integration separation, and environment configuration per project.
 tags: [typescript, monorepo, testing, vitest, vite, esm, test-files]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: vitest
+    resource: https://vitest.dev/
+    title: 'Vitest'
+  - id: stagehand
+    resource: https://docs.stagehand.dev/
+    title: 'Stagehand'
 ---
 
 # Vitest for TypeScript Testing
@@ -134,10 +144,4 @@ Configure test environments per project:
 - [ESM over CommonJS](/esm-over-commonjs.md) — Vitest's native ESM support is
   why ESM is preferred.
 
-## Citations
 
-[1] [ADR-20251106002: Use Vitest for TypeScript Testing](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251106002-vitest-for-testing.md)
-[2] [typescript-rules.md](https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md) — Testing section
-[3] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — Testing Standards section
-[4] [Vitest](https://vitest.dev/)
-[5] [Stagehand](https://docs.stagehand.dev/)

@@ -78,9 +78,9 @@ scan:
 
 ```yaml
 # CI calls the same commands
-- run: devbox run -- just test
-- run: devbox run -- just build
-- run: devbox run -- just scan
+- run: just test
+- run: just build
+- run: just scan
 ```
 
 ## Alignment Audit Checklist
@@ -167,14 +167,14 @@ removes `devbox run --` wrappers, (2) but the Justfile recipes themselves call
 test:
     devbox run test
 
-# Good — calls the internal recipe directly, works with or without devbox
+# Good — calls the implementation recipe directly, works with or without devbox
 test:
-    just test-internal
+    just test_impl
 ```
 
 The `devbox run` wrapper is only needed when devbox isn't already active. Inside
 the container, tools are on PATH — the wrapper is pure overhead and can fail on
-network calls. Justfile recipes should call their `-internal` variants directly,
+network calls. Justfile recipes should call their `_impl` variants directly,
 not through `devbox run`.
 
 ## Local CI Testing with act

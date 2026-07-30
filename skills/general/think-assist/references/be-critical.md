@@ -45,7 +45,8 @@ runtime:
   terminate: "manual"
 date:
   created: "2026-07-12"
-  updated: "2026-07-12"
+  knowledge-basis: "2026-07-12"
+  last-used: "2026-07-12"
 ---
 
 # Be Critical

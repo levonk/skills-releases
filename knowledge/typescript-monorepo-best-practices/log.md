@@ -1,5 +1,65 @@
 # Directory Update Log
 
+## 2026-07-28
+
+* **Cross-link**: Added a Related Concepts entry in
+  [pnpm-nx-monorepo.md](pnpm-nx-monorepo.md) pointing to the new
+  [Nx Monorepo Docker Patterns](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/nx-monorepo-docker-patterns.md)
+  concept in the `container-best-practices` bundle. The new page applies this
+  bundle's `npx`/`bunx`/`pnpm exec` rule to Docker builds and documents the
+  pnpm-sidecar shared store pattern for monorepo container builds.
+
+## 2026-07-26
+* **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
+* **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md, migrated `# Citations` body sections to `sources` frontmatter with footnote attribution per §13.1, migrated `timestamp` to `generated` (typescript-monorepo only).
+
+## 2026-07-23
+
+* **Ingest**: Created a new concept page
+  [pnpm-supply-chain.md](pnpm-supply-chain.md) covering five pnpm supply-chain
+  hardening features not previously in the bundle: `overrides` (transitive dep
+  CVE remediation), `patchedDependencies` / `pnpm patch` (install-time patches
+  with the GHSA-rxhj-4m44-96r4 path-traversal advisory warning and patch hygiene
+  rules), `onlyBuiltDependencies` (postinstall script allowlist, defense
+  against the Shai-Hulud npm worm), `.pnpmfile.mjs` hooks (`readPackage`,
+  `afterAllResolved`, `beforePacking`), and `packageExtensions` (fixing broken
+  upstream peer dep declarations). Documents the pnpm 11 silent-ignore
+  regression for `pnpm.overrides`/`pnpm.patchedDependencies` in `package.json`
+  (issue #11536). Added to [index.md](index.md). Cross-linked from
+  [pnpm-nx-monorepo.md](pnpm-nx-monorepo.md) Related Concepts.
+* **Update**: Added a "Workspace Mechanics" subsection to
+  [pnpm-nx-monorepo.md](pnpm-nx-monorepo.md) covering `sharedWorkspaceLockfile`,
+  `saveWorkspaceProtocol`, and `injectWorkspacePackages` /
+  `dependenciesMeta[].injected` (with a per-package inject example and
+  guidance on when to inject vs symlink).
+* **Fix**: Removed the stale `.test.ts` exception from
+  [explicit-file-extensions.md](explicit-file-extensions.md) line 43. Tests
+  must use `.test.mts` per [vitest-testing.md](vitest-testing.md) and the
+  `job-aide/test-files-explicit-extension` ESLint rule — `.test.ts` was listed
+  as an exception to the `.ts` ban but was never actually allowed by the test
+  extension rule. Added a cross-link to vitest-testing.md for clarity.
+* **Rule**: Established **pnpm catalogs (`catalog:` protocol) as the mandatory
+  standard** for external dependency version management across all pnpm
+  monorepos. Added a new "Catalogs: Centralize External Dependency Versions"
+  section to [pnpm-nx-monorepo.md](pnpm-nx-monorepo.md) covering: the
+  `catalog:` / `catalog:default` / `catalog:<name>` protocol with
+  `pnpm-workspace.yaml` examples, the **anti-pattern that `"*"` does NOT
+  inherit from root** (it resolves to the latest registry release — a common
+  misconception), `catalogMode: strict` enforcement (refuses `pnpm add`
+  outside the catalog), the `catalog:` vs `workspace:` decision table
+  (external vs internal deps), and the `pnpm dlx codemod pnpm/catalog`
+  migration path. Updated the Failure Mode list (added version drift + the
+  `"*"` misconception as failure mode 6), Rationale, Consequences,
+  Migration (added step 11), and Citations (added pnpm Catalogs docs).
+  Updated [index.md](index.md) to surface the catalog rule in the concept
+  blurb. Updated [overview.md](overview.md.tmpl) lifecycle diagram and
+  table to include `catalog:`. Added a row to the canonical tech-stack
+  table include (`src/current/includes/tech-stack-table.md.tmpl`) so every
+  overview that includes it inherits the catalog standard. Triggered by a
+  user query that initially assumed `"*"` inherits from root — corrected
+  the premise and ingested the actual pnpm feature (`catalog:`) as the
+  standard instead.
+
 ## 2026-07-18
 
 * **Rule**: Added a hard "NEVER `npx`/`bunx`/`yarn dlx` — always `pnpm dlx` or

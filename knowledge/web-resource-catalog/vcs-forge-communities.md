@@ -3,7 +3,17 @@ type: Web Resource Category
 title: VCS & Forge Communities
 description: Public version control hosting, forge platforms, and code collaboration communities.
 tags: ['vcs', 'forge', 'git', 'code-hosting', 'open-source']
-timestamp: 2026-07-11T16:30:00Z
+date:
+  created: "2026-07-12"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: toon-format
+    resource: https://toonformat.dev/
+    title: TOON Format
+  - id: devin-cli-config
+    resource: https://github.com/levonk/dotfiles/blob/main/home/current/dot_config/devin/config.json
+    title: Devin CLI config
 ---
 
 # VCS & Forge Communities
@@ -27,7 +37,3 @@ for this category:
   config; this list includes only exact-domain matches
 - See [Overview](overview.md) for format details and maintenance workflow
 
-# Citations
-
-[1] [TOON Format](https://toonformat.dev/)
-[2] [Devin CLI config](https://github.com/levonk/dotfiles/blob/main/home/current/dot_config/devin/config.json)

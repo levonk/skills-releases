@@ -3,7 +3,24 @@ type: Practice
 title: Base Image Selection — Slim over Alpine for applications
 description: Prefer slim over alpine for application Dockerfiles because musl libc breaks native dependency wheels and forces source compilation.
 tags: [docker, dockerfile, base-image, alpine, slim, musl, glibc, build-time]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: musl-libc
+    resource: "https://musl.libc.org/"
+    title: "musl libc"
+  - id: glibc
+    resource: "https://www.gnu.org/software/libc/"
+    title: "glibc"
+  - id: existing-project-standard-alpine-for-infra
+    resource: "../../workflows/software-dev/devops/containers/docker-standards.md"
+    title: "existing project standard (alpine-for-infra)"
 ---
 
 # Base Image Selection — Slim over Alpine for applications
@@ -68,10 +85,3 @@ possible". This is **not** a contradiction — it is context-dependent:
 When in doubt, measure: build the same Dockerfile on `alpine` and `slim`,
 compare build time, final size, and whether native deps resolve without
 `build-base`.
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [musl libc](https://musl.libc.org/)
-[3] [glibc](https://www.gnu.org/software/libc/)
-[4] [docker-standards.md workflow](https://github.com/levonk/skills-releases/blob/main/workflows/software-dev/devops/containers/docker-standards.md) — existing project standard (alpine-for-infra)

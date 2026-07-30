@@ -3,8 +3,16 @@ type: Practice
 title: Explicit File Extensions for TypeScript Modules
 description: Enforce .mts/.cts/.tsx over ambiguous .ts/.js. File extension immediately shows module system, prevents tooling confusion, and allows mixing ESM and CommonJS in same package.
 tags: [typescript, file-extensions, esm, commonjs, eslint, modules]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019001-explicit-file-extensions
+    resource: "internal-docs/adr/adr-20251019001-explicit-file-extensions.md"
+    title: "job-aide"
 ---
+
 
 # Explicit File Extensions for TypeScript Modules
 
@@ -51,7 +59,3 @@ Rules in `@job-aide/tools-lint-eslint-config`:
 
 - [Path Alias Safety](path-alias-safety.md) — Import patterns for these files
 - [ESLint Composition API](eslint-composition-api.md) — Config that enforces these rules
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251019001-explicit-file-extensions.md` — job-aide

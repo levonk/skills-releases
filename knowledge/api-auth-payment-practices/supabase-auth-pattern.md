@@ -3,8 +3,16 @@ type: Practice
 title: Supabase Auth Pattern
 description: Supabase Auth with email/password + OAuth (Google, Microsoft), cookie-based sessions via @supabase/ssr, server actions for login/signup, protected-route middleware.
 tags: [supabase, auth, oauth, sessions, server-actions, middleware, saas]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: tasks-bookkeeping-saas-mvp-06-002-auth
+    resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-06-002-auth.md"
+    title: "bookkeep-saas"
 ---
+
 
 # Supabase Auth Pattern
 
@@ -53,7 +61,3 @@ shared authentication layer.
 
 - [Multi-Tenant RLS](multi-tenant-rls.md) — RLS policies enforced after auth
 - [Tier Feature Gating](tier-feature-gating.md) — Trial starts at signup
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-06-002-auth.md` — bookkeep-saas

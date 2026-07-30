@@ -50,7 +50,8 @@ runtime:
   terminate: "manual"
 date:
   created: "2025-10-25"
-  updated: "2025-10-25"
+  knowledge-basis: "2025-10-25"
+  last-used: "2025-10-25"
 ---
 
 # Devil's Advocate

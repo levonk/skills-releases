@@ -3,7 +3,23 @@ type: Practice
 title: Code Style — Double Quotes, Semicolons, Type Over Interface
 description: Enforce double quotes, 2-space indentation, semicolons, kebab-case filenames, prefer type over interface, and use import type for type-only imports across all TypeScript projects.
 tags: [typescript, monorepo, code-style, formatting, eslint, conventions]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: typescript-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md
+    title: 'typescript-rules.md — Code Style section'
+  - id: architecture-md
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'ARCHITECTURE.md — ESLint Configuration section'
+  - id: usage-examples-md
+    resource: https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/USAGE-EXAMPLES.md
+    title: 'USAGE-EXAMPLES.md'
+  - id: antfu-eslint-config
+    resource: https://github.com/antfu/eslint-config
+    title: '@antfu/eslint-config — base config'
 ---
 
 # Code Style — Double Quotes, Semicolons, Type Over Interface
@@ -91,9 +107,4 @@ consistently across the entire monorepo.
 - [ESM over CommonJS](/esm-over-commonjs.md) — `import type` is an ESM
   feature.
 
-## Citations
 
-[1] [typescript-rules.md](https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md) — Code Style section
-[2] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — ESLint Configuration section
-[3] [USAGE-EXAMPLES.md](https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/USAGE-EXAMPLES.md)
-[4] [@antfu/eslint-config](https://github.com/antfu/eslint-config) — base config

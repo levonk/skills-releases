@@ -3,7 +3,14 @@ type: Practice
 title: Infrastructure Variable Consolidation
 description: Centralized infrastructure topology variables with infra_ naming convention. Shared schemas with client-specific overrides for networks, ports, domains, and storage.
 tags: [infrastructure, ansible, variables, consolidation, naming-convention, topology]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20260625001-infrastructure-consolidation
+    resource: shared/active/08-docs/adr/adr-20260625001-infrastructure-consolidation.md
+    title: infrahub
 ---
 
 # Infrastructure Variable Consolidation
@@ -66,7 +73,3 @@ infra_storage_vault_path: "/opt/localnet/config/vault"
   subnets defined as consolidated variables
 - [NetBird Zero-Trust Platform](netbird-zero-trust-platform.md) — Network
   topology managed through consolidated variables
-
-## Citations
-
-[1] `shared/active/08-docs/adr/adr-20260625001-infrastructure-consolidation.md` — infrahub

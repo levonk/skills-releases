@@ -3,7 +3,14 @@ type: Practice
 title: Monorepo Structure — active vs icebox, categories, platforms, and domains
 description: Organize packages and apps by status (active/icebox), category (core/features/services/ui/tools), platform (node/web/shared), and domain to keep boundaries clear and dependencies acyclic.
 tags: [typescript, monorepo, structure, packages, apps, active, icebox]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: job-aide-architecture-md
+    resource: https://github.com/lrepo52/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'job-aide ARCHITECTURE.md — monorepo structure and naming conventions'
 ---
 
 # Monorepo Structure
@@ -77,6 +84,4 @@ apps/{status}/{product-suite}/{app-name}/{platform}/{language}
 Allowed: `apps` → `features` → `core` / `services`
 Forbidden: `core` → `features`, `active` → `icebox`, circular references.
 
-## Citations
 
-[1] [job-aide ARCHITECTURE.md](https://github.com/lrepo52/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — monorepo structure and naming conventions

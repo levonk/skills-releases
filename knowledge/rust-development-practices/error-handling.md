@@ -3,7 +3,15 @@ type: Practice
 title: Error Handling
 description: Use thiserror for structured error types, anyhow for context, implement From traits, and never panic in library code except for unrecoverable logic errors.
 tags: [rust, error-handling, thiserror, anyhow, panic, result]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Error Handling
@@ -50,7 +58,3 @@ pub type Result<T> = std::result::Result<T, PackageError>;
 
 - [Project Structure](project-structure.md) — error.rs module placement
 - [Cargo Configuration](cargo-configuration.md) — thiserror as workspace dependency
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

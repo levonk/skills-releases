@@ -3,7 +3,14 @@ type: Practice
 title: AI + Human Timeline Estimates
 description: Timelines must be based on AI + human collaborative estimates, not previous human-only estimates. Pre-AI time estimates (days/weeks of human work) are no longer valid units — a unit of work that took 3 days of human time in 2022 may take hours of AI-assisted time in 2026. Estimate as "human review + AI execution" pairs, never as "human days" alone.
 tags: [estimation, timelines, ai-assisted-dev, planning, anti-patterns]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
+sources:
+  - id: bookkeeping-saas-mvp
+    resource: internal-docs/feature/2026/07/bookkeeping-saas-mvp/
+    title: "bookkeep-saas decision dialogue where pre-AI estimates were corrected"
 ---
 
 # AI + Human Timeline Estimates
@@ -162,8 +169,3 @@ A decision is the conjunction of the two:
   estimates applied to the wrong root cause are wasted
 - [Auth Provider Selection](https://github.com/levonk/skills-releases/blob/main/knowledge/api-auth-payment-practices/auth-provider-selection.md)
   — Worked example of this estimate format in action
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/` — bookkeep-saas
-    decision dialogue where pre-AI estimates were corrected

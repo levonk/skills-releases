@@ -384,8 +384,8 @@ tkr ready ja-4c5d6
 # After reflection identifies pattern
 tkr add-note ja-7f8e9 "Reflection: Auth testing pattern repeated. Creating auth-testing skill."
 
-# Use ai-skill-upsert to codify the pattern
-"Use ai-skill-upsert to create auth-testing skill based on discovered patterns"
+# Use ai-upsert to codify the pattern
+"Use ai-upsert to create auth-testing skill based on discovered patterns"
 # New skill created and available for future use
 ```
 

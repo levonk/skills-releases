@@ -3,7 +3,10 @@ type: Practice
 title: Root-Cause First — No Workarounds for Fixable Problems
 description: Treat every failure as a symptom. Diagnose the underlying cause before applying any fix. Workarounds are last resort, never the default. When a workaround is unavoidable, document it and track its removal. When fixing one document, update all dependent documents — never leave the other side in a broken state.
 tags: [root-cause, workarounds, maintenance, technical-debt, documentation, engineering-discipline]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Root-Cause First — No Workarounds for Fixable Problems

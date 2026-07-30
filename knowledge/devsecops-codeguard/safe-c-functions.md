@@ -3,8 +3,19 @@ type: Practice
 title: Safe C Functions — Banned Memory and String Operations
 description: Replace unbounded C memory/string functions (memcpy, strcpy, sprintf) with bounded _s variants or snprintf/fgets, and enable compiler hardening flags to catch overflows at build time.
 tags: [devsecops, security, c, cpp, memory-safety, buffer-overflow, compiler-flags]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: codeguard-1-safe-c-functions
+    resource: ".devin/rules/codeguard-1-safe-c-functions.md"
+    title: "job-aide"
+  - id: codeguard-0-devops-ci-cd-containers
+    resource: ".devin/rules/codeguard-0-devops-ci-cd-containers.md"
+    title: "job-aide (C/C++ toolchain hardening section)"
 ---
+
 
 # Safe C Functions — Banned Memory and String Operations
 
@@ -153,8 +164,3 @@ flags in CI with `checksec` and fail builds if protections are missing.
 - [ ] All `errno_t` return values handled
 - [ ] Strings properly null-terminated
 - [ ] Compiler hardening flags enabled and verified in CI
-
-## Citations
-
-[1] `.devin/rules/codeguard-1-safe-c-functions.md` — job-aide
-[2] `.devin/rules/codeguard-0-devops-ci-cd-containers.md` — job-aide (C/C++ toolchain hardening section)

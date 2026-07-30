@@ -3,8 +3,16 @@ type: Practice
 title: ESLint Composition API
 description: Three-level ESLint config customization — direct usage (zero config), options-based (toggle features, add plugins), and full composition (file-specific rules via rest parameters).
 tags: [eslint, composition, plugins, api-design, configuration, customization]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019003-plugin-composition-api
+    resource: "internal-docs/adr/adr-20251019003-plugin-composition-api.md"
+    title: "job-aide"
 ---
+
 
 # ESLint Composition API
 
@@ -74,7 +82,3 @@ function jobAideEslintConfig(
   this config
 - [Path Alias Safety](path-alias-safety.md) — Rules enforced by this config
 - [Code Style Conventions](code-style-conventions.md) — Style rules in this config
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251019003-plugin-composition-api.md` — job-aide

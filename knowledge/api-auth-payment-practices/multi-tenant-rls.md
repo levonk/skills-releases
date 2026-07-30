@@ -3,8 +3,16 @@ type: Practice
 title: Multi-Tenant RLS
 description: Row-Level Security on every table with tenant_id isolation. No shared schemas. Every query scoped by tenant_id. Hard constraint from day one.
 tags: [supabase, rls, multi-tenant, isolation, postgresql, security]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: feat-202607170936-bookkeeping-saas-mvp
+    resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md"
+    title: "bookkeep-saas PRD NFR2"
 ---
+
 
 # Multi-Tenant RLS
 
@@ -42,7 +50,3 @@ Lead magnet data is **not** mixed with paid tenant data:
 
 - [Supabase Auth Pattern](supabase-auth-pattern.md) — Auth establishes tenant_id
 - [Encrypted Token Storage](encrypted-token-storage.md) — Tokens stored per-tenant
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md` — bookkeep-saas PRD NFR2

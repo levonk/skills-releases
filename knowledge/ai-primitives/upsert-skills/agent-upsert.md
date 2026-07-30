@@ -4,7 +4,14 @@ title: agent-upsert
 description: Creates, updates, and audits agent definitions. The producer skill for the agent primitive.
 resource: src/current/skills/ai/agent-upsert/
 tags: [upsert-skills, agent-creation, agent-audit]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: agent-upsert-skill-md
+    resource: src/current/skills/ai/agent-upsert/SKILL.md.tmpl
+    title: "agent-upsert SKILL.md"
 ---
 
 # agent-upsert
@@ -50,7 +57,3 @@ for the agent primitive.
 - `references/agent-design.md` — Agent-specific design guidance
 - `references/agent-guidelines.md` — Agent-specific guidelines
 - `references/agent-search.md` — Agent search workflow
-
-# Citations
-
-[1] [agent-upsert SKILL.md](src/current/skills/ai/agent-upsert/SKILL.md.tmpl)

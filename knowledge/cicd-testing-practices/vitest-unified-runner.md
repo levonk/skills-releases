@@ -3,8 +3,16 @@ type: Practice
 title: Vitest Unified Runner
 description: Vitest as primary framework for all TypeScript testing — unit, integration, and E2E test runner with Stagehand/Playwright. Fast, ESM-native, Jest-compatible, monorepo-integrated.
 tags: [vitest, testing, typescript, unified, runner, jest, esm]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251106002-vitest-for-testing
+    resource: "internal-docs/adr/adr-20251106002-vitest-for-testing.md"
+    title: "levonk-base-boilerplate"
 ---
+
 
 # Vitest Unified Runner
 
@@ -50,7 +58,3 @@ Use **Vitest** as the primary framework for all TypeScript testing.
   orchestrated by Vitest
 - [Shared Quality Scripts](shared-quality-scripts.md) — Quality script invokes
   Vitest
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251106002-vitest-for-testing.md` — levonk-base-boilerplate

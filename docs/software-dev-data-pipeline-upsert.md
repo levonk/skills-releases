@@ -68,7 +68,7 @@ Create, update, and convert data pipelines across Apache Airflow (DAG authoring)
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
-- **ai-skill-upsert** (skill, sibling) — Same upsert family — handles AI skill creation and updates
+- **ai-upsert** (skill, sibling) — Same upsert family — handles AI skill creation and updates
 - **container-image-build** (skill, complement) — Build container images for data pipeline services
 - **cicd-upsert** (skill, complement) — CI/CD pipelines for data pipeline deployment
 - **java-app-upsert** (skill, complement) — Create and update Java applications that may serve as data pipeline components
@@ -77,4 +77,4 @@ Create, update, and convert data pipelines across Apache Airflow (DAG authoring)
 
 - **Full skill**: [`skills/software-dev/data-pipeline-upsert/SKILL.md`](skills/software-dev/data-pipeline-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

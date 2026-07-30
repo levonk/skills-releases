@@ -3,7 +3,10 @@ type: Practice
 title: CSS Fundamentals
 description: Foundational CSS patterns — architecture, reset/base, responsive design, layout systems, positioning, custom properties, animations, BEM naming, preprocessors, CSS-in-JS, performance, and debugging.
 tags: [css, frontend, layout, responsive, bem, design-tokens, animations, scss]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # CSS Fundamentals

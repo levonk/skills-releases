@@ -4,7 +4,14 @@ title: rule-upsert
 description: Creates and maintains AI agent rules. The producer skill for the rule primitive.
 resource: src/current/skills/ai/rule-upsert/
 tags: [upsert-skills, rule-creation, rule-management, rule-audit]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: rule-upsert-skill-md
+    resource: src/current/skills/ai/rule-upsert/SKILL.md.tmpl
+    title: "rule-upsert SKILL.md"
 ---
 
 # rule-upsert
@@ -41,7 +48,3 @@ producer skill for the rule primitive.
 ## Produces
 
 [Rules](../primitives/rules.md) — always-on binding constraints for AI agents.
-
-# Citations
-
-[1] [rule-upsert SKILL.md](src/current/skills/ai/rule-upsert/SKILL.md.tmpl)

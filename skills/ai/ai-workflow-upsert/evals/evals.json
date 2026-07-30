@@ -39,7 +39,7 @@
     {
       "id": 6,
       "prompt": "Convert my existing vendor-onboarding workflow into a skill so I can add evals and scripts",
-      "expected_output": "Does NOT trigger this skill — redirects to ai-skill-upsert (Mode B: Convert Workflow to a Skill) which handles the git-mv history preservation and skill-format transformation. This is the reverse of this skill's Mode B.",
+      "expected_output": "Does NOT trigger this skill — redirects to ai-upsert (Mode B: Convert Workflow to a Skill) which handles the git-mv history preservation and skill-format transformation. This is the reverse of this skill's Mode B.",
       "files": [],
       "assertions": []
     }

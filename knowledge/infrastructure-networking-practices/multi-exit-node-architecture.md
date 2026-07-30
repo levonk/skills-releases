@@ -3,7 +3,14 @@ type: Practice
 title: Multi-Exit Node Architecture
 description: Three exit node configurations — Direct (OCI), NordVPN (privacy), Tor (high anonymity) — with dedicated Docker networks and Tailscale routing per exit node.
 tags: [vpn, exit-node, nordvpn, tor, tailscale, docker, networking, privacy]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20260625001-multi-exit-node-architecture
+    resource: shared/active/08-docs/adr/adr-20260625001-multi-exit-node-architecture.md
+    title: infrahub
 ---
 
 # Multi-Exit Node Architecture
@@ -50,7 +57,3 @@ exit paths.
   platform that exit nodes route through
 - [Infrastructure Variable Consolidation](infrastructure-variable-consolidation.md)
   — Network subnets defined as consolidated variables
-
-## Citations
-
-[1] `shared/active/08-docs/adr/adr-20260625001-multi-exit-node-architecture.md` — infrahub

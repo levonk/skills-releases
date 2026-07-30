@@ -106,7 +106,7 @@ typecheck:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     # Language-specific setup handled by devbox
     echo "Development environment ready!"
 

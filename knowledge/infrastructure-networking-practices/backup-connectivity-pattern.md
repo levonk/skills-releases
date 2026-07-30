@@ -3,7 +3,14 @@ type: Practice
 title: Backup Connectivity Pattern
 description: SSH server, mosh, and Tailscale as backup connectivity alongside primary NetBird VPN. Prevents complete lockout when primary VPN fails.
 tags: [ssh, mosh, tailscale, backup, connectivity, netbird, failover]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-001-netbird-cloud-controlplane
+    resource: shared/active/08-docs/adr/adr-001-netbird-cloud-controlplane.md
+    title: infrahub
 ---
 
 # Backup Connectivity Pattern
@@ -42,7 +49,3 @@ Deploy **multiple connectivity layers** on the cloud host:
   connectivity layer
 - [Multi-Exit Node Architecture](multi-exit-node-architecture.md) — Tailscale
   also used for exit node routing
-
-## Citations
-
-[1] `shared/active/08-docs/adr/adr-001-netbird-cloud-controlplane.md` — infrahub

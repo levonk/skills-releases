@@ -3,7 +3,10 @@ type: Practice
 title: Excalidraw Practices
 description: Excalidraw conventions for documentation — store .excalidraw JSON in git for diffability, use the hand-drawn aesthetic to signal tentative designs, and switch to Mermaid/PlantUML when precision is required.
 tags: [documentation, diagrams, excalidraw, whiteboard, hand-drawn, json-storage]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-19"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Excalidraw Practices

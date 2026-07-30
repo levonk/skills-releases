@@ -19,6 +19,36 @@ Use this template for consistency when creating handoff documents:
 1. [Blocking issue 1]
 2. [Blocking issue 2]
 
+## Git State
+
+**Commit at handoff**: `<full 40-char SHA>` (captured via `git rev-parse HEAD`
+after the pre-handoff commit checkpoint)
+
+This is the exact repo state at handoff time. The receiving session can
+reconstruct what was done by inspecting this commit and its history:
+- `git show <SHA>` — what the handoff commit changed
+- `git log <SHA>..HEAD` — work done since the handoff (during restoration)
+- `git diff <SHA>~1 <SHA>` — the last change before handoff
+
+If the target project is not a git repository, replace this section with:
+"Not a git repository — no commit hash available."
+
+## Required Reading
+
+Before any other action, read `{REPO_ROOT}/<agent-file>` — it is the root of
+this project's progressively-disclosed informational files (JIT index, binding
+contracts, conventions). Follow its Usage Protocol and re-read the chain for
+any path you touch.
+
+> **Detection**: The capturing session checks in priority order: `AGENTS.md`,
+> `AGENT.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `GEMINI.md`,
+> `.windsurf/rules/*.md`, `.cursor/rules/*.mdc`, `CONVENTIONS.md`. If multiple
+> exist, the largest by byte size wins (pointer/symlink stubs are small).
+> Replace `<agent-file>` with the detected path. If none exist, replace this
+> section with: "No agent-instructions file found at the project root. No
+> progressive-disclosure root to read — proceed without project-level agent
+> conventions."
+
 ## Project Overview
 
 ### Objective
@@ -88,6 +118,36 @@ Based on the infrahub example, a more detailed handoff for complex projects:
 ### ❌ Blocking Issues
 1. **[Issue 1]**: [Description]
 2. **[Issue 2]**: [Description]
+
+## Git State
+
+**Commit at handoff**: `<full 40-char SHA>` (captured via `git rev-parse HEAD`
+after the pre-handoff commit checkpoint)
+
+This is the exact repo state at handoff time. The receiving session can
+reconstruct what was done by inspecting this commit and its history:
+- `git show <SHA>` — what the handoff commit changed
+- `git log <SHA>..HEAD` — work done since the handoff (during restoration)
+- `git diff <SHA>~1 <SHA>` — the last change before handoff
+
+If the target project is not a git repository, replace this section with:
+"Not a git repository — no commit hash available."
+
+## Required Reading
+
+Before any other action, read `{REPO_ROOT}/<agent-file>` — it is the root of
+this project's progressively-disclosed informational files (JIT index, binding
+contracts, conventions). Follow its Usage Protocol and re-read the chain for
+any path you touch.
+
+> **Detection**: The capturing session checks in priority order: `AGENTS.md`,
+> `AGENT.md`, `CLAUDE.md`, `.github/copilot-instructions.md`, `GEMINI.md`,
+> `.windsurf/rules/*.md`, `.cursor/rules/*.mdc`, `CONVENTIONS.md`. If multiple
+> exist, the largest by byte size wins (pointer/symlink stubs are small).
+> Replace `<agent-file>` with the detected path. If none exist, replace this
+> section with: "No agent-instructions file found at the project root. No
+> progressive-disclosure root to read — proceed without project-level agent
+> conventions."
 
 ## Target Architecture
 

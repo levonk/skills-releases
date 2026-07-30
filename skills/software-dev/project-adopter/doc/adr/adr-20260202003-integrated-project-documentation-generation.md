@@ -48,7 +48,7 @@ Users needed comprehensive documentation and functional targets from the start.
 Implement integrated generation of four core project artifacts:
 
 1. **devbox.json** - Environment and packages (AI tools + language-specific)
-2. **justfile** - Standard interface + *-internal targets (real commands)
+2. **justfile** - Standard interface + *_impl targets (real commands)
 3. **README.md** - Human-readable setup guide with devbox commands
 4. **AGENTS.md** - AI agent configuration with project-specific guidance
 
@@ -71,7 +71,7 @@ create_config_files() {
     # Generate devbox.json with AI tools + language packages
     generate_devbox_json "$PROJECT_PATH" "$detected_systems"
     
-    # Generate integrated justfile with *-internal targets
+    # Generate integrated justfile with *_impl targets
     generate_integrated_justfile "$PROJECT_PATH" "$detected_systems"
     
     # Generate README.md with devbox commands
@@ -98,14 +98,14 @@ create_config_files() {
 }
 ```
 
-### Functional justfile with *-internal Targets
+### Functional justfile with *_impl Targets
 ```just
 # Standard interface (devbox shell)
 dev:
     devbox shell dev
 
 # Language-specific implementation
-dev-internal:
+dev_impl:
     pnpm run dev        # Real command from package.json
 ```
 
@@ -146,7 +146,7 @@ just ci
 ## Affected Components
 
 - **generate_devbox_json()** - Enhanced with AI tools and mode-aware packages
-- **generate_integrated_justfile()** - Real *-internal targets instead of placeholders
+- **generate_integrated_justfile()** - Real *_impl targets instead of placeholders
 - **generate_readme_md()** - New function for comprehensive user documentation
 - **generate_agents_md()** - New function for AI agent configuration
 - **create_config_files()** - Orchestrates all four generations

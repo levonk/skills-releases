@@ -3,7 +3,18 @@ type: Practice
 title: Dockerfile Best Practices — apt vs apk, User Creation, and Multi-Stage Builds
 description: Clean package manager caches, create non-root users correctly for Debian (groupadd/useradd) and Alpine (addgroup/adduser), use multi-stage builds, and add HEALTHCHECK to every production image.
 tags: [devsecops, security, docker, dockerfile, alpine, debian, healthcheck, multi-stage]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: job-aide-dockerfile-best-practices-md
+    resource: "https://github.com/lrepo52/job-aide/blob/main/.devin/rules/dockerfile-best-practices.md"
+    title: "job-aide dockerfile-best-practices.md"
+  - id: job-aide-codeguard-0-devops-ci-cd-containers-md
+    resource: "https://github.com/lrepo52/job-aide/blob/main/.devin/rules/codeguard-0-devops-ci-cd-containers.md"
+    title: "job-aide codeguard-0-devops-ci-cd-containers.md"
 ---
 
 # Dockerfile Best Practices
@@ -85,8 +96,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   healthchecks.
 - [dockerfile-linting](/dockerfile-linting.md) — automate enforcement of
   these patterns with hadolint in CI.
-
-## Citations
-
-[1] [job-aide dockerfile-best-practices.md](https://github.com/lrepo52/job-aide/blob/main/.devin/rules/dockerfile-best-practices.md)
-[2] [job-aide codeguard-0-devops-ci-cd-containers.md](https://github.com/lrepo52/job-aide/blob/main/.devin/rules/codeguard-0-devops-ci-cd-containers.md)

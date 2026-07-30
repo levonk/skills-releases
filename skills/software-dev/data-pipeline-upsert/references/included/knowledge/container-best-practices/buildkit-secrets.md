@@ -3,7 +3,27 @@ type: Practice
 title: BuildKit Secret Mounts — never bake credentials into image layers
 description: ARG and RUN with inline tokens persist secrets in layers and docker history. Use --mount=type=secret and --mount=type=ssh so credentials exist only for the RUN that needs them.
 tags: [docker, buildkit, secrets, security, ssh-agent, npm-pypi, buildx, ci]
-timestamp: 2026-07-17T19:00:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: build-secrets-docker-docs
+    resource: "https://docs.docker.com/build/building/secrets/"
+    title: "Build secrets | Docker Docs"
+  - id: docker-buildx-build-secret-reference-docker-docs
+    resource: "https://docs.docker.com/reference/cli/docker/buildx/build/#secret"
+    title: "docker buildx build — --secret reference | Docker Docs"
+  - id: using-secrets-with-github-actions-docker-docs
+    resource: "https://docs.docker.com/build/ci/github-actions/secrets/"
+    title: "Using secrets with GitHub Actions | Docker Docs"
+  - id: the-hidden-risks-of-docker-build-time-arguments-microsoft-ise-developer-blog
+    resource: "https://devblogs.microsoft.com/ise/hidden-risks-of-docker-build-time-arguments-and-how-to-secure-your-secrets/"
+    title: "The Hidden Risks of Docker Build Time Arguments — Microsoft ISE Developer Blog"
+  - id: how-secrets-leak-out-of-docker-images-truffle-security
+    resource: "https://trufflesecurity.com/blog/how-secrets-leak-out-of-docker-images"
+    title: "How Secrets Leak out of Docker Images — Truffle Security"
 ---
 
 # BuildKit Secret Mounts — never bake credentials into image layers
@@ -120,11 +140,3 @@ appears in the workflow log or the image history.
 - [multi-stage-builds](/multi-stage-builds.md) — multi-stage shrinks the final image but the builder stage still caches secrets without `--mount=type=secret`.
 - [build-context-hygiene](/build-context-hygiene.md) — `.dockerignore` excludes `.env` from the context; `--secret` is the build-time equivalent for credentials the build actually needs.
 - [container-runtime-hardening](/container-runtime-hardening.md) — runtime secret hygiene (runtime-only env, secret managers) complements build-time secret hygiene.
-
-## Citations
-
-[1] [Build secrets | Docker Docs](https://docs.docker.com/build/building/secrets/)
-[2] [docker buildx build — --secret reference | Docker Docs](https://docs.docker.com/reference/cli/docker/buildx/build/#secret)
-[3] [Using secrets with GitHub Actions | Docker Docs](https://docs.docker.com/build/ci/github-actions/secrets/)
-[4] [The Hidden Risks of Docker Build Time Arguments — Microsoft ISE Developer Blog](https://devblogs.microsoft.com/ise/hidden-risks-of-docker-build-time-arguments-and-how-to-secure-your-secrets/)
-[5] [How Secrets Leak out of Docker Images — Truffle Security](https://trufflesecurity.com/blog/how-secrets-leak-out-of-docker-images)

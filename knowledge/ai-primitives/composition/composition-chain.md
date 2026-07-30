@@ -3,7 +3,23 @@ type: Concept
 title: Composition Chain
 description: How primitives compose bottom-up — templates → prompts → workflows → skills → agents → committees — with build-time and runtime composition patterns.
 tags: [ai-primitives, composition, chain, templates, prompts, workflows, skills, agents, committees]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-28"
+  last-used: "2026-07-28"
+sources:
+  - id: skills-src-readme
+    resource: https://github.com/levonk/skills-src
+    title: "skills-src README"
+  - id: includes-agents-md
+    resource: src/current/includes/AGENTS.md
+    title: "Includes AGENTS.md"
+  - id: developer-guide
+    resource: .agents/knowledge/developer.md
+    title: "Developer guide"
+  - id: eve-filesystem-agents
+    resource: https://github.com/vercel/eve
+    title: "vercel/eve — filesystem-first framework for durable AI agents"
 ---
 
 # Composition Chain
@@ -191,6 +207,14 @@ The agent body has:
 6. Instructions → 7. Templates → 8. Guardrails → 9. Design By Contract →
 10. Quality Evaluation → 11. Handoffs → 12. References
 
+### Real-World Composition: vercel/eve
+
+[vercel/eve](../cross-domain/eve-filesystem-agents.md) demonstrates this
+layer in production. An eve agent composes `instructions.md` (context) +
+`tools/` (capabilities) + `skills/` (on-demand procedures) +
+`subagents/` (delegation) via filesystem discovery at runtime, rather than
+build-time inlining. See the cross-domain page for the full mapping.
+
 ## Layer 6: Committees
 
 Committees compose agents to deliberate and synthesize.
@@ -288,9 +312,3 @@ base-ai-guidance.md (hub)
 A single `{{{ include "includes/base-ai-guidance.md" . }}}` in a skill
 pulls in all sub-includes. This keeps skills small in source form while
 being fully self-contained after build.
-
-# Citations
-
-[1] [skills-src README](https://github.com/levonk/skills-src)
-[2] [Includes AGENTS.md](src/current/includes/AGENTS.md)
-[3] [Developer guide](.agents/knowledge/developer.md)

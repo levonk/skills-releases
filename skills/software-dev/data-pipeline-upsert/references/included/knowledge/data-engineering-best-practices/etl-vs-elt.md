@@ -3,7 +3,24 @@ type: Practice
 title: ETL vs ELT — Transform Before Load vs Load Then Transform
 description: ETL transforms before load; ELT loads raw data then transforms in-warehouse with dbt — choose by warehouse compute cost, transformation maturity, and data volume.
 tags: [data-engineering, etl, elt, dbt, data-warehouse, transformation]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: dbt-documentation-what-is-dbt
+    resource: "https://docs.getdbt.com/docs/introduction"
+    title: "dbt documentation — What is dbt?"
+  - id: apache-spark-documentation
+    resource: "https://spark.apache.org/docs/latest/"
+    title: "Apache Spark documentation"
+  - id: orchestrating-both-etl-and-elt-tasks
+    resource: "/airflow-dag-patterns.md"
+    title: "orchestrating both ETL and ELT tasks"
+  - id: in-warehouse-transformation-practices
+    resource: "/dbt-transformation-patterns.md"
+    title: "in-warehouse transformation practices"
 ---
 
 # ETL vs ELT — Transform Before Load vs Load Then Transform
@@ -58,10 +75,3 @@ Many platforms run both: ELT for standard analytics transforms (dbt models in
 the warehouse) and ETL for specialized processing (Spark jobs for ML feature
 engineering or large-scale joins that exceed warehouse limits). Airflow
 orchestrates both as separate task groups in the same DAG.
-
-## Citations
-
-[1] [dbt documentation — What is dbt?](https://docs.getdbt.com/docs/introduction)
-[2] [Apache Spark documentation](https://spark.apache.org/docs/latest/)
-[3] [Airflow DAG Patterns](/airflow-dag-patterns.md) — orchestrating both ETL and ELT tasks
-[4] [dbt Transformation Patterns](/dbt-transformation-patterns.md) — in-warehouse transformation practices

@@ -3,7 +3,10 @@ type: Practice
 title: PlantUML Practices
 description: PlantUML conventions for documentation — always wrap in @startuml/@enduml, prefer local jar over public server for air-gapped environments, use salt for wireframes, and let auto-layout handle positioning.
 tags: [documentation, diagrams, plantuml, uml, sequence, class, state, rendering]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-19"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # PlantUML Practices

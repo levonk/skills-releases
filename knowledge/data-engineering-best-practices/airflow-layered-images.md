@@ -3,7 +3,18 @@ type: Practice
 title: Airflow Layered Images — Cache Reuse and Task-Image Separation
 description: Split Airflow into layered images (base-common → base-python → airflow-core → airflow-platform → airflow-py) so scheduler/webserver code does not leak into task pods and layers cache independently.
 tags: [data-engineering, airflow, containers, layered-images, caching, kubernetes]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: infrahub-airflow-service-readme
+    resource: "https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/airflow/README.md"
+    title: "infrahub Airflow service README"
+  - id: job-aide-airflow-layered-images-spec
+    resource: "https://github.com/lrepo52/job-aide/blob/main/specs/005-airflow-layered-images-spec/spec.md"
+    title: "job-aide Airflow layered images spec"
 ---
 
 # Airflow Layered Images
@@ -64,8 +75,3 @@ apache-airflow==3.1.2
 apache-airflow-providers-cncf-kubernetes==...
 apache-airflow-providers-postgres==...
 ```
-
-## Citations
-
-[1] [infrahub Airflow service README](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/airflow/README.md)
-[2] [job-aide Airflow layered images spec](https://github.com/lrepo52/job-aide/blob/main/specs/005-airflow-layered-images-spec/spec.md)

@@ -3,7 +3,21 @@ type: Practice
 title: Multi-Stage Builds — builder is the bloat zone
 description: Use multi-stage Dockerfiles with a builder stage for toolchains and a scratch/distroless final stage for the runtime. Ship only the binary, not the compiler.
 tags: [docker, dockerfile, multi-stage, scratch, distroless, go, rust, static-binary]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: distroless-images
+    resource: "https://github.com/GoogleContainerTools/distroless"
+    title: "Distroless images"
+  - id: docker-multi-stage-build-documentation
+    resource: "https://docs.docker.com/build/building/multi-stage/"
+    title: "Docker multi-stage build documentation"
 ---
 
 # Multi-Stage Builds — builder is the bloat zone
@@ -73,9 +87,3 @@ Result: 272 MB → **2.3 MB** (with `scratch`) or **11 MB** (with a minimal base
   practical use).
 - [layer-cache-order](/layer-cache-order.md) — `go mod download` before
   `COPY . .` in the builder stage.
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [Distroless images](https://github.com/GoogleContainerTools/distroless)
-[3] [Docker multi-stage build documentation](https://docs.docker.com/build/building/multi-stage/)

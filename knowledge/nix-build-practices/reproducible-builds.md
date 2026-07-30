@@ -3,7 +3,17 @@ type: Practice
 title: Reproducible Builds
 description: flake.lock and devbox.lock pin exact dependency versions. Deterministic builds across machines. Lock files must be committed for reproducibility.
 tags: [nix, reproducible, flake-lock, devbox-lock, pinning, deterministic]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251219001-nix-direnv-dev-environment
+    resource: internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md
+    title: levonk-base-boilerplate
+  - id: adr-20251226001-devbox-direnv-dev-environment
+    resource: internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md
+    title: levonk-base-boilerplate
 ---
 
 # Reproducible Builds
@@ -53,8 +63,3 @@ With lock files committed:
   flake.nix
 - [Devbox as Nix Abstraction](devbox-as-nix-abstraction.md) — devbox.lock lives
   alongside devbox.json
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md` — levonk-base-boilerplate
-[2] `internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md` — levonk-base-boilerplate

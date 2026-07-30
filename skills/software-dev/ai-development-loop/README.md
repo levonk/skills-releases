@@ -244,7 +244,7 @@ This creates a virtuous cycle where each iteration improves the development proc
 
 - ticketr CLI documentation: `tkr help`
 - Project AGENTS.md for specific patterns
-- ai-skill-upsert for codifying discovered patterns
+- ai-upsert for codifying discovered patterns
 - Workflow templates in `.windsurf/workflows/`
 
 ---

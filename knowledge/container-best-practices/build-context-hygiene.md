@@ -3,7 +3,18 @@ type: Practice
 title: Build Context Hygiene — .dockerignore over COPY gymnastics
 description: The bad pattern is not COPY . — it's sending garbage into the Docker build context. Use .dockerignore to filter, keep COPY . readable.
 tags: [docker, dockerfile, dockerignore, build-context, copy]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: docker-dockerignore-documentation
+    resource: "https://docs.docker.com/build/concepts/context/#dockerignore-files"
+    title: "Docker .dockerignore documentation"
 ---
 
 # Build Context Hygiene — .dockerignore over COPY gymnastics
@@ -76,8 +87,3 @@ docker-compose*.yml
   is filtered; layer order still matters for caching.
 - [dockerfile-linting](/dockerfile-linting.md) — `hadolint` flags `COPY .`
   without a `.dockerignore`.
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [Docker .dockerignore documentation](https://docs.docker.com/build/concepts/context/#dockerignore-files)

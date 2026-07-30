@@ -3,7 +3,21 @@ type: Practice
 title: Airflow on Kubernetes — KubernetesExecutor, Helm, and Security Hardening
 description: Deploy Airflow with the official Helm chart, KubernetesExecutor, Postgres metadata DB, non-root containers, dropped capabilities, read-only root FS, and tmpfs for temporary files.
 tags: [data-engineering, airflow, kubernetes, helm, security, deployment]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: infrahub-airflow-service-readme
+    resource: "https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/airflow/README.md"
+    title: "infrahub Airflow service README"
+  - id: job-aide-airflow-layered-images-spec
+    resource: "https://github.com/lrepo52/job-aide/blob/main/specs/005-airflow-layered-images-spec/spec.md"
+    title: "job-aide Airflow layered images spec"
+  - id: airflow-kubernetesexecutor-docs
+    resource: "https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/executors/kubernetes-executor.html"
+    title: "Airflow KubernetesExecutor docs"
 ---
 
 # Airflow on Kubernetes
@@ -53,9 +67,3 @@ cluster security policies.
   space.
 - Use Kubernetes Secrets or an external secret backend (Vault) for Airflow
   Connections and Variables.
-
-## Citations
-
-[1] [infrahub Airflow service README](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/airflow/README.md)
-[2] [job-aide Airflow layered images spec](https://github.com/lrepo52/job-aide/blob/main/specs/005-airflow-layered-images-spec/spec.md)
-[3] [Airflow KubernetesExecutor docs](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/executors/kubernetes-executor.html)

@@ -178,7 +178,7 @@ Recognize expertise that should be codified:
 - Complex problem-solving approaches
 - Domain-specific best practices
 
-**Action**: Create new AI skills using ai-skill-upsert workflow
+**Action**: Create new AI skills using ai-upsert workflow
 
 ### 4. Template Opportunities
 Find reusable templates:
@@ -215,7 +215,7 @@ This skill works best with:
 - **code-review**: For verifying implementation quality
 - **frontend-design**: For UI/UX work
 - **ansible-rules**: For infrastructure work
-- **ai-skill-upsert**: For creating new skills from discovered patterns
+- **ai-upsert**: For creating new skills from discovered patterns
 - **git-repository-management**: For organized, secure repository operations
 - **code-quality-validation**: For comprehensive code quality checks
 
@@ -383,5 +383,5 @@ To investigate the script itself:
 
 - ticketr CLI documentation: `tkr help`
 - Project AGENTS.md for specific patterns
-- ai-skill-upsert for codifying discovered patterns
+- ai-upsert for codifying discovered patterns
 - Workflow templates in `.windsurf/workflows/`

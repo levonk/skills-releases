@@ -3,7 +3,18 @@ type: Practice
 title: Node.js in Containers — Production Hardening
 description: Harden Node.js containers with npm ci --omit=dev, NODE_ENV=production, non-root ownership, dumb-init for signal handling, and multi-stage builds that separate build and runtime.
 tags: [devsecops, security, nodejs, docker, containers, npm, production]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: job-aide-node-js-in-containers-section
+    resource: ".devin/rules/codeguard-0-devops-ci-cd-containers.md"
+    title: "job-aide (Node.js in containers section)"
+  - id: job-aide
+    resource: ".devin/rules/dockerfile-best-practices.md"
+    title: "job-aide"
 ---
 
 # Node.js in Containers — Production Hardening
@@ -143,8 +154,3 @@ concept.
 - [ ] Base image pinned with tag + digest
 - [ ] `.dockerignore` maintained
 - [ ] No build-time secrets in layers (use BuildKit secret mounts)
-
-## Citations
-
-[1] `.devin/rules/codeguard-0-devops-ci-cd-containers.md` — job-aide (Node.js in containers section)
-[2] `.devin/rules/dockerfile-best-practices.md` — job-aide

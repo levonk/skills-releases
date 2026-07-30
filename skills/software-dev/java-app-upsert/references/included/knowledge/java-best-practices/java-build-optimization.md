@@ -3,7 +3,17 @@ type: Practice
 title: Java Build Optimization — Incremental Compilation, Parallel Execution, and Build Cache
 description: Enable incremental compilation, parallel execution, build cache, and the Gradle daemon to keep Java build times low; prefer module boundaries that compile independently.
 tags: [java, build, gradle, maven, performance, caching, parallel, incremental]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: gradle-build-cache
+    resource: https://docs.gradle.org/current/userguide/build_cache.html
+    title: Gradle Build Cache
+  - id: maven-parallel-builds
+    resource: https://maven.apache.org/ref/3.9.6/maven-embedder/cli.html
+    title: Maven parallel builds
 ---
 
 # Java Build Optimization
@@ -47,8 +57,3 @@ monolithic module where every change triggers a full rebuild.
   leak into public signatures.
 - Avoid cyclic dependencies between modules — they break incremental
   compilation.
-
-## Citations
-
-[1] [Gradle Build Cache](https://docs.gradle.org/current/userguide/build_cache.html)
-[2] [Maven parallel builds](https://maven.apache.org/ref/3.9.6/maven-embedder/cli.html)

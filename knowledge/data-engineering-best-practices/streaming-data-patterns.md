@@ -3,7 +3,18 @@ type: Practice
 title: Streaming Data Patterns — Exactly-Once, Watermarks, and Windowing
 description: Design streaming pipelines with explicit delivery guarantees, event-time watermarks, and windowing strategies that handle late events without unbounded state growth.
 tags: [data-engineering, streaming, kafka, kinesis, exactly-once, watermark, windowing, flink]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: apache-flink-streaming-concepts
+    resource: "https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/"
+    title: "Apache Flink Streaming Concepts"
+  - id: kafka-streams-delivery-guarantees
+    resource: "https://kafka.apache.org/documentation/streams/architecture"
+    title: "Kafka Streams Delivery Guarantees"
 ---
 
 # Streaming Data Patterns
@@ -60,8 +71,3 @@ Use idempotent sinks and offset/commits for exactly-once semantics.
 - Use RocksDB state backend for large keyed state.
 - Enable checkpointing to recover from failures without reprocessing from the
   beginning.
-
-## Citations
-
-[1] [Apache Flink Streaming Concepts](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/)
-[2] [Kafka Streams Delivery Guarantees](https://kafka.apache.org/documentation/streams/architecture)

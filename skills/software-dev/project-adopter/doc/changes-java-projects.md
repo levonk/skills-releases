@@ -45,28 +45,28 @@ Projects are detected as Java when they contain:
 
 ## justfile Changes
 
-### Language-Specific *-internal Targets
+### Language-Specific *_impl Targets
 ```just
 # Java-specific implementations (Maven)
-dev-internal:
+dev_impl:
     mvn spring-boot:run
 
-build-internal:
+build_impl:
     mvn compile
 
-test-internal:
+test_impl:
     mvn test
 
-lint-internal:
+lint_impl:
     mvn checkstyle:check
 
-typecheck-internal:
+typecheck_impl:
     mvn compile
 
-clean-internal:
+clean_impl:
     mvn clean
 
-bootstrap-internal:
+bootstrap_impl:
     mvn dependency:resolve
     echo "Java development environment ready!"
 ```
@@ -74,25 +74,25 @@ bootstrap-internal:
 ### Alternative Gradle Targets
 ```just
 # Java-specific implementations (Gradle)
-dev-internal:
+dev_impl:
     ./gradlew bootRun
 
-build-internal:
+build_impl:
     ./gradlew build
 
-test-internal:
+test_impl:
     ./gradlew test
 
-lint-internal:
+lint_impl:
     ./gradlew checkstyleMain
 
-typecheck-internal:
+typecheck_impl:
     ./gradlew compileJava
 
-clean-internal:
+clean_impl:
     ./gradlew clean
 
-bootstrap-internal:
+bootstrap_impl:
     ./gradlew dependencies
     echo "Java development environment ready!"
 ```

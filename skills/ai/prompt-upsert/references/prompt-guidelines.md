@@ -43,8 +43,9 @@ version: 1.0.0
 owner: 'https://github.com/levonk'
 status: 'ready'
 date:
-  created: '2025-11-15'
-  updated: '2025-11-15'
+  created: "'2025-11-15'"
+  knowledge-basis: "'2025-11-15'"
+  last-used: "'2025-11-15'"
 tags:
   - 'ai/template/prompt/readme'
 ---
@@ -134,7 +135,8 @@ owner: "https://github.com/levonk"
 status: "ready"                  # draft, ready, deprecated
 date:
   created: "2025-11-15"
-  updated: "2025-11-15"
+  knowledge-basis: "2025-11-15"
+  last-used: "2025-11-15"
 tags:
   - "ai/template/prompt/skeleton"
 ---
@@ -201,7 +203,8 @@ owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-11-15"
-  updated: "2025-11-15"
+  knowledge-basis: "2025-11-15"
+  last-used: "2025-11-15"
 tags:
   - "ai/template/prompt/pattern/coding"
 ---
@@ -255,7 +258,8 @@ owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-11-15"
-  updated: "2025-11-15"
+  knowledge-basis: "2025-11-15"
+  last-used: "2025-11-15"
 tags:
   - "ai/template/prompt/pattern/analysis"
 ---
@@ -299,7 +303,8 @@ status: "ready"
 visibility: "internal"
 date:
   created: "2025-11-15"
-  updated: "2025-11-15"
+  knowledge-basis: "2025-11-15"
+  last-used: "2025-11-15"
 tags:
   - "ai/template/prompt/pattern/research"
 ---

@@ -4,7 +4,20 @@ title: Memory and Context
 description: Always-on context files defining the agent's identity, soul, tools, user preferences, and operational rules.
 resource: src/current/context/
 tags: [ai-primitives, memory, context, identity, always-on, state]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: context-directory
+    resource: src/current/context/
+    title: "Context directory"
+  - id: context-agents-md
+    resource: src/current/context/AGENTS.md
+    title: "Context AGENTS.md"
+  - id: soul-md
+    resource: src/current/context/SOUL.md
+    title: "SOUL.md"
 ---
 
 # Memory and Context
@@ -108,9 +121,3 @@ always-on context files.
 No dedicated `context-upsert` skill. Context files are authored by hand.
 Use `ai-guidance-improver` to audit them. The `handoff` skill handles
 session continuity.
-
-# Citations
-
-[1] [Context directory](src/current/context/)
-[2] [Context AGENTS.md](src/current/context/AGENTS.md)
-[3] [SOUL.md](src/current/context/SOUL.md)

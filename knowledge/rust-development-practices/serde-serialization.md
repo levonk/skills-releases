@@ -3,7 +3,15 @@ type: Practice
 title: Serde Serialization
 description: Optional serde integration with feature flags, multiple format support (JSON, TOML), skip_serializing_if for optional fields, and custom serialization for complex types.
 tags: [rust, serde, serialization, json, toml, feature-flags]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Serde Serialization
@@ -40,7 +48,3 @@ serde = ["dep:serde", "serde/derive"]
 
 - [Cargo Configuration](cargo-configuration.md) — Feature flag pattern
 - [Error Handling](error-handling.md) — Parse errors in deserialization
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

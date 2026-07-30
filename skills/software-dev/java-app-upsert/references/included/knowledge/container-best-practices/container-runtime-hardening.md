@@ -3,7 +3,30 @@ type: Practice
 title: Container Runtime Hardening — least privilege at run time
 description: Run containers as non-root, read-only, with all capabilities dropped and no-new-privileges set; layer resource limits, seccomp, and MAC on top.
 tags: [docker, security, hardening, cap-drop, read-only, non-root, no-new-privileges, seccomp, user-namespaces, resource-limits]
-timestamp: 2026-07-17T19:00:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: cis-docker-benchmark-v1-7-0
+    resource: "https://www.cisecurity.org/benchmark/docker"
+    title: "CIS Docker Benchmark v1.7.0"
+  - id: docker-engine-security-isolate-containers-with-a-user-namespace
+    resource: "https://docs.docker.com/engine/security/userns-remap/"
+    title: "Docker Engine security — Isolate containers with a user namespace"
+  - id: docker-engine-security-seccomp-profiles
+    resource: "https://docs.docker.com/engine/security/seccomp/"
+    title: "Docker Engine security — Seccomp profiles"
+  - id: docker-engine-security-apparmor-profiles
+    resource: "https://docs.docker.com/engine/security/apparmor/"
+    title: "Docker Engine security — AppArmor profiles"
+  - id: nist-sp-800-190-application-container-security-guide
+    resource: "https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-190.pdf"
+    title: "NIST SP 800-190 — Application Container Security Guide"
+  - id: job-aide-docker-and-container-hardening-section
+    resource: ".devin/rules/codeguard-0-devops-ci-cd-containers.md"
+    title: "job-aide (Docker and container hardening section)"
 ---
 
 # Container Runtime Hardening — least privilege at run time
@@ -171,12 +194,3 @@ failing scan breaks the build.
 - [pin-image-digests](/pin-image-digests.md) — supply-chain integrity complements runtime hardening; a hardened runtime still runs attacker code if the image is tampered.
 - [buildkit-secrets](/buildkit-secrets.md) — build-time secret mounts that prevent credentials from baking into image layers.
 - [nodejs-in-containers](/nodejs-in-containers.md) — Node.js-specific production hardening (npm ci, NODE_ENV, dumb-init, multi-stage).
-
-## Citations
-
-[1] [CIS Docker Benchmark v1.7.0](https://www.cisecurity.org/benchmark/docker) — Section 5: Container Runtime Configuration (5.3 capabilities, 5.10 read-only FS, 5.11 memory limits, 5.12 CPU limits)
-[2] [Docker Engine security — Isolate containers with a user namespace](https://docs.docker.com/engine/security/userns-remap/)
-[3] [Docker Engine security — Seccomp profiles](https://docs.docker.com/engine/security/seccomp/)
-[4] [Docker Engine security — AppArmor profiles](https://docs.docker.com/engine/security/apparmor/)
-[5] [NIST SP 800-190 — Application Container Security Guide](https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-190.pdf) — resource allocation, least-privilege, namespace isolation recommendations
-[6] `.devin/rules/codeguard-0-devops-ci-cd-containers.md` — job-aide (Docker and container hardening section)

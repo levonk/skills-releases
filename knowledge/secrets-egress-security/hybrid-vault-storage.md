@@ -3,7 +3,14 @@ type: Practice
 title: Hybrid Vault Storage
 description: Per-client central vault for shared secrets (database passwords, API keys, VPN credentials) with in-service storage for transient secrets (JWT tokens, session keys). Ansible vault as mechanism.
 tags: [ansible-vault, secrets, hybrid-storage, per-client, transient, security]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20260624001-hybrid-sensitive-information-storage
+    resource: shared/active/08-docs/adr/adr-20260624001-hybrid-sensitive-information-storage.md
+    title: 'infrahub'
 ---
 
 # Hybrid Vault Storage
@@ -63,6 +70,4 @@ Service-specific transient secrets stored within service configurations:
 - [Ansible Vault Distribution](ansible-vault-distribution.md) — How vault
   variables are distributed
 
-## Citations
 
-[1] `shared/active/08-docs/adr/adr-20260624001-hybrid-sensitive-information-storage.md` — infrahub

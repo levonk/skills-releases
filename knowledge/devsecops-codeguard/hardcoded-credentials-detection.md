@@ -3,8 +3,19 @@ type: Practice
 title: Hardcoded Credentials Detection — Recognition Patterns
 description: Recognize and block hardcoded credentials by their format patterns — AWS (AKIA*), Stripe (sk_live_*), Google (AIza*), GitHub (ghp_*), JWT (eyJ*), private key blocks, and connection strings.
 tags: [devsecops, security, credentials, secrets, detection, aws, stripe, github, jwt]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: codeguard-1-hardcoded-credentials
+    resource: ".devin/rules/codeguard-1-hardcoded-credentials.md"
+    title: "job-aide"
+  - id: codeguard-0-devops-ci-cd-containers
+    resource: ".devin/rules/codeguard-0-devops-ci-cd-containers.md"
+    title: "job-aide (secrets section)"
 ---
+
 
 # Hardcoded Credentials Detection — Recognition Patterns
 
@@ -118,8 +129,3 @@ Never store credentials in source code. Use secure alternatives:
 Any credential found in source code must be **rotated immediately** — it is
 already compromised. Removing it from the current code does not remove it
 from git history.
-
-## Citations
-
-[1] `.devin/rules/codeguard-1-hardcoded-credentials.md` — job-aide
-[2] `.devin/rules/codeguard-0-devops-ci-cd-containers.md` — job-aide (secrets section)

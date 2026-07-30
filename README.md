@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `c64bddd3e30a41980ed590b68797921da9ba871a` · Branch: `env/dev` · Generated: 2026-07-20T22:00:35Z
+> Commit: `5de2d66e88f965a749da65a09b02b98279e387f5` · Branch: `env/dev` · Generated: 2026-07-30T10:21:17Z
 
 ## Overview
 
@@ -19,6 +19,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | agent-upsert | Create new expert agents, modify and improve existing agents, and audit agent definitions for rel... | [Synopsis](ai-agent-upsert.md) |
 | ai-guidance-improver | Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) an... | [Synopsis](ai-ai-guidance-improver.md) |
 | ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
+| ai-upsert | Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, an... | [Synopsis](ai-ai-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
 | knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
@@ -70,6 +71,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 
 | Skill | Description | Details |
 |-------|-------------|---------|
+| agent-file-upsert | Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Conte... | [Synopsis](software-dev-agent-file-upsert.md) |
 | ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
 | cicd-upsert | Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI images, security... | [Synopsis](software-dev-cicd-upsert.md) |
 | cli-tool-upsert | Create, update, and optimize CLI programs and scripts for AI agent consumption. Two tiers: embedd... | [Synopsis](software-dev-cli-tool-upsert.md) |
@@ -80,6 +82,8 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | container-service-deploy | Deploy multi-container services using docker-compose (local/dev) or Ansible docker_container (pro... | [Synopsis](software-dev-container-service-deploy.md) |
 | data-pipeline-upsert | Create, update, and convert data pipelines across Apache Airflow (DAG authoring), Apache Spark (j... | [Synopsis](software-dev-data-pipeline-upsert.md) |
 | git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](software-dev-git-repository-management.md) |
+| github-issue | File a well-formed GitHub issue against a third-party or upstream repository. Discovers the proje... | [Synopsis](software-dev-github-issue.md) |
+| github-pr | Open a well-formed pull request against a third-party or upstream repository. Requires an issue n... | [Synopsis](software-dev-github-pr.md) |
 | java-app-upsert | Create new Java applications, update and improve existing Java projects, and convert between Mave... | [Synopsis](software-dev-java-app-upsert.md) |
 | monorepo-extractor | Safely extract projects from monorepos while preserving git history and ensuring team coordinatio... | [Synopsis](software-dev-monorepo-extractor.md) |
 | nixify | Add Nix flake support to a project so it can be installed via nix run github:... or nix profile a... | [Synopsis](software-dev-nixify.md) |
@@ -87,6 +91,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | project-comparison | >- | [Synopsis](software-dev-project-comparison.md) |
 | project-configuration | Configure existing projects with compatible preferences without overwriting established workflows... | [Synopsis](software-dev-project-configuration.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
+| readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](software-dev-readme-upsert.md) |
 | refactor-planning | Plan and execute systematic evolutionary refactors based on Michael Feathers' 'Working Effectivel... | [Synopsis](software-dev-refactor-planning.md) |
 | repository-health-review | Comprehensive repository health analysis for outdated information, conflicting rules, undocumente... | [Synopsis](software-dev-repository-health-review.md) |
 | shell-wrapper | Wrap bash tool calls with an environment wrapper (devbox, mise, flox, direnv, or nix) and rtk bef... | [Synopsis](software-dev-shell-wrapper.md) |

@@ -1,5 +1,132 @@
 # Directory Update Log
 
+## 2026-07-29
+
+* **Addition**: Authored [resilience-patterns.md](resilience-patterns.md)
+  — four classes of overload protection (internal concurrency limiters,
+  connection poolers, RPC circuit breakers, adaptive concurrency), the
+  choke-point principle (all four require a central registry + metrics +
+  choke point), the no-universal-library insight (concurrency models,
+  networking stacks, and failure semantics differ across languages), and the
+  stack you actually need: service mesh (Envoy/Istio/Linkerd) for
+  cross-language control + per-language libraries for internal fan-out.
+  Includes a per-language library matrix (Go, Java, Rust, Node, Python, .NET)
+  and anti-patterns (no choke point, static-only limits, retry-storms,
+  mesh-for-internal-fan-out). Cross-linked to load-balancing,
+  microservices, asynchronism, CAP, cost-aware, security, and tech-decision-
+  risk. Sourced from the System Design Primer, Envoy adaptive concurrency
+  docs, Resilience4j, and Netflix Hystrix.
+* **Addition**: Authored [technology-selection-pattern.md](technology-selection-pattern.md)
+  — convention for authoring technology-selection concept pages. Required
+  sections: Failure Mode, Requirement, Candidates, Risk Assessment (applies
+  the tech-decision-risk hierarchy), Recommendation, Why Not the Others,
+  When to Reconsider, See Also. Optional sections: Preference Ordering,
+  Verification, Per-language matrix. Documents when to write a selection
+  page (reusable, non-obvious winner, reversibility cost, risk hierarchy
+  level 6+) and when not to. References two worked examples:
+  auth-provider-selection (binary choice, risk level 2) and
+  resilience-patterns (stack choice with per-language matrix, risk level 6
+  vs 11-12). Cross-linked to tech-decision-risk, ai-human-timelines,
+  root-cause-first, and both worked examples.
+* **Update**: [overview.md](overview.md) — extended the architecture
+  landscape diagram with `technology-selection-pattern` on the decisions axis
+  and `resilience-patterns` on the system-level axis (between microservices
+  and cost); added Selection and Resilience rows to the concern table.
+  Updated knowledge-basis and last-used to 2026-07-29.
+* **Update**: [index.md](index.md) — registered both new concept pages.
+
+## 2026-07-26
+* **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
+* **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
+
+## 2026-07-25
+
+* **Ingest**: Added the decentralized / P2P architecture axis and the
+  business-model axis to the bundle, sourced from the
+  [Freenet tutorial](https://freenet.org/build/manual/tutorial/) and the
+  Freenet research captured in the 2ndbrain vault
+  (`Computer/Medium/Freenet/Freenet.md` and
+  `Computer/Medium/Web Communication Protocols Compared.md`). The bundle was
+  previously client-server / microservices only; this ingest adds the
+  structural opposite (P2P) and the revenue side of the cost-aware equation.
+  New pages:
+  - [Decentralized P2P Architecture](decentralized-p2p-architecture.md) — P2P
+    topology, subscriber-based replication, CRDT/commutative-monoid state,
+    WASM-sandboxed contracts, censorship-resistance threat model, browser-as-
+    node limitations (sockets / always-on), homelab always-on-node deployment.
+  - [Business Models Around Open Protocols](business-models-around-open-protocols.md)
+    — managed nodes, premium clients, curation, identity services, B2B
+    censorship-resistant infra, consulting, seedboxing; why per-transaction
+    tolls, middleman arbitrage, and in-contract ads fail on open networks.
+* **Update**: [communication-protocols.md](communication-protocols.md) — added
+  WebTransport, WebRTC, and SSE; added the application-vs-transport layering
+  note; added a browser support matrix and a NAT traversal section; added a P2P
+  branch and a mobile/unstable-network branch to the decision checklist;
+  cross-linked to the new Decentralized P2P Architecture page. Updated
+  knowledge-basis and last-used to 2026-07-25.
+* **Update**: [cap-consistency-availability.md](cap-consistency-availability.md)
+  — promoted the one-line CRDT mention into a "CRDTs and Commutative Monoids"
+  subsection covering G-Counter / PN-Counter / LWW-Register / OR-Set / RGA /
+  Yjs / Automerge, and the equivalence between multi-region active-active
+  replication and P2P subscriber-based replication. Added `crdt` and
+  `commutative-monoid` tags. Cross-linked to Decentralized P2P Architecture.
+  Updated knowledge-basis and last-used to 2026-07-25.
+* **Update**: [overview.md](overview.md) — extended the architecture landscape
+  diagram with a new `decentralized-p2p → business-models-around-open-protocols`
+  axis; added Decentralization and Revenue rows to the concern table; updated
+  the bundle description and scope to cover the P2P axis. Updated knowledge-basis
+  and last-used to 2026-07-25.
+* **Update**: [index.md](index.md) — registered both new concept pages and
+  updated the Communication Protocols entry to reflect the added protocols and
+  P2P branch. Updated bundle description.
+
+## 2026-07-24
+
+* **Ingest**: Added system-level architecture concepts from
+  [The System Design Primer](https://github.com/donnemartin/system-design-primer)
+  to extend the bundle from codebase-level architecture to system-level
+  architecture. Each new page includes decision checklists and tradeoffs.
+  New pages:
+  - [Scalability Fundamentals](scalability-fundamentals.md) — performance vs
+    scalability, latency vs throughput, back-of-the-envelope with current
+    hardware latency figures.
+  - [CAP, Consistency, and Availability](cap-consistency-availability.md) —
+    CAP theorem, PACELC, consistency patterns (weak/eventual/strong), fail-over,
+    availability in numbers, multi-region active-active, SLOs, chaos engineering.
+  - [Load Balancing and Reverse Proxy](load-balancing-and-proxy.md) — L4/L7,
+    horizontal scaling, reverse proxy, service mesh, cloud-managed LBs, HTTP/3
+    QUIC, edge compute.
+  - [CDN and DNS](cdn-and-dns.md) — push vs pull CDNs, DNS record types, TTL,
+    geo/health-based DNS routing.
+  - [Database Scaling](database-scaling.md) — RDBMS replication/federation/
+    sharding/denormalization/SQL tuning, NoSQL data models, distributed SQL,
+    vector DBs, lakehouse, time-series.
+  - [Caching Strategies](caching-strategies.md) — multi-layer caching,
+    cache-aside/write-through/write-behind/refresh-ahead, invalidation.
+  - [Asynchronism and Queues](asynchronism-and-queues.md) — message queues,
+    task queues, back pressure, Kafka/partitions/retention, delivery semantics,
+    transactional outbox, idempotency.
+  - [Communication Protocols](communication-protocols.md) — HTTP, TCP/UDP,
+    RPC/gRPC, REST, GraphQL, WebSockets, HTTP/3 (QUIC) with decision logic.
+  - [System Security Basics](system-security-basics.md) — encrypt, sanitize,
+    least privilege, zero-trust, mTLS, OAuth2/OIDC, secrets management,
+    observability (OpenTelemetry).
+  - [Application Layer and Microservices](application-layer-microservices.md) —
+    web/app layer separation, microservices, service discovery, containers,
+    Kubernetes, serverless, service mesh.
+  - [Cost-Aware System Design](cost-aware-system-design.md) — per-seat vs
+    per-call billing, fan-out cost amplification, cap-and-shed, flat-rate vs
+    metered contracts, cost-allocation tagging.
+* **Update**: [overview.md](overview.md) — expanded the architecture landscape
+  and concern table to include the new system-level concepts; updated scope to
+  cover system-level architecture; added System Design Primer source.
+* **Update**: [index.md](index.md) — added all new concept entries and updated
+  bundle description.
+* **Update**: [data-access-layer.md](data-access-layer.md) — added See Also
+  links to Database Scaling, Caching Strategies, and System Security Basics.
+* **Update**: [distribution.md](distribution.md) — added See Also links to
+  CDN and DNS, Load Balancing and Reverse Proxy, and Cost-Aware System Design.
+
 ## 2026-07-18
 
 * **Ingest**: Authored [indexed-ast-tools.md](indexed-ast-tools.md)

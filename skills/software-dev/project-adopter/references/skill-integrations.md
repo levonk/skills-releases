@@ -132,7 +132,7 @@ ignorefile-manager's reconcile step catches manual additions that would otherwis
 #### Adoption Workflow
 
 ```bash
-# 1. Ensure AGENTS.md exists FIRST (project-adopter step 10 / agent-file-upsert)
+# 1. Ensure AGENTS.md exists FIRST (project-adopter step 10 / agent-file-upsert - bundled skill)
 #    so readme-upsert can link to it and verify_consistency.py can check agreement.
 
 # 2. Invoke readme-upsert — it runs its 5-phase workflow:

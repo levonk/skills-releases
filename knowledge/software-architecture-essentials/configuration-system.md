@@ -3,7 +3,10 @@ type: Practice
 title: Configuration System
 description: Layered config precedence with schema validation, caching, and documented override rules.
 tags: [architecture, configuration, config, toml, validation]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Configuration System

@@ -188,7 +188,12 @@ def _search_dirs() -> list[Path]:
             dirs.extend([repo / "bin", repo / ".bundle/bin"])
         if (repo / "composer.json").is_file():
             dirs.append(repo / "vendor/bin")
-        dirs.extend([repo / "bin", repo / "scripts", repo / ".local/bin"])
+        # NOTE: Unconditional repo / "bin" is searched LAST (after package
+        # managers in resolve_tool) because a cloned repo could contain
+        # malicious executables in bin/. Tech-stack-specific dirs above
+        # (node_modules/.bin, target/release, .venv/bin, vendor/bin, etc.)
+        # are build-system-managed and stay here. Covers Hermit's bin/ shims
+        # and similar project-local tool layouts — but only as a last resort.
 
     return dirs
 
@@ -293,7 +298,18 @@ def resolve_tool(tool: str) -> dict:
         except FileNotFoundError:
             pass
 
-    # 5. uv fallback: ensure uv is recorded in devbox.json, then fall back to pip.
+    # 5. Repo-root fallback dirs — searched LAST (least secure: a cloned repo
+    # could contain malicious executables in bin/). Covers Hermit's bin/ shims
+    # and similar project-local tool layouts that aren't caught by the
+    # tech-stack-specific dirs in _search_dirs().
+    repo = _get_repo_root()
+    if repo:
+        for d in [repo / "bin", repo / "scripts", repo / ".local/bin"]:
+            candidate = d / tool
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return {"status": "found", "path": str(candidate)}
+
+    # 6. uv fallback: ensure uv is recorded in devbox.json, then fall back to pip.
     if tool == "uv":
         ensure_devbox_package("uv")
         pip_cmd = None
@@ -663,7 +679,7 @@ def check_frontmatter(fm: dict[str, str], verbose: bool) -> list[str]:
             issues.append(f"  EMPTY personality sub-field: '{sub}' — must have a value")
 
     # 3. date format
-    for date_field in ["date.created", "date.updated", "date.last-used"]:
+    for date_field in ["date.created", "date.knowledge-basis", "date.last-used"]:
         if date_field in fm and fm[date_field]:
             if not DATE_PATTERN.match(fm[date_field]):
                 issues.append(f"  INVALID date format: '{date_field}' = '{fm[date_field]}' — expected YYYY-MM-DD")

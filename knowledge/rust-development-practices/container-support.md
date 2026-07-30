@@ -3,7 +3,15 @@ type: Practice
 title: Container Support
 description: Multi-stage Dockerfile for minimal runtime images, non-root user creation, healthcheck, and docker-compose integration for Rust packages.
 tags: [rust, docker, container, multi-stage, healthcheck, docker-compose]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Container Support
@@ -59,7 +67,3 @@ services:
 
 - [CLI Tool Standards](cli-tool-standards.md) — Health check mechanism for containers
 - [Security and Auditing](security-auditing.md) — Non-root user, minimal image
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

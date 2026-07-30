@@ -69,7 +69,7 @@ runs:
     - uses: actions/checkout@v4
     - uses: jetify-com/devbox-install-action@v0
       with: { enable-cache: true, devbox-path: devbox.json }
-    - run: devbox run -- just install-deps
+    - run: just install-deps
       shell: bash
 ```
 
@@ -77,7 +77,7 @@ runs:
 # Usage in a workflow
 steps:
   - uses: ./.github/actions/setup-env
-  - run: devbox run -- just build
+  - run: just build
 ```
 
 ## Job Matrices

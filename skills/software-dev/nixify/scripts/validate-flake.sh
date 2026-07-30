@@ -22,7 +22,7 @@ run_step() {
   fi
 }
 
-run_step "flake check" nix flake check --no-build
+run_step "flake check --all-systems" nix flake check --all-systems --no-build
 run_step "nix build" nix build .
 run_step "binary --version" sh -c "result/bin/$BINARY --version"
 run_step "nix run --help" nix run . -- --help

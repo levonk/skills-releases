@@ -3,7 +3,10 @@ type: Practice
 title: JavaScript and TypeScript Fundamentals
 description: JavaScript ES modules, modern syntax, error handling, performance, security, JSDoc typing standards, import standards, config hygiene, and tooling integration for TypeScript monorepos.
 tags: [javascript, typescript, es-modules, jsdoc, error-handling, performance, security, imports, config-hygiene, tooling]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # JavaScript and TypeScript Fundamentals

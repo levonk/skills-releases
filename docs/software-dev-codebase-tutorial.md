@@ -127,4 +127,4 @@ This creates:
 
 - **Full skill**: [`skills/software-dev/codebase-tutorial/SKILL.md`](skills/software-dev/codebase-tutorial/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

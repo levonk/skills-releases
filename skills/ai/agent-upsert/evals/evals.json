@@ -61,11 +61,11 @@
     {
       "id": 5,
       "prompt": "Create a new skill for PDF rotation",
-      "expected_output": "Should NOT trigger agent-upsert. This is a skill creation task, not an agent definition task. The trigger guard should explain that ai-skill-upsert handles skill creation, not agent-upsert.",
+      "expected_output": "Should NOT trigger agent-upsert. This is a skill creation task, not an agent definition task. The trigger guard should explain that ai-upsert handles skill creation, not agent-upsert.",
       "files": [],
       "assertions": [
         "Does NOT run the agent-upsert workflow",
-        "Explains that ai-skill-upsert is the correct skill for skill creation",
+        "Explains that ai-upsert is the correct skill for skill creation",
         "Does not create or modify agent definition files"
       ]
     },

@@ -3,7 +3,17 @@ type: Practice
 title: Ansible Vault Distribution
 description: Use Ansible vault variables for secure distribution at runtime. Reference pattern: vault variables in client-specific inventory, services reference vault variables, Ansible handles secure distribution.
 tags: [ansible, vault, variables, distribution, runtime, security]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20260624001-hybrid-sensitive-information-storage
+    resource: shared/active/08-docs/adr/adr-20260624001-hybrid-sensitive-information-storage.md
+    title: 'infrahub'
+  - id: vault-password-and-agent-workflow-sections
+    resource: Infrahub AGENTS.md
+    title: 'vault password and agent workflow sections'
 ---
 
 # Ansible Vault Distribution
@@ -59,7 +69,4 @@ When a new secret is needed:
 - [Hybrid Vault Storage](hybrid-vault-storage.md) — Where vault files live
 - [Vault Troubleshooting](vault-troubleshooting.md) — Recovery from vault issues
 
-## Citations
 
-[1] `shared/active/08-docs/adr/adr-20260624001-hybrid-sensitive-information-storage.md` — infrahub
-[2] Infrahub AGENTS.md — vault password and agent workflow sections

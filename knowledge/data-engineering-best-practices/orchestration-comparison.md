@@ -3,7 +3,18 @@ type: Practice
 title: Orchestration Comparison — Airflow vs Argo Workflows vs Tekton vs Kueue
 description: Choose orchestration by workload shape: Airflow for Python-centric DAGs, Argo for Kubernetes-native container workflows, Tekton for CI/CD, and Kueue for Kubernetes job queueing and quota management.
 tags: [data-engineering, orchestration, airflow, argo, tekton, kueue, comparison]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: 2ndbrain-airflow-vs-argo-workflows-vs-tekton-pipelines
+    resource: "https://github.com/levonk/2ndbrain/blob/main/Default/Technologies/Computer/Data/Airflow%20vs%20Argo%20Workflows%20vs%20Tekton%20Pipelines.md"
+    title: "2ndbrain: Airflow vs Argo Workflows vs Tekton Pipelines"
+  - id: 2ndbrain-kueue-vs-airflow
+    resource: "https://github.com/levonk/2ndbrain/blob/main/Default/Technologies/Computer/Data/Kueue%20vs%20Airflow.md"
+    title: "2ndbrain: Kueue vs Airflow"
 ---
 
 # Orchestration Comparison
@@ -42,8 +53,3 @@ long-running batch jobs in Tekton).
   are usually containers.
 - **Scheduling**: Airflow has mature scheduling/backfill; Argo is event/trigger
   driven; Kueue focuses on admission control.
-
-## Citations
-
-[1] [2ndbrain: Airflow vs Argo Workflows vs Tekton Pipelines](https://github.com/levonk/2ndbrain/blob/main/Default/Technologies/Computer/Data/Airflow%20vs%20Argo%20Workflows%20vs%20Tekton%20Pipelines.md)
-[2] [2ndbrain: Kueue vs Airflow](https://github.com/levonk/2ndbrain/blob/main/Default/Technologies/Computer/Data/Kueue%20vs%20Airflow.md)

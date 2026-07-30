@@ -3,7 +3,14 @@ type: Practice
 title: Python Makefile Conventions
 description: Matching up/down targets, standard command set (dev/test/lint/format/typecheck/build/up/down), docker compose not docker-compose, configurable COMPOSE_FILE and SERVICE_NAME.
 tags: [python, makefile, commands, docker-compose, conventions]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # Python Makefile Conventions
@@ -42,7 +49,3 @@ Use `docker compose` (v2 plugin) with configurable `COMPOSE_FILE` and
 
 - [Docker Standards](docker-standards.md) — What up/down controls
 - [FastAPI Service Layout](fastapi-service-layout.md) — Service that Makefile manages
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

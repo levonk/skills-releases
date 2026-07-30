@@ -3,7 +3,14 @@ type: Practice
 title: Devbox as Nix Abstraction
 description: devbox.json as simpler alternative to raw Nix flakes. JSON config, Nix-compatible packages, devbox.lock for reproducibility. Lower learning curve than raw Nix.
 tags: [devbox, nix, abstraction, json, devbox-json, devbox-lock]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251226001-devbox-direnv-dev-environment
+    resource: internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md
+    title: levonk-base-boilerplate
 ---
 
 # Devbox as Nix Abstraction
@@ -45,7 +52,7 @@ Use **devbox.json** as a simpler abstraction over Nix.
 2. **Simple package syntax** — `"package@version"` format
 3. **devbox.lock** — reproducibility without manual flake.lock management
 4. **Nix-compatible** — uses Nix packages under the hood
-5. **Shell scripts** — `devbox.json` scripts call `just *-internal` targets
+5. **Shell scripts** — `devbox.json` scripts call `just *_impl` targets
 
 ### When to Use Raw Nix Instead
 
@@ -65,7 +72,3 @@ control is needed. The underlying Nix infrastructure remains the same.
 - [Package Verification](package-verification.md) — Verify packages before
   adding to devbox.json
 - [Reproducible Builds](reproducible-builds.md) — devbox.lock provides this
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md` — levonk-base-boilerplate

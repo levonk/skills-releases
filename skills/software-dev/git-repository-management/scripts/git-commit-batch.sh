@@ -3,13 +3,29 @@
 # git-commit-batch.sh - Execute batch of commits with AI-provided decisions
 # Purpose: Single handoff to execute multiple commits with their messages and file groups
 # Usage: git-commit-batch.sh [--amend] [--dry-run] [--slug <slug>] [repo_root]
-# Input: STDIN with commit specifications in format:
-#   COMMIT:<commit_message>
-#   FILES:<file1>
-#   FILES:<file2>
-#   FILES:<file3>
-#   COMMIT:<another_commit_message>
-#   FILES:<file1>
+# Input: STDIN with commit specifications in EITHER of two equivalent formats:
+#
+#   Format A — multi-line (natural, recommended for heredocs and files):
+#     COMMIT:Subject line
+#
+#     Body paragraph explaining the why.
+#     - bullet 1
+#     - bullet 2
+#     FILES:src/path/to/file1
+#     FILES:src/path/to/file2
+#     COMMIT:Next subject
+#     ...
+#
+#   Format B — \n literals (compact, for printf one-liners):
+#     COMMIT:Subject line\n\nBody paragraph\n- bullet 1\nFILES:src/path/to/file1
+#
+# Both formats produce the same commit message. Format A captures every
+# non-COMMIT:/non-FILES: line after a COMMIT: line (including blank lines)
+# as part of the message, then expand_message() converts any \n literals
+# to real newlines (a no-op for Format A). Format B puts the entire
+# message on the COMMIT: line with \n literals that expand_message()
+# converts.
+#
 # One file per FILES: line — paths containing spaces are preserved
 # because the entire line after "FILES:" is treated as a single path.
 # With --amend: exactly one COMMIT block; stages files and amends HEAD
@@ -21,84 +37,96 @@
 
 set -euo pipefail
 
-# RTK (Rust Token Killer) detection — use rtk as a proxy for git
-# when available to reduce LLM token consumption by 60-90%.
-# See: https://github.com/rtk-ai/rtk
-if command -v rtk >/dev/null 2>&1; then
-    RTK_AVAILABLE=1
-else
-    RTK_AVAILABLE=0
-fi
+# Tool detection and wrapper helpers are shared via includes.
+# These provide: probe_devbox(), wrapper_prefix(), devbox_run(), run_command(),
+# rtk_available(), rtk_prefix(), git_cmd(), rtk_wrap().
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_TOOL_DISCOVERY="$SCRIPT_DIR/cli-tool-discovery.sh"
 
-# Devbox detection — use devbox run for environment-aware execution
-# when devbox is available and a devbox.json is present.
-if command -v devbox >/dev/null 2>&1 && [[ -f "devbox.json" ]]; then
-    DEVBOX_AVAILABLE=1
-else
-    DEVBOX_AVAILABLE=0
-fi
+# Optional tool availability flags (for AVAILABLE_TOOLS output if needed).
+# These are simple presence checks; the wrapper helpers handle the actual
+# wrapping logic via cli-tool-discovery.sh.
+if command -v jj >/dev/null 2>&1; then JJ_AVAILABLE=1; else JJ_AVAILABLE=0; fi
+if command -v difft >/dev/null 2>&1; then DIFFT_AVAILABLE=1; else DIFFT_AVAILABLE=0; fi
+if command -v delta >/dev/null 2>&1; then DELTA_AVAILABLE=1; else DELTA_AVAILABLE=0; fi
+if command -v hunk >/dev/null 2>&1; then HUNK_AVAILABLE=1; else HUNK_AVAILABLE=0; fi
+if command -v git-summary >/dev/null 2>&1; then GIT_EXTRAS_AVAILABLE=1; else GIT_EXTRAS_AVAILABLE=0; fi
 
-# Jujutsu (jj) — alternative VCS client
-# See: https://github.com/martinvonz/jj
-if command -v jj >/dev/null 2>&1; then
-    JJ_AVAILABLE=1
-else
-    JJ_AVAILABLE=0
-fi
+# Set RTK_AVAILABLE for the AVAILABLE_TOOLS output. The actual rtk wrapping
+# is handled by rtk-helpers.sh's git_cmd() / rtk_wrap() below.
+if command -v rtk >/dev/null 2>&1; then RTK_AVAILABLE=1; else RTK_AVAILABLE=0; fi
 
-# Difftastic — AST-aware structural diff
-# See: https://github.com/Wilfred/difftastic
-if command -v difft >/dev/null 2>&1; then
-    DIFFT_AVAILABLE=1
-else
-    DIFFT_AVAILABLE=0
-fi
-
-# Delta — syntax-highlighted diff pager
-# See: https://github.com/dandavison/delta
-if command -v delta >/dev/null 2>&1; then
-    DELTA_AVAILABLE=1
-else
-    DELTA_AVAILABLE=0
-fi
-
-# Hunk — review-first terminal diff viewer for agentic coders
-# See: https://github.com/modem-dev/hunk
-if command -v hunk >/dev/null 2>&1; then
-    HUNK_AVAILABLE=1
-else
-    HUNK_AVAILABLE=0
-fi
-
-# git-extras — convenience git subcommands
-# See: https://github.com/tj/git-extras
-if command -v git-summary >/dev/null 2>&1; then
-    GIT_EXTRAS_AVAILABLE=1
-else
-    GIT_EXTRAS_AVAILABLE=0
-fi
+# Include shared wrapper helpers (probe_devbox, wrapper_prefix, devbox_run, run_command).
+# wrapper-helpers.sh — shared functions for environment wrapper detection
+#
+# Included by skills that need to wrap commands with environment wrappers
+# (devbox, mise, flox, direnv, nix). Provides:
+#   - probe_devbox():    hang-safe probe that disables devbox if it doesn't respond
+#   - wrapper_prefix():  resolve the wrapper prefix (e.g. "devbox run --")
+#   - devbox_run():      run a command through devbox when available, else directly
+#   - run_command():     run a command through the detected wrapper, else directly
+#
+# Depends on: cli-tool-discovery.sh materialized in the same scripts/ directory.
+#
+# Consumers:
+#   - shell-wrapper/scripts/wrap_command.sh.tmpl
+#   - git-repository-management/scripts/git-collect.sh.tmpl
+#   - git-repository-management/scripts/git-commit-batch.sh.tmpl
+#   - git-repository-management/scripts/git-push.sh.tmpl
+#   - git-repository-management/scripts/git-rollback.sh.tmpl
+#
+# Usage (in a .tmpl script, after defining SCRIPT_DIR and CLI_TOOL_DISCOVERY):
+#   Include this file via the templater's include directive.
+#
+# Optional override: set WRAPPER_DEVBOX_DISABLED=1 before including to make
+# wrapper_prefix() skip the devbox wrapper (also set by probe_devbox on hang).
 
 # Probe devbox: verify `devbox run` actually responds within a timeout.
 # Tests with the real command chain (rtk git / git) to catch wrapper recursion.
 # If it hangs (e.g. broken wrapper recursion, nix store issues), disable
 # devbox wrapping for the rest of the script and fall back to direct execution.
+#
+# Optional: set PROBE_DEVBOX_TIMEOUT_SECS to override the default 15s timeout.
+# Optional: set PROBE_DEVBOX_TEST_CMD to override the test command (default:
+#   "rtk git --version" if rtk is available, else "git --version").
+#
+# This function is idempotent — calling it multiple times is safe. After the
+# first call, WRAPPER_DEVBOX_DISABLED reflects the probe result and subsequent
+# calls return immediately.
 probe_devbox() {
-    if [[ "$DEVBOX_AVAILABLE" -ne 1 ]]; then
+    # If devbox was already disabled by a prior probe or caller, nothing to do.
+    if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
         return 0
     fi
+    # If cli-tool-discovery says we're already inside a devbox shell, no probe
+    # needed — devbox binaries are on PATH and no wrapper detection is required.
+    if [[ -n "${DEVBOX_SHELL:-}${IN_DEVBOX_SHELL:-}" ]]; then
+        return 0
+    fi
+    # If no devbox.json up the tree, no point probing.
+    if ! command -v devbox >/dev/null 2>&1; then
+        WRAPPER_DEVBOX_DISABLED=1
+        return 0
+    fi
+    local _timeout="${PROBE_DEVBOX_TIMEOUT_SECS:-15}"
     local _test_cmd=(git --version)
-    if [[ "$RTK_AVAILABLE" -eq 1 ]]; then
+    if command -v rtk >/dev/null 2>&1; then
         _test_cmd=(rtk git --version)
+    fi
+    # Honor caller override for the test command.
+    if [[ -n "${PROBE_DEVBOX_TEST_CMD:-}" ]]; then
+        # shellcheck disable=SC2206  # intentional word-splitting on caller's command
+        _test_cmd=(${PROBE_DEVBOX_TEST_CMD})
     fi
     devbox run -- "${_test_cmd[@]}" >/dev/null 2>&1 &
     local _pid=$!
     local _elapsed=0
     while kill -0 "$_pid" 2>/dev/null; do
-        if [[ "$_elapsed" -ge 15 ]]; then
+        if [[ "$_elapsed" -ge "$_timeout" ]]; then
             kill -9 "$_pid" 2>/dev/null
             wait "$_pid" 2>/dev/null || true
-            echo "⚠️ devbox run hung after 15s (likely broken wrapper), falling back to direct execution" >&2
-            DEVBOX_AVAILABLE=0
+            echo "⚠️ devbox run hung after ${_timeout}s (likely broken wrapper), falling back to direct execution" >&2
+            WRAPPER_DEVBOX_DISABLED=1
             return 1
         fi
         sleep 1
@@ -108,32 +136,192 @@ probe_devbox() {
     wait "$_pid" || _exit=$?
     if [[ "$_exit" -ne 0 ]]; then
         echo "⚠️ devbox run failed (exit $_exit), falling back to direct execution" >&2
-        DEVBOX_AVAILABLE=0
+        WRAPPER_DEVBOX_DISABLED=1
         return 1
     fi
     return 0
 }
 
-# Wrapper: run a command through devbox when available, otherwise directly
+# Resolve the environment wrapper for the current directory.
+# Prints the wrapper prefix (e.g. "devbox run --") or empty if none.
+# Delegates entirely to cli-tool-discovery.sh, which checks "already inside"
+# env vars (DEVBOX_SHELL, MISE_SHELL, FLOX_ACTIVE, DIRENV_DIR, IN_NIX_SHELL)
+# and walks up from cwd for config files. No duplicate detection logic here.
+wrapper_prefix() {
+    if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+        printf ''
+        return
+    fi
+
+    # Probe with a nonexistent tool name — cli-tool-discovery.sh checks PATH
+    # first (skipped for nonexistent tools), then wrappers. The output format is
+    # "WRAPPER: <wrapper-cmd> __wrapper_probe__" — strip the probe tool name.
+    local result
+    result="$(bash "$CLI_TOOL_DISCOVERY" __wrapper_probe__ 2>/dev/null || true)"
+    case "$result" in
+        WRAPPER:\ *)
+            local wrapper_full="${result#WRAPPER: }"
+            local prefix="${wrapper_full% __wrapper_probe__}"
+            # Allow callers to disable devbox at runtime (e.g. probe_devbox)
+            if [[ "$prefix" == "devbox run --" && "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+                printf ''
+            else
+                printf '%s' "$prefix"
+            fi
+            ;;
+        *)
+            printf ''
+            ;;
+    esac
+}
+
+# Run a command through devbox when available, otherwise directly.
+# This is the simple wrapper — it does NOT probe. Call probe_devbox first if
+# you want hang-safety. wrapper_prefix() honors WRAPPER_DEVBOX_DISABLED.
 devbox_run() {
-    if [[ "$DEVBOX_AVAILABLE" -eq 1 ]]; then
-        devbox run -- "$@"
+    local wrapper
+    wrapper="$(wrapper_prefix)"
+    if [[ -n "$wrapper" ]]; then
+        $wrapper "$@"
     else
         "$@"
     fi
 }
 
-# Wrapper: use 'rtk git' instead of 'git' when rtk is available,
-# and run through devbox when available
+# Run a command through the detected environment wrapper (if any), otherwise directly.
+# Alias for devbox_run — kept for backward compatibility with existing callers.
+run_command() {
+    devbox_run "$@"
+}
+
+
+# Include shared rtk helpers (rtk_available, rtk_prefix, git_cmd, rtk_wrap).
+# Must come after wrapper-helpers.sh since it depends on devbox_run/wrapper_prefix.
+# rtk-helpers.sh — shared functions for rtk (Rust Token Killer) wrapping
+#
+# Provides rtk_available(), rtk_prefix(), rtk_wrap_command(), git_cmd(), and rtk_wrap().
+# rtk compresses CLI output by 60-90% for LLM context. Coverage is determined
+# by `rtk rewrite` — the single source of truth that rtk's own hooks use.
+# No hardcoded list of supported commands is maintained here.
+#
+# Depends on: cli-tool-discovery.sh and wrapper-helpers.sh materialized in the
+# same scripts/ directory. Include wrapper-helpers.sh BEFORE this file.
+#
+# Consumers:
+#   - shell-wrapper/scripts/wrap_command.sh.tmpl
+#   - git-repository-management/scripts/git-collect.sh.tmpl
+#   - git-repository-management/scripts/git-commit-batch.sh.tmpl
+#   - git-repository-management/scripts/git-push.sh.tmpl
+#   - git-repository-management/scripts/git-rollback.sh.tmpl
+#
+# Optional: set RTK_SKIP=1 before including to disable all rtk wrapping
+# (used by shell-wrapper's --raw flag and git-collect's probe failure).
+
+# Resolve rtk via cli-tool-discovery.sh (finds it even in non-standard locations).
+# Prints "rtk" if available, empty otherwise.
+rtk_available() {
+    if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+        printf ''
+        return
+    fi
+    if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+        command -v rtk >/dev/null 2>&1 && printf 'rtk'
+        return
+    fi
+    local result
+    result="$(bash "$CLI_TOOL_DISCOVERY" rtk 2>/dev/null || true)"
+    case "$result" in
+        FOUND:*|WRAPPER:*)
+            printf 'rtk'
+            ;;
+        *)
+            printf ''
+            ;;
+    esac
+}
+
+# Check if rtk supports a command by probing `rtk rewrite`.
+# Exit codes from rtk rewrite: 0=allow, 1=not supported, 2=deny, 3=ask.
+# 0 and 3 both mean "rtk supports this command".
+# Prints "rtk" if the command should be wrapped, empty otherwise.
+rtk_prefix() {
+    if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+        printf ''
+        return
+    fi
+    if [[ -z "$(rtk_available)" ]]; then
+        printf ''
+        return
+    fi
+    # Probe with the full command — rtk rewrite needs the subcommand to
+    # determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
+    rtk rewrite -- "$@" >/dev/null 2>&1
+    local rc=$?
+    if [[ $rc -eq 0 || $rc -eq 3 ]]; then
+        printf 'rtk'
+    fi
+}
+
+# Wrap a command with rtk if supported, run through environment wrapper if present.
+# Usage: rtk_wrap_command <tool> [args...]
+# If rtk supports the command, runs: <env-wrapper> rtk <tool> [args...]
+# Otherwise runs:                   <env-wrapper> <tool> [args...]
+rtk_wrap_command() {
+    local tool="$1"
+    shift
+    local rtk_prefix_val
+    rtk_prefix_val="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+    local wrapper
+    wrapper="$(wrapper_prefix)"
+    if [[ -n "$rtk_prefix_val" ]]; then
+        if [[ -n "$wrapper" ]]; then
+            $wrapper rtk "$tool" "$@"
+        else
+            rtk "$tool" "$@"
+        fi
+    else
+        if [[ -n "$wrapper" ]]; then
+            $wrapper "$tool" "$@"
+        else
+            "$tool" "$@"
+        fi
+    fi
+}
+
+# Wrapper: use 'rtk git' instead of 'git' when rtk supports it,
+# and run through devbox when available. Uses rtk_prefix() for coverage check.
+# This is the canonical git command wrapper — all git-repository-management
+# scripts use this instead of redefining their own git_cmd().
 git_cmd() {
-    if [[ "$RTK_AVAILABLE" -eq 1 ]]; then
+    local rtk_p
+    rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
+    if [[ -n "$rtk_p" ]]; then
         devbox_run rtk git "$@"
     else
         devbox_run git "$@"
     fi
 }
 
-# Run probe after function definitions so it can test the real command chain
+# Wrapper: use 'rtk <tool>' for supported commands, run through devbox when available.
+# Uses rtk_prefix() for coverage check — no longer wraps unconditionally.
+# This is the generic tool wrapper — all git-repository-management scripts use
+# this instead of redefining their own rtk_wrap().
+rtk_wrap() {
+    local tool="$1"
+    shift
+    local rtk_p
+    rtk_p="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+    if [[ -n "$rtk_p" ]]; then
+        devbox_run rtk "$tool" "$@"
+    else
+        devbox_run "$tool" "$@"
+    fi
+}
+
+
+# Probe devbox after function definitions so it can test the real command chain.
+# This sets WRAPPER_DEVBOX_DISABLED=1 if devbox hangs, which wrapper_prefix()
+# and devbox_run() honor for the rest of the script.
 probe_devbox || true
 
 discover_repo_root() {
@@ -254,6 +442,96 @@ validate_commit_message_quality() {
     return 0
 }
 
+# Validate commit subject against banned vague/generic patterns.
+# Returns 0 if the subject passes, 1 if it matches a banned pattern.
+# Emits COMMIT_FAILED:BAD_SUBJECT + the matched pattern + a suggestion to stderr.
+#
+# Banned patterns (derived from commit-organization.md lines 167-172):
+#   1. Generic counters: "Update N files", "Update N file(s)"
+#   2. Version bump as feat: "feat ... bump ... vX.Y.Z" (should be chore)
+#   3. Vague improvement phrases: "various improvements", "misc improvements",
+#      "PR feedback improvements", "general improvements", "some improvements",
+#      "minor improvements", "code improvements"
+#   4. Vague change phrases: "various changes", "misc changes", "some changes",
+#      "minor changes", "various fixes", "misc fixes"
+#   5. Filler words: "oops", "maybe fixed", "stuff", "things", "misc"
+#   6. Bare "Update X" with no specifics (X is a single generic word like
+#      "code", "files", "stuff", "things")
+#
+# The check is case-insensitive. Patterns match anywhere in the subject.
+validate_commit_subject() {
+    local msg="$1"
+    local subject="${msg%%$'\n'*}"  # first line only
+    local subject_lower="${subject,,}"  # lowercase for case-insensitive matching
+    local matched=""
+    local suggestion=""
+
+    # 1. Generic counters: "Update N files" / "Update N file"
+    if [[ "$subject_lower" =~ update\ +[0-9]+\ +files? ]]; then
+        matched="generic counter: 'Update N files'"
+        suggestion="Describe what changed, not how many files: 'Fix overflow in sidebar menu' not 'Update 4 files'"
+    fi
+
+    # 2. Version bump as feat: "feat ... bump ... v1.2.3" or "feat ... bump ... version"
+    if [[ -z "$matched" ]] && [[ "$subject_lower" =~ ^feat.*bump.*v?[0-9]+\.[0-9]+ ]]; then
+        matched="version bump as feat: 'feat: bump to vX.Y.Z'"
+        suggestion="Version bumps are chore, not feat. If the commit has real functional changes, describe them: 'feat(nixify): harden hash automation with ASSET_MAP reverse-check'"
+    fi
+    if [[ -z "$matched" ]] && [[ "$subject_lower" =~ ^feat.*bump.*version ]]; then
+        matched="version bump as feat: 'feat: bump version'"
+        suggestion="Version bumps are chore, not feat. If the commit has real functional changes, describe them: 'feat(nixify): harden hash automation with ASSET_MAP reverse-check'"
+    fi
+
+    # 3. Vague improvement phrases
+    if [[ -z "$matched" ]]; then
+        local vague_improvements="various improvements|misc improvements|miscellaneous improvements|pr feedback improvements|general improvements|some improvements|minor improvements|code improvements|various enhancements|misc enhancements"
+        if [[ "$subject_lower" =~ ($vague_improvements) ]]; then
+            matched="vague improvement phrase: '${BASH_REMATCH[1]}'"
+            suggestion="Name the specific improvement: 'Add ASSET_MAP reverse-check guard to hash automation' not 'PR feedback improvements'"
+        fi
+    fi
+
+    # 4. Vague change/fix phrases
+    if [[ -z "$matched" ]]; then
+        local vague_changes="various changes|misc changes|miscellaneous changes|some changes|minor changes|various fixes|misc fixes|miscellaneous fixes"
+        if [[ "$subject_lower" =~ ($vague_changes) ]]; then
+            matched="vague change phrase: '${BASH_REMATCH[1]}'"
+            suggestion="Name the specific change: 'Fix hash mismatch on darwin x86_64' not 'various fixes'"
+        fi
+    fi
+
+    # 5. Filler words (as whole words, not substrings — "things" in "thingsboard" is fine)
+    if [[ -z "$matched" ]]; then
+        # Use word-boundary matching via [[ =~ ]] with [[:space:]] or start/end
+        if [[ "$subject_lower" =~ (^|[[:space:]])oops($|[[:space:]]|[,.!?]) ]] \
+            || [[ "$subject_lower" =~ (^|[[:space:]])maybe\ fixed($|[[:space:]]|[,.!?]) ]] \
+            || [[ "$subject_lower" =~ (^|[[:space:]])stuff($|[[:space:]]|[,.!?]) ]] \
+            || [[ "$subject_lower" =~ (^|[[:space:]])things($|[[:space:]]|[,.!?]) ]] \
+            || [[ "$subject_lower" =~ (^|[[:space:]])misc($|[[:space:]]|[,.!?]) ]]; then
+            matched="filler word in subject"
+            suggestion="Use specific language: 'Fix overflow in sidebar menu' not 'oops fix stuff'"
+        fi
+    fi
+
+    # 6. Bare "Update X" where X is a single generic word
+    if [[ -z "$matched" ]]; then
+        if [[ "$subject_lower" =~ ^update\ +(code|files|stuff|things|misc|repo|repository|project|config|configs|scripts|docs|documentation)$ ]]; then
+            matched="bare 'Update X' with generic X: '${BASH_REMATCH[1]}'"
+            suggestion="Describe what specifically changed: 'Update README install instructions for Nix flakes' not 'Update docs'"
+        fi
+    fi
+
+    if [[ -n "$matched" ]]; then
+        echo "COMMIT_FAILED:BAD_SUBJECT" >&2
+        echo "ERROR: Commit subject matches banned pattern: $matched" >&2
+        echo "ERROR: Subject: $subject" >&2
+        echo "ERROR: $suggestion" >&2
+        echo "ERROR: See commit-organization.md → Message Format → Quality Standards" >&2
+        return 1
+    fi
+    return 0
+}
+
 main() {
     local slug="" target_path="." amend=0 dry_run=0
     while [[ $# -gt 0 ]]; do
@@ -294,8 +572,6 @@ main() {
         local validation_failed=0
 
         while IFS= read -r line || [[ -n "$line" ]]; do
-            [[ -z "$line" || "$line" =~ ^# ]] && continue
-
             if [[ "$line" =~ ^COMMIT:(.*)$ ]]; then
                 # Capture the commit message immediately — inner [[ ]] tests
                 # below reset BASH_REMATCH, so we must grab it before any
@@ -307,6 +583,8 @@ main() {
                         echo "COMMIT_FAILED:NO_BODY"
                         echo "ERROR: Commit message must include a body after a blank line." >&2
                         echo "ERROR: Got: $current_message" >&2
+                        validation_failed=1
+                    elif ! validate_commit_subject "$current_message"; then
                         validation_failed=1
                     else
                         echo "PROCESSING_COMMIT:$((commit_count + 1))"
@@ -342,6 +620,14 @@ main() {
                 fi
             elif [[ "$line" =~ ^FILES:(.*)$ ]]; then
                 current_files+=("${BASH_REMATCH[1]}")
+            elif [[ -n "$current_message" ]]; then
+                # Inside a COMMIT block: append continuation line (including
+                # blank lines and lines that look like comments) to the message.
+                # This supports the natural multi-line format where the subject
+                # and body span separate physical lines. The blank line between
+                # subject and body is preserved so validate_commit_message()
+                # can find the \n\n separator.
+                current_message="$current_message"$'\n'"$line"
             fi
         done
 
@@ -352,6 +638,8 @@ main() {
                 echo "COMMIT_FAILED:NO_BODY"
                 echo "ERROR: Commit message must include a body after a blank line." >&2
                 echo "ERROR: Got: $current_message" >&2
+                validation_failed=1
+            elif ! validate_commit_subject "$current_message"; then
                 validation_failed=1
             else
                 echo "PROCESSING_COMMIT:$((commit_count + 1))"
@@ -399,7 +687,7 @@ main() {
 
     # Capture pre-run SHA and create pre-tag before any commits
     local tag_prefix
-    tag_prefix="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
+    tag_prefix="tags/auto/grm/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
     if [[ "$head_unborn" -eq 0 ]]; then
         local pre_sha
         pre_sha=$(git_cmd rev-parse HEAD)
@@ -439,9 +727,6 @@ main() {
     local commit_count=0
 
     while IFS= read -r line || [[ -n "$line" ]]; do
-        # Skip empty lines and comments
-        [[ -z "$line" || "$line" =~ ^# ]] && continue
-
         if [[ "$line" =~ ^COMMIT:(.*)$ ]]; then
             # Capture the commit message immediately — validate_commit_message_quality
             # below uses =~ which resets BASH_REMATCH, so grab it before any
@@ -449,7 +734,7 @@ main() {
             local new_message="${BASH_REMATCH[1]}"
             # Process previous commit if exists
             if [[ -n "$current_message" ]] && [[ ${#current_files[@]} -gt 0 ]]; then
-                # Expand \n literals to real newlines
+                # Expand \n literals to real newlines (no-op for multi-line format)
                 current_message="$(expand_message "$current_message")"
 
                 # Validate: every commit must have a body explaining the why
@@ -457,7 +742,13 @@ main() {
                     echo "COMMIT_FAILED:NO_BODY"
                     echo "ERROR: Commit message must include a body after a blank line." >&2
                     echo "ERROR: Format: \"Subject line\\n\\n- Body bullet 1\\n- Body bullet 2\"" >&2
+                    echo "ERROR: Or use multi-line format: COMMIT:Subject\\n\\nBody\\nFILES:..." >&2
                     echo "ERROR: Got: $current_message" >&2
+                    exit 1
+                fi
+
+                # Validate: subject must not match banned vague/generic patterns
+                if ! validate_commit_subject "$current_message"; then
                     exit 1
                 fi
 
@@ -527,6 +818,15 @@ main() {
             # Add file to current commit — one path per FILES: line
             # so paths containing spaces are preserved intact
             current_files+=("${BASH_REMATCH[1]}")
+        elif [[ -n "$current_message" ]]; then
+            # Inside a COMMIT block: append continuation line (including
+            # blank lines and lines that look like comments) to the message.
+            # This supports the natural multi-line format where the subject
+            # and body span separate physical lines. The blank line between
+            # subject and body is preserved so validate_commit_message()
+            # can find the \n\n separator. expand_message() above converts
+            # any \n literals to real newlines (a no-op for multi-line input).
+            current_message="$current_message"$'\n'"$line"
         fi
     done
 
@@ -541,6 +841,11 @@ main() {
             echo "ERROR: Commit message must include a body after a blank line." >&2
             echo "ERROR: Format: \"Subject line\\n\\n- Body bullet 1\\n- Body bullet 2\"" >&2
             echo "ERROR: Got: $current_message" >&2
+            exit 1
+        fi
+
+        # Validate: subject must not match banned vague/generic patterns
+        if ! validate_commit_subject "$current_message"; then
             exit 1
         fi
 
@@ -589,7 +894,7 @@ main() {
     # Create post-run tag after all commits
     local post_ts
     post_ts=$(date -u +%Y%m%d%H%M%S)
-    local post_prefix="tags/auto/$(date -u +%Y/%m)/${post_ts}"
+    local post_prefix="tags/auto/grm/$(date -u +%Y/%m)/${post_ts}"
     local post_tag="${post_prefix}-${slug}-post"
     git_cmd tag -a "$post_tag" HEAD -m "Post-run checkpoint: ${slug}"
     echo "AUTO_TAG_POST:$post_tag"

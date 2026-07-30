@@ -1,7 +1,7 @@
 # Project Adopter
 
 Adopt and standardize a project onto the canonical developer UX flow
-(`direnv → devbox → just (*-internal) → [build tool]`, per ADR 20260131001).
+(`direnv → devbox → just (auto-detecting) → [build tool]`, per ADR 20260131001).
 The skill detects the project's stack, writes the standard environment files,
 installs knowledge bundles, generates ignore files, and commits the adoption
 changeset — overwriting existing preferences with the standardized workflow.
@@ -37,8 +37,8 @@ config), and a single `project-adoption` commit on a rollback-safe tag.
 1. **Detect** stack via `project-detection` (50+ build systems / CI platforms)
 2. **devbox.json** with language-appropriate packages (`nodejs_22`, `rustc`,
    `python3`, `go`, etc.)
-3. **justfile** with the standard target pair: `just build` →
-   `devbox run build` → `just build-internal` → `[build tool]`
+3. **justfile** with auto-detecting targets: `just build` →
+   `_devbox build_impl` → (in devbox) `just build_impl` → `[build tool]`
 4. **.envrc** for direnv auto-activation
 5. **Technology-specific build tools** (cargo, nx, pytest, etc.)
 6. **Shared quality scripts** (ADR 20251218002)
@@ -97,7 +97,7 @@ uv run --script scripts/install-knowledge-bundles.py . --private --bundles secre
 |------|---------|------|
 | Universal | `software-architecture-essentials`, `dev-environment-practices`, `devsecops-codeguard`, `cicd-testing-practices`, `build-system-essentials` | Installed by default |
 | Stack-matched | `typescript-monorepo-best-practices`, `rust-development-practices`, `python-services-practices`, `java-best-practices`, `frontend-stack-practices`, `nix-build-practices`, `container-best-practices`, `data-engineering-best-practices` | Added via `--bundles` based on detection |
-| Domain-specific | `api-auth-payment-practices`, `infrastructure-networking-practices`, `cloud-provider-essentials`, `web-resource-catalog`, `upstream-contribution-practices`, `ai-primitives` | NOT installed — URL-referenced in AGENTS.md by `agent-file-upsert` for on-demand fetch |
+| Domain-specific | `api-auth-payment-practices`, `infrastructure-networking-practices`, `cloud-provider-essentials`, `web-resource-catalog`, `upstream-contribution-practices`, `ai-primitives` | NOT installed — URL-referenced in AGENTS.md by agent-file-upsert (bundled skill) for on-demand fetch |
 
 ## Per-Language Configuration Scripts
 

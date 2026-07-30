@@ -3,7 +3,15 @@ type: Practice
 title: Rustfmt and Clippy Configuration
 description: Standard rustfmt and clippy configuration for consistent formatting and linting — 2-space indent, 100 char width, cognitive complexity threshold, trivial copy size limit.
 tags: [rust, rustfmt, clippy, formatting, linting, code-quality]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Rustfmt and Clippy Configuration
@@ -55,7 +63,3 @@ cargo clippy --all-targets --all-features -- -D warnings
 
 - [Quality Gates](quality-gates.md) — CI enforcement of formatting and linting
 - [Project Structure](project-structure.md) — Config files live at package root
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

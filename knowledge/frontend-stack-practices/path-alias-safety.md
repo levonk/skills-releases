@@ -3,8 +3,16 @@ type: Practice
 title: Path Alias Safety
 description: Ban ambiguous @/* path alias in favor of explicit category-based aliases like @/core/*, @/features/* to prevent conflicts with npm scoped packages.
 tags: [typescript, path-aliases, imports, eslint, npm, monorepo]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019002-path-alias-safety
+    resource: "internal-docs/adr/adr-20251019002-path-alias-safety.md"
+    title: "job-aide"
 ---
+
 
 # Path Alias Safety
 
@@ -60,7 +68,3 @@ In monorepos, it's unclear if `@/lib/api` is a local file or workspace package.
 
 - [Explicit File Extensions](explicit-file-extensions.md) — What these aliases point to
 - [ESLint Composition API](eslint-composition-api.md) — Config that enforces these rules
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251019002-path-alias-safety.md` — job-aide

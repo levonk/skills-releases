@@ -3,7 +3,20 @@ type: Practice
 title: Java Security — Dependency Scanning, SAST, and Deprecated Security APIs
 description: Scan dependencies with OWASP Dependency-Check or Snyk, run SAST with SpotBugs/FindSecBugs, avoid Security Manager for new code (JEP 411), and never ship hardcoded secrets.
 tags: [java, security, dependency-scan, sast, spotbugs, jep-411, secrets]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: jep-411-deprecate-the-security-manager-for-removal
+    resource: https://openjdk.org/jeps/411
+    title: 'JEP 411: Deprecate the Security Manager for Removal'
+  - id: owasp-dependency-check
+    resource: https://owasp.org/www-project-dependency-check/
+    title: OWASP Dependency-Check
+  - id: findsecbugs
+    resource: https://find-sec-bugs.github.io/
+    title: FindSecBugs
 ---
 
 # Java Security
@@ -47,9 +60,3 @@ run too late in the pipeline.
 - JEP 411 deprecated the Security Manager for removal.
 - Do not write new code that relies on `System.setSecurityManager`.
 - Use OS-level sandboxing (containers, seccomp, AppArmor) instead.
-
-## Citations
-
-[1] [JEP 411: Deprecate the Security Manager for Removal](https://openjdk.org/jeps/411)
-[2] [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/)
-[3] [FindSecBugs](https://find-sec-bugs.github.io/)

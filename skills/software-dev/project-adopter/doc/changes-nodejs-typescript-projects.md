@@ -45,13 +45,13 @@ Projects are detected as Node.js/TypeScript when they contain:
 ```json
 {
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal",
-    "clean": "just clean-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl",
+    "clean": "just clean_impl"
   }
 }
 ```
@@ -80,28 +80,28 @@ clean:
     devbox shell clean
 ```
 
-### Language-Specific *-internal Targets
+### Language-Specific *_impl Targets
 ```just
 # Node.js-specific implementations
-dev-internal:
+dev_impl:
     pnpm run dev
 
-build-internal:
+build_impl:
     pnpm run build
 
-test-internal:
+test_impl:
     pnpm run test
 
-lint-internal:
+lint_impl:
     pnpm run lint
 
-typecheck-internal:
+typecheck_impl:
     pnpm run typecheck
 
-clean-internal:
+clean_impl:
     rm -rf dist/ node_modules/.cache/
 
-bootstrap-internal:
+bootstrap_impl:
     pnpm install
     echo "Node.js development environment ready!"
 ```
@@ -131,13 +131,13 @@ audit:
 
 | Script | Source of Truth | Command | Purpose |
 |--------|------------------|---------|---------|
-| **bootstrap** | `apply_surgical_configs()` - Node.js scripts section | `just bootstrap-internal` | Bootstrap the project |
-| **build** | `apply_surgical_configs()` - Node.js scripts section | `just build-internal` | Build the project |
-| **test** | `apply_surgical_configs()` - Node.js scripts section | `just test-internal` | Run tests |
-| **dev** | `apply_surgical_configs()` - Node.js scripts section | `just dev-internal` | Start development server |
-| **lint** | `apply_surgical_configs()` - Node.js scripts section | `just lint-internal` | Run linting |
-| **typecheck** | `apply_surgical_configs()` - Node.js scripts section | `just typecheck-internal` | Run type checking |
-| **clean** | `apply_surgical_configs()` - Node.js scripts section | `just clean-internal` | Clean build artifacts |
+| **bootstrap** | `apply_surgical_configs()` - Node.js scripts section | `just bootstrap_impl` | Bootstrap the project |
+| **build** | `apply_surgical_configs()` - Node.js scripts section | `just build_impl` | Build the project |
+| **test** | `apply_surgical_configs()` - Node.js scripts section | `just test_impl` | Run tests |
+| **dev** | `apply_surgical_configs()` - Node.js scripts section | `just dev_impl` | Start development server |
+| **lint** | `apply_surgical_configs()` - Node.js scripts section | `just lint_impl` | Run linting |
+| **typecheck** | `apply_surgical_configs()` - Node.js scripts section | `just typecheck_impl` | Run type checking |
+| **clean** | `apply_surgical_configs()` - Node.js scripts section | `just clean_impl` | Clean build artifacts |
 | **loop** | `apply_surgical_configs()` - Node.js scripts section | `just loop` | Development loop |
 | **ci** | `apply_surgical_configs()` - Node.js scripts section | `just ci` | CI pipeline |
 
@@ -187,13 +187,13 @@ audit:
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal",
-    "clean": "just clean-internal",
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl",
+    "clean": "just clean_impl",
     "loop": "just loop",
     "ci": "just ci",
     "nx": "nx",
@@ -250,13 +250,13 @@ audit:
 ```json
 {
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal",
-    "clean": "just clean-internal",
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl",
+    "clean": "just clean_impl",
     "loop": "just loop",
     "ci": "just ci",
     "nx": "nx",

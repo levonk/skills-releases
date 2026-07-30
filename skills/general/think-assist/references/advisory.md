@@ -7,7 +7,8 @@ url: "src/current/workflows/business/consulting/dynamic-guide-advisory-panel-cre
 authors: ["https://github.com/levonk"]
 date:
   created: "2025-11-10"
-  updated: "2025-11-10"
+  knowledge-basis: "2025-11-10"
+  last-used: "2025-11-10"
 version: "0.0.1"
 status: "accepted"
 aliases: ["AI Advisory Panel", "Guide Builder AI"]

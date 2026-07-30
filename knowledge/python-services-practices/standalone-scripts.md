@@ -3,7 +3,26 @@ type: Practice
 title: Standalone Python Scripts (PEP 723)
 description: Use PEP 723 inline script metadata with `uv run --script` for small Python scripts that don't warrant a full service or package. Discover `uv` via cli-tool-discovery, fall back to pip if unavailable, and add `uv` to devbox.json when a devbox environment is present.
 tags: [python, pep723, uv, scripts, standalone, cli-tool-discovery, devbox]
-timestamp: 2026-07-19T00:00:00Z
+date:
+  created: "2026-07-20"
+  knowledge-basis: "2026-07-19"
+  last-used: "2026-07-19"
+sources:
+  - id: pep-723-inline-script-metadata
+    resource: https://peps.python.org/pep-0723/
+    title: PEP 723 — Inline script metadata
+  - id: uv-script-guide
+    resource: https://docs.astral.sh/uv/guides/scripts/
+    title: uv script guide
+  - id: validate-diagram-py
+    resource: src/current/skills/content/diagram-upsert/scripts/validate-diagram.py.tmpl
+    title: a real PEP 723 script in this repo
+  - id: cli-tool-discovery-sh
+    resource: src/current/includes/cli-tool-discovery.sh.tmpl
+    title: the shared tool discovery logic referenced in Toolchain Discovery
+  - id: cli-tool-discovery-py
+    resource: src/current/includes/cli-tool-discovery.py.tmpl
+    title: the shared tool discovery logic referenced in Toolchain Discovery
 ---
 
 # Standalone Python Scripts (PEP 723)
@@ -323,7 +342,7 @@ time), there is additional guidance about *materializing* shared scripts
 into the skill's `scripts/` dir so the installed skill is self-contained.
 That guidance is in the `script-materialization` include in
 `src/current/includes/` (file `script-materialization.md.tmpl`), wired into
-the `ai-skill-upsert` skill. The PEP 723 metadata on this page still applies
+the `ai-upsert` skill. The PEP 723 metadata on this page still applies
 — the script is a normal PEP 723 script; the materialization layer just
 ensures it ships with the skill instead of being fetched at runtime.
 
@@ -341,13 +360,4 @@ See also the published version at
 - [nox Orchestration](nox-orchestration.md) — nox orchestrates test/lint
   pipelines for packages; standalone scripts typically don't need nox.
 
-## Citations
 
-- [PEP 723 — Inline script metadata](https://peps.python.org/pep-0723/)
-- [uv script guide](https://docs.astral.sh/uv/guides/scripts/) — Astral's
-  reference for `uv run --script` and PEP 723 support.
-- `src/current/skills/content/diagram-upsert/scripts/validate-diagram.py.tmpl`
-  — a real PEP 723 script in this repo.
-- `src/current/includes/cli-tool-discovery.sh.tmpl` and
-  `src/current/includes/cli-tool-discovery.py.tmpl` — the shared tool
-  discovery logic referenced in [Toolchain Discovery](#toolchain-discovery).

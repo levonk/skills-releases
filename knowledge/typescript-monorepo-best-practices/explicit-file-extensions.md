@@ -3,7 +3,23 @@ type: Practice
 title: Explicit File Extensions for TypeScript Modules
 description: Use .mts for ESM, .cts for CJS, .tsx for React, .mjs/.cjs for JS, .d.ts for types; ban ambiguous .ts/.js extensions that hide the module system behind package.json type.
 tags: [typescript, monorepo, file-extensions, esm, commonjs, eslint, module-system]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019001-explicit-file-extensions-for-typescript-modules
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251019001-explicit-file-extensions.md
+    title: 'ADR-20251019001: Explicit File Extensions for TypeScript Modules'
+  - id: file-extension-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/FILE-EXTENSION-RULES.md
+    title: 'FILE-EXTENSION-RULES.md'
+  - id: typescript-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md
+    title: 'typescript-rules.md — File Extensions section'
+  - id: architecture-md
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'ARCHITECTURE.md — TypeScript File Extensions section'
 ---
 
 # Explicit File Extensions for TypeScript Modules
@@ -40,10 +56,12 @@ Use **explicit file extensions that indicate module system**:
 
 **Ban ambiguous extensions**:
 
-- `.ts` files (except `.d.ts`, `.config.ts`, `.test.ts`)
+- `.ts` files (except `.d.ts`, `.config.ts`)
 - `.js` files (except `.config.js`)
 
 Config files (`.config.ts`, `.config.js`) are exempted for tool compatibility.
+Test files use `.test.mts` (not `.test.ts`) — see
+[Vitest Testing](/vitest-testing.md).
 
 ## Enforcement
 
@@ -93,9 +111,4 @@ upgrade to `error`.
 - [ESLint Composition API](/eslint-composition-api.md) — how to enable the
   file-extension rules via the shared config.
 
-## Citations
 
-[1] [ADR-20251019001: Explicit File Extensions for TypeScript Modules](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251019001-explicit-file-extensions.md)
-[2] [FILE-EXTENSION-RULES.md](https://github.com/levonk/job-aide/blob/main/packages/active/tools/lint/eslint-config/typescript/docs/FILE-EXTENSION-RULES.md)
-[3] [typescript-rules.md](https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md) — File Extensions section
-[4] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — TypeScript File Extensions section

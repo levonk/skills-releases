@@ -3,8 +3,22 @@ type: Practice
 title: Code Style Conventions
 description: TypeScript code style — double quotes, 2-space indentation, semicolons, kebab-case filenames, type over interface, import type for type-only imports, ESM preferred.
 tags: [typescript, code-style, formatting, conventions, eslint]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251019001-explicit-file-extensions
+    resource: "internal-docs/adr/adr-20251019001-explicit-file-extensions.md"
+    title: "job-aide"
+  - id: adr-20251019002-path-alias-safety
+    resource: "internal-docs/adr/adr-20251019002-path-alias-safety.md"
+    title: "job-aide"
+  - id: adr-20251019003-plugin-composition-api
+    resource: "internal-docs/adr/adr-20251019003-plugin-composition-api.md"
+    title: "job-aide"
 ---
+
 
 # Code Style Conventions
 
@@ -53,9 +67,3 @@ Every package must have:
   these style rules
 - [Vitest Testing Framework](vitest-testing-framework.md) — Test file naming
   convention
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251019001-explicit-file-extensions.md` — job-aide
-[2] `internal-docs/adr/adr-20251019002-path-alias-safety.md` — job-aide
-[3] `internal-docs/adr/adr-20251019003-plugin-composition-api.md` — job-aide

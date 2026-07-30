@@ -3,7 +3,14 @@ type: Practice
 title: Shared Path Cleanliness
 description: The shared/ directory must never contain sensitive information. No vault files, no hardcoded secrets, all secrets use vault variable references. Pre-commit hook validation.
 tags: [shared-path, secrets, cleanliness, validation, pre-commit, security]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20260624001-hybrid-sensitive-information-storage
+    resource: shared/active/08-docs/adr/adr-20260624001-hybrid-sensitive-information-storage.md
+    title: 'infrahub'
 ---
 
 # Shared Path Cleanliness
@@ -49,6 +56,4 @@ configurations that work across any client deployment. Including secrets would:
 - [Ansible Vault Distribution](ansible-vault-distribution.md) — How services
   reference vault variables
 
-## Citations
 
-[1] `shared/active/08-docs/adr/adr-20260624001-hybrid-sensitive-information-storage.md` — infrahub

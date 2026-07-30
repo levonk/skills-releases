@@ -13,7 +13,7 @@ template-specific checks.
 - [ ] `use` field present and states when to invoke.
 - [ ] `engine` field present and valid (`go-template`, `markdown-only`, etc.).
 - [ ] `outputs_to` field present and points to valid paths/globs.
-- [ ] `date.created`, `date.updated`, `date.last-used` present (YYYY-MM-DD).
+- [ ] `date.created`, `date.knowledge-basis`, `date.last-used` present (YYYY-MM-DD).
 - [ ] `tags` present and follow naming convention.
 - [ ] `see-also` entries valid (no circular dependencies, correct relationship
       types).

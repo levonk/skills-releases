@@ -4,7 +4,14 @@ title: template-upsert
 description: Creates and audits reusable templates. The producer skill for the template primitive.
 resource: src/current/skills/ai/template-upsert/
 tags: [upsert-skills, template-creation, template-audit, variable-schema]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: template-upsert-skill-md
+    resource: src/current/skills/ai/template-upsert/SKILL.md.tmpl
+    title: "template-upsert SKILL.md"
 ---
 
 # template-upsert
@@ -48,7 +55,3 @@ template primitive.
 `templates/meta/template-template.md` defines the canonical structure for
 new or significantly revised templates. Every template should conform to
 this meta-template.
-
-# Citations
-
-[1] [template-upsert SKILL.md](src/current/skills/ai/template-upsert/SKILL.md.tmpl)

@@ -3,8 +3,16 @@ type: Practice
 title: Hybrid Playwright/Stagehand Testing
 description: 80/20 split — Playwright for deterministic, performance-critical tests (80%), Stagehand for brittle flows, complex navigation, third-party integrations (20%). Stagehand built on Playwright.
 tags: [playwright, stagehand, testing, e2e, ai-testing, hybrid, browser-automation]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20260104001-hybrid-webui-testing-playwright-stagehand
+    resource: "internal-docs/adr/adr-20260104001-hybrid-webui-testing-playwright-stagehand.md"
+    title: "levonk-base-boilerplate"
 ---
+
 
 # Hybrid Playwright/Stagehand Testing
 
@@ -55,7 +63,3 @@ switch between AI mode and deterministic mode in the same script.
 - [Vitest Unified Runner](vitest-unified-runner.md) — Vitest orchestrates these
   tests
 - [Pre-Commit CI Parity](pre-commit-ci-parity.md) — These tests run in CI
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260104001-hybrid-webui-testing-playwright-stagehand.md` — levonk-base-boilerplate

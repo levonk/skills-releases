@@ -3,7 +3,10 @@ type: Practice
 title: AWS Infrastructure with Terraform
 description: Terraform (HCL) implementations for AWS best practices — VPC endpoints, cost anomaly detection, Organizations, tagging, Config rules, and more.
 tags: [cloud, aws, terraform, infrastructure-as-code, iac, hcl, best-practices]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # AWS Infrastructure with Terraform

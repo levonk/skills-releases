@@ -3,7 +3,18 @@ type: Practice
 title: Layer Cache Order — the Onion Model
 description: Order Dockerfile layers from least-frequently-changed (deps) to most-frequently-changed (app code) so code edits don't invalidate dependency install layers.
 tags: [docker, dockerfile, cache, layers, build-time, npm-ci]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: docker-build-cache-documentation
+    resource: "https://docs.docker.com/build/cache/"
+    title: "Docker build cache documentation"
 ---
 
 # Layer Cache Order — the Onion Model
@@ -78,8 +89,3 @@ See [multi-stage-builds](/multi-stage-builds.md) — the builder stage copies
   the build context is filtered.
 - [dockerfile-linting](/dockerfile-linting.md) — `hadolint` flags
   `npm install` vs `npm ci` and other layer-order smells.
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [Docker build cache documentation](https://docs.docker.com/build/cache/)

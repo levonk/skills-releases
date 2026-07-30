@@ -48,30 +48,43 @@ The project-adopter skill makes changes to projects in two distinct modes:
 | **ci** | `generate_integrated_justfile()` - additional targets | CI pipeline (bootstrap → lint → typecheck → test → build) |
 
 ```just
-# Standard interface targets
+# _devbox helper — DRY auto-detection of devbox environment
+_devbox target *args:
+    #!/usr/bin/env bash
+    if [ "${DEVBOX_SHELL_ENABLED:-0}" = "1" ]; then
+        exec just "{{target}}" {{args}}
+    elif command -v devbox >/dev/null 2>&1; then
+        exec devbox run -- just "{{target}}" {{args}}
+    else
+        echo "❌ devbox not found in PATH." >&2
+        just doctor 2>/dev/null || true
+        exit 1
+    fi
+
+# Standard interface targets — delegate to _devbox
 default:
     @just --list
 
 clean:
-    @just clean-internal
+    just _devbox clean_impl
 
 dev:
-    @just dev-internal
+    just _devbox dev_impl
 
 build:
-    @just build-internal
+    just _devbox build_impl
 
 test:
-    @just test-internal
+    just _devbox test_impl
 
 lint:
-    @just lint-internal
+    just _devbox lint_impl
 
 typecheck:
-    @just typecheck-internal
+    just _devbox typecheck_impl
 
 bootstrap:
-    @just bootstrap-internal
+    just _devbox bootstrap_impl
 
 # Development loop targets
 loop: || (bootstrap build test dev)
@@ -82,13 +95,13 @@ ci: || (bootstrap lint typecheck test build)
 ```json
 {
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal",
-    "clean": "just clean-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl",
+    "clean": "just clean_impl"
   }
 }
 ```

@@ -3,7 +3,26 @@ type: Practice
 title: JVM Tuning — Container-aware heap, GC selection, and cgroup limits
 description: Use -XX:MaxRAMPercentage and -XX:+UseContainerSupport for container-aware heap sizing; select G1 for general-purpose or ZGC for low-latency workloads.
 tags: [java, jvm, gc, g1gc, zgc, containers, heap, tuning, performance]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: jep-343-packaging-tool-jpackage
+    resource: https://openjdk.org/jeps/343
+    title: 'JEP 343: Packaging Tool (jpackage)'
+  - id: jep-377-zgc-a-scalable-low-latency-garbage-collector
+    resource: https://openjdk.org/jeps/377
+    title: 'JEP 377: ZGC: A Scalable Low-Latency Garbage Collector'
+  - id: jep-391-macosaarch64-port
+    resource: https://openjdk.org/jeps/391
+    title: 'JEP 391: macOS/AArch64 Port'
+  - id: java-container-support-documentation
+    resource: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runtime.html#maxMemory--
+    title: Java Container Support documentation
+  - id: infrahub-java-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar
+    title: infrahub java-sidecar Dockerfile
 ---
 
 # JVM Tuning — Container-aware heap, GC selection, and cgroup limits
@@ -87,11 +106,3 @@ java \
   image; the JVM flags go in the runtime stage.
 - [java-build-optimization](/java-build-optimization.md) — JVM tuning for the
   build daemon (Gradle) is separate from runtime tuning.
-
-## Citations
-
-[1] [JEP 343: Packaging Tool (jpackage)](https://openjdk.org/jeps/343) — container-aware packaging
-[2] [JEP 377: ZGC: A Scalable Low-Latency Garbage Collector](https://openjdk.org/jeps/377) — ZGC production-ready in Java 15
-[3] [JEP 391: macOS/AArch64 Port](https://openjdk.org/jeps/391) — mentions container support
-[4] [Java Container Support documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Runtime.html#maxMemory--) — MaxRAMPercentage behavior
-[5] [infrahub java-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar) — real OpenJDK 17 container

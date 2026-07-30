@@ -44,28 +44,28 @@ Projects are detected as Go when they contain:
 
 ## justfile Changes
 
-### Language-Specific *-internal Targets
+### Language-Specific *_impl Targets
 ```just
 # Go-specific implementations
-dev-internal:
+dev_impl:
     go run ./cmd/main.go
 
-build-internal:
+build_impl:
     go build ./...
 
-test-internal:
+test_impl:
     go test ./...
 
-lint-internal:
+lint_impl:
     golangci-lint run
 
-typecheck-internal:
+typecheck_impl:
     go vet ./...
 
-clean-internal:
+clean_impl:
     rm -f bin/* coverage.out
 
-bootstrap-internal:
+bootstrap_impl:
     go mod download
     go mod tidy
     echo "Go development environment ready!"

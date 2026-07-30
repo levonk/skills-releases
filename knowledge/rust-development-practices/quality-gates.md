@@ -3,7 +3,15 @@ type: Practice
 title: Quality Gates
 description: Pre-commit hooks for fmt/clippy/test, CI/CD with multiple Rust versions (stable/beta/nightly), cross-platform testing, documentation builds, and security audits.
 tags: [rust, quality-gates, pre-commit, ci-cd, cross-platform, testing]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Quality Gates
@@ -50,7 +58,3 @@ A Rust package is considered complete when:
 - [Rustfmt and Clippy](rustfmt-clippy-config.md) — Formatting and linting config
 - [Testing Strategy](testing-strategy.md) — Test types that gates enforce
 - [Security and Auditing](security-auditing.md) — cargo audit in CI
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

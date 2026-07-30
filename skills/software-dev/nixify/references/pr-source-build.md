@@ -1,3 +1,7 @@
+---
+description: Reusable guard for posting GitHub issue and PR bodies via gh CLI — prevents the two corruption modes (literal \n and stripped backticks) that have shipped broken posts in the wild
+---
+
 ## CRITICAL — How to post these bodies to GitHub (read before any `gh` call)
 
 The template below contains markdown backticks (`` ` `` and triple-fence ``` ``` ```), shell-style `$VARS` (`$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`), and real newlines. If you pass it to `gh` the wrong way, GitHub stores garbage. Two failure modes have shipped broken PRs/issues in the wild:
@@ -7,8 +11,8 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
 
 **Always do this, no exceptions:**
 
-1. Substitute the four placeholders by **text replacement** (not shell expansion): `$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`, and `<issue-number>` / `<platform>` / `<project-name>`. Use `sed -i`/`perl -pi -e` or edit the file in your editor tool — never let bash expand `$UPSTREAM_OWNER`.
-2. Write the final body to a **file** (e.g. `/tmp/pr-body.md`).
+1. Substitute the placeholders by **text replacement** (not shell expansion): `$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`, and any `<issue-number>` / `<platform>` / `<project-name>` / `<feature-name>` placeholders. Use `sed -i`/`perl -pi -e` or edit the file in your editor tool — never let bash expand `$UPSTREAM_OWNER`.
+2. Write the final body to a **file** (e.g. `/tmp/pr-body.md` or `/tmp/issue-body.md`).
 3. Post with `--body-file`, never `--body`:
    ```bash
    gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" --title "..." --body-file /tmp/pr-body.md
@@ -61,6 +65,27 @@ The project currently requires users to clone the repository and build from sour
 - **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific dependencies.
 - **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
 - **Clean uninstall** — `nix profile remove` leaves no residue. No orphaned global packages.
+
+<!-- BEGIN conditional: Relationship to nixpkgs -->
+<!-- INCLUDE this section ONLY when check-nixpkgs.sh (Step 10) reported project_in_nixpkgs: true. -->
+<!-- If project_in_nixpkgs: false, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $PROJECT, $NIXPKGS_VERSION, $LATEST_RELEASE, $NIXPKGS_DARWIN_STABLE_VERSION from Step 10 -->
+<!-- output and the latest GitHub release (check-releases.sh, Step 4). -->
+<!-- Pick the correct x86_64-darwin clause based on x86_64_darwin_in_meta and delete the other. -->
+
+## Relationship to nixpkgs
+
+This project is already in nixpkgs as `nixpkgs#$PROJECT` (currently `$NIXPKGS_VERSION` on unstable; latest release is `$LATEST_RELEASE`). This flake is complementary, not redundant:
+
+- **Faster release cadence** — the flake tracks the project's own releases directly; nixpkgs follows its own staging schedule (days to weeks behind).
+- **Tag-pinning that works** — source-build flakes exist at every git tag, so `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO/vX.Y.Z` serves that exact version. nixpkgs only exposes the version its channel currently ships — older versions are gone once the channel moves.
+- **Reproducible dev environment** — `devbox.json` + `devShells.default` pin the project's own toolchain; nixpkgs does not provide a per-project dev shell.
+- **`x86_64-darwin` at the latest version** — nixpkgs's `meta.platforms` does not declare `x86_64-darwin`<!-- ALTERNATIVE if x86_64_darwin_in_meta=true: declares `x86_64-darwin` but the stable darwin channel ships an older version -->; the flake's `nixpkgs-darwin-legacy` pin builds it at the latest release, where the nixpkgs darwin stable channel ships `$NIXPKGS_DARWIN_STABLE_VERSION`.
+- **Shorter supply chain** — builds directly from `$UPSTREAM_OWNER/$UPSTREAM_REPO`'s source, one fewer packaging layer to audit.
+
+`nix profile add nixpkgs#$PROJECT` still works and this flake does not replace it.
+
+<!-- END conditional: Relationship to nixpkgs -->
 
 ## Changes
 

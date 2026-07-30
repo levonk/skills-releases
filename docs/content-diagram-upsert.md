@@ -37,10 +37,10 @@ Create and embed diagrams in technical documentation (ADR, design docs, README, 
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 - **trigger-guard** (template, over-triggering-guard) — Shared over-triggering guard protocol
-- **knowledge-bundle-upsert** (skill, complement) — Knowledge bundles that document diagram practices live in src/current/knowledge/documentation-diagram-practices/ — this skill references that bundle rather than restating it
+- **ai-upsert** (skill, complement) — Knowledge bundles that document diagram practices live in src/current/knowledge/documentation-diagram-practices/ — this skill references that bundle rather than restating it
 
 ---
 
 - **Full skill**: [`skills/content/diagram-upsert/SKILL.md`](skills/content/diagram-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

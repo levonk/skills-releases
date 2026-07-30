@@ -3,7 +3,14 @@ type: Practice
 title: Nix Flake Structure
 description: flake.nix with inputs, outputs, devShells per system, packages, and flake.lock for reproducibility. Standard structure for all Nix-based projects.
 tags: [nix, flakes, flake-nix, flake-lock, devshells, reproducible]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251219001-nix-direnv-dev-environment
+    resource: internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md
+    title: levonk-base-boilerplate
 ---
 
 # Nix Flake Structure
@@ -65,7 +72,3 @@ devbox still benefit from understanding the underlying Nix flake structure.
 
 - [Devbox as Nix Abstraction](devbox-as-nix-abstraction.md) — Simpler alternative
 - [Reproducible Builds](reproducible-builds.md) — flake.lock enables this
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md` — levonk-base-boilerplate

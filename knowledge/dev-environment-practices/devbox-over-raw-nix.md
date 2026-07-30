@@ -3,7 +3,14 @@ type: Practice
 title: Devbox Over Raw Nix
 description: Replace flake.nix with devbox.json for simpler configuration, familiar CLI workflow, and lower barrier to entry while maintaining Nix reproducibility.
 tags: [devbox, nix, developer-experience, configuration, migration]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md
+    title: levonk-base-boilerplate
 ---
 
 # Devbox Over Raw Nix
@@ -33,15 +40,15 @@ offering a simpler JSON-based configuration and familiar CLI workflow
   ],
   "shell": {
     "init_hook": [
-      "just bootstrap-internal"
+      "just bootstrap_impl"
     ]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "lint": "just lint-internal",
-    "dev": "just dev-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "lint": "just lint_impl",
+    "dev": "just dev_impl"
   },
   "nix_pkgs": [
     "just"
@@ -72,7 +79,3 @@ From raw Nix flakes to devbox:
 - [Nix Flake Dev Shells](nix-flake-dev-shells.md) — The predecessor practice
 - [direnv Auto-Activation](direnv-auto-activation.md) — Activation layer
 - [Standard Developer UX Flow](standard-developer-ux-flow.md) — Workflow built on devbox
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md` — levonk-base-boilerplate

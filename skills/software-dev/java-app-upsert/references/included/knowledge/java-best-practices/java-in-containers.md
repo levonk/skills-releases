@@ -3,7 +3,26 @@ type: Practice
 title: Java in Containers — JRE vs JDK, multi-stage builds, Alpine vs Debian
 description: Ship JRE-only in the runtime stage; use multi-stage builds to keep the JDK in the builder; choose Alpine openjdk17 for infra sidecars or Debian JDK for applications with native dependencies.
 tags: [java, containers, docker, jre, jdk, multi-stage, alpine, debian, openjdk17]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: infrahub-java-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar
+    title: infrahub java-sidecar Dockerfile
+  - id: infrahub-gradle-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar
+    title: infrahub gradle-sidecar Dockerfile
+  - id: eclipse-temurin-images
+    resource: https://hub.docker.com/_/eclipse-temurin
+    title: Eclipse Temurin images
+  - id: docker-multi-stage-build-documentation
+    resource: https://docs.docker.com/build/building/multi-stage/
+    title: Docker multi-stage build documentation
+  - id: general-multi-stage-pattern
+    resource: ../container-best-practices/multi-stage-builds.md
+    title: general multi-stage pattern
 ---
 
 # Java in Containers — JRE vs JDK, multi-stage builds, Alpine vs Debian
@@ -98,11 +117,3 @@ RUN ln -sf /opt/gradle/bin/gradle /usr/local/bin/gradle
   with JNI and native libraries.
 - [java-sidecar-pattern](/java-sidecar-pattern.md) — full sidecar architecture.
 - [jvm-tuning](/jvm-tuning.md) — JVM flags for the runtime stage.
-
-## Citations
-
-[1] [infrahub java-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar) — `apk add openjdk17` pattern
-[2] [infrahub gradle-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/gradle-sidecar/Dockerfile.gradle-sidecar) — multi-stage with `openjdk17-jre` runtime
-[3] [Eclipse Temurin images](https://hub.docker.com/_/eclipse-temurin) — official OpenJDK Docker images
-[4] [Docker multi-stage build documentation](https://docs.docker.com/build/building/multi-stage/)
-[5] [container-best-practices: multi-stage-builds](../container-best-practices/multi-stage-builds.md) — general multi-stage pattern

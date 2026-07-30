@@ -6,7 +6,7 @@ When auditing an existing prompt (Mode C), check the following:
 
 - [ ] Required fields present: `description`, `version`, `date` (created/updated/last-used), `tags`
 - [ ] `date.last-used` reflects the current date (YYYY-MM-DD)
-- [ ] `date.updated` reflects the last content change
+- [ ] `date.knowledge-basis` reflects the last content change
 - [ ] Tags are accurate and follow the `ai/prompt/...` convention
 
 ## Naming Convention

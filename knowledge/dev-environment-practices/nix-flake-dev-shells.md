@@ -3,7 +3,14 @@ type: Practice
 title: Nix Flake Dev Shells
 description: Per-project reproducible tooling via flake.nix devShells; the original approach before migrating to devbox. Documents the Nix foundation that devbox builds on.
 tags: [nix, flake, dev-shell, reproducible, direnv, tooling]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md
+    title: levonk-base-boilerplate
 ---
 
 # Nix Flake Dev Shells
@@ -73,7 +80,3 @@ while simplifying configuration to JSON.
 
 - [Devbox Over Raw Nix](devbox-over-raw-nix.md) — The successor practice
 - [direnv Auto-Activation](direnv-auto-activation.md) — Shared activation layer
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md` — levonk-base-boilerplate

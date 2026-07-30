@@ -58,7 +58,7 @@ substitution is automatic, not a last resort.
 A subagent tries to run a build:
 
 ```bash
-$ devbox run -- just build
+$ just build
 zsh: command not found: devbox
 ```
 

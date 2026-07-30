@@ -3,7 +3,10 @@ type: Practice
 title: Theme System
 description: Centralize theme definitions (palettes, variants) in a single source of truth with runtime switching and consistent semantic colors across the UI.
 tags: [architecture, theme-system, ui, theming, design-tokens]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Theme System

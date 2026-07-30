@@ -3,7 +3,10 @@ type: Practice
 title: OCI (Oracle Cloud Infrastructure) Best Practices
 description: OCI best practices for storage, database, networking, compute, and security services across prototyping, testing, and production configurations.
 tags: [cloud, oci, oracle, best-practices, devops, infrastructure, cost-optimization, storage, database, networking, compute, security]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # OCI (Oracle Cloud Infrastructure) Best Practices

@@ -3,7 +3,27 @@ type: Practice
 title: Compose Service Dependency Ordering — healthchecks over depends_on alone
 description: depends_on only waits for the container to start, not for the service to be ready; pair it with condition: service_healthy and a healthcheck to avoid startup race conditions.
 tags: [docker, docker-compose, depends-on, healthcheck, service-healthy, pg-isready, startup-order]
-timestamp: 2026-07-17T19:00:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: control-startup-and-shutdown-order-in-compose
+    resource: "https://docs.docker.com/compose/how-tos/startup-order/"
+    title: "Control startup and shutdown order in Compose"
+  - id: compose-file-reference-services-depends-on-and-healthcheck
+    resource: "https://docs.docker.com/reference/compose-file/services/"
+    title: "Compose file reference — services: depends_on and healthcheck"
+  - id: docker-compose-healthchecks-and-depends-on-practical-guide
+    resource: "https://toolsops.dev/en/guides/docker-compose-healthchecks"
+    title: "Docker Compose healthchecks and depends_on — practical guide"
+  - id: docker-compose-depends-on-not-working-postgres-startup-fix
+    resource: "https://jakeinsight.com/tech/2026-04-16-docker-compose-healthcheck-dependson-not-working-p/"
+    title: "Docker Compose depends_on Not Working: Postgres Startup Fix"
+  - id: docker-healthchecks-service-readiness-and-dependencies-in-compose
+    resource: "https://blog.gntech.me/posts/2026-05-26-docker-healthchecks-compose-service-readiness/"
+    title: "Docker Healthchecks — Service Readiness and Dependencies in Compose"
 ---
 
 # Compose Service Dependency Ordering — healthchecks over depends_on alone
@@ -123,11 +143,3 @@ integrate with `depends_on` natively.
 - [single-container-multi-process](/single-container-multi-process.md) — a
   healthcheck probes one process; multi-process containers need a
   supervisor-aware check.
-
-## Citations
-
-[1] [Control startup and shutdown order in Compose](https://docs.docker.com/compose/how-tos/startup-order/) — Docker Docs
-[2] [Compose file reference — services: depends_on and healthcheck](https://docs.docker.com/reference/compose-file/services/) — Docker Docs
-[3] [Docker Compose healthchecks and depends_on — practical guide](https://toolsops.dev/en/guides/docker-compose-healthchecks) — ToolsOps
-[4] [Docker Compose depends_on Not Working: Postgres Startup Fix](https://jakeinsight.com/tech/2026-04-16-docker-compose-healthcheck-dependson-not-working-p/) — Jake's Insights, 2026-04-16
-[5] [Docker Healthchecks — Service Readiness and Dependencies in Compose](https://blog.gntech.me/posts/2026-05-26-docker-healthchecks-compose-service-readiness/) — GnTech Blog, 2026-05-26

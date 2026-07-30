@@ -3,7 +3,17 @@ type: Practice
 title: BigDecimal Pitfalls — equals() vs compareTo() for Numerical Equality
 description: BigDecimal.equals() compares both value and scale; use compareTo() when checking numerical equality to avoid silent inequality bugs from trailing zeros.
 tags: [java, bigdecimal, equality, pitfall, equals, compareto]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: 2ndbrain-bigdecimal-article
+    resource: https://igorstechnoclub.com/java-bigdecimal/
+    title: 2ndbrain BigDecimal article
+  - id: bigdecimal-javadoc
+    resource: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html
+    title: BigDecimal Javadoc
 ---
 
 # BigDecimal Pitfalls
@@ -58,8 +68,3 @@ if (a.equals(b)) { ... } // false
 
 `equals()` is correct only when you genuinely care about both numeric value and
 scale, such as verifying that a parsed value has not been normalized.
-
-## Citations
-
-[1] [2ndbrain BigDecimal article](https://igorstechnoclub.com/java-bigdecimal/) — Igor's Techno Club, captured 2024-06-19
-[2] [BigDecimal Javadoc](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html)

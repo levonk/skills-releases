@@ -3,7 +3,10 @@ type: Practice
 title: Architecture Philosophy
 description: Domain-based modular architecture with clear separation of concerns, focused modules, and coordination via local index modules.
 tags: [architecture, philosophy, modular, separation-of-concerns]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Architecture Philosophy

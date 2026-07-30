@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-07-26
+* **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
+* **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
+
 ## 2026-07-17
 
 * **Initialization**: Created the `infrastructure-networking-practices` knowledge bundle to consolidate infrastructure networking practices from three ADRs in infrahub.

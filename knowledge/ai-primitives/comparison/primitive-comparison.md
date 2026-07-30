@@ -3,7 +3,17 @@ type: Comparison
 title: Primitive Comparison Matrix
 description: Full comparison of all AI primitives across every dimension — role, scope, autonomy, loading, reusability, personality, reasoning, and more.
 tags: [ai-primitives, comparison, matrix, dimensions, reference]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: skills-src-readme
+    resource: https://github.com/levonk/skills-src
+    title: "skills-src README"
+  - id: okf-v0-1-specification
+    resource: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+    title: "OKF v0.1 Specification"
 ---
 
 # Primitive Comparison Matrix
@@ -25,7 +35,7 @@ Complete comparison of all AI primitives across every dimension.
 | **Has Subdirectories** | No | No | Yes (scripts, references, evals, assets) | No | No | No | No | No | No | No |
 | **Format** | Markdown (.md.tmpl) | Markdown (.md.tmpl) | Markdown + scripts | Markdown (Template/Wrapper) | Markdown (.md.tmpl) | Markdown | Markdown stubs | Markdown | Python scripts | Code templates (.tmpl) |
 | **Token Cost** | On-demand | On-demand (when active) | On-demand | On-demand | On-demand | On-demand | Permanent (always-on) | Permanent (always-on) | Per-event (minimal) | None (generated, not loaded) |
-| **Producer Skill** | None (hand-authored) | agent-upsert | ai-skill-upsert | ai-workflow-upsert | template-upsert | prompt-upsert | None (hand-authored) | rule-upsert | None (hand-authored) | None (feature-generated) |
+| **Producer Skill** | None (hand-authored) | agent-upsert | ai-upsert | ai-workflow-upsert | template-upsert | prompt-upsert | None (hand-authored) | rule-upsert | None (hand-authored) | None (feature-generated) |
 | **File Location** | `committees/<cat>/` | `agents/<cat>/` | `skills/<cat>/<name>/` | `workflows/<cat>/` + `templates/<cat>/` | `templates/<cat>/` | `internal-docs/prompts/` | `context/` | `rules/<cat>/` | `hooks/<event>/` | `snippets/features/<feat>/` |
 
 ## Detailed Dimension Analysis
@@ -138,8 +148,3 @@ Hooks ────────────────────────�
 - **Agents** are used by committees
 - **Rules, Memory/Context, Hooks** are cross-cutting — they apply to all
   primitives as constraints, state, and guardrails
-
-# Citations
-
-[1] [skills-src README](https://github.com/levonk/skills-src)
-[2] [OKF v0.1 Specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)

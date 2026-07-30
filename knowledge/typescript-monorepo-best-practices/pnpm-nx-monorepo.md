@@ -1,9 +1,37 @@
 ---
 type: Practice
 title: pnpm and Nx for Monorepo Management
-description: Standardize on pnpm workspaces with workspace:* dependencies and Nx for polyglot task orchestration; enforce only-allow pnpm to prevent phantom dependencies and enable unified caching across JavaScript, Docker, Python, and Rust.
-tags: [typescript, monorepo, pnpm, nx, build-system, workspaces, caching, polyglot]
-timestamp: 2026-07-17T00:00:00Z
+description: Standardize on pnpm workspaces with workspace:* dependencies, catalog: for external dependency versions, and Nx for polyglot task orchestration; enforce only-allow pnpm to prevent phantom dependencies and enable unified caching across JavaScript, Docker, Python, and Rust.
+tags: [typescript, monorepo, pnpm, nx, build-system, workspaces, catalogs, caching, polyglot]
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-23"
+  last-used: "2026-07-23"
+sources:
+  - id: adr-20260419001-use-nx-for-monorepo-build-orchestration
+    resource: https://github.com/levonk/levonk-base-boilerplate/blob/main/internal-docs/adr/adr-20260419001-nx-monorepo-build-tool.md
+    title: 'ADR-20260419001: Use Nx for Monorepo Build Orchestration'
+  - id: adr-20251106001-use-pnpm-and-turborepo-for-monorepo-management-superseded
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251106001-pnpm-and-turborepo.md
+    title: 'ADR-20251106001: Use pnpm and Turborepo for Monorepo Management (superseded)'
+  - id: architecture-md
+    resource: https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md
+    title: 'ARCHITECTURE.md — Package Management section'
+  - id: typescript-rules-md
+    resource: https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md
+    title: 'typescript-rules.md — "Must use the pnpm package manager"'
+  - id: pnpm
+    resource: https://pnpm.io/
+    title: 'pnpm'
+  - id: pnpm-catalogs
+    resource: https://pnpm.io/catalogs/
+    title: 'pnpm Catalogs'
+  - id: nx
+    resource: https://nx.dev/
+    title: 'Nx'
+  - id: nx-vs-turborepo-comparison
+    resource: https://nx.dev/concepts/turbo-and-nx
+    title: 'Nx vs Turborepo Comparison'
 ---
 
 # pnpm and Nx for Monorepo Management
@@ -24,7 +52,13 @@ monorepo has grown to include Docker, Python, and Rust projects. Problems:
    packages.
 5. **Dependency conflicts**: Different packages accidentally resolve to
    different versions of the same dependency.
-6. **Fragmented build system**: Turborepo handles JavaScript but cannot cache
+6. **Version drift across packages**: The same external dependency (e.g.
+   `react`) is pinned to different versions in different `package.json` files.
+   Upgrading requires editing every file (merge conflicts on every bump), and
+   no mechanism prevents two packages from drifting apart over time. The
+   misconception that `"*"` "inherits from root" makes this worse — `"*"`
+   resolves to the latest registry release, ignoring the root entirely.
+7. **Fragmented build system**: Turborepo handles JavaScript but cannot cache
    or orchestrate Docker, Python, or Rust builds — requiring separate tools
    (Nexus for Docker, Verdaccio for npm) and fragmented workflows.
 
@@ -135,6 +169,166 @@ Workspace dependencies use the `workspace:*` protocol:
 }
 ```
 
+#### Workspace Mechanics
+
+| Setting | Default | When to change it |
+|---------|---------|-------------------|
+| `sharedWorkspaceLockfile` | `true` (single `pnpm-lock.yaml` at root) | Almost never — the shared lockfile is the correct default for monorepos. Set `false` only if a workspace package needs a fully independent lockfile (rare). |
+| `saveWorkspaceProtocol` | `true` in pnpm 10+ (writes `workspace:*`/`workspace:^` to `package.json`) | Leave at default. `workspace:*` rewrites to the exact local version on publish; `workspace:^` rewrites to a caret range. Use `workspace:*` for non-published apps, `workspace:^` for published libraries that depend on each other. |
+| `injectWorkspacePackages` | `false` (symlink workspace deps) | Set `true` (or use `dependenciesMeta[].injected` per-package) when a workspace dep needs its own resolved `node_modules` — e.g. Next.js transpiling a workspace package, or when the consumer needs the dep's built artifact rather than its source. Symlinking is faster and reflects source edits immediately; injecting produces a hard-linked copy that resolves the dep's own dependency tree independently. |
+
+```jsonc
+// Per-package inject via dependenciesMeta (prefer this over the global flag)
+{
+  "name": "@myorg/app",
+  "dependencies": {
+    "@myorg/ui": "workspace:*"
+  },
+  "dependenciesMeta": {
+    "@myorg/ui": {
+      "injected": true
+    }
+  }
+}
+```
+
+For supply-chain security features (`overrides`, `patchedDependencies`,
+`onlyBuiltDependencies`, `.pnpmfile.mjs`, `packageExtensions`), see
+[pnpm Supply-Chain Hardening](/pnpm-supply-chain.md) — that is a separate
+concept page because the security surface is deep enough to warrant its own
+treatment.
+
+### Catalogs: Centralize External Dependency Versions
+
+**Hard rule**: external (registry) dependency versions live in **one place** —
+the `catalog:` block of the root `pnpm-workspace.yaml`. Sub-package
+`package.json` files reference them via the `catalog:` protocol and **never**
+duplicate a version range. This is the standard for all pnpm monorepos.
+
+```yaml
+# pnpm-workspace.yaml — single source of truth for external dep versions
+packages:
+  - "apps/*"
+  - "packages/*"
+
+catalog:
+  react: ^18.3.1
+  react-dom: ^18.3.1
+  next: ^15.1.0
+  drizzle-orm: ^0.36.0
+  vitest: ^2.1.0
+```
+
+```jsonc
+// apps/saas/package.json — references the catalog, no version duplicated
+{
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "next": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}
+```
+
+```jsonc
+// packages/ui/package.json — same versions, zero drift
+{
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  }
+}
+```
+
+`catalog:` (bare) is shorthand for `catalog:default`. Named catalogs support
+piecemeal migrations (e.g. `catalog:react18` while some packages still pin
+`react@17`). On `pnpm publish`/`pnpm pack`, `catalog:` is rewritten to the
+concrete semver range — published packages remain consumable by any package
+manager, identical to how `workspace:` is rewritten.
+
+#### Anti-Pattern: `"*"` Does NOT Inherit From Root
+
+A common misconception is that `"*"` in a sub-package's `package.json` makes
+it inherit the version from the root `package.json`. **It does not.** `"*"`
+is the most permissive semver range — it resolves to the **latest release on
+the npm registry**, ignoring whatever the root declares. This is true for
+npm, yarn, and pnpm alike; `"*"` is a semver range, not an inheritance
+mechanism.
+
+```jsonc
+// ❌ WRONG — pulls latest from npm, ignores root, non-deterministic
+{
+  "dependencies": {
+    "react": "*"
+  }
+}
+
+// ✅ CORRECT — version pinned once in pnpm-workspace.yaml catalog
+{
+  "dependencies": {
+    "react": "catalog:"
+  }
+}
+```
+
+#### Strict Enforcement
+
+Set `catalogMode: strict` in `pnpm-workspace.yaml` so `pnpm add` refuses to
+introduce a dependency version outside the catalog. This makes drift
+impossible at install time — the only way to add or bump a dependency is to
+edit the catalog first.
+
+```yaml
+# pnpm-workspace.yaml
+catalogMode: strict
+catalog:
+  react: ^18.3.1
+  # ...
+```
+
+With `strict`, `pnpm add react@^18.2.0` (when the catalog says `^18.3.1`)
+errors out. Use `pnpm add react` (no version) to add from the catalog, or
+update the catalog entry first. `prefer` is a softer migration path (falls
+back to direct deps if no compatible catalog version); `manual` (default)
+relies on convention and review alone. New projects use `strict`.
+
+#### catalog: vs workspace: — When to Use Which
+
+| Protocol | Use for | Rewrites on publish to |
+|----------|---------|------------------------|
+| `workspace:*` / `workspace:^` / `workspace:~` | **Internal** workspace packages (e.g. `@myorg/ui`) | The local package's concrete version |
+| `catalog:` / `catalog:default` / `catalog:<name>` | **External** registry dependencies (e.g. `react`, `next`) | The semver range from the catalog entry |
+
+They are complementary: `workspace:` links local packages, `catalog:` pins
+external versions. A typical sub-package uses both:
+
+```jsonc
+{
+  "dependencies": {
+    "@myorg/ui": "workspace:*",      // internal
+    "react": "catalog:",             // external
+    "next": "catalog:"               // external
+  }
+}
+```
+
+#### Migration
+
+To adopt catalogs in an existing workspace, run the official codemod (it
+extracts duplicated version ranges into a catalog and rewrites `package.json`
+references):
+
+```bash
+pnpm dlx codemod pnpm/catalog
+```
+
+Or migrate manually: add a `catalog:` block to `pnpm-workspace.yaml` with one
+entry per shared external dep, then replace each sub-package's version range
+with `catalog:`. Set `catalogMode: strict` once all packages are migrated.
+
 ### Nx Task Orchestration
 
 Nx replaces Turborepo as the build orchestrator. Configuration lives in
@@ -236,7 +430,10 @@ Use `only-allow` to prevent other package managers:
 
 - **pnpm**: Non-flat `node_modules` structure and content-addressable store
   are highly efficient for monorepos. Saves disk space by symlinking
-  dependencies. Strictness prevents phantom dependency issues.
+  dependencies. Strictness prevents phantom dependency issues. The
+  `catalog:` protocol (pnpm 9.5+) centralizes external dependency versions
+  in `pnpm-workspace.yaml`, eliminating version drift and `package.json`
+  merge conflicts on upgrades.
 - **Nx**: Polyglot by design — plugin architecture supports JavaScript,
   Docker, Python, and Rust as first-class citizens. Unified computation cache
   for all builds. Same `nx build`, `nx test`, `nx lint` commands work across
@@ -266,6 +463,10 @@ Use `only-allow` to prevent other package managers:
 
 - Faster, more reliable dependency installation and builds.
 - Reduced disk space usage via content-addressable store.
+- Zero version drift — external dependency versions declared once in the
+  catalog, referenced everywhere via `catalog:`.
+- One-line upgrades — bump a version in `pnpm-workspace.yaml` and every
+  package picks it up; no `package.json` edits, no merge conflicts.
 - A single, unified workflow for all developers across all technologies.
 - True polyglot monorepo — one build system for JavaScript, Docker, Python,
   Rust, and future technologies.
@@ -303,6 +504,11 @@ Use `only-allow` to prevent other package managers:
 9. Remove `turbo.json` (keep as reference for historical ADR).
 10. For Docker projects: install `@nx/docker` plugin and configure
     `project.json` targets.
+11. Adopt catalogs for external dependencies: run `pnpm dlx codemod pnpm/catalog`
+    to extract duplicated version ranges into a `catalog:` block in
+    `pnpm-workspace.yaml`, then set `catalogMode: strict`. Replace any `"*"`
+    version ranges with `catalog:` references — `"*"` does not inherit from
+    root, it resolves to the latest registry release.
 
 ## Related Concepts
 
@@ -312,13 +518,15 @@ Use `only-allow` to prevent other package managers:
   Nx's `test` task.
 - [Package Naming Convention](/package-naming-convention.md) — how workspace
   packages are named and referenced.
+- [pnpm Supply-Chain Hardening](/pnpm-supply-chain.md) — `overrides`,
+  `patchedDependencies`, `onlyBuiltDependencies`, `.pnpmfile.mjs`, and
+  `packageExtensions`: the security layer on top of workspaces and catalogs.
+- [Nx Monorepo Docker Patterns](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/nx-monorepo-docker-patterns.md)
+  — how to Dockerize Nx monorepo frontends: two-layer base image
+  (`node-base` + `deps-base`), `nx affected -t docker-build` for affected-only
+  image builds, dual cache (Nx computation cache + Docker BuildKit cache), and
+  the pnpm-vs-bun-in-containers tradeoff with the pnpm-sidecar shared store
+  pattern. Applies the `npx`/`bunx`/`pnpm exec` rule from this page to Docker
+  builds.
 
-## Citations
 
-[1] [ADR-20260419001: Use Nx for Monorepo Build Orchestration](https://github.com/levonk/levonk-base-boilerplate/blob/main/internal-docs/adr/adr-20260419001-nx-monorepo-build-tool.md)
-[2] [ADR-20251106001: Use pnpm and Turborepo for Monorepo Management (superseded)](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251106001-pnpm-and-turborepo.md)
-[3] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — Package Management section
-[4] [typescript-rules.md](https://github.com/levonk/job-aide/blob/main/.devin/rules/typescript-rules.md) — "Must use the pnpm package manager"
-[5] [pnpm](https://pnpm.io/)
-[6] [Nx](https://nx.dev/)
-[7] [Nx vs Turborepo Comparison](https://nx.dev/concepts/turbo-and-nx)

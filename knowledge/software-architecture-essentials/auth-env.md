@@ -3,7 +3,10 @@ type: Practice
 title: Authentication and Environment Management
 description: Detect CI/SSH/Docker/Codespaces, prevent browser auth in headless terminals, provide API key guidance, and centralize environment helpers.
 tags: [architecture, authentication, environment, ci, headless, api-keys]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Authentication and Environment Management

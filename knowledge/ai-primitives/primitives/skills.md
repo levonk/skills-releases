@@ -4,7 +4,20 @@ title: Skills
 description: Capabilities loaded on demand for focused tasks, with bundled scripts, references, and evals.
 resource: src/current/skills/
 tags: [ai-primitives, skills, capability, on-demand, focused]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: skills-directory
+    resource: src/current/skills/
+    title: "Skills directory"
+  - id: skills-agents-md
+    resource: src/current/skills/AGENTS.md
+    title: "Skills AGENTS.md"
+  - id: developer-guide
+    resource: .agents/knowledge/developer.md
+    title: "Developer guide"
 ---
 
 # Skills
@@ -35,7 +48,7 @@ user-invocable: <true | false>
 disable-model-invocation: <true | false>
 date:
   created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+  knowledge-basis: "YYYY-MM-DD"
   last-used: "YYYY-MM-DD"
 tags:
   - "ai/skill"
@@ -59,7 +72,7 @@ see-also:
 | `user-invocable` | Whether the user can invoke it directly |
 | `disable-model-invocation` | If true, only user can trigger (not auto-invoked by model) |
 | `date.created` | Creation date |
-| `date.updated` | Last content change date |
+| `date.knowledge-basis` | Last content change date |
 | `date.last-used` | Last invocation date (self-updated) |
 | `tags` | Categorization tags (always include `ai/skill`) |
 | `see-also` | Cross-links to related skills, templates, workflows |
@@ -131,18 +144,11 @@ See [Build-Time vs Runtime Dependencies](../build-system/dependencies.md).
 
 ## Examples
 
-- `skills/ai/ai-skill-upsert/` — Creates and manages skills
-- `skills/ai/knowledge-bundle-upsert/` — Creates OKF knowledge bundles
+- `skills/ai/ai-upsert/` — Creates and manages skills and OKF knowledge bundles
 - `skills/software-dev/git-repository-management/` — Git operations
 - `skills/commerce/acquisition/` — Acquisition analysis
 
 ## Producer Skill
 
-[`ai-skill-upsert`](../upsert-skills/ai-skill-upsert.md) — creates, updates,
-converts, and benchmarks skills.
-
-# Citations
-
-[1] [Skills directory](src/current/skills/)
-[2] [Skills AGENTS.md](src/current/skills/AGENTS.md)
-[3] [Developer guide](.agents/knowledge/developer.md)
+[`ai-upsert`](../upsert-skills/ai-upsert.md) — creates, updates,
+converts, and benchmarks skills; creates and maintains OKF knowledge bundles.

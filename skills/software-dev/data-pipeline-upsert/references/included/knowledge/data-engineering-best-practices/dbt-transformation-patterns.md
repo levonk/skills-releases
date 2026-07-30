@@ -3,7 +3,21 @@ type: Practice
 title: dbt Transformation Patterns — Models, Tests, Snapshots, and Materializations
 description: Use dbt to transform data in the warehouse with clear model layers, materialization strategies, generic and custom tests, snapshots for SCD2, and incremental models for large tables.
 tags: [data-engineering, dbt, data-warehouse, transformations, tests, snapshots, incremental]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: dbt-docs-materializations
+    resource: "https://docs.getdbt.com/docs/build/materializations"
+    title: "dbt docs: Materializations"
+  - id: dbt-docs-tests
+    resource: "https://docs.getdbt.com/docs/build/tests"
+    title: "dbt docs: Tests"
+  - id: dbt-docs-snapshots
+    resource: "https://docs.getdbt.com/docs/build/snapshots"
+    title: "dbt docs: Snapshots"
 ---
 
 # dbt Transformation Patterns
@@ -59,9 +73,3 @@ Organize models into layers:
 - Use dbt snapshots for slowly changing dimensions (SCD2).
 - Define `unique_key` and `updated_at`/`dbt_updated_at`.
 - Query snapshots with `dbt_valid_to is null` for current records.
-
-## Citations
-
-[1] [dbt docs: Materializations](https://docs.getdbt.com/docs/build/materializations)
-[2] [dbt docs: Tests](https://docs.getdbt.com/docs/build/tests)
-[3] [dbt docs: Snapshots](https://docs.getdbt.com/docs/build/snapshots)

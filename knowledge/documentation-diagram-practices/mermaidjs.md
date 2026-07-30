@@ -3,7 +3,10 @@ type: Practice
 title: Mermaid Practices
 description: Mermaid syntax conventions for documentation — quote decision node labels with special characters, use <br/> inside quoted strings for line breaks, and avoid syntax that markdown pre-processors strip.
 tags: [documentation, diagrams, mermaid, syntax, quoting, line-breaks, markdown]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-19"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Mermaid Practices

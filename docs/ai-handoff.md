@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **ai** · Status:  · Version: 2.0.0
+> Category: **ai** · Status:  · Version: 2.3.0
 
 Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation.
 
@@ -13,7 +13,7 @@ Capture and restore AI conversation context for seamless work continuation acros
 |-------|-------|
 | Name | `handoff` |
 | Category | `ai` |
-| Version | `2.0.0` |
+| Version | `2.3.0` |
 | Status | `` |
 | Owner |  |
 
@@ -21,9 +21,10 @@ Capture and restore AI conversation context for seamless work continuation acros
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **git-repository-management** (skill, dependency) — Commits pending work before context capture and commits the handoff document after save, so the handoff's git commit hash pins a clean, reproducible repo state
 
 ---
 
 - **Full skill**: [`skills/ai/handoff/SKILL.md`](skills/ai/handoff/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

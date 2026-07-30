@@ -3,7 +3,17 @@ type: Concept
 title: Upsert Skills Family
 description: Overview of the skill family that creates and maintains all AI primitives, sharing common includes, patterns, and cross-linking.
 tags: [ai-primitives, upsert-skills, family, producers, lifecycle]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: ai-skills-directory
+    resource: src/current/skills/ai/
+    title: "AI skills directory"
+  - id: skills-agents-md
+    resource: src/current/skills/AGENTS.md
+    title: "Skills AGENTS.md"
 ---
 
 # Upsert Skills Family
@@ -16,13 +26,12 @@ create, update, and audit all AI primitive types. Each upsert skill is the
 
 | Skill | Produces | Version |
 |------|----------|---------|
-| [ai-skill-upsert](ai-skill-upsert.md) | Skills | 2.3.0 |
+| [ai-upsert](ai-upsert.md) | Skills and OKF knowledge bundles | 3.0.0 |
 | [ai-workflow-upsert](ai-workflow-upsert.md) | Workflows | 3.1.0 |
 | [agent-upsert](agent-upsert.md) | Agent definitions | 1.0.0 |
 | [agent-file-upsert](agent-file-upsert.md) | AGENTS.md hierarchy docs | 3.1.0 |
 | [prompt-upsert](prompt-upsert.md) | Prompts | 1.0.0 |
 | [template-upsert](template-upsert.md) | Templates | 1.0.0 |
-| [knowledge-bundle-upsert](knowledge-bundle-upsert.md) | OKF knowledge bundles | 2.0.0 |
 | [rule-upsert](rule-upsert.md) | Rules | 1.0.0 |
 | [readme-upsert](readme-upsert.md) | README.md documentation | 1.1.0 |
 | [ai-guidance-improver](ai-guidance-improver.md) | Audits any AI guidance type | 1.1.0 |
@@ -39,7 +48,7 @@ All upsert skills pull in the same shared includes at build time:
 {{{ include "includes/trigger-guard.md" . }}}       # Prevents over-triggering
 {{{ include "includes/research-phase.md" . }}}       # Search before creating
 {{{ include "includes/cross-linking.md" . }}}        # see-also relationships
-{{{ include "includes/date-management.md" . }}}     # date.updated / date.last-used
+{{{ include "includes/date-management.md" . }}}     # date.knowledge-basis / date.last-used
 {{{ include "includes/clarifying-questions.md" . }}} # Ask before generating
 {{{ include "includes/script-materialization.md" . }}} # Materialize cli-tool-discovery.sh
 ```
@@ -56,7 +65,7 @@ user-invocable: true
 disable-model-invocation: true
 date:
   created: "YYYY-MM-DD"
-  updated: "YYYY-MM-DD"
+  knowledge-basis: "YYYY-MM-DD"
   last-used: "YYYY-MM-DD"
 tags:
   - "ai/skill"  # or "ai/agent", "ai/prompt/upsert", etc.
@@ -127,8 +136,3 @@ Some primitives don't have a dedicated upsert skill:
 | Memory/Context | Hand-authored (no `context-upsert`) |
 
 Use `ai-guidance-improver` to audit these.
-
-# Citations
-
-[1] [AI skills directory](src/current/skills/ai/)
-[2] [Skills AGENTS.md](src/current/skills/AGENTS.md)

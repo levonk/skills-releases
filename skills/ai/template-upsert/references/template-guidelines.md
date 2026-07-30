@@ -13,7 +13,7 @@ Every template must have clear frontmatter:
 - `use`: When to invoke this template.
 - `engine`: Rendering engine (e.g., `go-template`, `markdown-only`).
 - `outputs_to`: Paths or glob patterns where rendered artifacts will live.
-- `date`: `created`, `updated`, `last-used` (YYYY-MM-DD format).
+- `date`: `created`, `knowledge-basis`, `last-used` (YYYY-MM-DD format).
 - `variables.schema`: Entries with `name`, `type`, `required`, `default`, and
   `description`.
 

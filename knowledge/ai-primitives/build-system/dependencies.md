@@ -3,7 +3,17 @@ type: Concept
 title: Build-Time vs Runtime Dependencies
 description: How skill dependencies work — what gets inlined at build time vs what consumers must install at runtime.
 tags: [build-system, dependencies, build-time, runtime, composition]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-12"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: skills-src-readme
+    resource: https://github.com/levonk/skills-src
+    title: "skills-src README"
+  - id: developer-guide
+    resource: .agents/knowledge/developer.md
+    title: "Developer guide"
 ---
 
 # Build-Time vs Runtime Dependencies
@@ -99,8 +109,3 @@ skills in `skills-releases` have no `{{{ include }}}` directives. The
 `cli-tool-discovery.sh` script is also materialized into each skill's
 `scripts/` directory at build time, making installed skills fully
 self-contained.
-
-# Citations
-
-[1] [skills-src README](https://github.com/levonk/skills-src)
-[2] [Developer guide](.agents/knowledge/developer.md)

@@ -57,7 +57,7 @@ Provides real-time suggestions and improvements for prompts users are actively w
 - "optimize this prompt: [your prompt text]"
 
 ## Related Skills
-- **ai-skill-upsert** (skill, complement) — For creating new AI guidance files; shares the research-phase and comparison-methodology includes
+- **ai-upsert** (skill, complement) — For creating new AI guidance files; shares the research-phase and comparison-methodology includes
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
@@ -67,4 +67,4 @@ Provides real-time suggestions and improvements for prompts users are actively w
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-20T22:00:35Z
+- **Generated**: 2026-07-30T10:21:17Z

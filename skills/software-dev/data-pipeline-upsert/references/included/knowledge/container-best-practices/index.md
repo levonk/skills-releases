@@ -1,5 +1,5 @@
 ---
-okf_version: "0.1"
+okf_version: "0.2"
 ---
 
 # Container Best Practices
@@ -25,3 +25,4 @@ occurred in real Dockerfiles and the practice that prevents it.
 * [Node.js in Containers](nodejs-in-containers.md) - npm ci --omit=dev, NODE_ENV=production, non-root ownership, dumb-init signal handling, multi-stage builds
 * [Dockerfile Best Practices](dockerfile-best-practices.md) - Package manager cleanup (apt vs apk), user creation (groupadd vs addgroup), multi-stage builds, healthchecks
 * [Container Runtime Essentials](container-runtime-essentials.md) - Build strategy decision tree (pre-built vs Dockerfile vs Nix), multi-arch mandates, QEMU avoidance, sidecar usage, entrypoint/healthcheck naming, base image by use case, --push requirement
+* [Nx Monorepo Docker Patterns](nx-monorepo-docker-patterns.md) - Two-layer base image (node-base + deps-base), Nx-affected Docker builds, dual cache (Nx + BuildKit), pnpm-vs-bun-in-containers tradeoff with pnpm-sidecar, @nx/docker plugin, custom hash-based executors, dev-time docker-compose

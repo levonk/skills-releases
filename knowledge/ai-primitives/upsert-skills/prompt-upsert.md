@@ -4,7 +4,14 @@ title: prompt-upsert
 description: Creates and improves AI prompts using the Levonk methodology. The producer skill for the prompt primitive.
 resource: src/current/skills/ai/prompt-upsert/
 tags: [upsert-skills, prompt-creation, prompt-optimization, levonk-methodology]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: prompt-upsert-skill-md
+    resource: src/current/skills/ai/prompt-upsert/SKILL.md.tmpl
+    title: "prompt-upsert SKILL.md"
 ---
 
 # prompt-upsert
@@ -52,7 +59,3 @@ DECONSTRUCT → DIAGNOSE → DEVELOP → DELIVER
 ## Produces
 
 [Prompts](../primitives/prompts.md) — precision-crafted instruction sets.
-
-# Citations
-
-[1] [prompt-upsert SKILL.md](src/current/skills/ai/prompt-upsert/SKILL.md.tmpl)

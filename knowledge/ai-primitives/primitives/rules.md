@@ -4,7 +4,17 @@ title: Rules
 description: Always-on binding constraints loaded into the system prompt, providing contracts for AI agents working in any project.
 resource: src/current/rules/
 tags: [ai-primitives, rules, always-on, constraints, contracts, binding]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: rules-directory
+    resource: src/current/rules/
+    title: "Rules directory"
+  - id: rules-agents-md
+    resource: src/current/rules/AGENTS.md
+    title: "Rules AGENTS.md"
 ---
 
 # Rules
@@ -110,8 +120,3 @@ No — rules are constraints, not process.
 [`rule-upsert`](../upsert-skills/rule-upsert.md) — creates, updates, and
 audits rules. Previously rules were authored by hand; `rule-upsert` now
 provides lifecycle management.
-
-# Citations
-
-[1] [Rules directory](src/current/rules/)
-[2] [Rules AGENTS.md](src/current/rules/AGENTS.md)

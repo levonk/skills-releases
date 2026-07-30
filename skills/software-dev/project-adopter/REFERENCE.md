@@ -52,15 +52,15 @@ This skill is designed to work seamlessly with other skills in the ecosystem:
     "typescript"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl"
   }
 }
 ```
@@ -76,15 +76,15 @@ This skill is designed to work seamlessly with other skills in the ecosystem:
     "rustfmt"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "clean": "just clean-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "clean": "just clean_impl"
   }
 }
 ```
@@ -101,15 +101,15 @@ This skill is designed to work seamlessly with other skills in the ecosystem:
     "mypy"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "typecheck": "just typecheck-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "typecheck": "just typecheck_impl"
   }
 }
 ```
@@ -124,15 +124,15 @@ This skill is designed to work seamlessly with other skills in the ecosystem:
     "golangci-lint"
   ],
   "shell": {
-    "init_hook": ["just bootstrap-internal"]
+    "init_hook": ["just bootstrap_impl"]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "clean": "just clean-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "clean": "just clean_impl"
   }
 }
 ```
@@ -164,27 +164,27 @@ typecheck:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     pnpm install
     echo "✅ TypeScript environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     pnpm run build
 
-test-internal:
+test_impl:
     pnpm run test
 
-dev-internal:
+dev_impl:
     pnpm run dev
 
-lint-internal:
+lint_impl:
     pnpm run lint
 
-typecheck-internal:
+typecheck_impl:
     pnpm run typecheck
 
-clean-internal:
+clean_impl:
     rm -rf dist node_modules/.cache
 ```
 
@@ -210,24 +210,24 @@ lint:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     cargo build
     echo "✅ Rust environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     cargo build --release
 
-test-internal:
+test_impl:
     cargo test
 
-dev-internal:
+dev_impl:
     cargo run
 
-lint-internal:
+lint_impl:
     cargo clippy
 
-clean-internal:
+clean_impl:
     cargo clean
 ```
 
@@ -256,27 +256,27 @@ typecheck:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     poetry install
     echo "✅ Python environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     poetry build
 
-test-internal:
+test_impl:
     poetry run pytest
 
-dev-internal:
+dev_impl:
     poetry run python -m src
 
-lint-internal:
+lint_impl:
     poetry run ruff check
 
-typecheck-internal:
+typecheck_impl:
     poetry run mypy
 
-clean-internal:
+clean_impl:
     rm -rf build dist .pytest_cache
 ```
 
@@ -302,24 +302,24 @@ lint:
 bootstrap:
     devbox shell bootstrap
 
-bootstrap-internal:
+bootstrap_impl:
     go mod download
     echo "✅ Go environment ready!"
 
-# Internal targets
-build-internal:
+# Implementation targets
+build_impl:
     go build ./...
 
-test-internal:
+test_impl:
     go test ./...
 
-dev-internal:
+dev_impl:
     go run main.go
 
-lint-internal:
+lint_impl:
     golangci-lint run
 
-clean-internal:
+clean_impl:
     go clean -cache
 ```
 
@@ -553,7 +553,7 @@ just quality  # if defined
 FROM jetify/devbox:latest as builder
 WORKDIR /app
 COPY devbox.json ./
-RUN devbox shell -- just build-internal
+RUN just build
 
 FROM node:22-alpine as runtime
 COPY --from=builder /app/dist ./dist
@@ -569,7 +569,7 @@ COPY --from=builder /app/dist ./dist
 
 ### Justfile Design
 - Separate user-facing targets from internal ones
-- Use `-internal` suffix for implementation details
+- Use `_impl` suffix for implementation details
 - Keep recipes simple and focused
 - Add comments for complex workflows
 

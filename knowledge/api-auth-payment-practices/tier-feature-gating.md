@@ -3,8 +3,16 @@ type: Practice
 title: Tier Feature Gating
 description: Free/Starter/Pro/Premium tiers with feature flags, 14-day Pro trial (no credit card), dunning (3 retries over 14 days → downgrade), commitment terms (quarterly/annual), annual discount ~15%.
 tags: [tiers, billing, feature-gating, trial, dunning, stripe, saas]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: tasks-bookkeeping-saas-mvp-09-001-billing-tiers-trial
+    resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-09-001-billing-tiers-trial.md"
+    title: "bookkeep-saas"
 ---
+
 
 # Tier Feature Gating
 
@@ -59,7 +67,3 @@ getTierLimits(tier): TierLimits    // Returns caps (receipts, entities, etc.)
 - [Payment Provider Interface](payment-provider-interface.md) — Provider manages
   subscriptions
 - [Supabase Auth Pattern](supabase-auth-pattern.md) — Trial starts at signup
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-09-001-billing-tiers-trial.md` — bookkeep-saas

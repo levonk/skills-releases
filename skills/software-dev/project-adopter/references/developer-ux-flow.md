@@ -1,18 +1,19 @@
 # Standard Developer UX Flow (ADR 20260131001)
 
-**Primary Flow**: `direnv → devbox → just (*-internal) → [build tool]`
+**Primary Flow**: `direnv → devbox → just (auto-detecting) → [build tool]`
 
 **AI Agent Workflow** (automated):
 ```bash
-devbox run just build-internal      # → language-specific build command
-devbox run just test-internal       # → language-specific test command
-devbox run just lint-internal       # → language-specific lint command
+just build      # → auto-detects devbox → build_impl → language-specific build command
+just test       # → auto-detects devbox → test_impl → language-specific test command
+just lint       # → auto-detects devbox → lint_impl → language-specific lint command
 ```
 
 **Human Developer Workflow** (interactive):
 ```bash
-just build  # → automatically ensures devbox environment
-# Flow: just build → devbox run build → just build-internal → [build tool]
+just build  # → auto-detects devbox environment via _devbox helper
+# Flow: just build → _devbox build_impl → devbox run -- just build_impl → [build tool]
+# (or if already in devbox: just build → _devbox build_impl → just build_impl → [build tool])
 ```
 
 ### Devbox Setup (Based on Detection)
@@ -28,16 +29,16 @@ Configure `devbox.json` based on detected systems:
   ],
   "shell": {
     "init_hook": [
-      "just bootstrap-internal"
+      "just bootstrap_impl"
     ]
   },
   "scripts": {
-    "bootstrap": "just bootstrap-internal",
-    "build": "just build-internal",
-    "test": "just test-internal",
-    "dev": "just dev-internal",
-    "lint": "just lint-internal",
-    "clean": "just clean-internal"
+    "bootstrap": "just bootstrap_impl",
+    "build": "just build_impl",
+    "test": "just test_impl",
+    "dev": "just dev_impl",
+    "lint": "just lint_impl",
+    "clean": "just clean_impl"
   }
 }
 ```
@@ -53,30 +54,55 @@ Configure `devbox.json` based on detected systems:
 Create `justfile` with standard targets following ADR 20260131001:
 
 ```just
-# Normal targets - Developer interface (REQUIRED)
+# _devbox helper — DRY auto-detection of devbox environment
+# All normal targets delegate to this. Checks DEVBOX_SHELL_ENABLED and either
+# runs the _impl target directly, re-execs via devbox run, or falls back to doctor.
+_devbox target *args:
+    #!/usr/bin/env bash
+    if [ "${DEVBOX_SHELL_ENABLED:-0}" = "1" ]; then
+        exec just "{{target}}" {{args}}
+    elif command -v devbox >/dev/null 2>&1; then
+        exec devbox run -- just "{{target}}" {{args}}
+    else
+        echo "❌ devbox not found in PATH." >&2
+        echo "💡 Running doctor to diagnose environment issues..." >&2
+        just doctor 2>/dev/null || true
+        exit 1
+    fi
+
+# Normal targets - Developer interface (REQUIRED) — one-liners delegating to _devbox
 clean:
-    devbox shell clean
+    just _devbox clean_impl
 
 dev:
-    devbox shell dev
+    just _devbox dev_impl
 
 build:
-    devbox shell build
+    just _devbox build_impl
 
 test:
-    devbox shell test
+    just _devbox test_impl
 
 lint:
-    devbox shell lint
+    just _devbox lint_impl
 
 typecheck:
-    devbox shell typecheck
+    just _devbox typecheck_impl
 
 # Bootstrap recipes (REQUIRED)
 bootstrap:
-    devbox shell bootstrap
+    just _devbox bootstrap_impl
 
-bootstrap-internal:
+# doctor runs DIRECTLY — it's the fallback when devbox is missing
+doctor:
+    #!/usr/bin/env bash
+    echo "🔍 Checking development environment..."
+    command -v devbox >/dev/null 2>&1 && echo "✅ devbox: $(devbox version 2>&1 | head -1)" || echo "❌ devbox: NOT FOUND"
+    command -v just >/dev/null 2>&1 && echo "✅ just: $(just --version 2>&1)" || echo "❌ just: NOT FOUND"
+    [ "${DEVBOX_SHELL_ENABLED:-0}" = "1" ] && echo "✅ devbox env: ACTIVE" || echo "⚠️  devbox env: NOT ACTIVE"
+
+# Implementation targets (REQUIRED) — hidden from just --list via _ prefix
+bootstrap_impl:
     # Language-specific setup
     {{{ "{{" }}}#if is_rust{{{ "}}" }}}
     cargo build
@@ -89,8 +115,7 @@ bootstrap-internal:
     {{{ "{{" }}}#/if{{{ "}}" }}}
     echo "Development environment ready!"
 
-# Internal targets (REQUIRED)
-build-internal:
+build_impl:
     {{{ "{{" }}}#if is_rust{{{ "}}" }}}
     cargo build --release
     {{{ "{{" }}}#/if{{{ "}}" }}}
@@ -101,7 +126,7 @@ build-internal:
     poetry build
     {{{ "{{" }}}#/if{{{ "}}" }}}
 
-test-internal:
+test_impl:
     {{{ "{{" }}}#if is_rust{{{ "}}" }}}
     cargo test
     {{{ "{{" }}}#/if{{{ "}}" }}}
@@ -112,7 +137,7 @@ test-internal:
     poetry run pytest
     {{{ "{{" }}}#/if{{{ "}}" }}}
 
-dev-internal:
+dev_impl:
     {{{ "{{" }}}#if is_rust{{{ "}}" }}}
     cargo run
     {{{ "{{" }}}#/if{{{ "}}" }}}
@@ -123,7 +148,7 @@ dev-internal:
     poetry run python -m src
     {{{ "{{" }}}#/if{{{ "}}" }}}
 
-lint-internal:
+lint_impl:
     {{{ "{{" }}}#if is_rust{{{ "}}" }}}
     cargo clippy
     {{{ "{{" }}}#/if{{{ "}}" }}}
@@ -134,7 +159,7 @@ lint-internal:
     poetry run ruff check
     {{{ "{{" }}}#/if{{{ "}}" }}}
 
-typecheck-internal:
+typecheck_impl:
     {{{ "{{" }}}#if is_typescript{{{ "}}" }}}
     pnpm run typecheck
     {{{ "{{" }}}#/if{{{ "}}" }}}
@@ -142,7 +167,7 @@ typecheck-internal:
     poetry run mypy
     {{{ "{{" }}}#/if{{{ "}}" }}}
 
-clean-internal:
+clean_impl:
     {{{ "{{" }}}#if is_rust{{{ "}}" }}}
     cargo clean
     {{{ "{{" }}}#/if{{{ "}}" }}}
@@ -253,7 +278,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-    command: just dev-internal
+    command: just dev_impl
 ```
 
 Create `docker/Dockerfile`:
@@ -270,7 +295,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 EXPOSE 3000
-CMD ["just", "dev-internal"]
+CMD ["just", "dev_impl"]
 ```
 
 ### LICENSE.md
@@ -312,10 +337,10 @@ Brief description of the project and its purpose.
 ### Commands
 
 ```bash
-just build-internal    # Build project
-just test-internal     # Run tests
-just lint-internal     # Run linting
-just typecheck-internal # Run type checking
+just build_impl    # Build project (inside devbox)
+just test_impl     # Run tests (inside devbox)
+just lint_impl     # Run linting (inside devbox)
+just typecheck_impl # Run type checking (inside devbox)
 ```
 
 ### Project Structure

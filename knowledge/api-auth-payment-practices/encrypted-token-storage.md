@@ -3,8 +3,16 @@ type: Practice
 title: Encrypted Token Storage
 description: Plaid and Stripe access_tokens encrypted at rest (AES-256), never logged, never exposed to client. Hard constraint from FTC Safeguards Rule and client trust.
 tags: [encryption, tokens, plaid, stripe, security, aes-256, secrets]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: feat-202607170936-bookkeeping-saas-mvp
+    resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md"
+    title: "bookkeep-saas PRD NFR3"
 ---
+
 
 # Encrypted Token Storage
 
@@ -46,7 +54,3 @@ WISP (Written Information Security Program) must document:
 - [Multi-Tenant RLS](multi-tenant-rls.md) — Tokens isolated per tenant
 - [Webhook Idempotency](webhook-idempotency.md) — Webhook handler never logs
   tokens
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md` — bookkeep-saas PRD NFR3

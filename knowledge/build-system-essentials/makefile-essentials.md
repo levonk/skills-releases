@@ -3,7 +3,10 @@ type: Practice
 title: Makefile Essentials
 description: Core Makefile guidelines — centralized scripting, standardized targets, documentation-driven help, modular structure, and best practices for maintainable build orchestration.
 tags: [build-system, makefile, make, build-orchestration, scripting]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Make & Makefiles

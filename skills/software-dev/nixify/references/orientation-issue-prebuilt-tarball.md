@@ -1,3 +1,7 @@
+---
+description: Reusable guard for posting GitHub issue and PR bodies via gh CLI — prevents the two corruption modes (literal \n and stripped backticks) that have shipped broken posts in the wild
+---
+
 ## CRITICAL — How to post these bodies to GitHub (read before any `gh` call)
 
 The template below contains markdown backticks (`` ` `` and triple-fence ``` ``` ```), shell-style `$VARS` (`$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`), and real newlines. If you pass it to `gh` the wrong way, GitHub stores garbage. Two failure modes have shipped broken PRs/issues in the wild:
@@ -7,8 +11,8 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
 
 **Always do this, no exceptions:**
 
-1. Substitute the four placeholders by **text replacement** (not shell expansion): `$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`, and `<issue-number>` / `<platform>` / `<project-name>`. Use `sed -i`/`perl -pi -e` or edit the file in your editor tool — never let bash expand `$UPSTREAM_OWNER`.
-2. Write the final body to a **file** (e.g. `/tmp/pr-body.md`).
+1. Substitute the placeholders by **text replacement** (not shell expansion): `$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`, and any `<issue-number>` / `<platform>` / `<project-name>` / `<feature-name>` placeholders. Use `sed -i`/`perl -pi -e` or edit the file in your editor tool — never let bash expand `$UPSTREAM_OWNER`.
+2. Write the final body to a **file** (e.g. `/tmp/pr-body.md` or `/tmp/issue-body.md`).
 3. Post with `--body-file`, never `--body`:
    ```bash
    gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" --title "..." --body-file /tmp/pr-body.md
@@ -48,6 +52,27 @@ This issue tracks adding Nix flake support to the upstream project so users can 
 ## Current gap
 
 The project currently only documents source builds (`cargo install --path .`, `npm install -g`, etc.). There is no one-command install path for users who already have Nix.
+
+<!-- BEGIN conditional: Relationship to nixpkgs -->
+<!-- INCLUDE this section ONLY when check-nixpkgs.sh (Step 10) reported project_in_nixpkgs: true. -->
+<!-- If project_in_nixpkgs: false, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $PROJECT, $NIXPKGS_VERSION, $LATEST_RELEASE, $NIXPKGS_DARWIN_STABLE_VERSION from Step 10 -->
+<!-- output and the latest GitHub release (check-releases.sh, Step 4). -->
+<!-- Pick the correct x86_64-darwin clause based on x86_64_darwin_in_meta and delete the other. -->
+
+## Relationship to nixpkgs
+
+This project is already packaged in nixpkgs (`nixpkgs#$PROJECT`), so a reasonable question is why a repo-owned flake is worth adding on top of it. The flake is complementary, not redundant:
+
+- **Faster release cadence.** nixpkgs ships `$NIXPKGS_VERSION` on the unstable channel; the latest upstream release is `$LATEST_RELEASE`. nixpkgs updates on its own staging schedule (days to weeks behind upstream, longer on the stable channel). The flake's hash-automation workflow bumps to the latest release within ~24 hours of publication, so `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` always serves the current release.
+- **Release install option (`#prebuilt`).** The flake serves the official prebuilt release tarball directly from GitHub Releases — no compilation, no nixpkgs build toolchain in the path. Users who want the exact artifact the project ships get it via `nix run .#prebuilt`.
+- **Source install option (`#source`).** The flake also builds from source for users who want reproducibility or auditability without depending on nixpkgs's packaging decisions.
+- **Broader platform support.** nixpkgs's `meta.platforms` for `$PROJECT` does not declare `x86_64-darwin`<!-- ALTERNATIVE if x86_64_darwin_in_meta=true: declares `x86_64-darwin` but the stable darwin channel ships an older version -->; the flake's `nixpkgs-darwin-legacy` pin builds on `x86_64-darwin` at the latest version, where the nixpkgs darwin stable channel ships `$NIXPKGS_DARWIN_STABLE_VERSION` (older).
+- **Shorter supply chain.** The flake fetches directly from `$UPSTREAM_OWNER/$UPSTREAM_REPO`'s GitHub Releases — one fewer packaging layer to audit and trust.
+
+`nix profile add nixpkgs#$PROJECT` remains a valid install path and this flake does not replace it. The two coexist: users who prefer nixpkgs's curation keep using it; users who want the latest release, the prebuilt path, or `x86_64-darwin` at current versions use the flake.
+
+<!-- END conditional: Relationship to nixpkgs -->
 
 ## Proposed change
 

@@ -3,7 +3,21 @@ type: Practice
 title: Dockerfile Linting — hadolint in CI
 description: Run hadolint on every Dockerfile in CI to catch the patterns in this bundle automatically: npm install vs npm ci, COPY . without .dockerignore, unpinned tags.
 tags: [docker, dockerfile, linting, hadolint, ci, quality-gate]
-timestamp: 2026-07-17T18:30:00Z
+date:
+  created: "2026-07-17"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: give-me-15-minutes-and-i-ll-fix-your-dockerfiles-forever
+    resource: "https://www.youtube.com/watch?v=aZ_y2M2OuEA"
+    title: "Give me 15 minutes and I'll Fix Your Dockerfiles Forever"
+  - id: hadolint-dockerfile-linter
+    resource: "https://github.com/hadolint/hadolint"
+    title: "hadolint — Dockerfile linter"
+  - id: hadolint-github-action
+    resource: "https://github.com/hadolint/hadolint-action"
+    title: "hadolint GitHub Action"
 ---
 
 # Dockerfile Linting — hadolint in CI
@@ -73,9 +87,3 @@ matures.
 
 - Every other concept in this bundle — hadolint is the automated enforcement
   layer for all of them.
-
-## Citations
-
-[1] [Give me 15 minutes and I'll Fix Your Dockerfiles Forever](https://www.youtube.com/watch?v=aZ_y2M2OuEA) — DevOps Toolbox, 2026-07-17
-[2] [hadolint — Dockerfile linter](https://github.com/hadolint/hadolint)
-[3] [hadolint GitHub Action](https://github.com/hadolint/hadolint-action)

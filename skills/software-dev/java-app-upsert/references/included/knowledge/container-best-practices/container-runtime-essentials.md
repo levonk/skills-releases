@@ -3,7 +3,10 @@ type: Practice
 title: Container Runtime Essentials
 description: Build strategy decision tree (pre-built vs Dockerfile vs Nix), multi-arch mandates, QEMU avoidance, sidecar usage, entrypoint/healthcheck naming, base image selection by use case, and --push requirements for production images.
 tags: [container, docker, runtime, base-image, multi-arch, buildx, nix, sidecar, entrypoint, healthcheck, alpine, debian]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Container Runtime Essentials

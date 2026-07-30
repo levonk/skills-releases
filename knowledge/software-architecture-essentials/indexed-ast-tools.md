@@ -3,7 +3,10 @@ type: Practice
 title: Indexed AST Tool Selection
 description: Pick the right indexed AST tool (CodeGraph, Graphify, GitNexus) for the AST Search and AST Insights rows of the 6×2 matrix — by freshness, dispatch tracing, multi-repo support, content breadth, and license; they win orthogonal rounds and can run together.
 tags: [architecture, code-intelligence, indexed-ast-tools, mcp, ai-agents, tooling, tool-selection]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-19"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Indexed AST Tool Selection

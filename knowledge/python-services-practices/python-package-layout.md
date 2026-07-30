@@ -3,7 +3,14 @@ type: Practice
 title: Python Package Layout
 description: Non-service Python library layout with src/ directory, tests/, pyproject.toml, and README. No Dockerfile or Makefile by default unless explicitly containerized.
 tags: [python, package-layout, library, src-layout, project-structure]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # Python Package Layout
@@ -44,7 +51,3 @@ package/
 
 - [FastAPI Service Layout](fastapi-service-layout.md) — Service counterpart
 - [pyproject.toml Manifest](pyproject-toml-manifest.md) — Manifest for the package
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

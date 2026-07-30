@@ -4,7 +4,14 @@ title: handoff
 description: Captures and restores AI conversation context for seamless work continuation across sessions.
 resource: src/current/skills/ai/handoff/
 tags: [upsert-skills, handoff, context-continuity, session-management]
-timestamp: 2026-07-11T10:30:00Z
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-11"
+  last-used: "2026-07-11"
+sources:
+  - id: handoff-skill-md
+    resource: src/current/skills/ai/handoff/SKILL.md.tmpl
+    title: "handoff SKILL.md"
 ---
 
 # handoff
@@ -43,7 +50,3 @@ requiring re-explanation.
 This is a **utility** skill, not a producer of primitives. It handles
 session-to-session continuity, complementing the always-on context files
 (IDENTITY.md, SOUL.md, MEMORY.md) which provide permanent state.
-
-# Citations
-
-[1] [handoff SKILL.md](src/current/skills/ai/handoff/SKILL.md.tmpl)

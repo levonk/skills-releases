@@ -3,7 +3,20 @@ type: Practice
 title: Java Alpine Compatibility — musl libc, Native Libraries, and glibc Workarounds
 description: Be aware that Alpine uses musl libc; Java with JNI or native dependencies may fail unless you add glibc compatibility or use a Debian-based runtime.
 tags: [java, alpine, musl, glibc, jni, containers, compatibility]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: infrahub-java-sidecar-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar
+    title: infrahub java-sidecar Dockerfile
+  - id: infrahub-coredns-dockerfile
+    resource: https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/dns/coredns/docker/Dockerfile.coredns
+    title: infrahub CoreDNS Dockerfile
+  - id: musl-libc
+    resource: https://musl.libc.org/
+    title: musl libc
 ---
 
 # Java Alpine Compatibility
@@ -47,9 +60,3 @@ Java Native Interface (JNI) call expects glibc symbols.
 - `apk add build-base` installs a C toolchain. It does not make musl glibc.
 - Native libraries compiled on Alpine with `build-base` are musl binaries and
   will not run on glibc systems.
-
-## Citations
-
-[1] [infrahub java-sidecar Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/artifact/java-sidecar/Dockerfile.java-sidecar) — OpenJDK 17 on Alpine
-[2] [infrahub CoreDNS Dockerfile](https://github.com/levonk/infrahub/blob/main/shared/active/03-container/services/dns/coredns/docker/Dockerfile.coredns) — adds `gnu-libiconv` and `musl-utils`
-[3] [musl libc](https://musl.libc.org/)

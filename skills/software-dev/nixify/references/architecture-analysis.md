@@ -202,3 +202,27 @@ The `brave` derivation in nixpkgs wraps the binary with `makeWrapper` to set up 
 - If the nixpkgs derivation is simple (few inputs, no patches, no postInstall) — your flake can follow the same pattern with confidence.
 - If the nixpkgs derivation has patches, wrapper scripts, or many runtime deps — either replicate them in your flake, or prefer the `nixpkgs_wrapper` approach (Step 12 — `flake_type=nixpkgs_wrapper`) and let nixpkgs handle the complexity.
 - If the nixpkgs derivation uses `fetchurl` on a prebuilt binary — confirms the Prebuilt Tarball Flake path (Step 12 — `flake_type=prebuilt_tarball`) and shows you the exact `buildInputs` and `installPhase` layout to replicate.
+
+## Darwin Framework and Runtime Dependency Detection
+
+Even when nixpkgs has no matching derivation, you can catch the two most common
+Nix-Rust packaging gaps from the project source:
+
+1. **`native-tls` / `reqwest` on Darwin**: Search `Cargo.toml` and `Cargo.lock`
+   for `reqwest`, `native-tls`, `hyper-tls`, or `openssl`. If any appear, the
+   Darwin build must include `Security` and `SystemConfiguration` frameworks in
+   `buildInputs` (see `references/flake-templates/darwin-framework-note.md`).
+   Without them, linking fails with `framework not found Security`.
+
+2. **Runtime service dependencies**: Run
+   `scripts/detect-runtime-deps.sh <project-dir>` from the nixify skill
+   directory. It scans `Cargo.toml` (root + workspace members), `package.json`,
+   `pyproject.toml`, `requirements.txt`, and `go.mod` for crates/packages that
+   imply a runtime service — `surrealdb` → `surrealdb`, `sqlx`/`diesel`/
+   `tokio-postgres` → `postgresql`, `redis`/`deadpool-redis` → `redis`,
+   `lapin`/`amqp` → `rabbitmq`, `mongodb` → `mongodb`, etc. Add every detected
+   nix package to both `devbox.json` `packages` and the flake
+   `devShells.default.buildInputs` so `devbox shell` / `nix develop` provide a
+   reproducible environment. Also check `docs/`, `README.md`, and install
+   scripts for services the binary talks to that may not have a crate-level
+   signal (e.g. a project that shells out to `ffmpeg` or `imagemagick`).

@@ -3,7 +3,14 @@ type: Practice
 title: Mandatory Testing Workflow
 description: TDD-first development with mandatory regression tests for bug fixes, comprehensive coverage requirements, and quality gates enforced via pre-commit hooks and CI/CD.
 tags: [testing, tdd, quality-gates, regression, pre-commit, ci-cd]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate-testing-requirements-section
+    resource: internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md
+    title: levonk-base-boilerplate (Testing Requirements section)
 ---
 
 # Mandatory Testing Workflow
@@ -49,12 +56,12 @@ enforces testing at every level.
 
 ```bash
 # Standard testing workflow across all flows
-devbox run just test-internal           # Run all tests
-devbox run just test-internal feature   # Run specific test
-devbox run just test-internal -- --nocapture  # Run with output
+just test           # Run all tests (auto-detects devbox)
+just test feature   # Run specific test
+just test -- --nocapture  # Run with output
 
 # Quality gates before completion
-devbox run just test-internal && devbox run just lint-internal
+just test && just lint
 ```
 
 ### Enforcement
@@ -79,7 +86,3 @@ quality:
   enforces testing
 - [Internal vs Normal Targets](internal-vs-normal-targets.md) — Test targets
   follow the naming convention
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md` — levonk-base-boilerplate (Testing Requirements section)

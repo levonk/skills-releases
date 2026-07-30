@@ -3,7 +3,14 @@ type: Practice
 title: pytest Testing Baseline
 description: pytest as default test runner with pytest-asyncio and httpx/TestClient. Browser/E2E tests use Stagehand + Playwright from Node harness, not Python.
 tags: [python, pytest, testing, asyncio, httpx, stagehand, playwright, e2e]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # pytest Testing Baseline
@@ -40,7 +47,3 @@ knowledge. Python focuses on API-level and unit-level correctness.
 
 - [FastAPI Service Layout](fastapi-service-layout.md) — Tests live in tests/
 - [nox Orchestration](nox-orchestration.md) — nox runs pytest across projects
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

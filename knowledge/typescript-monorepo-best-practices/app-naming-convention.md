@@ -3,7 +3,10 @@ type: Practice
 title: App Naming Convention
 description: Applications follow apps/{status}/{product-suite}/{app-name}/{platform}/{language} — status, product suite, app name, platform, and language are all explicit in the path.
 tags: [typescript, monorepo, app-naming, directory-structure, conventions]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
 ---
 
 # App Naming Convention
@@ -81,7 +84,4 @@ packages/active/features/web/auth/auth-ui/typescript
 - [pnpm and Nx](/pnpm-nx-monorepo.md) — workspace globs consume
   this directory structure.
 
-## Citations
 
-[1] [ARCHITECTURE.md](https://github.com/levonk/job-aide/blob/main/internal-docs/ARCHITECTURE.md) — Application Structure section
-[2] [ADR-20251014002: Application Organization](https://github.com/levonk/job-aide/blob/main/internal-docs/adr/adr-20251014002-application-organization.md)

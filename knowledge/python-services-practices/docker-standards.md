@@ -3,7 +3,14 @@ type: Practice
 title: Python Docker Standards
 description: Multi-stage builds on base-alpine image, non-root user, standard env vars (PUID, PGID, TZ, PORT), /health healthcheck endpoint.
 tags: [python, docker, multi-stage, non-root, healthcheck, base-alpine]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # Python Docker Standards
@@ -46,7 +53,3 @@ Expose the service port and define a `HEALTHCHECK` hitting `/health`.
 
 - [FastAPI Service Layout](fastapi-service-layout.md) — Provides /health endpoint
 - [Makefile Conventions](makefile-conventions.md) — up/down targets use docker compose
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

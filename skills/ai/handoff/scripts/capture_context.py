@@ -166,7 +166,12 @@ def _search_dirs() -> list[Path]:
             dirs.extend([repo / "bin", repo / ".bundle/bin"])
         if (repo / "composer.json").is_file():
             dirs.append(repo / "vendor/bin")
-        dirs.extend([repo / "bin", repo / "scripts", repo / ".local/bin"])
+        # NOTE: Unconditional repo / "bin" is searched LAST (after package
+        # managers in resolve_tool) because a cloned repo could contain
+        # malicious executables in bin/. Tech-stack-specific dirs above
+        # (node_modules/.bin, target/release, .venv/bin, vendor/bin, etc.)
+        # are build-system-managed and stay here. Covers Hermit's bin/ shims
+        # and similar project-local tool layouts — but only as a last resort.
 
     return dirs
 
@@ -271,7 +276,18 @@ def resolve_tool(tool: str) -> dict:
         except FileNotFoundError:
             pass
 
-    # 5. uv fallback: ensure uv is recorded in devbox.json, then fall back to pip.
+    # 5. Repo-root fallback dirs — searched LAST (least secure: a cloned repo
+    # could contain malicious executables in bin/). Covers Hermit's bin/ shims
+    # and similar project-local tool layouts that aren't caught by the
+    # tech-stack-specific dirs in _search_dirs().
+    repo = _get_repo_root()
+    if repo:
+        for d in [repo / "bin", repo / "scripts", repo / ".local/bin"]:
+            candidate = d / tool
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return {"status": "found", "path": str(candidate)}
+
+    # 6. uv fallback: ensure uv is recorded in devbox.json, then fall back to pip.
     if tool == "uv":
         ensure_devbox_package("uv")
         pip_cmd = None
@@ -548,10 +564,34 @@ def resolve_runner(ecosystem: str) -> dict:
 
 
 
+def capture_git_commit_hash(repo_path=None):
+    """Capture the current HEAD commit hash of the target project.
+
+    Returns the full 40-char SHA, or None if the path is not a git repository.
+    The caller is expected to have committed pending work (via the
+    git-repository-management skill) before invoking this so the hash pins a
+    clean, reproducible repo state.
+    """
+    cwd = repo_path if repo_path else os.getcwd()
+    try:
+        result = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+        return None
+    except (subprocess.SubprocessError, FileNotFoundError, OSError):
+        return None
+
+
 def format_context(context):
     """Format the context dictionary into markdown"""
     md = "# Conversation Context Handoff\n\n"
-    
+
     # Add tkr reference if present
     if context.get('tkr_ticket'):
         md += "## Ticket Reference\n"
@@ -559,14 +599,29 @@ def format_context(context):
         if context.get('tkr_parent'):
             md += f"- **Parent Ticket**: {context['tkr_parent']}\n"
         md += "\n"
-    
+
     # Metadata
     md += "## Metadata\n"
     md += f"- **Created**: {context['created']}\n"
     if context.get('session_duration'):
         md += f"- **Session Duration**: {context['session_duration']}\n"
     md += f"- **Primary Goal**: {context['primary_goal']}\n\n"
-    
+
+    # Git State — pin the repo state at handoff time
+    md += "## Git State\n\n"
+    if context.get('git_commit_hash'):
+        sha = context['git_commit_hash']
+        md += f"**Commit at handoff**: `{sha}`\n\n"
+        md += (
+            "This is the exact repo state at handoff time. The receiving session "
+            "can reconstruct what was done by inspecting this commit and its history:\n"
+        )
+        md += f"- `git show {sha}` — what the handoff commit changed\n"
+        md += f"- `git log {sha}..HEAD` — work done since the handoff (during restoration)\n"
+        md += f"- `git diff {sha}~1 {sha}` — the last change before handoff\n\n"
+    else:
+        md += "Not a git repository — no commit hash available.\n\n"
+
     # Project Overview
     md += "## Project Overview\n"
     md += "### Objective\n"
@@ -689,7 +744,7 @@ def create_tkr_ticket(context, parent_ticket=None):
 def capture_interactive():
     """Interactive context capture"""
     print("=== Conversation Context Capture ===\n")
-    
+
     # Check tkr availability
     tkr_available, tkr_status = check_tkr_available()
     if tkr_available:
@@ -698,12 +753,22 @@ def capture_interactive():
     else:
         print(f"ℹ {tkr_status}")
         use_tkr = False
-    
+
+    # Capture git commit hash — pins the repo state at handoff time.
+    # The caller is expected to have committed pending work (via the
+    # git-repository-management skill) before running this script.
+    git_hash = capture_git_commit_hash()
+    if git_hash:
+        print(f"✓ Captured git commit hash: {git_hash}")
+    else:
+        print("ℹ Not a git repository — no commit hash available")
+
     context = {
         'created': datetime.now().isoformat(),
         'primary_goal': input("Primary goal (one sentence): "),
         'objective': input("Detailed objective: "),
         'current_status': input("Current status/progress: "),
+        'git_commit_hash': git_hash,
     }
     
     # Check for parent ticket if using tkr

@@ -3,7 +3,15 @@ type: Practice
 title: Async Patterns
 description: Use tokio as the async runtime, #[tokio::test] for async tests, async fn for async functions, and implement Stream for async iterators when appropriate.
 tags: [rust, async, tokio, futures, async-trait, stream]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: levonk-base-boilerplate
+    resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
+    title: "levonk-base-boilerplate"
 ---
 
 # Async Patterns
@@ -46,7 +54,3 @@ async = ["tokio"]
 
 - [Testing Strategy](testing-strategy.md) — Async test macro pattern
 - [Cargo Configuration](cargo-configuration.md) — tokio as workspace dependency
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — levonk-base-boilerplate

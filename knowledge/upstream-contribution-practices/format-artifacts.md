@@ -3,7 +3,17 @@ type: Practice
 title: Format Artifacts
 description: Run the project's own formatter on non-project files you create before committing. Prevents review feedback asking you to format.
 tags: [formatting, formatter, oxfmt, prettier, biome, review, artifacts]
-timestamp: 2026-07-14T11:30:00Z
+date:
+  created: "2026-07-14"
+  knowledge-basis: "2026-07-14"
+  last-used: "2026-07-14"
+sources:
+  - id: yusukebe-ax-pr-27
+    resource: https://github.com/yusukebe/ax/pull/27
+    title: "yusukebe/ax PR #27"
+  - id: nixify-format-artifacts-sh
+    resource: https://github.com/levonk/skills-src/tree/main/src/current/skills/software-dev/nixify/scripts/format-artifacts.sh
+    title: "nixify format-artifacts.sh"
 ---
 
 # Format Artifacts
@@ -79,8 +89,3 @@ would fail style CI.
 * [Linear History](linear-history.md) — the style commit is kept
   separate from the feature commit but both are part of clean linear
   history
-
-# Citations
-
-[1] [yusukebe/ax PR #27](https://github.com/yusukebe/ax/pull/27)
-[2] [nixify format-artifacts.sh](https://github.com/levonk/skills-src/tree/main/src/current/skills/software-dev/nixify/scripts/format-artifacts.sh)

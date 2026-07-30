@@ -3,8 +3,16 @@ type: Practice
 title: Vitest Testing Framework
 description: Vitest as primary framework for all TypeScript testing — unit, integration, and E2E test runner with Stagehand/Playwright. Fast, ESM-native, Jest-compatible, monorepo-integrated.
 tags: [vitest, testing, typescript, e2e, stagehand, playwright, jest]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: adr-20251106002-vitest-for-testing
+    resource: "internal-docs/adr/adr-20251106002-vitest-for-testing.md"
+    title: "levonk-base-boilerplate"
 ---
+
 
 # Vitest Testing Framework
 
@@ -50,7 +58,3 @@ Use **Vitest** as the primary framework for all TypeScript testing.
 
 - [Code Style Conventions](code-style-conventions.md) — Test files use .test.mts
 - [ESLint Composition API](eslint-composition-api.md) — Vitest rules in ESLint config
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251106002-vitest-for-testing.md` — levonk-base-boilerplate

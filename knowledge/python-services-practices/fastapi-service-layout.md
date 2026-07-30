@@ -3,7 +3,14 @@ type: Practice
 title: FastAPI Service Layout
 description: Standard FastAPI service layout with app/ module, tests/ directory, /health endpoint, pyproject.toml, Dockerfile, docker-compose.yml, and Makefile.
 tags: [python, fastapi, service-layout, project-structure, health-endpoint]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md
+    title: levonk-base-boilerplate
 ---
 
 # FastAPI Service Layout
@@ -53,7 +60,3 @@ service/
 - [pyproject.toml Manifest](pyproject-toml-manifest.md) — Manifest for the service
 - [Docker Standards](docker-standards.md) — Container for the service
 - [Makefile Conventions](makefile-conventions.md) — Commands for the service
-
-## Citations
-
-[1] `internal-docs/adr/adr-20251129003-python-services-and-packages-standard.md` — levonk-base-boilerplate

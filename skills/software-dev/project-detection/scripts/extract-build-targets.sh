@@ -299,7 +299,7 @@ extract_devbox_targets() {
     echo "bootstrap:"
     echo "	devbox shell bootstrap"
     echo ""
-    echo "bootstrap-internal:"
+    echo "bootstrap_impl:"
     echo "	# Language-specific setup handled by devbox"
     echo "	echo \"Development environment ready!\""
     echo ""
@@ -307,7 +307,7 @@ extract_devbox_targets() {
     # Extract custom scripts from devbox.json if they exist
     if command -v jq &> /dev/null; then
         local custom_scripts
-        custom_scripts=$(jq -r '.scripts // {} | to_entries[] | select(.key != "bootstrap" and .key != "bootstrap-internal") | "\(.key):\n\tdevbox shell \(.key)"' "$devbox_json" 2>/dev/null || echo "")
+        custom_scripts=$(jq -r '.scripts // {} | to_entries[] | select(.key != "bootstrap" and .key != "bootstrap_impl") | "\(.key):\n\tdevbox shell \(.key)"' "$devbox_json" 2>/dev/null || echo "")
 
         if [[ -n "$custom_scripts" ]]; then
             echo "# Custom scripts from devbox.json"

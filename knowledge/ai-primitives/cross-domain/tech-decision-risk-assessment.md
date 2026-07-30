@@ -3,7 +3,10 @@ type: Cross-Link
 title: Tech Decision Risk Assessment (cross-link)
 description: Cross-link to the canonical tech-decision risk hierarchy in software-architecture-essentials. Applies to AI agents making technology decisions between paths.
 tags: [risk, decision-making, cross-link, architecture]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 canonical: ../software-architecture-essentials/tech-decision-risk-assessment.md
 ---
 

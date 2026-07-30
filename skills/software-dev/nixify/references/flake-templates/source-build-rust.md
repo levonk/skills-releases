@@ -8,22 +8,34 @@ Use when the project does not have published binary releases and uses Cargo.
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # Pin x86_64-darwin to a stable release branch for older macOS Intel
+    # compatibility. See references/flake-templates/darwin-legacy-pin.md.
+    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-darwin-legacy, flake-utils, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs =
+          if system == "x86_64-darwin"
+          then nixpkgs-darwin-legacy.legacyPackages.${system}
+          else nixpkgs.legacyPackages.${system};
         <pname> = pkgs.rustPlatform.buildRustPackage {
           pname = "<binary-name>";
           version = "<x.y.z>";
-          src = ./.;
+          # cleanSource filters build artifacts, .git, .devbox, etc., so
+          # trivial local changes do not invalidate the Nix build cache.
+          src = pkgs.lib.cleanSource ./.;
           cargoLock.lockFile = ./Cargo.lock;
           nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
-            pkgs.libiconv
-          ];
+          buildInputs =
+            [ pkgs.openssl ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+              pkgs.libiconv
+              pkgs.darwin.apple_sdk.frameworks.Security
+              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+            ];
           meta = {
             description = "<Project description>";
             homepage = "https://github.com/$UPSTREAM_OWNER/$UPSTREAM_REPO";
@@ -57,6 +69,21 @@ Use when the project does not have published binary releases and uses Cargo.
 
         checks = {
           build = <pname>;
+        };
+
+        devShells.default = pkgs.mkShell {
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs =
+            [ pkgs.openssl pkgs.rustc pkgs.cargo ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+              pkgs.libiconv
+              pkgs.darwin.apple_sdk.frameworks.Security
+              pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+            ]
+            # Add runtime service deps detected by:
+            #   scripts/detect-runtime-deps.sh <project-dir>
+            # Common examples: pkgs.surrealdb, pkgs.postgresql, pkgs.redis
+            ++ [ <runtime-deps> ];
         };
       }
     );

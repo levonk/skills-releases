@@ -1215,7 +1215,7 @@ iterative_development_loop() {
         print_status "You can manually retry with: run_command just $failed_target"
         case "$env" in
             "devbox")
-                echo "  Or: devbox run -- just $failed_target"
+                echo "  Or: just $failed_target (auto-detects devbox via _devbox helper)"
                 ;;
             "mise")
                 echo "  Or: mise exec -- just $failed_target"

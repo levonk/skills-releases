@@ -43,9 +43,9 @@ and noisy on large repos).
 
 | Disallowed / Wrong | Sanctioned | Notes |
 |---|---|---|
-| Direct `<cmd>` in a devbox project | `devbox run -- <cmd>` | Unless already inside `devbox shell`. |
+| Direct `<cmd>` in a devbox project | `just <recipe>` | `just` auto-detects devbox via `_devbox` helper. Only use `devbox run -- <cmd>` for commands not covered by a just target. |
 | `rtk <cmd>` directly | `devbox run -- rtk <cmd>` | `rtk` is only available inside devbox. |
-| `just <recipe>` directly | `devbox run -- just <recipe>` | If the project uses devbox. |
+| `devbox run -- just <recipe>` | `just <recipe>` | Redundant — `just` auto-detects devbox. |
 | Claiming "devbox not found" | Add nix paths to `PATH` first | See [diagnosing-tool-not-found.md](diagnosing-tool-not-found.md). |
 
 ## Ansible (infrahub and similar)

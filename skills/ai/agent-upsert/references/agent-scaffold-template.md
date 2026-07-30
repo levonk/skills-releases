@@ -44,7 +44,7 @@ runtime:
 tags: ["ai/agent"]
 date:
   created: "<YYYY-MM-DD>"
-  updated: "<YYYY-MM-DD>"
+  knowledge-basis: "<YYYY-MM-DD>"
   last-used: "<YYYY-MM-DD>"
 ---
 

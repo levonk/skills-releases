@@ -3,7 +3,14 @@ type: Practice
 title: Just Over Makefiles
 description: Replace Makefiles with just for task running — no .PHONY needed, simple syntax, better error messages, cross-platform consistency, and command-runner focus.
 tags: [just, makefile, task-runner, developer-experience, build-tools]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: levonk-base-boilerplate
+    resource: internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md
+    title: levonk-base-boilerplate
 ---
 
 # Just Over Makefiles
@@ -62,16 +69,16 @@ test:
     devbox run test
 
 lint:
-    devbox run lint
+    just _devbox lint_impl
 
-# Internal targets — Actual implementation
-build-internal:
+# Implementation targets — Actual implementation (hidden from just --list)
+build_impl:
     cargo build
 
-test-internal:
+test_impl:
     cargo test
 
-lint-internal:
+lint_impl:
     cargo clippy -- -D warnings
 ```
 
@@ -85,8 +92,4 @@ lint-internal:
 ## Related Concepts
 
 - [Standard Developer UX Flow](standard-developer-ux-flow.md) — The workflow just enables
-- [Internal vs Normal Targets](internal-vs-normal-targets.md) — Target naming convention
-
-## Citations
-
-[1] `internal-docs/adr/adr-20260131001-standard-developer-ux-flow.md` — levonk-base-boilerplate
+- [Auto-Detecting Devbox Targets](internal-vs-normal-targets.md) — The `_devbox` helper and `*_impl` naming convention

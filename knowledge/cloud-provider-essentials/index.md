@@ -1,10 +1,13 @@
 ---
-okf_version: "0.1"
+okf_version: "0.2"
 type: KnowledgeBundle
 title: Cloud Provider Essentials
 description: Cloud provider best practices for AWS, Azure, GCP, and OCI — covering infrastructure patterns, cost optimization, security, networking, and IaC implementations with Pulumi and Terraform.
 tags: [cloud, aws, azure, gcp, oci, infrastructure, best-practices, pulumi, terraform, iac]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Cloud Provider Essentials

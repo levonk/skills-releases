@@ -3,8 +3,16 @@ type: Practice
 title: Accessibility Testing in CI
 description: axe-core accessibility scanning in CI pipeline. WCAG 2.1 AA compliance from day one. Semantic HTML, keyboard navigation, ARIA, color contrast 4.5:1. Zero critical violations required.
 tags: [accessibility, a11y, axe-core, wcag, ci-cd, compliance, testing]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+sources:
+  - id: feat-202607170936-bookkeeping-saas-mvp
+    resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md"
+    title: "bookkeep-saas PRD NFR21-NFR24"
 ---
+
 
 # Accessibility Testing in CI
 
@@ -55,7 +63,3 @@ From bookkeep-saas PRD (NFR21-NFR24):
   contexts
 - [Shared Quality Scripts](shared-quality-scripts.md) — axe-core invoked through
   quality script
-
-## Citations
-
-[1] `internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md` — bookkeep-saas PRD NFR21-NFR24

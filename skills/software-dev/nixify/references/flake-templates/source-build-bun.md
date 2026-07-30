@@ -17,13 +17,19 @@ Nix builds run in a sandbox without network access. `bun install` needs to fetch
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # Pin x86_64-darwin to a stable release branch for older macOS Intel
+    # compatibility. See references/flake-templates/darwin-legacy-pin.md.
+    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-darwin-legacy, flake-utils, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs =
+          if system == "x86_64-darwin"
+          then nixpkgs-darwin-legacy.legacyPackages.${system}
+          else nixpkgs.legacyPackages.${system};
 
         # Bun target triple mapping for cross-compilation
         bunTarget = {
@@ -40,7 +46,9 @@ Nix builds run in a sandbox without network access. `bun install` needs to fetch
         deps = pkgs.stdenv.mkDerivation {
           pname = "<binary-name>-deps";
           version = "<x.y.z>";
-          src = ./.;
+          # cleanSource filters out build artifacts, .git, .devbox, etc. so
+          # trivial local changes do not invalidate the Nix build cache.
+          src = pkgs.lib.cleanSource ./.;
 
           nativeBuildInputs = [ pkgs.bun ];
 
@@ -66,7 +74,9 @@ Nix builds run in a sandbox without network access. `bun install` needs to fetch
         <pname> = pkgs.stdenv.mkDerivation {
           pname = "<binary-name>";
           version = "<x.y.z>";
-          src = ./.;
+          # cleanSource filters out build artifacts, .git, .devbox, etc. so
+          # trivial local changes do not invalidate the Nix build cache.
+          src = pkgs.lib.cleanSource ./.;
 
           nativeBuildInputs = [ pkgs.bun ];
 
@@ -156,3 +166,50 @@ The `outputHash` for the deps derivation must be computed empirically:
 4. Re-run to confirm.
 
 This hash changes whenever `bun.lock` changes. For release-based repos, the hash automation workflow (see `references/advanced-features.md` — Release-Triggered Hash Automation) should be adapted to also bump the FOD hash.
+
+## Per-platform FOD hashes (MANDATORY when bun.lock has platform-gated optionals)
+
+`bun.lock` carries platform-gated optional dependencies (`@esbuild/darwin-arm64`, `@esbuild/linux-x64`, `@esbuild/darwin-x64`, etc.). The installed `node_modules` tree differs per system, so **a single `outputHash` cannot be valid across all four platforms**. If the project's `bun.lock` contains any platform-specific optional packages (check with `grep -E '@esbuild/(darwin|linux)' bun.lock` or `grep 'optionalDependencies' package.json`), you MUST use per-platform FOD hashes instead of a single shared one.
+
+**Pattern**: Make the deps derivation a function of `system` and compute a separate `outputHash` per platform:
+
+```nix
+# Per-platform FOD hashes — one per system. Compute each by building on
+# that platform (or by cross-building) and reading the hash mismatch error.
+# A single outputHash CANNOT be shared across platforms when bun.lock
+# carries platform-gated optionals like @esbuild/darwin-arm64.
+fodHashes = {
+  x86_64-linux = "<SRI_HASH_LINUX_X64>";
+  aarch64-linux = "<SRI_HASH_LINUX_ARM64>";
+  x86_64-darwin = "<SRI_HASH_DARWIN_X64>";
+  aarch64-darwin = "<SRI_HASH_DARWIN_ARM64>";
+};
+
+deps = pkgs.stdenv.mkDerivation {
+  # ... same as above ...
+  outputHashMode = "recursive";
+  outputHashAlgo = "sha256";
+  outputHash = fodHashes.${system} or (throw "no FOD hash for ${system}");
+};
+```
+
+If the project's `bun.lock` has NO platform-gated optionals (rare for projects with native addons), a single shared `outputHash` is safe. When in doubt, use per-platform hashes — they are always correct.
+
+This was a declining reason on Archon PR #2131: a single `outputHash` was used across four platforms while `bun.lock` carried `@esbuild/darwin-arm64`, `@esbuild/linux-x64`, and `@esbuild/darwin-x64` — the installed tree differed per system, so the hash was only valid on one platform.
+
+## Toolchain version pinning (MANDATORY)
+
+The `#source` build uses `pkgs.bun` from nixpkgs, which tracks nixpkgs-unstable's version. If the project's CI pins a specific Bun version (e.g. `bun 1.3.11` in GitHub Actions workflows) or `package.json#engines` declares a version constraint, the flake's `#source` build MUST use the same pinned version, not whatever nixpkgs-unstable happens to ship. A version mismatch means the `#source` build and CI validate against different toolchains — the flake can pass while CI fails, or vice versa.
+
+**Pattern**: Pin Bun to the project's declared version using `pkgs.bun_1_3` or an overlay:
+
+```nix
+# If the project pins bun 1.3.x in CI or package.json#engines, pin it here too.
+# Check .github/workflows/*.yml for the exact version the project validates against.
+# nixpkgs may name the package bun_1_3, bun_1_4, etc. — match the major.minor.
+nativeBuildInputs = [ pkgs.bun_1_3 ];  # not pkgs.bun (unstable, drifts)
+```
+
+If nixpkgs doesn't ship the exact version, use `pkgs.bun` and document the version constraint in a comment. The key principle: **the source-build toolchain version must match what the project actually validates against**, not what nixpkgs-unstable happens to ship today.
+
+This was a declining reason on Archon PR #2131: `#source` built with `pkgs.bun` from nixpkgs-unstable while CI pinned `bun 1.3.11` across five workflows and `package.json#engines` said `^1.3.0` — a second toolchain source of truth that drifted from the one actually validated.

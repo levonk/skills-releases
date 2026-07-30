@@ -29,10 +29,11 @@ Any additional tags the user explicitly requests are created in addition to thes
 #### Tag Format
 
 ```
-tags/auto/YYYY/MM/YYYYMMDDHHmmss-{slug}-{pre|post}
+tags/auto/grm/YYYY/MM/YYYYMMDDHHmmss-{slug}-{pre|post}
 ```
 
 Where:
+- `grm` — Skill identifier (`git-repository-management`); namespaces auto-tags per skill so consumers can filter `tags/auto/grm/*` vs `tags/auto/execute-upsert/*` etc.
 - `YYYY/MM` — Current year and month (e.g., `2026/06`)
 - `YYYYMMDDHHmmss` — Full timestamp (e.g., `20260627162000`)
 - `{slug}` — General slug describing all commits combined in this run (kebab-case, max 50 chars)
@@ -41,20 +42,20 @@ Where:
 #### Example Tags
 
 ```
-tags/auto/2026/06/20260627162000-add-nixify-advanced-features-pre
+tags/auto/grm/2026/06/20260627162000-add-nixify-advanced-features-pre
 
-tags/auto/2026/06/20260627162045-add-nixify-advanced-features-post
+tags/auto/grm/2026/06/20260627162045-add-nixify-advanced-features-post
 ```
 
 #### Tag Creation Commands
 
 ```bash
 # Pre-run tag (before any commits)
-TAG_PREFIX="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
+TAG_PREFIX="tags/auto/grm/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
 git tag -a "${TAG_PREFIX}-${SLUG}-pre" -m "Pre-run checkpoint: ${SLUG}"
 
 # Post-run tag (after all commits)
-TAG_PREFIX="tags/auto/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
+TAG_PREFIX="tags/auto/grm/$(date -u +%Y/%m)/$(date -u +%Y%m%d%H%M%S)"
 git tag -a "${TAG_PREFIX}-${SLUG}-post" -m "Post-run checkpoint: ${SLUG}"
 ```
 
@@ -142,7 +143,7 @@ Only 3 scripts needed to minimize AI-script handoffs:
 
 **git-commit-batch.sh** - Single commit execution handoff
 - Executes multiple commits from AI-provided decisions
-- Creates automatic pre/post run tags (`tags/auto/YYYY/MM/TS-<slug>-{pre,post}`)
+- Creates automatic pre/post run tags (`tags/auto/grm/YYYY/MM/TS-<slug>-{pre,post}`)
 - Input: STDIN with commit messages and file groupings
 - With `--amend`: exactly one COMMIT block; stages files and amends HEAD
   instead of creating a new commit. Use after a quality-check failure to fix

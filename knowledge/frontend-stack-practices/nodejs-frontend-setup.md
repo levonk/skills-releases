@@ -3,7 +3,10 @@ type: Practice
 title: Node.js Frontend Setup
 description: Frontend development with Node.js — mise toolchain, webpack bundling, ESLint as the unified linter/formatter (no separate Prettier), Vitest testing, production builds, and deployment pipeline.
 tags: [nodejs, frontend, mise, webpack, eslint, vitest, testing, deployment, toolchain]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Node.js Frontend Setup
@@ -146,6 +149,9 @@ For detailed patterns and best practices, see the platform-specific guides:
   the styles directory
 - [Tailwind v4 Features](tailwind-v4-features.md) — Utility-first CSS framework
   integration
+- [HTMX Hypermedia-First](htmx-hypermedia-first.md) — Prefer HTMX over a
+  client-side JS/React SPA; reach for this Node.js frontend setup only for the
+  subtree that genuinely needs client-side JS
 
 ## Sources
 

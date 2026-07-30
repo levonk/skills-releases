@@ -3,7 +3,18 @@ type: Practice
 title: Drizzle ORM Patterns — Schema Definition, Migrations, and PostgreSQL
 description: Define TypeScript schemas with Drizzle, generate migrations to a migrations directory, use environment-based connection strings, and keep schema files separate from query logic.
 tags: [data-engineering, drizzle, orm, typescript, postgresql, migrations, schema]
-timestamp: 2026-07-17T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-17"
+  last-used: "2026-07-17"
+
+sources:
+  - id: job-aide-drizzle-config
+    resource: "https://github.com/lrepo52/job-aide/blob/main/apps/active/politics/left-parody/web/typescript/drizzle.config.ts"
+    title: "job-aide Drizzle config"
+  - id: drizzle-orm-documentation
+    resource: "https://orm.drizzle.team/"
+    title: "Drizzle ORM documentation"
 ---
 
 # Drizzle ORM Patterns
@@ -67,8 +78,3 @@ export default defineConfig({
 - Keep query logic in repository/service files, not inline in UI components.
 - Use Drizzle's query builder for type-safe queries.
 - Use transactions for multi-step operations.
-
-## Citations
-
-[1] [job-aide Drizzle config](https://github.com/lrepo52/job-aide/blob/main/apps/active/politics/left-parody/web/typescript/drizzle.config.ts)
-[2] [Drizzle ORM documentation](https://orm.drizzle.team/)

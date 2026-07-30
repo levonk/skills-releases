@@ -3,7 +3,10 @@ type: Practice
 title: Adding New Tools
 description: Define the CLI surface, add display-name/config mapping, extend detection/mapping, wire execution path, and add service operations under services/.
 tags: [architecture, tooling, cli, extensibility, services]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Adding New Tools

@@ -3,7 +3,10 @@ type: Practice
 title: Terminal State Management
 description: Use minimal terminal control sequences, prepare terminal state for tools requiring input focus, and centralize theme-aware terminal helpers.
 tags: [architecture, terminal, tty, state-management, cli]
-timestamp: 2026-07-18T00:00:00Z
+date:
+  created: "2026-07-18"
+  knowledge-basis: "2026-07-18"
+  last-used: "2026-07-18"
 ---
 
 # Terminal State Management

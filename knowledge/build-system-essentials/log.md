@@ -1,5 +1,8 @@
 # Directory Update Log
 
+## 2026-07-26
+* **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
+
 ## 2026-07-18
 
 * **Initialization**: Created the `build-system-essentials` knowledge bundle to consolidate build system and Makefile practices from the rules directory.
