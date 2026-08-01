@@ -2,12 +2,108 @@
 
 ## Table of Contents
 
+- [Inherent Platform Scope](#inherent-platform-scope)
 - [Check for Prebuilt Release Tarballs](#check-for-prebuilt-release-tarballs)
+- [Partial Platform Coverage](#partial-platform-coverage)
 - [Complex Distribution Requirements](#complex-distribution-requirements)
 - [Success and Failure Patterns](#success-and-failure-patterns)
 - [Make Build Scripts Nix-Aware](#make-build-scripts-nix-aware)
 - [Ensure Lockfiles in npm Tarballs](#ensure-lockfiles-in-npm-tarballs)
 - [Inspecting Existing nixpkgs Derivations](#inspecting-existing-nixpkgs-derivations)
+
+---
+
+## Inherent Platform Scope
+
+> **Knowledge base**: The canonical concept page for this practice is
+> [`inherent-platform-scope`](../included/knowledge/nix-build-practices/inherent-platform-scope.md)
+> in the `nix-build-practices` bundle. This section is the skill-specific
+> operational guidance; the bundle page is the compounding reference.
+
+**CRITICAL**: Before checking for prebuilt tarballs or computing platform
+coverage, determine whether the project is inherently platform-specific. Some
+software only runs on one OS family by design — a macOS menu-bar app cannot
+run on Linux (no AppKit/Cocoa), and a GRUB/systemd tool cannot run on Darwin
+(no Linux kernel ABI). For such projects, the flake should target only the
+platforms the software actually supports, rather than the default 4-system
+set. Narrowing scope is NOT a coverage gap — it is the project's correct
+release policy.
+
+**How to detect**: Run `scripts/detect-platform-scope.sh <project-dir>`. The
+script inspects CI matrix (`.github/workflows/*.yml` `runs-on:` / `matrix.os:`),
+Rust manifests (`Cargo.toml`/`Cargo.lock` for `cocoa`, `objc`, `systemd`,
+etc.), Swift source files (`import SwiftUI/AppKit/UIKit`), Go build tags
+(`//go:build linux` / `//go:build darwin`), Node.js native deps, and
+README/docs for platform-defining signals. It reports:
+
+- `target_platforms`: JSON array subset of the 4 Nix systems
+- `platform_scope`: `all`, `darwin_only`, or `linux_only`
+- `confidence`: `high`, `medium`, or `low`
+- `signals`: array of `{ signal, scope, source, confidence }`
+- `rationale`: human-readable summary
+
+**Decision tree:**
+
+- **`platform_scope=all`** (the common case): The project is cross-platform
+  or has no platform-narrowing signals. Proceed with the default 4-system
+  target set. No special handling needed downstream.
+- **`platform_scope=darwin_only` or `linux_only` with `confidence=high`**: A
+  high-confidence signal (e.g. CI matrix only runs on macOS, or Swift source
+  imports AppKit) with no signals for the other OS family. The flake targets
+  only the detected family. Do NOT attempt cross-compilation to the excluded
+  family — a from-source build of a Cocoa app on Linux is impossible (no
+  AppKit), and a systemd service on Darwin is impossible (no Linux ABI).
+- **`platform_scope=darwin_only` or `linux_only` with `confidence=medium`**:
+  Multiple medium-confidence signals (e.g. `cocoa` crate + README says "macOS
+  only") but no single definitive one. Present the detection result to the
+  user with the `rationale` and `signals` list, and confirm before narrowing
+  scope. The user may know the project is cross-platform despite the signals.
+- **`confidence=low`** (conflicting signals): Keep `platform_scope=all` and
+  proceed with the 4-system default. Do not narrow scope on conflicting
+  evidence.
+
+**Manual override**: If the user explicitly states the project is
+platform-specific (or cross-platform despite detection), honor their input
+over the script. Set `target_platforms` and `platform_scope` accordingly and
+note the override in the PR body.
+
+**What NOT to do:**
+
+- Do NOT attempt cross-compilation to fill the "missing" platform. A Mac
+  toolbar app doesn't need a Linux build — the Linux build would fail or
+  produce a broken binary. The "missing" platform is correct by design.
+- Do NOT use the hybrid fallback variant to fill inherent-scope gaps. The
+  hybrid fallback is for projects that *could* build on the missing platform
+  but just don't ship a prebuilt binary for it. An inherently darwin-only
+  project cannot build on Linux at all.
+- Do NOT ignore the detection and target all 4 systems anyway. A flake that
+  advertises Linux support for a macOS-only app will fail to build on Linux,
+  which is worse than honestly declaring darwin-only support.
+
+**Downstream consumption:**
+
+- `target_platforms` is passed to `check-releases.sh` (Step 4b) as the third
+  argument, so `partial_platform_coverage` is computed relative to the
+  project's scope, not the hardcoded 4-system set.
+- At Step 12, the flake's `allSystems`, `assets`, and `meta.platforms` are
+  scoped to `target_platforms`.
+- At Steps 24 and 27, the PR/issue templates include a "Platform scope"
+  clause when `platform_scope` is not `all`, pre-empting the "why no
+  Linux/macOS?" review comment.
+
+**Examples:**
+
+- **macOS menu-bar app** (Swift, imports AppKit): `platform_scope=darwin_only`,
+  `target_platforms=["x86_64-darwin","aarch64-darwin"]`. The flake targets
+  darwin only. A Linux user who tries `nix run github:...` gets "package not
+  available for this system" — correct, because the app cannot run on Linux.
+- **systemd service manager** (Rust, depends on `systemd` crate): `platform_scope=linux_only`,
+  `target_platforms=["x86_64-linux","aarch64-linux"]`. The flake targets Linux
+  only. A macOS user gets "package not available" — correct, because the tool
+  needs the Linux kernel ABI.
+- **CLI tool written in Rust** (no platform-specific deps, CI runs on both
+  ubuntu and macos): `platform_scope=all`, `target_platforms` = all 4
+  systems. The flake targets all 4 platforms as before — no narrowing.
 
 ---
 
@@ -34,6 +130,82 @@ curl -s "https://api.github.com/repos/<owner>/<repo>/releases" | jq -r '.[].asse
 - A bare `cargo build` / `go build` / `npm run build` produces a binary that passes `--version` but fails real workloads because the runtime tree is absent.
 
 A from-source `buildRustPackage` for such a project produces a binary that passes `nix run . -- --version` in CI but is non-functional for real use. Prefer the prebuilt tarball even when source builds are possible. (Reference: nubjs/nub#169 — prebuilt chosen precisely because from-source omits the vendored `runtime/` tree.)
+
+---
+
+## Partial Platform Coverage
+
+> **Knowledge base**: The canonical concept page for this practice is
+> [`partial-platform-coverage`](../included/knowledge/nix-build-practices/partial-platform-coverage.md)
+> in the `nix-build-practices` bundle. This section is the skill-specific
+> operational guidance; the bundle page is the compounding reference.
+
+**CRITICAL**: After confirming prebuilt tarballs exist, check whether the project
+ships prebuilt binaries for **all** of its `target_platforms` (from Step 4a's
+`detect-platform-scope.sh`) or only **some** of them. `check-releases.sh`
+reports this via `platform_coverage` (per-system true/false) and
+`partial_platform_coverage` (true when some but not all of the `target_platforms`
+have a prebuilt asset). The coverage is computed relative to `target_platforms`,
+not the hardcoded 4-system set — so a darwin-only project that ships both
+darwin binaries has `partial_platform_coverage=false` (full coverage of its
+scope), even though it doesn't ship Linux binaries.
+
+**Why this matters**: The standard prebuilt-tarball template derives its target
+systems from `builtins.attrNames assets` — only platforms with a prebuilt asset
+get *any* output. If a project ships binaries for `x86_64-linux`,
+`aarch64-linux`, and `aarch64-darwin` but NOT `x86_64-darwin`, then `nix run
+github:...` on an Intel Mac fails with "package not available for this system"
+— even though the project could be built from source on that platform.
+
+**The hybrid fallback variant** (see `references/flake-templates/prebuilt-tarball.md`
+— Hybrid Fallback Variant) solves this by making `#default` fall back to a
+from-source build on platforms that lack a prebuilt binary:
+
+- `#prebuilt` = prebuilt binary, only on platforms that have a release asset
+- `#source` = source build on **all** buildable platforms (the union)
+- `#default` = prebuilt where available, source fallback where not
+- `#<project-name>` = alias for `#default`
+
+This means `nix run github:...` works on every buildable platform — users on
+platforms with a prebuilt binary get the fast path, users on platforms the
+project didn't ship a binary for get a from-source build instead of an error.
+
+**Decision tree for partial coverage:**
+
+- **If `partial_platform_coverage=false`** (all 4 systems have prebuilt assets,
+  OR no prebuilt assets at all): Use the standard prebuilt-tarball template.
+  No hybrid fallback needed.
+- **If `partial_platform_coverage=true` AND source build is feasible** for the
+  missing platform(s): Use the hybrid fallback variant. Set
+  `hybrid_fallback=true` — it is consumed at Steps 15, 24, and 27 to select
+  the correct documentation and PR/issue template clauses.
+- **If `partial_platform_coverage=true` AND source build is NOT feasible** for
+  the missing platform(s) (e.g. complex native addons with no nixpkgs support
+  on the missing platform): Use the standard prebuilt-only template and
+  document the platform gap in the PR body. The flake correctly only supports
+  platforms the project ships binaries for; that is the project's release
+  policy, not a flake bug. Do NOT attempt the hybrid fallback if `sourceFor`
+  cannot be implemented for the missing platform(s).
+- **If `force_source_build=true`**: Use a pure source-build flake. The hybrid
+  fallback is for prebuilt-first flakes; a forced source build is pure source.
+
+**How to determine source-build feasibility for the missing platform:**
+Check whether the language has a source-build template
+(`references/flake-templates/source-build-*.md`) and whether the project's
+build process works on the missing platform. For example, a Rust project that
+builds on `x86_64-darwin` in CI can use `buildRustPackage` in the hybrid
+fallback's `sourceFor` for that platform. A project with a N-API addon that
+only ships prebuilt `.node` files for `x86_64-linux` cannot build from source
+on `x86_64-darwin` — use the standard prebuilt-only template and document the
+gap.
+
+**Hash automation interaction**: The hybrid flake's `assets` attrset only
+includes platforms with prebuilt binaries. The hash automation workflow
+(Step 16) only bumps hashes for platforms in `ASSET_MAP` (the prebuilt
+platforms). The `#source` output on fallback platforms tracks the git tag,
+not release assets — it is NOT hash-automated. This is correct: the source
+build is reproducible from the git tag, so it doesn't need hash automation.
+See `references/advanced-features.md` — Release-Triggered Hash Automation.
 
 ---
 

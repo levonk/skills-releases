@@ -1,5 +1,24 @@
 ---
-description: Process Tasks
+workflow: "Tasks Processor"
+slug: "tasks-processor"
+description: "Execute task stories created by tasks-from-prd, tracking progress in the index file"
+use: "When implementing task stories from a generated task index, marking progress and committing per story"
+role: "Developer"
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
+tags:
+  - "ai/workflow/software-dev/tasks/processor"
+  - "task-execution"
+  - "progress-tracking"
+see-also:
+  - workflow: "tasks-from-prd"
+    relationship: "previous-step"
+    description: "Produces the task stories this workflow executes"
+  - skill: "execute-upsert"
+    relationship: "complement"
+    description: "Orchestrates PRD creation, task breakdown, and execution as a pipeline"
 ---
 
 ---

@@ -40,20 +40,25 @@ description: >
   domain files cover automobiles (EV/PHEV, hybrid, exotic, truck, RV),
   major appliances (HVAC, water heater, laundry, kitchen, refrigeration,
   spa, commercial vs consumer), small appliances, cameras, mobile phones,
-  collectibles, yard tools, computer parts (CPU/motherboard, GPU, RAM/
-  storage, PSU/case/cooling, monitor/peripherals), and tools (woodworking,
-  metalworking, welding, gardening, pottery). Leasee (tenant) is split into
+  computers (laptops, desktops, Macs — including Activation Lock, MDM/ABM,
+  firmware locks, and receipt retention for lock removal), collectibles,
+  yard tools, computer parts (CPU/motherboard, GPU, RAM/storage, PSU/case/
+  cooling, monitor/peripherals), and tools (woodworking, metalworking,
+  welding, gardening, pottery). Used-device lock verification (Activation
+  Lock, iCloud, Find My, MDM/Remote Management, firmware/EFI, BitLocker,
+  carrier IMEI blacklist) is covered with do-with-seller vs do-later
+  in-person handoff steps. Leasee (tenant) is split into
   generic tenant constraints plus home rental, apartment rental, and
   commercial lease sub-domains. Section 5 documents the 3-level progressive
   disclosure chain (attribute index → attribute files → domain files) with
   worked examples.
-version: 1.8.0
+version: 1.9.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  knowledge-basis: "2026-07-13"
-  last-used: "2026-07-13"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
 tags: ["ai/skill", "commerce", "shopping", "needs-assessment", "product-research"]
 see-also:
   - skill: "shopping-deal-intelligence"

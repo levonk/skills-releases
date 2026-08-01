@@ -24,4 +24,5 @@ that prevents it.
 * [Application Naming Convention](app-naming-convention.md) - `apps/{status}/{product-suite}/{app-name}/{platform}/{language}`
 * [Code Style](code-style.md) - Double quotes, 2-space indent, semicolons, kebab-case, `type` over `interface`, `import type` for type-only imports
 * [Monorepo Structure](monorepo-structure.md) - `active` vs `icebox`, `core`/`features`/`services`/`ui`/`tools` categories, platform (node/web/shared)
+* [Parallel Export Collisions](parallel-export-collisions.md) - When parallel subagents independently choose export names and modify barrel files, they collide on merge (TS2308); prevent by forbidding subagents from modifying barrel exports, resolve by renaming the newer module's symbol with a module-specific prefix
 * [JavaScript and TypeScript Fundamentals](javascript-typescript-fundamentals.md) - ES modules, modern syntax, error handling, performance, security, JSDoc typing, import standards, config hygiene, tooling integration

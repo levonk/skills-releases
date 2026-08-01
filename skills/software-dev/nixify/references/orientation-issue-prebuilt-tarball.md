@@ -77,6 +77,18 @@ This project is already packaged in nixpkgs (`nixpkgs#$PROJECT`), so a reasonabl
 ## Proposed change
 
 - Add `flake.nix` with `packages.prebuilt` and `packages.source` (plus `packages.default` aliasing `prebuilt`), so users can choose between the fast prebuilt path (`nix run .#prebuilt`) and the reproducible-from-source path (`nix run .#source`).
+<!-- BEGIN conditional: Hybrid Fallback (Partial Platform Coverage) -->
+<!-- INCLUDE this clause ONLY when hybrid_fallback=true (Step 12). -->
+<!-- If hybrid_fallback=false, DELETE this comment block and the line below it. -->
+<!-- Fill $PREBUILT_PLATFORMS and $FALLBACK_PLATFORMS from check-releases.sh (Step 4b) platform_coverage. -->
+- The project ships prebuilt binaries for `$PREBUILT_PLATFORMS` but not `$FALLBACK_PLATFORMS`. The flake uses a hybrid fallback: `#default` uses the prebuilt binary where available and builds from source on `$FALLBACK_PLATFORMS`, so `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` works on every buildable platform. `#prebuilt` is only exposed on platforms with a release asset; `#source` is available on all buildable platforms.
+<!-- END conditional: Hybrid Fallback (Partial Platform Coverage) -->
+<!-- BEGIN conditional: Platform Scope (Inherent Platform Specificity) -->
+<!-- INCLUDE this clause ONLY when platform_scope is "darwin_only" or "linux_only" (Step 4a). -->
+<!-- If platform_scope=all, DELETE this comment block and the line below it. -->
+<!-- Fill $SCOPE_FAMILY ("macOS" or "Linux") and $EXCLUDED_FAMILY from detect-platform-scope.sh (Step 4a). -->
+- The project is inherently `$SCOPE_FAMILY`-only (`$SCOPE_RATIONALE`). The flake targets only `$SCOPE_FAMILY` Nix systems; users on `$EXCLUDED_FAMILY` will see "package not available" — this is correct, as the software cannot run on `$EXCLUDED_FAMILY` by design. Cross-compilation is not attempted.
+<!-- END conditional: Platform Scope (Inherent Platform Specificity) -->
 - Add a scheduled GitHub Action that auto-bumps `version` and refreshes per-platform `sha256` hashes when a new release is cut.
 - Update README install section to include Nix (flakes) instructions
 - Mirror changes to translated READMEs (e.g., `README.ko.md`)

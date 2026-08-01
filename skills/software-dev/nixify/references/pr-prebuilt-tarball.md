@@ -108,6 +108,36 @@ Builds and runs successfully on `<platform>`.
 - Tag-pinning (`github:.../vX.Y.Z`) is not supported for the prebuilt output — release tags are cut before the bump workflow updates `flake.nix`. Use `github:.../` (tracks default branch) or pin to a commit SHA. The `#source` output works at any tag since it builds from source.
 - No breaking changes to existing build paths.
 
+<!-- BEGIN conditional: Hybrid Fallback (Partial Platform Coverage) -->
+<!-- INCLUDE this section ONLY when hybrid_fallback=true (Step 12). -->
+<!-- If hybrid_fallback=false, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $PREBUILT_PLATFORMS and $FALLBACK_PLATFORMS from check-releases.sh (Step 4b) platform_coverage. -->
+
+## Platform coverage
+
+This project ships prebuilt release binaries for `$PREBUILT_PLATFORMS` but not for `$FALLBACK_PLATFORMS`. The flake uses a **hybrid fallback** design so `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` works on every buildable platform:
+
+- **`#default`** — prebuilt binary on `$PREBUILT_PLATFORMS`; from-source build on `$FALLBACK_PLATFORMS`.
+- **`#prebuilt`** — prebuilt binary only (errors on `$FALLBACK_PLATFORMS` where no release asset exists).
+- **`#source`** — from-source build on all buildable platforms.
+- **`#<project-name>`** — alias for `#default`.
+
+The hash automation workflow only bumps hashes for the prebuilt platforms (`$PREBUILT_PLATFORMS`). The `#source` output on `$FALLBACK_PLATFORMS` tracks the git tag and builds from source — it is validated by Nix CI, not hash automation.
+
+<!-- END conditional: Hybrid Fallback (Partial Platform Coverage) -->
+
+<!-- BEGIN conditional: Platform Scope (Inherent Platform Specificity) -->
+<!-- INCLUDE this section ONLY when platform_scope is "darwin_only" or "linux_only" (Step 4a). -->
+<!-- If platform_scope=all, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $SCOPE_FAMILY ("macOS" or "Linux") and $EXCLUDED_FAMILY ("Linux" or "macOS") -->
+<!-- from detect-platform-scope.sh (Step 4a) output. -->
+
+## Platform scope
+
+This project is inherently `$SCOPE_FAMILY`-only — it depends on platform-specific APIs (`$SCOPE_RATIONALE`) that are not available on `$EXCLUDED_FAMILY`. The flake targets only `$SCOPE_FAMILY` Nix systems (`$TARGET_PLATFORMS`); users on `$EXCLUDED_FAMILY` will see "package not available for this system" when attempting `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO`, which is correct — the software cannot run on `$EXCLUDED_FAMILY` by design, not due to a flake limitation. Cross-compilation is not attempted because the required platform APIs do not exist on the target.
+
+<!-- END conditional: Platform Scope (Inherent Platform Specificity) -->
+
 ## Scope
 
 The PR scope is well-contained — additive only, no existing functionality affected.

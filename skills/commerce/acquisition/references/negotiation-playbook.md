@@ -52,6 +52,7 @@
 | **Leverage** | Cash in hand, immediate pickup, comparable listings, item condition flaws |
 | **Key phrases** | "Can you do $X? I can pick up today with cash" |
 | **Safety** | Meet in public (police station), bring a friend, inspect thoroughly before paying |
+| **Lockable devices** | For phones, computers, tablets, watches — require an erase-and-reset test and original receipt before paying; see `handoff-verification.md` for the full procedure |
 | **Timing** | Items listed 7+ days are ripe for negotiation; sellers get anxious after 2 weeks |
 
 ### Bulk Purchasing

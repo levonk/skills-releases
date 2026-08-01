@@ -116,6 +116,24 @@ Builds and runs successfully on `<platform>`.
 - Tag-pinning (`github:.../vX.Y.Z`) is not supported for the prebuilt output — release tags are cut before the bump workflow updates `flake.nix`. Use `github:.../` (tracks default branch) or pin to a commit SHA. The `#source` output works at any tag since it builds from source.
 - No breaking changes to existing build paths.
 
+<!-- BEGIN conditional: Hybrid Fallback (Partial Platform Coverage) -->
+<!-- INCLUDE this section ONLY when hybrid_fallback=true (Step 12). -->
+<!-- If hybrid_fallback=false, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $PREBUILT_PLATFORMS and $FALLBACK_PLATFORMS from check-releases.sh (Step 4) platform_coverage. -->
+
+## Platform coverage
+
+This project ships prebuilt release binaries for `$PREBUILT_PLATFORMS` but not for `$FALLBACK_PLATFORMS`. The flake uses a **hybrid fallback** design so `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` works on every buildable platform:
+
+- **`#default`** — prebuilt binary on `$PREBUILT_PLATFORMS`; from-source build on `$FALLBACK_PLATFORMS`.
+- **`#prebuilt`** — prebuilt binary only (errors on `$FALLBACK_PLATFORMS` where no release asset exists).
+- **`#source`** — from-source build on all buildable platforms.
+- **`#<project-name>`** — alias for `#default`.
+
+The hash automation workflow only bumps hashes for the prebuilt platforms (`$PREBUILT_PLATFORMS`). The `#source` output on `$FALLBACK_PLATFORMS` tracks the git tag and builds from source — it is validated by Nix CI, not hash automation.
+
+<!-- END conditional: Hybrid Fallback (Partial Platform Coverage) -->
+
 ## Scope
 
 The PR scope is well-contained — additive only, no existing functionality affected.

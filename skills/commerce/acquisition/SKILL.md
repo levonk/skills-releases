@@ -10,15 +10,19 @@ description: >
   execution when the user has pre-authorized conditions using their payment
   methods (credit cards and gift cards), (4) purchase notification with exact
   instructions when auto-buy is not enabled, (5) service provider booking with
-  scope-of-work verification, deposit negotiation, and payment protection.
+  scope-of-work verification, deposit negotiation, and payment protection,
+  (6) in-person handoff verification for used lockable devices (phones,
+  computers, tablets, watches) — erase-and-reset test, Activation Lock/MDM/
+  firmware/BitLocker/carrier blacklist checks, and original-receipt retention
+  for lock removal, with do-with-seller vs do-later steps.
   This skill acts as the final execution layer of the personal shopper pipeline.
-version: 1.0.0
+version: 1.1.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  knowledge-basis: "2026-07-02"
-  last-used: "2026-07-02"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
 tags: ["ai/skill", "commerce", "negotiation", "purchasing", "stock-monitoring", "auto-buy"]
 see-also:
   - skill: "shopping-needs-discovery"
@@ -1551,6 +1555,24 @@ When auto-buy is not enabled, deliver actionable purchase instructions:
 - ⚠️ Stock level: [X remaining / Limited]
 ```
 
+### 5. In-Person Handoff Verification (Used Lockable Devices)
+
+For used **lockable devices** — phones, computers (laptops/desktops/Macs),
+tablets, smartwatches — the in-person handoff is the last chance to catch an
+account-tied lock (Activation Lock, MDM/ABM, firmware password, BitLocker,
+carrier financing) before money changes hands. A device that works today can
+brick after the next erase or reset, and cash marketplace sales have no buyer
+protection.
+
+**Mandatory before payment:** erase/factory reset the device and walk through
+the setup screens while the seller is present. Get the original receipt and a
+bill of sale — manufacturers only remove locks for the owner of record with
+proof of purchase, regardless of where the device was bought.
+
+For the full procedure (do-with-seller vs do-later split, walk-away triggers,
+receipt retention, payment protection), see
+`references/handoff-verification.md`.
+
 ## Core Workflow — Services
 
 When the Deal Intelligence Report covers a **service**:
@@ -1620,6 +1642,7 @@ Select the best card from `payment_methods` for service payments:
 - `references/negotiation-playbook.md` — Category-specific negotiation tactics, opening ranges, and leverage points
 - `references/stock-monitoring.md` — Monitoring tool comparison, alert classification matrix, and output format
 - `references/auto-buy-config.md` — Auto-buy configuration schema, execution steps, and safeguards
+- `references/handoff-verification.md` — In-person handoff procedure for used lockable devices (phones, computers, tablets, watches): do-with-seller vs do-later, receipt retention, walk-away triggers
 - `references/sourcing-guide.md` — (in deal-intelligence skill) Channel comparison by product type
 
 ## Error Handling

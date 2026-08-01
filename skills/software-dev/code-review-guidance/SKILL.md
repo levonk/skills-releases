@@ -1,14 +1,14 @@
 ---
 name: code-review-guidance
-description: "Systematic code review checklist covering infrastructure, schemas, integrations, security, performance, accessibility, and cross-cutting concerns. Use when reviewing a pull request, conducting a PR review, or working through a code review checklist before merging. Triggers on 'review this code', 'code review checklist', 'PR review', 'pull request review', or 'review this PR'. Do NOT trigger on general coding questions, bug fixes, feature implementation, or writing new code — this skill is for reviewing existing changes, not authoring them."
-version: 1.0.0
+description: "Systematic code review checklist covering infrastructure, schemas, integrations, security, performance, accessibility, and cross-cutting concerns. Use when reviewing a pull request, conducting a PR review, working through a code review checklist before merging, or reviewing a single story commit as part of an automated execution pipeline. Triggers on 'review this code', 'code review checklist', 'PR review', 'pull request review', 'review this PR', or 'review story commit'. Do NOT trigger on general coding questions, bug fixes, feature implementation, or writing new code — this skill is for reviewing existing changes, not authoring them."
+version: 1.3.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-18"
-  last-used: "2026-07-18"
-tags: ["ai/skill", "code-review", "pr-review", "checklist"]
+  knowledge-basis: "2026-07-31"
+  last-used: "2026-07-31"
+tags: ["ai/skill", "code-review", "pr-review", "checklist", "story-review", "automated-review"]
 see-also:
   - skill: code-quality-validation
     relationship: "related"
@@ -16,9 +16,24 @@ see-also:
   - skill: refactor-planning
     relationship: "related"
     description: "For review findings that warrant a structured refactoring effort"
+  - skill: execute-upsert
+    relationship: "dependent"
+    description: "Project execution controller that invokes this skill for per-story code review during the execution loop"
   - knowledge: devsecops-codeguard
-    relationship: "reference"
-    description: "Security patterns and banned-function checks for the security review category"
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. Provides the actual security patterns (banned C functions, hardcoded credential detection, crypto algorithm governance, certificate validation, SSH hardening, security audit playbook) that the Security review category references. Without this bundle, the security category is advisory only — the review subagent has no patterns to check against"
+  - knowledge: secrets-egress-security
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. Provides secret storage and egress firewall patterns (Ansible vault distribution, hybrid vault storage, iron-proxy egress firewall, shared-path cleanliness) that the Security and Infrastructure review categories reference for secret-handling and network-egress review"
+  - knowledge: dev-environment-practices
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. Provides shell-scripting-best-practices.md (shellcheck, shfmt, strict mode, PATH guards) used in the Cross-Cutting Concerns / Testing category to validate generated shell scripts"
+  - knowledge: python-services-practices
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. Provides standalone-scripts.md (PEP 723, uv run --script) and pytest-testing-baseline.md used in the Cross-Cutting Concerns / Testing category to validate generated Python scripts and test suites"
+  - knowledge: rust-development-practices
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. Provides rustfmt-clippy-config.md, quality-gates.md, testing-strategy.md, error-handling.md, and security-auditing.md used in the Cross-Cutting Concerns / Testing category to validate generated Rust code"
 ---
 
 ---
@@ -1485,6 +1500,16 @@ not warn) so older skills can read newer config files without breaking.
 
 
 
+references/included/knowledge/devsecops-codeguard/
+
+references/included/knowledge/secrets-egress-security/
+
+references/included/knowledge/dev-environment-practices/
+
+references/included/knowledge/python-services-practices/
+
+references/included/knowledge/rust-development-practices/
+
 # Code Review Guidance
 
 Systematic code review checklist for pull requests and pre-merge review. Covers
@@ -1535,11 +1560,32 @@ author knows the review was intentional.
 ### Security
 
 - Are there changes to auth flows or permissions? If so, escalate to a focused
-  security review.
+  security review using the bundled `devsecops-codeguard` patterns. The bundle
+  is materialized at `references/included/knowledge/devsecops-codeguard/`
+  relative to this skill's root (standalone) or the orchestrator's root (when
+  bundled via includeTree in a parent skill like execute-upsert). If the path
+  is not found, use `scripts/resolve-reference.sh knowledge/devsecops-codeguard`
+  for the three-tier fallback.
 - Are user inputs validated, sanitized, and parameterized at trust boundaries?
 - Are secrets, tokens, and credentials kept out of logs, error messages, and
-  client responses?
+  client responses? Check against the hardcoded-credential detection patterns
+  in `devsecops-codeguard/hardcoded-credentials-detection.md`.
 - Are new dependencies vetted for known vulnerabilities and licensing terms?
+- For C/C++ code: check against the safe C functions list in
+  `devsecops-codeguard/safe-c-functions.md`.
+- For crypto code: check against the crypto algorithm governance rules in
+  `devsecops-codeguard/crypto-algorithm-governance.md`.
+- For TLS/certificate code: check against the certificate validation rules in
+  `devsecops-codeguard/digital-certificate-validation.md`.
+- For SSH configuration: check against the SSH hardening rules in
+  `devsecops-codeguard/ssh-hardening.md`.
+- For secret storage and distribution: check against the vault patterns in
+  `secrets-egress-security/hybrid-vault-storage.md` and
+  `secrets-egress-security/ansible-vault-distribution.md`. Verify secrets are
+  not committed to the shared path (see
+  `secrets-egress-security/shared-path-cleanliness.md`).
+- For network egress: check against the iron-proxy egress firewall rules in
+  `secrets-egress-security/iron-proxy-egress-firewall.md`.
 
 ### Performance
 
@@ -1575,7 +1621,23 @@ author knows the review was intentional.
 - **Observability** — are we missing critical O11y or logging on backend changes?
   Are we missing any important metrics?
 - **Testing** — did we add quality tests? Prefer fewer high-quality tests and
-  prefer integration tests for user flows.
+  prefer integration tests for user flows. Validate generated scripts against
+  the bundled standards:
+  - **Shell scripts** (`*.sh`): check against
+    `dev-environment-practices/shell-scripting-best-practices.md` — strict
+    mode (`set -euo pipefail`), PATH guards, `command -v` checks, quoting,
+    `exec` for final commands. Run `shellcheck` and `shfmt -d` if available.
+  - **Python scripts** (`*.py`): check against
+    `python-services-practices/standalone-scripts.md` — PEP 723 inline
+    metadata, `uv run --script` shebang, devbox/rtk detection. Run `ruff check`
+    and `ruff format --check` if available. For test suites, check against
+    `python-services-practices/pytest-testing-baseline.md`.
+  - **Rust code** (`*.rs`): check against
+    `rust-development-practices/rustfmt-clippy-config.md` and
+    `rust-development-practices/quality-gates.md`. Run `cargo fmt --check`,
+    `cargo clippy -- -D warnings`, and `cargo test` if available. For error
+    handling, check against
+    `rust-development-practices/error-handling.md`.
 
 ## Review Process Workflow
 
@@ -1591,6 +1653,117 @@ author knows the review was intentional.
    suggestions (should fix soon), and nits (optional polish).
 6. **Communicate** — post the review; offer to pair on any blocker rather than
    just describing the problem.
+
+## Review Modes
+
+This skill supports two review modes. The mode is determined by the caller or
+by skill configuration.
+
+### Mode 1: Human-in-the-Loop (Default)
+
+The reviewer presents findings to a human who decides what to fix. Use for
+pull request reviews where a human author is available to respond.
+
+Workflow: follow the Review Process Workflow above. Present blockers,
+suggestions, and nits in the conversation. Wait for the author to address
+blockers before approving.
+
+### Mode 2: Automated (Orchestrator-Driven)
+
+An orchestrator (e.g., `execute-upsert`) dispatches a review subagent on a
+completed story commit. The review subagent evaluates the diff against the
+checklist and returns a structured verdict. No human is in the loop unless
+blockers are found that the dev subagent cannot self-resolve.
+
+Use when an execution pipeline needs per-story code review without pausing
+for human input on every story.
+
+#### Automated Review Workflow
+
+1. **Orchestrator dispatches review subagent** with:
+   - The story commit hash (or range `base..HEAD`)
+   - The story file path (for acceptance criteria context)
+   - The project's tech context (package manager, test runner, linter — so
+     the reviewer knows what "correct" looks like)
+2. **Review subagent runs the checklist** on the diff:
+   - Skip categories that are clearly out of scope for the story (e.g.,
+     Accessibility for a backend-only story). State which categories were
+     skipped.
+   - Run the project's test suite and lint commands to validate the dynamic
+     pass. Use the tech context to invoke the correct commands (e.g.,
+     `devbox run -- pnpm test`, not `npm test`).
+3. **Review subagent returns a structured verdict** (see Review Output Format
+   below).
+4. **Orchestrator acts on the verdict**:
+   - `CLEAN` — proceed to commit finalization.
+   - `NEEDS_FIXES` — dispatch the dev subagent again with the review findings
+     as feedback. Loop until clean or the dev subagent returns `BLOCKED`.
+   - `BLOCKED` — the review found issues the dev subagent cannot resolve
+     (e.g., a design flaw requiring user input). Mark the story `[!] Blocked`
+     with the review findings in the `## Blocker` section.
+
+#### Review Output Format (Automated Mode)
+
+The review subagent returns a structured verdict the orchestrator can parse:
+
+```text
+REVIEW_VERDICT:CLEAN|NEEDS_FIXES|BLOCKED
+STORY:<story-id>
+COMMIT:<commit-hash>
+CATEGORIES_REVIEWED:<comma-separated list>
+CATEGORIES_SKIPPED:<comma-separated list with skip reasons>
+BLOCKERS:<count>
+SUGGESTIONS:<count>
+NITS:<count>
+
+BLOCKER_1:<file>:<line> — <description>
+BLOCKER_2:<file>:<line> — <description>
+
+SUGGESTION_1:<file>:<line> — <description>
+SUGGESTION_2:<file>:<line> — <description>
+
+SUMMARY:<one-paragraph summary of the review>
+```
+
+- `CLEAN` — zero blockers. Suggestions and nits may exist but do not block.
+- `NEEDS_FIXES` — one or more blockers found. The dev subagent should be
+  re-dispatched with the blocker list as feedback.
+- `BLOCKED` — one or more blockers that require human input or a design
+  decision the dev subagent cannot make. The story should be marked
+  `[!] Blocked`.
+
+### Configuration
+
+The review mode can be configured per-project via `skill-config.toml`:
+
+```toml
+[review]
+mode = "automated"  # "automated" (default) or "human"
+fail_on_suggestions = false  # if true, suggestions also block (strict mode)
+```
+
+When invoked by an orchestrator, the orchestrator passes the mode explicitly.
+When invoked standalone (human user says "review this PR"), the human-in-the-loop
+mode is used regardless of config.
+
+## Story-Commit Review
+
+When reviewing a single story commit (as opposed to a full PR), scope the
+review to the story's changes:
+
+1. **Identify the story scope** — read the story file to understand the
+   acceptance criteria, relevant files, and intended scope.
+2. **Diff the story commit** — `git diff <base>..<story-commit>` for a single
+   commit, or `git diff <pre-tag>..<post-tag>` for the story's full range.
+3. **Check scope alignment** — verify the commit only touches files listed in
+   the story's "Relevant Files" section. Flag out-of-scope changes.
+4. **Verify acceptance criteria** — for each criterion in the story file,
+   confirm the implementation satisfies it. Reference the specific test or
+   code that verifies each criterion.
+5. **Run the checklist** — apply the full Review Checklist, but skip
+   categories that are out of scope for the story (e.g., skip Accessibility
+   for a database migration story). State which categories were skipped.
+6. **Return the verdict** — use the Review Output Format above.
 
 For the expanded checklist with examples and edge cases per category, see
 [Review Checklist](references/review-checklist.md).

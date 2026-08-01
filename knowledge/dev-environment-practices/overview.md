@@ -139,6 +139,7 @@ Each phase has practices that prevent specific failure modes:
 | Targets | [Auto-Detecting Devbox Targets](internal-vs-normal-targets.md) | Double-wrapping devbox run, -internal thinking overhead, unclear target responsibilities |
 | Warmup | [Async Prime Internal](async-prime-internal.md) | Cold-cache latency on first command, serial warmup steps that could overlap |
 | Reliability | [Devbox Script Generation Bug](devbox-script-generation-bug.md) | Silent script failures, "command not found" in CI |
+| Fallback | [Devbox Broken Override](devbox-broken-override.md) | Devbox cannot build environment at all (nixpkgs pin missing a package); subagents block instead of using direct package-manager equivalents |
 | Quality | [Mandatory Testing Workflow](mandatory-testing-workflow.md) | Untested changes, regressions, missing quality gates |
 | Scripts | [Shell Scripting Best Practices](shell-scripting-best-practices.md) | Unsafe shell scripts, missing dry-runs, untested scripts, dirty repo state |
 

@@ -1,5 +1,24 @@
 ---
-description: Generate a Product Requirements Document (PRD) from a brief feature prompt
+workflow: "Greenfield PRD"
+slug: "greenfield-prd"
+description: "Generate a Product Requirements Document (PRD) from a brief feature prompt"
+use: "When creating a new feature PRD from a brief feature request, before task breakdown"
+role: "Product Manager"
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
+tags:
+  - "ai/workflow/software-dev/greenfield/prd"
+  - "prd"
+  - "feature-planning"
+see-also:
+  - workflow: "tasks-from-prd"
+    relationship: "next-step"
+    description: "Consumes the PRD this workflow produces to generate task stories"
+  - skill: "execute-upsert"
+    relationship: "complement"
+    description: "Orchestrates this workflow (PRD creation), task breakdown, and execution as a pipeline"
 ---
 
 ---
@@ -509,7 +528,7 @@ Three properties make the PRD executable by a weaker model:
 
 7. **Generate Task Files**
    - Generate task files based on the PRD.
-   - Use the ../tasks/tasks-from-prod.md workflow to generate the task files
+   - Use the ../tasks/tasks-from-prd.md workflow to generate the task files
 
 ## PRD Template Definition
 

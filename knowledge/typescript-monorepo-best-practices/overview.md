@@ -145,6 +145,7 @@ Each phase has practices that prevent specific failure modes:
 | Testing | [Vitest Testing](vitest-testing.md) | `.test.ts` extension mismatch, unit/integration test conflation |
 | Naming | [Package Naming Convention](package-naming-convention.md), [Application Naming Convention](app-naming-convention.md) | Inconsistent directory structure, unclear package status (active vs icebox) |
 | Structure | [Monorepo Structure](monorepo-structure.md) | Packages scattered by app, no clear shared/core boundary |
+| Parallelism | [Parallel Export Collisions](parallel-export-collisions.md) | Parallel subagents collide on barrel file exports (TS2308), barrel merge conflicts from independent naming choices |
 | Style | [Code Style](code-style.md) | Quote/indent/style drift, `interface`/`type` inconsistency |
 | Fundamentals | [JavaScript and TypeScript Fundamentals](javascript-typescript-fundamentals.md) | Missing JSDoc typing, unsafe error handling, config drift, import boundary violations |
 

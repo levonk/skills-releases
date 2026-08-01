@@ -82,6 +82,7 @@ elsewhere.
 | **Small appliances** | Blender, food processor, pressure cooker, fryer, mixer, meat grinder | `domains/small-appliances.md` |
 | **Cameras** | DSLR, mirrorless, compact, action camera | `domains/cameras.md` |
 | **Mobile phones** | Smartphone purchase | `domains/mobile-phones.md` |
+| **Computers** | User is buying a whole laptop, desktop, or all-in-one (Mac, Windows PC, Chromebook) — not building a PC from parts | `domains/computers.md` |
 | **Collectibles** | Watches, coins, cards, comics, art, wine, sneakers, vinyl, antiques | `domains/collectibles.md` |
 | **Yard tools** | Mowers, trimmers, blowers, chainsaws, tillers, snow blowers | `domains/yard-tools.md` |
 | **Computer parts** | User is building or upgrading a PC | `domains/computer-parts/index.md` (generic) + sub-domain below |
@@ -104,7 +105,7 @@ a starting point — always use judgment based on the specific product.
 
 | Purchase type | Obsolescence | Repairability | TCO | Used risks | Situational fit | Domain file |
 |--------------|-------------|---------------|-----|------------|-----------------|-------------|
-| Laptop | ✅ | ✅ | ✅ | ✅ (if used) | ✅ | `computer-parts/` (if building) |
+| Laptop | ✅ | ✅ | ✅ | ✅ (if used) | ✅ | `computers.md` (whole computer) / `computer-parts/` (if building) |
 | Phone | ✅ | ✅ | ✅ | ✅ (if used) | ✅ (carrier) | `mobile-phones.md` |
 | Watch (mechanical) | ❌ | ✅ | ✅ (service) | ✅ (if used) | ❌ | `collectibles.md` (if luxury) |
 | Watch (smart) | ✅ | ✅ | ✅ | ✅ (if used) | ❌ | — |

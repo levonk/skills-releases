@@ -1,14 +1,14 @@
 ---
 name: ai-upsert
 description: Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, and agents. Determines which type the user needs, recommends the best fit if they ask for the wrong one, and asks the user to choose before implementing. For skills: create from scratch, convert workflows (preserving git history via git mv), update existing skills, run evals, benchmark performance, and optimize descriptions. For knowledge bundles: create OKF-compliant bundles, ingest new sources, query bundles for answers, and lint for contradictions. For agents: recognize agent creation/update requests and route to the dedicated agent-upsert skill, which handles scaffolding, frontmatter customization, design focus, verification, and auditing. Use when users want to create a skill, create a knowledge bundle, create an agent, convert a workflow to a skill, edit/optimize an existing skill, run skill evals, benchmark skill performance, organize structured knowledge into a compounding markdown wiki, create OKF bundles, add sources to bundles, query bundles, health-check bundles, scaffold a new agent, or audit an existing agent definition. Make sure to use this skill whenever the user mentions skill creation, skill development, skill testing, skill evaluation, skill benchmarking, skill optimization, workflow-to-skill conversion, knowledge bundles, OKF, Open Knowledge Format, concept documents, bundle ingest, bundle query, bundle lint, agent creation, agent design, agent scaffolding, agent updating, agent auditing, agent optimization, or wants to package/distribute skills, even if they don't explicitly ask for a "skill creator," "knowledge bundle creator," or "agent creator." Do NOT trigger on general coding questions, bug fixes, feature implementation, code review, general documentation questions, one-off markdown files, or README creation (use readme-upsert) — this skill is for skill, knowledge bundle, and agent lifecycle management, not general development or writing.
-version: 3.2.0
+version: 3.3.0
 okf-supported-version: "0.2"
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-05-25"
-  knowledge-basis: "2026-07-28"
-  last-used: "2026-07-28"
+  knowledge-basis: "2026-07-31"
+  last-used: "2026-07-31"
 tags:
   - "ai/skill"
   - "skill-creation"
@@ -26,6 +26,11 @@ tags:
   - "compounding"
   - "ai/agent"
   - "agent-routing"
+  - "phased-pipeline"
+  - "self-update"
+  - "tech-detection"
+  - "code-review"
+  - "git-workflow"
 see-also:
   - template: "base-ai-guidance"
     relationship: "base-framework"
@@ -87,6 +92,33 @@ see-also:
   - knowledge: "documentation-diagram-practices"
     relationship: "complement"
     description: "Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram"
+  - skill: "project-detection"
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. ai-upsert runs it in Phase 2 (Establish Technologies) to detect the target project's package manager, build system, test runner, and linter. The detected tech stack becomes a binding constraint on the generated/updated skill's tool references"
+  - skill: "code-review-guidance"
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. ai-upsert runs its checklist in Phase 4 (Review & Verify) on the generated/updated artifact before commit"
+  - skill: "git-repository-management"
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. ai-upsert uses it in Phase 0 (Pre-flight clean-repo check) and Phase 5 (Commit) so commit conventions are always present and never ad-libbed"
+  - knowledge: "dev-environment-practices"
+    relationship: "transitive-bundled-dependency"
+    description: "Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides shell-scripting-best-practices.md used in Phase 4 (Review & Verify) to validate generated shell scripts (shellcheck, shfmt, strict mode, PATH guards)"
+  - knowledge: "python-services-practices"
+    relationship: "transitive-bundled-dependency"
+    description: "Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides standalone-scripts.md (PEP 723, uv) used in Phase 4 (Review & Verify) to validate generated Python scripts"
+  - knowledge: "rust-development-practices"
+    relationship: "transitive-bundled-dependency"
+    description: "Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides rustfmt-clippy-config.md, quality-gates.md, testing-strategy.md, error-handling.md used in Phase 4 (Review & Verify) to validate generated Rust code"
+  - knowledge: "secrets-egress-security"
+    relationship: "transitive-bundled-dependency"
+    description: "Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides vault storage and egress firewall patterns for security review in Phase 4"
+  - knowledge: "devsecops-codeguard"
+    relationship: "transitive-bundled-dependency"
+    description: "Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides security patterns (banned C functions, credential detection, crypto governance, cert validation, SSH hardening) for security review in Phase 4"
+  - skill: "execute-upsert"
+    relationship: "pattern-reference"
+    description: "Sibling execution skill whose phased pipeline (Self-Update, Establish Technologies, per-story review, commit) ai-upsert 3.3.0 adopts for its own lifecycle"
 ---
 
 ---
@@ -2340,7 +2372,208 @@ just different. If it's merely a reimplementation, reconsider whether creation
 is warranted.
 
 
+> **Single source of truth.** When a choice changes, update this table once.
+> Every knowledge file that includes it stays in sync automatically at build
+> time. Do not restate these choices in individual knowledge files — include
+> this table or link to it instead.
+>
+> This table records the *what* — use this, don't use this, with exceptions
+> where they matter. For the *why* (decision process, risk hierarchy,
+> alternatives considered, timeline estimates), see the footnotes at the bottom.
+
+| Category | Concern | Use | Don't use | Exceptions |
+|----------|---------|-----|-----------|------------|
+| build | Build orchestrator | **Nx** | Turborepo, Bazel, Pants | — |
+| build | Task runner | **just** (justfile) | Makefiles, npm scripts, custom shell scripts | — |
+| build | Development environment (system tools) | **devbox** (Nix-backed) + direnv | brew/apt/system npm/pip for system tools, raw Nix flakes, mise | Language-native package managers (pnpm/cargo/uv/pip) remain canonical for language libraries — never install language deps via devbox |
+| node | Package manager | **pnpm** | npm, yarn, bun | — |
+| node | External dependency version management (monorepo) | **`catalog:` protocol** (versions centralized in `pnpm-workspace.yaml`, `catalogMode: strict`) | Hardcoded version ranges duplicated across sub-package `package.json` files, `"*"` (resolves to latest registry release — does NOT inherit from root) | `workspace:*` remains for internal workspace packages; `catalog:` is for external registry deps. See `typescript-monorepo-best-practices/pnpm-nx-monorepo.md` |
+| node | Ad-hoc package execution (host / pnpm workspace) | **`pnpm dlx <pkg>`** (for packages not installed) or **`pnpm exec <cmd>`** (for workspace-installed binaries) | `npx`, `bunx`, `yarn dlx`, `bun x` | None — `pnpm dlx`/`pnpm exec` always, even when contributing to upstream projects that use a different package manager |
+| node | Test runner (TypeScript) | **Vitest** | Jest, Mocha/Chai, Playwright Test Runner | Playwright is still used for E2E browser automation — just not as the primary test runner |
+| node | Linter | **ESLint** (`@antfu/eslint-config` + `@job-aide/tools-lint-eslint-config`) | Biome, XO | — |
+| node | Formatter | **ESLint stylistic rules** (via antfu) — no separate formatter | Prettier, Biome | — |
+| node | ORM (TypeScript) | **Drizzle ORM** | Prisma, Kysely, raw SQL | — |
+| python | Ad-hoc package execution (Python, packages) | **`uvx <pkg>`** | `pip install` at runtime, `python -m pip install` in scripts, `pipx run` | Use `uvx` for one-off package execution; `uv run --script` for PEP 723 inline-metadata scripts. When `uv` is not on PATH, resolve via `cli-tool-discovery.sh --runner python` and follow the `recommendation` (add to devbox.json, or fall back to `pip install` + `python3` when no `devbox.json` exists) |
+| python | Ad-hoc script execution (Python, PEP 723) | **`uv run --script <file>`** | `python3 <file>` (when deps are pre-installed), `pip install` + `python3 <file>` | The PEP 723 `# /// script` block is a comment to `python3`, so `python3 script.py` works if deps are already installed. `uv run --script` provisions deps automatically. See `python-services-practices/standalone-scripts.md` |
+| python | Python orchestration | **nox** | Bazel, Pants | — |
+| rust | Ad-hoc package execution (Rust) | **`cargo binstall -y <pkg>`** (prebuilt binaries) | `cargo install <pkg>` (source build, slow), `rustup component add` | `cargo binstall` fetches prebuilt binaries — much faster than `cargo install`. Use `cargo install` only when binstall has no package for the target. Resolve via `cli-tool-discovery.sh --runner rust` |
+| go | Ad-hoc package execution (Go) | **`go install <pkg>@latest`** | `go get` (deprecated for binaries), manual `git clone` + `go build` | `go install <pkg>@version` is the canonical way to install a Go binary. Resolve via `cli-tool-discovery.sh --runner go` |
+| shell | Test runner (shell / bash) | **bats-core** (`bats` executable, `bats-core` + `bats-support` + `bats-assert` + `bats-file` libraries) | Plain shell scripts masquerading as tests, `shunit2`, `shellcheck` used as a test runner, hand-rolled `test_*.sh` scripts with `set -e` and assertions | Ad-hoc one-line smoke checks (`script.sh && echo ok`) inside a Justfile are fine for smoke commands but do not count as a test suite; promote them to a `bats` file when they grow past one assertion |
+| shell | Linter (shell / bash) | **shellcheck** (`shellcheck -x` for sourced scripts) | `sh -n` (syntax-only, no semantic checks), ignoring shell issues, relying on `set -e` alone | `shellcheck` is a static analyzer — it catches common shell bugs (unquoted variables, word-splitting, SC2086, etc.) but does not execute code. Not a replacement for `bats` behavior tests. Use `-x` to follow sourced scripts |
+| shell | Formatter (shell / bash) | **shfmt** (default: `shfmt -i 2 -ci -bn` — 2-space indent, case indent, binary-next-line) | hand-rolling indentation, `bash -n` as a format check, editor-specific formatting | `shfmt` enforces consistent formatting (indentation, line breaks, spacing). Pairs with `shellcheck` — `shfmt` for format, `shellcheck` for semantics. Not a test runner |
+| container | Ad-hoc package execution (inside a container) | **`bunx <pkg>`** | `npx`, `pnpm dlx`, `pnpm exec`, `yarn dlx` | Containers use bun as their runtime — never install pnpm in a container. Applies to Dockerfiles, container entrypoint scripts, and any script that runs inside a container image |
+| container | Container system packages | **Container's native package manager** (`apk` on Alpine, `apt-get` on Debian slim) or **bare container** (`scratch`/`distroless`) for static binaries | Installing system packages via npm/pip/cargo at runtime; baking dev toolchains into runtime images | Dev toolchains (`build-base`, gcc, make) belong in the builder stage only |
+| container | Container runtime tooling | **Docker** — OrbStack on x86_64 Darwin, Docker Desktop on Windows, `dockerd` on Linux; platform-native on aarch64 Darwin | podman, colima | — |
+| container | Container orchestration (local dev) | **k3s** | kind, minikube, microk8s, full k8s | — |
+| container | Container orchestration (production) | **k8s** (full Kubernetes) | k3s, Docker Swarm, Nomad | — |
+| deployment | Service deployment & configuration | **Ansible** (`community.docker` modules) | `docker compose` for deployment | `docker-compose.yml` is valid for sharing a deployable service externally (outside the org) where the recipient doesn't have the Ansible overhead |
+| security | Auth provider | **better-auth** (passkey / organization / two-factor plugins) | Supabase Auth, Auth0, Clerk, Lucia | Auth method preference: passkey-first > passkey > Google/Apple OAuth > local password + 2FA > local password only; email always collected for recovery |
+| data | Database (SaaS / multi-tenant OLTP) | **Supabase Postgres** with RLS via per-request session variables | PocketBase, SQLite-per-tenant, shared-schema Postgres without RLS, per-tenant Postgres clusters | — |
+| data | Analytics / ETL sidecar | **Per-tenant SQLite export + DuckDB** | PocketBase as OLTP, direct analytics on production Postgres, per-tenant Postgres replicas | — |
+| tooling | Ad-hoc runner resolution (all ecosystems) | **`cli-tool-discovery.sh --runner <python\|node\|rust\|go>`** | Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` in scripts | The runner mode pairs binary resolution with the canonical invocation. Returns JSON with `script`, `package`, `fallback`, and `recommendation` fields. Single source of truth for "how do I invoke an ad-hoc command in ecosystem X?" — `detect-package-manager.sh` delegates to it for the `runner` field |
+| tooling | Code intelligence (text search) | **ripgrep** (fresh, no index) + **xgrep** (repeated queries, trigram index) + **fzf** (interactive fuzzy) | grep, find, skim | Per ADR-20260520001 §6×2 matrix rows 1, 4, 5 (filename, exact, fuzzy). ripgrep for one-off fresh searches; xgrep for 2–46× faster repeated queries; fzf for interactive selection |
+| tooling | Code intelligence (semantic search) | **semble_rs** (hybrid BM25 + Model2Vec, ephemeral, single Rust binary) | qmd, Sourcegraph Cody | Per ADR-20260520001 §6. Ephemeral index rebuilt every run — zero config. Also provides `digest` for build/CI log compression (-99%) and `tree` for token-efficient codebase trees |
+| tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree |
+
+### Notable "considered and rejected" choices
+
+- **Turborepo** — superseded by ADR-20260419001. JS-only; cannot cache or orchestrate Docker, Python, or Rust builds.
+- **Jest** — replaced by Vitest per ADR-20251106002. Slower in ESM, complex TS/ESM config.
+- **Plain shell scripts as tests** — rejected in favor of bats-core. Hand-rolled `test_*.sh` scripts with `set -e` and manual assertions give no fixture isolation, no parallel execution, no TAP output, no `setup`/`teardown` hooks, and silently pass on skipped assertions. bats-core provides all of these, is a single portable bash script with no runtime deps, and emits TAP 13 output that CI runners and `bats-reporter` consume natively. Use `shellcheck`/`shfmt` for lint/format, `bats` for behavior.
+- **`sh -n` as a lint/format substitute** — rejected. `sh -n` only checks syntax (parse errors), not semantics — it misses unquoted variables (SC2086), word-splitting, unsafe globs, and the hundreds of other issues `shellcheck` catches. It also does not format. `shellcheck` for semantics + `shfmt` for formatting is the canonical pair; `sh -n` is a smoke check, not a lint pipeline.
+- **Prettier** — not used. Formatting is enforced through ESLint (antfu stylistic rules).
+- **Biome** — rejected. ESLint composition API and plugin ecosystem (Drizzle, Tailwind, Prisma, antfu framework support) cannot be replaced by Biome's static JSON config.
+- **podman** — rejected after real-world use. No working molecule driver in nixpkgs; molecule can't find podman binary in Ansible's restricted PATH; `community.docker` modules target the Docker Engine API.
+- **Raw Nix flakes for dev environments** — superseded by ADR-20251226001 (devbox + direnv). Too verbose; learning curve too steep for non-Nix-expert developers.
+- **brew/apt/system pip/system npm for system tools** — rejected for host dev environments (host pollution, drift, broken reproducibility). Still used **inside containers** (apk/apt-get) where the container's native package manager is correct.
+- **Supabase Auth** — rejected in favor of better-auth. No passkey-first onboarding; passkey API beta as of April 2026; tightly coupled to Postgres via `auth.uid()` in RLS policies (migration = end-user-impact risk); MAU billing above 50k.
+- **PocketBase** — rejected as primary OLTP and as a free-tier backend. Collection rules are app-layer filters, not storage-engine RLS (unacceptable for financial data with FTC Safeguards exposure). SQLite remains in the stack as the **analytics export format**, not as a live backend.
+- **Standardizing on one indexed AST tool** — rejected per ADR-20260520001 v3.0.0. The three contenders (CodeGraph, Graphify, GitNexus) each win exactly two of six rounds (index freshness, content breadth, dynamic dispatch, query power, multi-repo support, visualization) — there is no universal winner. Defaulting to CodeGraph for a multi-repo microservices project loses GitNexus's cross-repo blast radius; defaulting to GitNexus for a single-project zero-setup workflow loses CodeGraph's auto-sync; defaulting to either for a project with architecture docs/PDFs loses Graphify's multimodal coverage. The three do not conflict at runtime and can be run together. GitNexus's PolyForm Noncommercial license is a separate consideration — procure a commercial license before indexing proprietary code for business use.
+
+> **Decision process & rationale** for these choices — including the full risk
+> hierarchy, alternatives considered, and AI + human timeline estimate format
+> that drove decisions like better-auth-from-day-one over a "use Supabase Auth
+> now, migrate later" path — live in the
+> [software-architecture-essentials](../software-architecture-essentials/overview.md)
+> and
+> [api-auth-payment-practices](../api-auth-payment-practices/overview.md)
+> knowledge bundles. For code knowledge graph tool selection specifically, see
+> [code-knowledge-graph-tools.md](../software-architecture-essentials/code-knowledge-graph-tools.md).
+> This table records the *what*; those bundles record the *why*.
+
+
+---
+description: Shared devbox missing-package remediation guidance — when a required tool/package is missing, add it to devbox.json and run via `devbox run --` instead of installing on the host. Wired into agent-file-upsert's developer.md template so new repositories inherit the logic
+---
+
+### Missing Package Remediation
+
+When a command fails with "command not found" or a required tool/package is
+missing on the system, do NOT install it on the host. Add it to `devbox.json`
+and run the command through devbox:
+
+1. Check whether the tool is already declared in `devbox.json`. If not, add it:
+   ```bash
+   devbox add <package>      # preferred: updates devbox.json + devbox.lock
+   # or edit devbox.json directly for version-pinned packages
+   ```
+2. Re-run the command via devbox:
+   ```bash
+   devbox run -- <command>
+   ```
+3. Prefer `devbox run --` over installing packages on the host system. This
+   keeps the environment reproducible and avoids polluting the host.
+
+**Do NOT** install missing tools via `npm`, `brew`, `apt`, `pip install --user`,
+`pipx`, `cargo install`, `go install`, or other host-level package managers
+unless the tool is explicitly a host-level prerequisite (e.g. devbox/nix
+itself, or a system-level binary that cannot live inside devbox). Add it to
+`devbox.json` instead and run via `devbox run --`.
+
+**Detection pattern (bash):** before invoking a tool, check availability and
+fall back to `devbox run --`:
+```bash
+if ! command -v <tool> >/dev/null 2>&1 && command -v devbox >/dev/null 2>&1 && [[ -f devbox.json ]]; then
+    devbox add <package>   # only if not already in devbox.json
+    devbox run -- <tool> "$@"
+else
+    <tool> "$@"
+fi
+```
+
+
+---
+description: Shared protocol for committing a clean checkpoint before delegating work to a subagent or starting a commit batch, so failures can be rolled back without losing prior progress
+---
+
+### Pre-Task Commit Checkpoint
+
+Before delegating a unit of work to a subagent (or starting any commit batch),
+ensure the working tree is at a clean, labeled commit. This creates a rollback
+point: if the subagent fails or produces unwanted changes, `git reset` or
+`git checkout` returns to the checkpoint without losing prior stories' work.
+
+#### When to Checkpoint
+
+- **Before each subagent dispatch** in a multi-story execution loop.
+- **Before the first commit** in a batch commit operation.
+- **Before any delegation** where the subagent might modify files you cannot
+  easily undo.
+
+Do NOT checkpoint after every file edit inside the orchestrator — only at
+delegation boundaries where a fresh context takes over.
+
+#### Checkpoint Protocol
+
+1. **Check for uncommitted changes**:
+   ```bash
+   git status --porcelain
+   ```
+   - If the output is empty, the tree is clean — proceed to dispatch.
+   - If there are changes, continue to step 2.
+
+2. **Commit the pending work** before dispatching:
+   - If the `git-repository-management` skill is installed, use its
+     `git-commit-batch.sh` script for structured, rollback-safe commits with
+     vertical grouping and mandatory commit bodies.
+   - Otherwise, commit directly:
+     ```bash
+     git add -A
+     git commit -m "checkpoint: <what was completed>" -m "- Pre-task checkpoint before <next task description>"
+     ```
+
+3. **Record the checkpoint commit hash** so the orchestrator can roll back to
+   it if the subagent fails:
+   ```bash
+   git rev-parse HEAD
+   ```
+
+4. **Dispatch the subagent**. The subagent works from the clean checkpoint.
+
+5. **On subagent failure**: roll back to the checkpoint if the subagent left
+   the tree in an undesirable state:
+   ```bash
+   git reset --hard <checkpoint-hash>
+   ```
+   Never roll back past a checkpoint that represents completed, reviewed work.
+
+#### Commit Quality Rules (Apply at Every Checkpoint)
+
+Even at checkpoint boundaries, commits must follow basic quality standards:
+
+- **Imperative mood**: "Add auth middleware" not "Added auth middleware"
+- **Mandatory body**: Every commit includes a body explaining the why, not
+  just the what. A subject line alone is never sufficient.
+- **No AI signatures**: Never add `Co-authored-by:`, `Generated by:`, or any
+  AI attribution trailer. This is a permanent, non-negotiable rule.
+- **Vertical grouping**: When a checkpoint spans multiple functional areas,
+  group changes by feature (code + tests + docs together), not by file type.
+- **Rollback-safe ordering**: When making multiple commits at a checkpoint,
+  order least-complicated → most-complicated so a revert of a complex commit
+  doesn't pull simpler, unrelated commits with it.
+
+For the full commit organization rules (vertical grouping examples, batch
+format, quality check integration, tagging), see the `git-repository-management`
+skill.
+
+
 references/included/skills/software-dev/cli-tool-upsert/references/
+
+references/included/skills/software-dev/project-detection/
+
+references/included/skills/software-dev/code-review-guidance/
+
+references/included/skills/software-dev/git-repository-management/
+
+references/included/knowledge/devsecops-codeguard/
+
+references/included/knowledge/secrets-egress-security/
+
+references/included/knowledge/dev-environment-practices/
+
+references/included/knowledge/python-services-practices/
+
+references/included/knowledge/rust-development-practices/
 
 # AI Create
 
@@ -2421,6 +2654,156 @@ MUST also honor the local project override layer. This is enforced by:
    documenting the override behavior, since the include is inlined at build
    time and the materialized copy already has the full text.
 
+## Phased Pipeline Overview
+
+ai-upsert runs a phased pipeline before the artifact-type decision tree. The
+phases are adapted from `execute-upsert` (Self-Update → Establish Technologies
+→ per-story review → commit) so that ai-upsert itself stays current, respects
+the target project's tech stack, and never ad-libs commit conventions. The
+directly bundled dependencies (project-detection, code-review-guidance,
+git-repository-management) are materialized at build time via `includeTree`.
+The knowledge bundles (devsecops-codeguard, secrets-egress-security,
+dev-environment-practices, python-services-practices, rust-development-practices)
+are bundled transitively via `code-review-guidance` — when ai-upsert bundles
+code-review-guidance, the templater materializes code-review-guidance's own
+`includeTreeForCache` directives into ai-upsert's `references/included/` tree
+at the flat location. All bundled content is present offline — the runtime
+resolver's three-tier fallback (local → URL → materialized) is a safety net,
+not the primary path, because a missing dependency causes the AI to ad-lib
+and corrupt the artifact.
+
+| Phase | Purpose | Bundled dependency |
+|-------|---------|--------------------|
+| 0. Pre-flight | Clean-repo check before mutating anything | git-repository-management |
+| 1. Self-Update | Ensure ai-upsert and sibling skills are at latest version | tech-stack-table (pnpm dlx) |
+| 2. Establish Technologies | Detect target project's tech stack; binding constraint on generated artifact | project-detection |
+| 3. Decision + Mode | Skill vs KB vs Agent; then Mode A/B/C work | (this skill) |
+| 4. Review & Verify | Structured code review + script-standards validation before commit | code-review-guidance, devsecops-codeguard, secrets-egress-security, dev-environment-practices, python-services-practices, rust-development-practices |
+| 5. Commit | Commit via git-repository-management conventions | git-repository-management |
+
+## Phase 0: Pre-flight (Clean Repository Check)
+
+Before any upsert work, check the target repository's git state. A dirty
+working tree risks sweeping unrelated changes into the upsert commit and
+makes it impossible to attribute changes to this upsert cleanly.
+
+1. **Run the clean-repo check** using the bundled `git-repository-management`
+   skill (materialized at
+   `references/included/skills/software-dev/git-repository-management/`).
+   Read its `SKILL.md` and follow the "Full Repository Cleanup" entry point's
+   collect phase to get the current change set.
+2. **If the working tree is clean** (no uncommitted changes): proceed to
+   Phase 1.
+3. **If the working tree is dirty**: do NOT abort. The
+   `skill-src-upsert.md` workflow stages only the files touched by this
+   upsert, so unrelated dirty files are not swept in. Instead:
+   - Note the pre-existing dirty files for the user.
+   - Proceed, but in Phase 5 (Commit) stage **only** the files this upsert
+     touched — never `git add -A` or `git add .`.
+4. **If the target is not a git repo** (e.g., creating a skill in a fresh
+   `~/.agents/skills/` directory): skip Phase 0 and Phase 5. Note that the
+   artifact will not be under version control; offer to `git init` if the user
+   wants history.
+
+## Phase 1: Self-Update
+
+Before any upsert work, ensure this skill and its siblings are at the latest
+version. This prevents stale skill logic from driving the upsert — especially
+important when resuming from a handoff created by an older skill version.
+
+**Command:**
+
+```bash
+devbox run -- pnpm dlx skills add levonk/skills-releases --all
+```
+
+This installs/updates all skills from the public distribution repo. The
+command uses `pnpm dlx` (never `npx`) per the canonical tech-stack table
+inlined above — pnpm is the package manager, `pnpm dlx` is the ad-hoc
+package execution tool. This is canonical skills-tooling, independent of the
+target project's tech stack: the target project may use `npm`, but the
+skills tooling still uses `pnpm dlx`.
+
+**Skip conditions:**
+
+- **`SKIP_SELF_UPDATE=1`** — environment variable to skip self-update entirely
+  (useful in CI or air-gapped environments where the latest version is already
+  installed).
+- **Upserting inside `skills-src` itself** — when the target is a skill in
+  this repo (`src/current/skills/...`), the source IS the latest version by
+  definition; skip self-update and proceed to Phase 2.
+
+**After self-update:** if any skill versions changed, re-invoke this skill
+(ai-upsert) to pick up the new logic — do not continue with the old skill
+instance loaded in context. If no versions changed, proceed to Phase 2.
+
+## Phase 2: Establish Technologies
+
+Detect the target project's tech stack and establish it as a binding constraint
+on the generated/updated artifact. This prevents the upsert from emitting
+references to the wrong tools (e.g., `npm`/`npx` in a pnpm project, `jest` in a
+Vitest project, `pip install` when `uv` is canonical).
+
+**Why this phase exists:** without explicit tech establishment, the upsert
+defaults to whatever it "remembers" — frequently `npm`/`npx` for Node
+projects. The canonical tech-stack table (inlined above) declares pnpm as the
+package manager and `pnpm dlx` as the ad-hoc runner, but the table is in the
+orchestrator's context, not the generated artifact's. This phase produces a
+**tech context block** that constrains every tool reference in the generated
+or updated skill/bundle/agent.
+
+**Detection:** run the bundled `project-detection` skill (materialized at
+`references/included/skills/software-dev/project-detection/`):
+
+```bash
+./references/included/skills/software-dev/project-detection/scripts/detect-all-systems.sh . --json
+```
+
+If `project-detection` is separately installed as a skill, invoke it through
+the skill registry instead. The bundled copy is the fallback for standalone
+ai-upsert installs.
+
+**Branch — upserting inside `skills-src`:** when the target is a skill in this
+repo, the tech stack is known and fixed (pnpm, just, devbox, uv, rust,
+chezmoi templating). Skip detection and use the known stack as the tech
+context block.
+
+**Tech context block** (produced from detection results; constrains the
+generated artifact's tool references):
+
+```text
+## Tech Context (Binding Constraint)
+
+This project uses the following tools. The generated/updated artifact MUST
+reference these, not alternatives.
+
+- Package manager: <pnpm|npm|yarn|bun|uv|pip|cargo|go mod>
+- Ad-hoc runner: <pnpm dlx|npx|yarn dlx|bunx|uvx|cargo binstall|go install>
+  (per the tech-stack table: pnpm dlx for Node, uvx for Python,
+  cargo binstall for Rust, go install for Go — never npx)
+- Build system: <Nx|Turbo|cargo|go|just|Make|Maven|Gradle>
+- Test runner: <Vitest|Jest|cargo test|go test|pytest|bats>
+- Linter: <ESLint|Biome|clippy|golangci-lint|shellcheck>
+- Container runtime: <Docker|podman>
+- CI/CD: <GitHub Actions|GitLab CI|CircleCI>
+
+System tools run via: devbox run -- <command>
+Never reference: npm, npx, yarn, jest, biome (unless the project explicitly uses them)
+```
+
+**Devbox remediation:** if a required tool is missing (e.g., `pnpm` not
+found, `just` not found), follow the devbox remediation protocol (inlined
+above from `includes/devbox-remediation.md`): add the tool to `devbox.json`
+via `devbox add <package>` and run via `devbox run -- <command>`. Do NOT
+install tools on the host via `npm`, `brew`, `apt`, `pip install --user`,
+`pipx`, `cargo install`, or `go install` — add them to `devbox.json` instead.
+
+**After establishment:** carry the tech context block into Phase 3 (Decision
++ Mode). Every tool reference written into the generated/updated artifact
+must agree with it. If the tech stack changes during the upsert (e.g., the
+new skill introduces a dependency), update the tech context block and
+re-check the artifact's references.
+
 ## Decision: Skill vs Knowledge Bundle vs Agent
 
 Before starting any work, determine which artifact type the user needs. This is
@@ -2490,7 +2873,10 @@ only the relevant workflow.
 ```mermaid
 flowchart TD
     Start([Invoke]) --> AGENTS["Read repository<br/>AGENTS.md / CLAUDE.md"]
-    AGENTS --> Type{"Skill, Knowledge<br/>Bundle, or Agent?"}
+    AGENTS --> P0["Phase 0: Pre-flight<br/>clean-repo check<br/>bundled git-repo-mgmt"]
+    P0 --> P1["Phase 1: Self-Update<br/>pnpm dlx skills add<br/>re-invoke if changed"]
+    P1 --> P2["Phase 2: Establish Technologies<br/>bundled project-detection<br/>tech context block"]
+    P2 --> Type{"Phase 3: Skill, Knowledge<br/>Bundle, or Agent?"}
     Type -->|"User asks for wrong type"| Rec["Recommend best fit<br/>Ask user to choose"]
     Rec --> Type
     Type -->|"Skill"| Skill["Skill Path"]
@@ -2508,17 +2894,17 @@ flowchart TD
     SF --> SS["Extract scripts<br/>& references"]
     SS --> SE["Add evals"]
     SE --> SP["Package & verify"]
-    SP --> DoneS([Done])
+    SP --> Review
 
     SB --> SBR["Research existing skills"]
     SBR --> SBM["git mv workflow<br/>to SKILL.md"]
     SBM --> SBO["Apply skill<br/>optimizations"]
-    SBO --> DoneS
+    SBO --> Review
 
     SC --> SCR["Read & audit<br/>existing skill"]
     SCR --> SCP["Propose changes"]
     SCP --> SCC["Confirm & apply"]
-    SCC --> DoneS
+    SCC --> Review
 
     KB --> KBMode{"Bundle mode?"}
     KBMode -->|"No bundle"| KBA["Mode A:<br/>Create"]
@@ -2531,30 +2917,32 @@ flowchart TD
     KBC --> KBI2["Initialize bundle"]
     KBI2 --> KBP["Plan & create<br/>concept docs"]
     KBP --> KBV["Verify OKF v0.2"]
-    KBV --> KBD["Deliver"]
-    KBD --> DoneK([Done])
+    KBV --> Review
 
     KBI --> KBIR["Research existing<br/>concepts"]
     KBIR --> KBIS["Read source"]
     KBIS --> KBIW["Write summary<br/>& update pages"]
     KBIW --> KBIL["Append to log"]
-    KBIL --> DoneK
+    KBIL --> Review
 
     KBQ --> KBQR["Read index first"]
     KBQR --> KBQD["Drill into concepts"]
     KBQD --> KBQS["Synthesize answer<br/>with citations"]
     KBQS --> KBQF["File good answers<br/>back"]
-    KBQF --> DoneK
+    KBQF --> Review
 
     KBL --> KBLK["Check contradictions,<br/>orphans, broken links"]
     KBLK --> KBLF["File findings as<br/>concepts or log entries"]
-    KBLF --> DoneK
+    KBLF --> Review
 
     Agent --> AMode{"Agent file<br/>exists?"}
     AMode -->|"No"| AC["Route to agent-upsert<br/>Mode A: Create"]
     AMode -->|"Yes"| AU["Route to agent-upsert<br/>Mode C: Update"]
-    AC --> DoneA([Done — see agent-upsert])
-    AU --> DoneA
+    AC --> Review
+    AU --> Review
+
+    Review["Phase 4: Review & Verify<br/>bundled code-review-guidance<br/>+ shell & python standards"] --> Commit["Phase 5: Commit<br/>bundled git-repo-mgmt<br/>stage only touched files"]
+    Commit --> Done([Done])
 ```
 
 ---
@@ -3005,11 +3393,121 @@ agent primitive using filesystem conventions.
 
 ---
 
+## Phase 4: Review & Verify
+
+After the artifact-type decision tree and Mode A/B/C/D work completes, run a
+structured review pass before committing. This phase catches issues that the
+per-mode verification steps miss — especially cross-cutting concerns like
+script-standards compliance, tech-context drift, and identity leaks.
+
+### 4.1 Structured Code Review
+
+Run the bundled `code-review-guidance` skill (materialized at
+`references/included/skills/software-dev/code-review-guidance/`). Read its
+`SKILL.md` and follow the review checklist on the generated/updated artifact:
+
+- Frontmatter validity (`name`, `description`, `version`, `date`, `tags`,
+  `see-also`)
+- Structure and progressive disclosure
+- Context Declaration completeness
+- Bundled resources (scripts, references, assets) are coherent
+- Includes resolve at build time (no leaked delimiters)
+- The artifact honors the local project override layer (includes
+  `base-ai-guidance` which bundles `project-overrides`, OR includes
+  `project-overrides` directly, OR has a materialized section documenting the
+  override behavior)
+- Tech-context agreement: every tool reference in the artifact agrees with
+  the tech context block from Phase 2 (no `npm`/`npx` in a pnpm project, no
+  `jest` in a Vitest project, no `pip install` when `uv` is canonical)
+
+### 4.2 Script-Standards Validation
+
+If the artifact bundles scripts, validate them against the directly bundled
+knowledge bundles (materialized under `references/included/knowledge/`):
+
+- **Shell scripts** (`*.sh`): check against
+  `references/included/knowledge/dev-environment-practices/shell-scripting-best-practices.md`
+  — strict mode (`set -euo pipefail`), PATH guards, `command -v` checks,
+  quoting, `exec` for final commands. Run `shellcheck` and `shfmt -d` on every
+  shell script if available (via `devbox run --`).
+- **Python scripts** (`*.py`): check against
+  `references/included/knowledge/python-services-practices/standalone-scripts.md`
+  — PEP 723 inline metadata header, `uv run --script` shebang, devbox/rtk
+  detection, `uv` fallback to `pip`. Run `ruff check` and `ruff format --check`
+  on every Python script if available (via `devbox run --`).
+- **Rust code** (`*.rs`): check against
+  `references/included/knowledge/rust-development-practices/rustfmt-clippy-config.md`
+  and `references/included/knowledge/rust-development-practices/quality-gates.md`.
+  Run `cargo fmt --check` and `cargo clippy -- -D warnings` if available (via
+  `devbox run --`).
+
+### 4.3 Existing Verification (preserved)
+
+Run the existing per-mode verification steps — these are not replaced by 4.1
+and 4.2, they are complemented:
+
+- **Skills**: `scripts/skill/package_skill.py` to validate structure. If any
+  markdown file has a `sources:` frontmatter field, run
+  `scripts/knowledge/validate_sources.py <path>` to verify sources are
+  accessible.
+- **Knowledge bundles**: OKF v0.2 self-check (see OKF Version Self-Check
+  above), `validate_sources.py` on any file with a `sources:` field.
+- **All artifacts**: run `scripts/scan-artifacts.sh` (if the artifact generates
+  scripts/files that will be committed) to catch identity leaks — the scanner
+  resolves this machine's actual identity values (`$HOME`, `whoami`,
+  `hostname`, WiFi SSID, DNS domain) and scans for those specific strings.
+
+### 4.4 Substantial-Script Gate
+
+If the artifact bundles more than a handful of substantial scripts (more than
+~5 scripts, or any script over ~100 lines), also invoke the
+`code-quality-validation` skill at runtime (not bundled — it is a heavy
+validation runner) on the artifact's `scripts/` directory. This runs lint,
+format, and test checks appropriate to the detected languages. Skip if the
+artifact has only trivial scripts.
+
+### 4.5 Gate
+
+Do not proceed to Phase 5 until 4.1, 4.2, and 4.3 pass. 4.4 is a warning gate
+(reported, but does not block unless the user opts in). If any check fails,
+fix the root cause (per the root-cause-first policy — no band-aids) and re-run
+the failing check until it passes.
+
+## Phase 5: Commit
+
+Commit the upsert result using the bundled `git-repository-management` skill
+(materialized at
+`references/included/skills/software-dev/git-repository-management/`). Read
+its `SKILL.md` and follow the commit workflow.
+
+**Critical — stage only touched files:** the repository may have unrelated
+dirty files (noted in Phase 0). Stage **only** the files this upsert touched —
+never `git add -A` or `git add .`. Use the `git-repository-management`
+skill's batch-commit workflow with explicit file paths.
+
+**Commit conventions:** follow the `commit-tagging-standard` include (inlined
+above) and the `git-repository-management` skill's commit templates. No AI
+attribution boilerplate (no "Generated with", no "Co-Authored-By: Devin"
+trailers) — per the global rules.
+
+**Pre/post auto-tags:** the `git-repository-management` skill auto-creates
+pre/post tags for rollback safety; let it.
+
+**Skip if not a git repo:** if Phase 0 determined the target is not under
+version control, skip this phase. Offer to `git init` if the user wants
+history.
+
+**After commit:** update `date.last-used` in this skill's frontmatter (the
+date-management include is wired in above) to reflect that ai-upsert was used
+today.
+
+---
+
 ## Cross-Cutting Concerns
 
 ### Script Execution Standards
 
-All scripts created by or bundled with a skill must include the PEP 723 inline script metadata header (for uv) and devbox/rtk/uv detection patterns. See `references/skill/script-execution-standards.md` for the full combined template, detection code, wrapper patterns (bash and python), and guidance on applying these standards when the AI agent runs bundled scripts directly.
+All scripts created by or bundled with a skill must include the PEP 723 inline script metadata header (for uv) and devbox/rtk/uv detection patterns. See `references/skill/script-execution-standards.md` for the full combined template, detection code, wrapper patterns (bash and python), and guidance on applying these standards when the AI agent runs bundled scripts directly. That reference also documents **template-syntax path robustness** — scripts that process git output must handle repos with `{{variable}}` in file paths (copier/Jinja2, chezmoi, cookiecutter) by using `jq` for JSON escaping, `--` before path arguments, and quoted `printf '%s'` patterns.
 
 For CLI scripts specifically, see the materialized [`embedded-script-standards.md`](references/included/skills/software-dev/cli-tool-upsert/references/embedded-script-standards.md) from `cli-tool-upsert` — the single source of truth for scripts bundled inside skills and projects.
 
@@ -3065,6 +3563,14 @@ When skills serve multiple audiences (e.g., end users vs developers), apply prog
 - Includes: `src/current/includes/` (shared includes wired into this skill)
 - Agent routing target: `src/current/skills/ai/agent-upsert/SKILL.md.tmpl` (the dedicated agent producer skill — this skill routes agent requests to it)
 - ai-primitives knowledge bundle: `src/current/knowledge/ai-primitives/` (including `primitives/agents.md` for the agent primitive definition and `cross-domain/eve-filesystem-agents.md` for the vercel/eve real-world reference)
+- Bundled project-detection skill (Phase 2): `references/included/skills/software-dev/project-detection/` — materialized at build time via `references/included/skills/software-dev/project-detection/`. Used in Phase 2 to detect the target project's tech stack
+- Bundled code-review-guidance skill (Phase 4): `references/included/skills/software-dev/code-review-guidance/` — materialized at build time via `references/included/skills/software-dev/code-review-guidance/`. Used in Phase 4 for the structured review checklist
+- Bundled git-repository-management skill (Phases 0 & 5): `references/included/skills/software-dev/git-repository-management/` — materialized at build time via `references/included/skills/software-dev/git-repository-management/`. Used in Phase 0 (clean-repo check) and Phase 5 (commit)
+- Bundled dev-environment-practices knowledge (Phase 4): `references/included/knowledge/dev-environment-practices/` — materialized at build time via `references/included/knowledge/dev-environment-practices/`. Provides `shell-scripting-best-practices.md` for shell script validation. Also bundled by code-review-guidance for standalone use
+- Bundled python-services-practices knowledge (Phase 4): `references/included/knowledge/python-services-practices/` — materialized at build time via `references/included/knowledge/python-services-practices/`. Provides `standalone-scripts.md` (PEP 723, uv) for Python script validation. Also bundled by code-review-guidance for standalone use
+- Bundled rust-development-practices knowledge (Phase 4): `references/included/knowledge/rust-development-practices/` — materialized at build time via `references/included/knowledge/rust-development-practices/`. Provides `rustfmt-clippy-config.md`, `quality-gates.md`, `testing-strategy.md`, `error-handling.md` for Rust code validation. Also bundled by code-review-guidance for standalone use
+- Bundled secrets-egress-security knowledge (Phase 4): `references/included/knowledge/secrets-egress-security/` — materialized at build time via `references/included/knowledge/secrets-egress-security/`. Provides vault storage and egress firewall patterns for security review. Also bundled by code-review-guidance for standalone use
+- Bundled devsecops-codeguard knowledge (Phase 4): `references/included/knowledge/devsecops-codeguard/` — materialized at build time via `references/included/knowledge/devsecops-codeguard/`. Provides security patterns (banned C functions, credential detection, crypto governance, cert validation, SSH hardening) for security review. Also bundled by code-review-guidance for standalone use
 
 ### External Resources
 - Matt Pocock's writing-great-skills guide: https://github.com/matt-pocock/writing-great-skills

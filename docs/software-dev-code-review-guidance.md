@@ -3,9 +3,9 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status: ready · Version: 1.0.0
+> Category: **software-dev** · Status: ready · Version: 1.3.0
 
-Systematic code review checklist covering infrastructure, schemas, integrations, security, performance, accessibility, and cross-cutting concerns. Use when reviewing a pull request, conducting a PR review, or working through a code review checklist before merging. Triggers on 'review this code', 'code review checklist', 'PR review', 'pull request review', or 'review this PR'. Do NOT trigger on general coding questions, bug fixes, feature implementation, or writing new code — this skill is for reviewing existing changes, not authoring them.
+Systematic code review checklist covering infrastructure, schemas, integrations, security, performance, accessibility, and cross-cutting concerns. Use when reviewing a pull request, conducting a PR review, working through a code review checklist before merging, or reviewing a single story commit as part of an automated execution pipeline. Triggers on 'review this code', 'code review checklist', 'PR review', 'pull request review', 'review this PR', or 'review story commit'. Do NOT trigger on general coding questions, bug fixes, feature implementation, or writing new code — this skill is for reviewing existing changes, not authoring them.
 
 ## Metadata
 
@@ -13,7 +13,7 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 |-------|-------|
 | Name | `code-review-guidance` |
 | Category | `software-dev` |
-| Version | `1.0.0` |
+| Version | `1.3.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -22,6 +22,8 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 - `code-review`
 - `pr-review`
 - `checklist`
+- `story-review`
+- `automated-review`
 
 ## Quick Start
 
@@ -38,10 +40,15 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 ## Related Skills
 - **code-quality-validation** (skill, related) — Automated quality checks (lint, test, security scan) that complement manual review
 - **refactor-planning** (skill, related) — For review findings that warrant a structured refactoring effort
-- **** (, reference) — Security patterns and banned-function checks for the security review category
+- **execute-upsert** (skill, dependent) — Project execution controller that invokes this skill for per-story code review during the execution loop
+- **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides the actual security patterns (banned C functions, hardcoded credential detection, crypto algorithm governance, certificate validation, SSH hardening, security audit playbook) that the Security review category references. Without this bundle, the security category is advisory only — the review subagent has no patterns to check against
+- **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides secret storage and egress firewall patterns (Ansible vault distribution, hybrid vault storage, iron-proxy egress firewall, shared-path cleanliness) that the Security and Infrastructure review categories reference for secret-handling and network-egress review
+- **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides shell-scripting-best-practices.md (shellcheck, shfmt, strict mode, PATH guards) used in the Cross-Cutting Concerns / Testing category to validate generated shell scripts
+- **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides standalone-scripts.md (PEP 723, uv run --script) and pytest-testing-baseline.md used in the Cross-Cutting Concerns / Testing category to validate generated Python scripts and test suites
+- **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides rustfmt-clippy-config.md, quality-gates.md, testing-strategy.md, error-handling.md, and security-auditing.md used in the Cross-Cutting Concerns / Testing category to validate generated Rust code
 
 ---
 
 - **Full skill**: [`skills/software-dev/code-review-guidance/SKILL.md`](skills/software-dev/code-review-guidance/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-07-30T19:45:30Z
+- **Generated**: 2026-08-01T09:54:06Z

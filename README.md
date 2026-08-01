@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `e194e9bf262fc132ada9ef1ef2e619401e9a9ae9` · Branch: `env/dev` · Generated: 2026-07-30T19:45:30Z
+> Commit: `947b1f7d38d1b19b1667955499ca395623c1eea5` · Branch: `env/dev` · Generated: 2026-08-01T09:54:06Z
 
 ## Overview
 
@@ -21,9 +21,12 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-upsert | Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, an... | [Synopsis](ai-ai-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
+| code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](ai-code-review-guidance.md) |
+| git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](ai-git-repository-management.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
 | knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
 | knowledge-bundle-upsert | Create and maintain OKF knowledge bundles through four operations: create a new bundle from scrat... | [Synopsis](ai-knowledge-bundle-upsert.md) |
+| project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](ai-project-detection.md) |
 | prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
 | readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](ai-readme-upsert.md) |
 | rule-upsert | Create new AI agent rules or audit and update existing rules. Scaffolds new rules from the rule t... | [Synopsis](ai-rule-upsert.md) |
@@ -34,6 +37,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | biz-email-upsert | Draft, review, and improve business emails using a structured framework that prioritizes speed, c... | [Synopsis](business-biz-email-upsert.md) |
+| career-advancement | Apply evidence-backed practices for the candidate side of the hiring pipeline — resume writing,... | [Synopsis](business-career-advancement.md) |
 | professional-communication | Craft clear, professional internal business communications across email, chat, meetings, and docu... | [Synopsis](business-professional-communication.md) |
 | task-triage | Apply the Agent Organization 26-tier prioritization framework to triage tasks, requests, and work... | [Synopsis](business-task-triage.md) |
 
@@ -57,7 +61,9 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | briefingmemo | Use when making high-stakes business decisions, strategic choices, partnership evaluations, or an... | [Synopsis](execution-briefingmemo.md) |
+| code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](execution-code-review-guidance.md) |
 | execute-upsert | Generic project execution controller that drives feature implementation from request to completio... | [Synopsis](execution-execute-upsert.md) |
+| project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](execution-project-detection.md) |
 
 ### general
 

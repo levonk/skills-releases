@@ -99,6 +99,49 @@ Below the threshold, budget for replacement cost in the purchase price.
   vehicles, [StolenRegister](https://stolenregister.com/) for other items.
   If a deal is too good to be true, it may be stolen.
 
+## Activation & Management Locks (Phones, Computers, Tablets, Watches)
+
+Account-tied locks are the dominant used-device scam vector. A device that
+works today can brick after the next erase, update, or reset — sometimes weeks
+later when a remote admin notices. These locks survive a factory reset and
+cannot be bypassed without the original owner's credentials or the
+manufacturer removing them with original proof of purchase.
+
+| Lock type | Platforms | Survives wipe? | Removal |
+|-----------|-----------|----------------|---------|
+| **Activation Lock / iCloud / Find My** | Apple (iOS, macOS Catalina+, watchOS) | Yes | Original owner's Apple Account password, or Apple with proof of purchase |
+| **Factory Reset Protection (FRP)** | Android | Yes | Original owner's Google account |
+| **MDM / Remote Management** (ABM/ASM, Intune, Autopilot, ChromeOS enterprise) | All | Yes — re-enrolls on setup | Org admin releases the device from the management console |
+| **Firmware / EFI / supervisor password** | Apple, some PCs | Yes (lives in firmware) | Manufacturer, owner of record + proof of purchase only |
+| **BitLocker / Microsoft Account** | Windows | Drive encrypted, key tied to owner account | Recovery key from owner's MS account / AD |
+| **Carrier financing / IMEI blacklist** | Phones | Yes | Seller pays off installment plan; blacklist lifted by carrier |
+
+**Why it complicates a sale:** unlike most used goods, these devices can be
+**remotely disabled** by someone who never touches the device again. A device
+that boots to the desktop/home screen in a half-configured state can hide any
+of these locks — they surface only when **you** erase, update, or reset the
+device, by which point the seller is gone with your cash. Cash marketplace
+sales have no buyer protection.
+
+**The only reliable test:** erase/factory reset the device and walk through the
+setup screens **while the seller is present, before paying**. The full
+in-person procedure (do-with-seller vs do-later, walk-away triggers, payment
+protection) is in
+[`acquisition/references/handoff-verification.md`](../../../acquisition/references/handoff-verification.md).
+
+**Receipt retention is non-negotiable.** Manufacturers (Apple, and the same
+principle for all account-tied devices) will only remove an Activation Lock,
+firmware password, or MDM/ABM enrollment for the **owner of record with
+original proof of purchase** — whether you bought from the manufacturer, an
+authorized distributor, or a third party. Require the seller's original
+receipt plus a bill of sale for any used account-tied device, and back up the
+receipt (scan with serial/IMEI visible, dated). Without it, a forgotten or
+contested lock is permanent and you have no recourse if the device is later
+reported stolen.
+
+Domain-specific lock details: phones → `domains/mobile-phones.md`, computers
+→ `domains/computers.md`.
+
 ## Recall Non-Compliance
 
 Used items may have unrepaired safety recalls. Check recall status by serial

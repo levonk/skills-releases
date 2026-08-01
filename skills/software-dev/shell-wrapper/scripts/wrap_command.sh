@@ -193,8 +193,54 @@ probe_devbox() {
 # Delegates entirely to cli-tool-discovery.sh, which checks "already inside"
 # env vars (DEVBOX_SHELL, MISE_SHELL, FLOX_ACTIVE, DIRENV_DIR, IN_NIX_SHELL)
 # and walks up from cwd for config files. No duplicate detection logic here.
+#
+# CACHING: The result is cached in WRAPPER_PREFIX_CACHE for the lifetime of the
+# script. cli-tool-discovery.sh can take up to 15s per call (devbox probe
+# timeout), and wrapper_prefix() is called on every devbox_run() — without
+# caching, a script that makes 20 git_cmd() calls would block for 300s.
+# The cache is invalidated if WRAPPER_DEVBOX_DISABLED changes after the first
+# call (probe_devbox may set it). Set WRAPPER_PREFIX_REFRESH=1 to force a
+# re-probe.
 wrapper_prefix() {
+    # Return cached result if available and the devbox-disabled flag hasn't changed.
+    if [[ -n "${WRAPPER_PREFIX_CACHE+x}" && "${WRAPPER_PREFIX_REFRESH:-0}" -eq 0 ]]; then
+        if [[ "${WRAPPER_PREFIX_CACHE_DISABLED:-0}" -eq "${WRAPPER_DEVBOX_DISABLED:-0}" ]]; then
+            printf '%s' "$WRAPPER_PREFIX_CACHE"
+            return
+        fi
+    fi
+
+    # Fast path: if devbox was disabled by probe_devbox (hang/failure) or by
+    # the caller, skip the cli-tool-discovery.sh probe entirely. The probe
+    # internally calls `devbox run --` which can take 15s to timeout — calling
+    # it when devbox is already known-broken defeats the purpose of the probe.
+    # Check for other wrappers (mise, flox, direnv, nix) only when devbox is
+    # NOT the disabled one — but in practice, if devbox.json exists and devbox
+    # is disabled, the other wrappers are not relevant for this repo.
+    if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+        # Still check for non-devbox wrappers via cli-tool-discovery, but only
+        # if there's no devbox.json up the tree (if there IS one, devbox was
+        # the intended wrapper and it's broken — don't waste 15s re-probing).
+        local _has_devbox_json=0
+        local _dir="$PWD"
+        while [[ "$_dir" != "/" ]]; do
+            if [[ -f "$_dir/devbox.json" ]]; then
+                _has_devbox_json=1
+                break
+            fi
+            _dir="$(dirname "$_dir")"
+        done
+        if [[ "$_has_devbox_json" -eq 1 ]]; then
+            WRAPPER_PREFIX_CACHE=""
+            WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
+            printf ''
+            return
+        fi
+    fi
+
     if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+        WRAPPER_PREFIX_CACHE=""
+        WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
         printf ''
         return
     fi
@@ -204,21 +250,24 @@ wrapper_prefix() {
     # "WRAPPER: <wrapper-cmd> __wrapper_probe__" — strip the probe tool name.
     local result
     result="$(bash "$CLI_TOOL_DISCOVERY" __wrapper_probe__ 2>/dev/null || true)"
+    local prefix=""
     case "$result" in
         WRAPPER:\ *)
             local wrapper_full="${result#WRAPPER: }"
-            local prefix="${wrapper_full% __wrapper_probe__}"
+            prefix="${wrapper_full% __wrapper_probe__}"
             # Allow callers to disable devbox at runtime (e.g. probe_devbox)
             if [[ "$prefix" == "devbox run --" && "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
-                printf ''
-            else
-                printf '%s' "$prefix"
+                prefix=""
             fi
             ;;
         *)
-            printf ''
+            prefix=""
             ;;
     esac
+
+    WRAPPER_PREFIX_CACHE="$prefix"
+    WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
+    printf '%s' "$prefix"
 }
 
 # Run a command through devbox when available, otherwise directly.

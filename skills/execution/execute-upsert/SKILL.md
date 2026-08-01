@@ -2,28 +2,33 @@
 name: execute-upsert
 description: >-
   Generic project execution controller that drives feature implementation from
-  request to completion through a PRD → tasks → execute pipeline. Assesses
-  request size, creates a PRD if one doesn't exist (for large requests),
-  breaks the PRD into parallelizable task stories, executes each story via
-  subagents, updates the PRD and task files when scope changes, and updates
-  project documentation as the final phase. Runs as much as possible: when a
-  story is blocked, marks it [!] Blocked with the reason in the index and
-  proceeds to the next runnable story, then presents a final blocker report
-  with the question, the options, the recommendation, and why it was
-  recommended. Use when users want to implement a feature or change that is
-  large enough to warrant structured planning, when they say "execute",
-  "implement this feature", "build this project", "run the project executor",
-  "drive this to completion", or reference a PRD or task list they want
-  executed. Do NOT trigger on quick fixes, single-file edits, bug fixes with
-  a known root cause, or questions about how something works — this skill is
-  for multi-step project execution, not trivial changes.
-version: 1.2.0
+  request to completion through a self-update → assess → establish-tech →
+  PRD → tasks → execute pipeline. Self-updates all skills to the latest
+  version before starting, establishes the project's tech stack as a binding
+  constraint for all subagents (so they never use npm when the project uses
+  pnpm, never use npx when the project uses pnpm dlx, etc.), assesses request
+  size, creates a PRD if one doesn't exist (for large requests), breaks the
+  PRD into parallelizable task stories, executes each story via subagents
+  with a per-story code review before commit, updates the PRD and task files
+  when scope changes, and updates project documentation as the final phase.
+  Runs as much as possible: when a story is blocked, marks it [!] Blocked
+  with the reason in the index and proceeds to the next runnable story, then
+  presents a final blocker report with the question, the options, the
+  recommendation, and why it was recommended. Use when users want to
+  implement a feature or change that is large enough to warrant structured
+  planning, when they say "execute", "implement this feature", "build this
+  project", "run the project executor", "drive this to completion", or
+  reference a PRD or task list they want executed. Do NOT trigger on quick
+  fixes, single-file edits, bug fixes with a known root cause, or questions
+  about how something works — this skill is for multi-step project execution,
+  not trivial changes.
+version: 1.5.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
-  knowledge-basis: "2026-07-29"
-  last-used: "2026-07-29"
+  knowledge-basis: "2026-07-31"
+  last-used: "2026-07-31"
 tags:
   - "ai/skill"
   - "execution"
@@ -31,6 +36,9 @@ tags:
   - "prd"
   - "task-management"
   - "subagent-delegation"
+  - "tech-establishment"
+  - "self-update"
+  - "code-review"
 see-also:
   - template: "base-ai-guidance"
     relationship: "base-framework"
@@ -38,6 +46,12 @@ see-also:
   - template: "trigger-guard"
     relationship: "over-triggering-guard"
     description: "Prevents triggering on requests that don't need the full pipeline"
+  - template: "tech-stack-table"
+    relationship: "dependency"
+    description: "Canonical tech-stack choices table — inlined into execute-upsert at build time so the skill carries the authoritative pnpm/Vitest/ESLint/devbox/just choices and never reaches for npm/npx/yarn/Jest/Biome"
+  - template: "devbox-remediation"
+    relationship: "dependency"
+    description: "Shared devbox missing-package remediation guidance — inlined so subagents add missing tools to devbox.json instead of installing on the host"
   - workflow: "greenfield-prd"
     relationship: "complement"
     description: "Source workflow for PRD creation — content inlined at build time into references/greenfield-prd.md (not a runtime dependency; workflows are not published to distribution repos)"
@@ -49,10 +63,16 @@ see-also:
     description: "Source workflow for task execution — content inlined at build time into references/tasks-processor.md (not a runtime dependency; workflows are not published to distribution repos)"
   - skill: git-repository-management
     relationship: "dependency"
-    description: "Provides the commit checkpoint protocol used before each subagent dispatch — shared via pre-task-commit-checkpoint include. Execute-upsert also runs it at story start (to flush any dirty repo state before the story begins) and at story finish (to commit the story's work), and adds per-story tags under tags/auto/execute-upsert/YYYY/MM/{story-id+slug}-{pre,post} via git-tag.sh so the story boundaries are greppable separately from the grm skill's own tags/auto/grm/... tags"
+    description: "Provides the commit checkpoint protocol used before each subagent dispatch — shared via pre-task-commit-checkpoint include. Execute-upsert also runs it at story start (to flush any dirty repo state before the story begins) and at story finish (to commit the story's work), and adds per-story tags under tags/auto/execute-upsert/YYYY/MM/{story-id+slug}-{pre,post} via git-tag.sh so the story boundaries are greppable separately from the grm skill's own tags/auto/grm/... tags. grm also runs scan-artifacts.sh before every commit to catch identity leaks"
   - skill: handoff
     relationship: "dependency"
     description: "Invoked when execution stops with work remaining (blocked stories, context limit, user pause) — captures context so a fresh session can resume from the task index. Shared via disruption-handoff include"
+  - skill: project-detection
+    relationship: "dependency"
+    description: "Bundled via includeTree for offline availability. Execute-upsert runs it in Phase 3 (Establish Technologies) to detect the project's package manager, build system, test runner, and linter. The detected tech stack becomes a binding constraint injected into every subagent dispatch"
+  - skill: code-review-guidance
+    relationship: "dependency"
+    description: "Bundled via includeTree for offline availability. Execute-upsert dispatches a review subagent that follows this skill's checklist on each story commit before final commit. Supports automated mode (default, preserves autonomous execution) and human-in-the-loop mode (configurable via skill-config.toml)"
 ---
 
 ---
@@ -1956,11 +1976,379 @@ index live (e.g., `~/p/gh/levonk/infrahub/.agents/handoffs/`).
   changes first so the handoff references a clean tree state.
 
 
+> **Single source of truth.** When a choice changes, update this table once.
+> Every knowledge file that includes it stays in sync automatically at build
+> time. Do not restate these choices in individual knowledge files — include
+> this table or link to it instead.
+>
+> This table records the *what* — use this, don't use this, with exceptions
+> where they matter. For the *why* (decision process, risk hierarchy,
+> alternatives considered, timeline estimates), see the footnotes at the bottom.
+
+| Category | Concern | Use | Don't use | Exceptions |
+|----------|---------|-----|-----------|------------|
+| build | Build orchestrator | **Nx** | Turborepo, Bazel, Pants | — |
+| build | Task runner | **just** (justfile) | Makefiles, npm scripts, custom shell scripts | — |
+| build | Development environment (system tools) | **devbox** (Nix-backed) + direnv | brew/apt/system npm/pip for system tools, raw Nix flakes, mise | Language-native package managers (pnpm/cargo/uv/pip) remain canonical for language libraries — never install language deps via devbox |
+| node | Package manager | **pnpm** | npm, yarn, bun | — |
+| node | External dependency version management (monorepo) | **`catalog:` protocol** (versions centralized in `pnpm-workspace.yaml`, `catalogMode: strict`) | Hardcoded version ranges duplicated across sub-package `package.json` files, `"*"` (resolves to latest registry release — does NOT inherit from root) | `workspace:*` remains for internal workspace packages; `catalog:` is for external registry deps. See `typescript-monorepo-best-practices/pnpm-nx-monorepo.md` |
+| node | Ad-hoc package execution (host / pnpm workspace) | **`pnpm dlx <pkg>`** (for packages not installed) or **`pnpm exec <cmd>`** (for workspace-installed binaries) | `npx`, `bunx`, `yarn dlx`, `bun x` | None — `pnpm dlx`/`pnpm exec` always, even when contributing to upstream projects that use a different package manager |
+| node | Test runner (TypeScript) | **Vitest** | Jest, Mocha/Chai, Playwright Test Runner | Playwright is still used for E2E browser automation — just not as the primary test runner |
+| node | Linter | **ESLint** (`@antfu/eslint-config` + `@job-aide/tools-lint-eslint-config`) | Biome, XO | — |
+| node | Formatter | **ESLint stylistic rules** (via antfu) — no separate formatter | Prettier, Biome | — |
+| node | ORM (TypeScript) | **Drizzle ORM** | Prisma, Kysely, raw SQL | — |
+| python | Ad-hoc package execution (Python, packages) | **`uvx <pkg>`** | `pip install` at runtime, `python -m pip install` in scripts, `pipx run` | Use `uvx` for one-off package execution; `uv run --script` for PEP 723 inline-metadata scripts. When `uv` is not on PATH, resolve via `cli-tool-discovery.sh --runner python` and follow the `recommendation` (add to devbox.json, or fall back to `pip install` + `python3` when no `devbox.json` exists) |
+| python | Ad-hoc script execution (Python, PEP 723) | **`uv run --script <file>`** | `python3 <file>` (when deps are pre-installed), `pip install` + `python3 <file>` | The PEP 723 `# /// script` block is a comment to `python3`, so `python3 script.py` works if deps are already installed. `uv run --script` provisions deps automatically. See `python-services-practices/standalone-scripts.md` |
+| python | Python orchestration | **nox** | Bazel, Pants | — |
+| rust | Ad-hoc package execution (Rust) | **`cargo binstall -y <pkg>`** (prebuilt binaries) | `cargo install <pkg>` (source build, slow), `rustup component add` | `cargo binstall` fetches prebuilt binaries — much faster than `cargo install`. Use `cargo install` only when binstall has no package for the target. Resolve via `cli-tool-discovery.sh --runner rust` |
+| go | Ad-hoc package execution (Go) | **`go install <pkg>@latest`** | `go get` (deprecated for binaries), manual `git clone` + `go build` | `go install <pkg>@version` is the canonical way to install a Go binary. Resolve via `cli-tool-discovery.sh --runner go` |
+| shell | Test runner (shell / bash) | **bats-core** (`bats` executable, `bats-core` + `bats-support` + `bats-assert` + `bats-file` libraries) | Plain shell scripts masquerading as tests, `shunit2`, `shellcheck` used as a test runner, hand-rolled `test_*.sh` scripts with `set -e` and assertions | Ad-hoc one-line smoke checks (`script.sh && echo ok`) inside a Justfile are fine for smoke commands but do not count as a test suite; promote them to a `bats` file when they grow past one assertion |
+| shell | Linter (shell / bash) | **shellcheck** (`shellcheck -x` for sourced scripts) | `sh -n` (syntax-only, no semantic checks), ignoring shell issues, relying on `set -e` alone | `shellcheck` is a static analyzer — it catches common shell bugs (unquoted variables, word-splitting, SC2086, etc.) but does not execute code. Not a replacement for `bats` behavior tests. Use `-x` to follow sourced scripts |
+| shell | Formatter (shell / bash) | **shfmt** (default: `shfmt -i 2 -ci -bn` — 2-space indent, case indent, binary-next-line) | hand-rolling indentation, `bash -n` as a format check, editor-specific formatting | `shfmt` enforces consistent formatting (indentation, line breaks, spacing). Pairs with `shellcheck` — `shfmt` for format, `shellcheck` for semantics. Not a test runner |
+| container | Ad-hoc package execution (inside a container) | **`bunx <pkg>`** | `npx`, `pnpm dlx`, `pnpm exec`, `yarn dlx` | Containers use bun as their runtime — never install pnpm in a container. Applies to Dockerfiles, container entrypoint scripts, and any script that runs inside a container image |
+| container | Container system packages | **Container's native package manager** (`apk` on Alpine, `apt-get` on Debian slim) or **bare container** (`scratch`/`distroless`) for static binaries | Installing system packages via npm/pip/cargo at runtime; baking dev toolchains into runtime images | Dev toolchains (`build-base`, gcc, make) belong in the builder stage only |
+| container | Container runtime tooling | **Docker** — OrbStack on x86_64 Darwin, Docker Desktop on Windows, `dockerd` on Linux; platform-native on aarch64 Darwin | podman, colima | — |
+| container | Container orchestration (local dev) | **k3s** | kind, minikube, microk8s, full k8s | — |
+| container | Container orchestration (production) | **k8s** (full Kubernetes) | k3s, Docker Swarm, Nomad | — |
+| deployment | Service deployment & configuration | **Ansible** (`community.docker` modules) | `docker compose` for deployment | `docker-compose.yml` is valid for sharing a deployable service externally (outside the org) where the recipient doesn't have the Ansible overhead |
+| security | Auth provider | **better-auth** (passkey / organization / two-factor plugins) | Supabase Auth, Auth0, Clerk, Lucia | Auth method preference: passkey-first > passkey > Google/Apple OAuth > local password + 2FA > local password only; email always collected for recovery |
+| data | Database (SaaS / multi-tenant OLTP) | **Supabase Postgres** with RLS via per-request session variables | PocketBase, SQLite-per-tenant, shared-schema Postgres without RLS, per-tenant Postgres clusters | — |
+| data | Analytics / ETL sidecar | **Per-tenant SQLite export + DuckDB** | PocketBase as OLTP, direct analytics on production Postgres, per-tenant Postgres replicas | — |
+| tooling | Ad-hoc runner resolution (all ecosystems) | **`cli-tool-discovery.sh --runner <python\|node\|rust\|go>`** | Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` in scripts | The runner mode pairs binary resolution with the canonical invocation. Returns JSON with `script`, `package`, `fallback`, and `recommendation` fields. Single source of truth for "how do I invoke an ad-hoc command in ecosystem X?" — `detect-package-manager.sh` delegates to it for the `runner` field |
+| tooling | Code intelligence (text search) | **ripgrep** (fresh, no index) + **xgrep** (repeated queries, trigram index) + **fzf** (interactive fuzzy) | grep, find, skim | Per ADR-20260520001 §6×2 matrix rows 1, 4, 5 (filename, exact, fuzzy). ripgrep for one-off fresh searches; xgrep for 2–46× faster repeated queries; fzf for interactive selection |
+| tooling | Code intelligence (semantic search) | **semble_rs** (hybrid BM25 + Model2Vec, ephemeral, single Rust binary) | qmd, Sourcegraph Cody | Per ADR-20260520001 §6. Ephemeral index rebuilt every run — zero config. Also provides `digest` for build/CI log compression (-99%) and `tree` for token-efficient codebase trees |
+| tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree |
+
+### Notable "considered and rejected" choices
+
+- **Turborepo** — superseded by ADR-20260419001. JS-only; cannot cache or orchestrate Docker, Python, or Rust builds.
+- **Jest** — replaced by Vitest per ADR-20251106002. Slower in ESM, complex TS/ESM config.
+- **Plain shell scripts as tests** — rejected in favor of bats-core. Hand-rolled `test_*.sh` scripts with `set -e` and manual assertions give no fixture isolation, no parallel execution, no TAP output, no `setup`/`teardown` hooks, and silently pass on skipped assertions. bats-core provides all of these, is a single portable bash script with no runtime deps, and emits TAP 13 output that CI runners and `bats-reporter` consume natively. Use `shellcheck`/`shfmt` for lint/format, `bats` for behavior.
+- **`sh -n` as a lint/format substitute** — rejected. `sh -n` only checks syntax (parse errors), not semantics — it misses unquoted variables (SC2086), word-splitting, unsafe globs, and the hundreds of other issues `shellcheck` catches. It also does not format. `shellcheck` for semantics + `shfmt` for formatting is the canonical pair; `sh -n` is a smoke check, not a lint pipeline.
+- **Prettier** — not used. Formatting is enforced through ESLint (antfu stylistic rules).
+- **Biome** — rejected. ESLint composition API and plugin ecosystem (Drizzle, Tailwind, Prisma, antfu framework support) cannot be replaced by Biome's static JSON config.
+- **podman** — rejected after real-world use. No working molecule driver in nixpkgs; molecule can't find podman binary in Ansible's restricted PATH; `community.docker` modules target the Docker Engine API.
+- **Raw Nix flakes for dev environments** — superseded by ADR-20251226001 (devbox + direnv). Too verbose; learning curve too steep for non-Nix-expert developers.
+- **brew/apt/system pip/system npm for system tools** — rejected for host dev environments (host pollution, drift, broken reproducibility). Still used **inside containers** (apk/apt-get) where the container's native package manager is correct.
+- **Supabase Auth** — rejected in favor of better-auth. No passkey-first onboarding; passkey API beta as of April 2026; tightly coupled to Postgres via `auth.uid()` in RLS policies (migration = end-user-impact risk); MAU billing above 50k.
+- **PocketBase** — rejected as primary OLTP and as a free-tier backend. Collection rules are app-layer filters, not storage-engine RLS (unacceptable for financial data with FTC Safeguards exposure). SQLite remains in the stack as the **analytics export format**, not as a live backend.
+- **Standardizing on one indexed AST tool** — rejected per ADR-20260520001 v3.0.0. The three contenders (CodeGraph, Graphify, GitNexus) each win exactly two of six rounds (index freshness, content breadth, dynamic dispatch, query power, multi-repo support, visualization) — there is no universal winner. Defaulting to CodeGraph for a multi-repo microservices project loses GitNexus's cross-repo blast radius; defaulting to GitNexus for a single-project zero-setup workflow loses CodeGraph's auto-sync; defaulting to either for a project with architecture docs/PDFs loses Graphify's multimodal coverage. The three do not conflict at runtime and can be run together. GitNexus's PolyForm Noncommercial license is a separate consideration — procure a commercial license before indexing proprietary code for business use.
+
+> **Decision process & rationale** for these choices — including the full risk
+> hierarchy, alternatives considered, and AI + human timeline estimate format
+> that drove decisions like better-auth-from-day-one over a "use Supabase Auth
+> now, migrate later" path — live in the
+> [software-architecture-essentials](../software-architecture-essentials/overview.md)
+> and
+> [api-auth-payment-practices](../api-auth-payment-practices/overview.md)
+> knowledge bundles. For code knowledge graph tool selection specifically, see
+> [code-knowledge-graph-tools.md](../software-architecture-essentials/code-knowledge-graph-tools.md).
+> This table records the *what*; those bundles record the *why*.
+
+
+---
+description: Shared devbox missing-package remediation guidance — when a required tool/package is missing, add it to devbox.json and run via `devbox run --` instead of installing on the host. Wired into agent-file-upsert's developer.md template so new repositories inherit the logic
+---
+
+### Missing Package Remediation
+
+When a command fails with "command not found" or a required tool/package is
+missing on the system, do NOT install it on the host. Add it to `devbox.json`
+and run the command through devbox:
+
+1. Check whether the tool is already declared in `devbox.json`. If not, add it:
+   ```bash
+   devbox add <package>      # preferred: updates devbox.json + devbox.lock
+   # or edit devbox.json directly for version-pinned packages
+   ```
+2. Re-run the command via devbox:
+   ```bash
+   devbox run -- <command>
+   ```
+3. Prefer `devbox run --` over installing packages on the host system. This
+   keeps the environment reproducible and avoids polluting the host.
+
+**Do NOT** install missing tools via `npm`, `brew`, `apt`, `pip install --user`,
+`pipx`, `cargo install`, `go install`, or other host-level package managers
+unless the tool is explicitly a host-level prerequisite (e.g. devbox/nix
+itself, or a system-level binary that cannot live inside devbox). Add it to
+`devbox.json` instead and run via `devbox run --`.
+
+**Detection pattern (bash):** before invoking a tool, check availability and
+fall back to `devbox run --`:
+```bash
+if ! command -v <tool> >/dev/null 2>&1 && command -v devbox >/dev/null 2>&1 && [[ -f devbox.json ]]; then
+    devbox add <package>   # only if not already in devbox.json
+    devbox run -- <tool> "$@"
+else
+    <tool> "$@"
+fi
+```
+
+
+#!/usr/bin/env bash
+# resolve-reference.sh — three-tier fallback resolver for skill/bundle references
+#
+# Usage:
+#   resolve-reference.sh <ref> [--tier <1|2|3>] [--out <path>]
+#   resolve-reference.sh <ref>                     # resolve, print content to stdout
+#   resolve-reference.sh <ref> --out <path>        # resolve, write content to <path>
+#   resolve-reference.sh <ref> --tier 3            # force tier 3 (materialized copy only)
+#
+# A <ref> is a relative path like:
+#   knowledge/foo/overview.md           (a knowledge bundle file)
+#   skills/content/bar/SKILL.md         (a skill file)
+#
+# Resolution order (three-tier fallback):
+#   Tier 1: Local relative path — walk up from $PWD looking for a `src/` tree
+#           or a `knowledge/` / `skills/` directory that contains the ref.
+#           Works in development and full-profile installs.
+#   Tier 2: Fetch from the published distribution repo.
+#           - Skill refs: `pnpm dlx skills add <repo> --yes --skill <name>`
+#             (pulls the whole skill tree so intra-skill links work).
+#           - Knowledge refs: `curl -fsSL` from raw.githubusercontent.com
+#             (bundles have no SKILL.md entry point, so the skills CLI
+#             can't install them).
+#           Works for online standalone installs.
+#   Tier 3: Materialized copy inside this skill/bundle's
+#           `references/included/<ref>` tree. Populated at build time by
+#           the templater's `includeTree` function. Works for offline
+#           standalone installs.
+#
+# Telemetry gating (per good-skills.sh pattern):
+#   - levonk-owned skills: telemetry allowed (env -u DISABLE_TELEMETRY -u DO_NOT_TRACK)
+#   - third-party skills: telemetry disabled (DISABLE_TELEMETRY=1 DO_NOT_TRACK=1)
+#   - knowledge bundles: curl sends no telemetry regardless
+#
+# Exit codes:
+#   0  — resolved, content on stdout (or written to --out path)
+#   1  — usage error
+#   2  — could not resolve at any tier
+#   3  — tier was forced (--tier) and that tier failed
+set -euo pipefail
+
+# --- Defaults ---
+REF=""
+TIER=""
+OUT_PATH=""
+
+# --- Parse args ---
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --tier)
+            TIER="$2"
+            shift 2
+            ;;
+        --out)
+            OUT_PATH="$2"
+            shift 2
+            ;;
+        --help|-h)
+            sed -n '2,40p' "$0"
+            exit 0
+            ;;
+        *)
+            if [[ -z "$REF" ]]; then
+                REF="$1"
+                shift
+            else
+                echo "ERROR: unexpected argument: $1" >&2
+                exit 1
+            fi
+            ;;
+    esac
+done
+
+if [[ -z "$REF" ]]; then
+    echo "ERROR: missing reference argument" >&2
+    echo "Usage: resolve-reference.sh <ref> [--tier <1|2|3>] [--out <path>]" >&2
+    exit 1
+fi
+
+# --- Determine the script's own directory (for tier 3 materialized copies) ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- Determine the distribution repo for tier 2 skill fetches ---
+# Public profile content → levonk/skills-releases
+# Private profile content → levonk/skills-private
+# Default to public; override via RESOLVE_REFERENCE_REPO env var.
+RESOLVE_REFERENCE_REPO="${RESOLVE_REFERENCE_REPO:-levonk/skills-releases}"
+
+# --- Walk up from $PWD looking for a directory containing the ref ---
+# Tier 1: local relative path (development, full-profile install)
+find_local_ref() {
+    local ref="$1"
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        # Try: <dir>/src/<ref>  (skills-src source tree)
+        if [[ -f "$dir/src/$ref" ]]; then
+            echo "$dir/src/$ref"
+            return 0
+        fi
+        # Try: <dir>/<ref>  (build output, or a flat knowledge/skills tree)
+        if [[ -f "$dir/$ref" ]]; then
+            echo "$dir/$ref"
+            return 0
+        fi
+        # Try: <dir>/current/<ref>  (profile-specific layout)
+        if [[ -f "$dir/current/$ref" ]]; then
+            echo "$dir/current/$ref"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+    return 1
+}
+
+# --- Tier 2: fetch from published repo ---
+# Skill refs use `pnpm dlx skills add`; knowledge refs use curl.
+fetch_remote_ref() {
+    local ref="$1"
+    if [[ "$ref" == skills/* ]]; then
+        # Skill reference — use the official skills CLI.
+        # Derive skill name: skills/<category>/<skill-name>/<rest>
+        local skill_name
+        skill_name="$(echo "$ref" | awk -F/ '{print $3}')"
+        if [[ -z "$skill_name" ]]; then
+            return 1
+        fi
+        local rest
+        rest="$(echo "$ref" | awk -F/ '{for(i=4;i<=NF;i++) printf "%s%s", $i, (i<NF?"/":"")}')"
+        # Telemetry gating: allow for levonk-owned repos, disable for third-party.
+        local telemetry_env=()
+        if [[ "$RESOLVE_REFERENCE_REPO" == levonk/* ]]; then
+            telemetry_env=(env -u DISABLE_TELEMETRY -u DO_NOT_TRACK)
+        else
+            telemetry_env=(env DISABLE_TELEMETRY=1 DO_NOT_TRACK=1)
+        fi
+        # Install the skill to a temp dir, then read the file.
+        local tmp_install
+        tmp_install="$(mktemp -d)"
+        if ! "${telemetry_env[@]}" pnpm dlx skills add "$RESOLVE_REFERENCE_REPO" --yes --skill "$skill_name" --path "$tmp_install" >/dev/null 2>&1; then
+            rm -rf "$tmp_install"
+            return 1
+        fi
+        local installed_file="$tmp_install/.agents/skills/$skill_name/$rest"
+        if [[ -f "$installed_file" ]]; then
+            cat "$installed_file"
+            rm -rf "$tmp_install"
+            return 0
+        fi
+        rm -rf "$tmp_install"
+        return 1
+    elif [[ "$ref" == knowledge/* ]]; then
+        # Knowledge reference — curl from raw.githubusercontent.com.
+        # raw.githubusercontent.com returns file content directly (not HTML).
+        local url="https://raw.githubusercontent.com/${RESOLVE_REFERENCE_REPO}/main/$ref"
+        if curl -fsSL "$url" 2>/dev/null; then
+            return 0
+        fi
+        return 1
+    else
+        # Unknown ref type — try curl as a last resort.
+        local url="https://raw.githubusercontent.com/${RESOLVE_REFERENCE_REPO}/main/$ref"
+        if curl -fsSL "$url" 2>/dev/null; then
+            return 0
+        fi
+        return 1
+    fi
+}
+
+# --- Tier 3: materialized copy inside this skill/bundle ---
+find_materialized_ref() {
+    local ref="$1"
+    # The materialized tree lives at references/included/<ref> relative to
+    # the skill's root directory. The script is in <skill-root>/scripts/,
+    # so the skill root is the parent of SCRIPT_DIR.
+    local skill_root
+    skill_root="$(dirname "$SCRIPT_DIR")"
+    local mat_path="$skill_root/references/included/$ref"
+    if [[ -f "$mat_path" ]]; then
+        echo "$mat_path"
+        return 0
+    fi
+    return 1
+}
+
+# --- Output helper: write content to stdout or to --out path ---
+emit_content() {
+    local content="$1"
+    if [[ -n "$OUT_PATH" ]]; then
+        mkdir -p "$(dirname "$OUT_PATH")"
+        printf '%s' "$content" > "$OUT_PATH"
+        echo "Wrote: $OUT_PATH" >&2
+    else
+        printf '%s' "$content"
+    fi
+}
+
+# --- Main resolution logic ---
+resolve() {
+    local content=""
+
+    # Tier 1: local relative path
+    if [[ -z "$TIER" || "$TIER" == "1" ]]; then
+        local local_path
+        if local_path="$(find_local_ref "$REF" 2>/dev/null)" && [[ -n "$local_path" ]]; then
+            content="$(cat "$local_path")"
+            emit_content "$content"
+            echo "[resolve-reference] tier 1 (local): $local_path" >&2
+            return 0
+        fi
+        if [[ "$TIER" == "1" ]]; then
+            echo "ERROR: tier 1 forced but local path not found for: $REF" >&2
+            return 3
+        fi
+    fi
+
+    # Tier 2: fetch from published repo
+    if [[ -z "$TIER" || "$TIER" == "2" ]]; then
+        if content="$(fetch_remote_ref "$REF" 2>/dev/null)" && [[ -n "$content" ]]; then
+            emit_content "$content"
+            echo "[resolve-reference] tier 2 (remote): $RESOLVE_REFERENCE_REPO/$REF" >&2
+            return 0
+        fi
+        if [[ "$TIER" == "2" ]]; then
+            echo "ERROR: tier 2 forced but remote fetch failed for: $REF" >&2
+            return 3
+        fi
+    fi
+
+    # Tier 3: materialized copy
+    if [[ -z "$TIER" || "$TIER" == "3" ]]; then
+        local mat_path
+        if mat_path="$(find_materialized_ref "$REF" 2>/dev/null)" && [[ -n "$mat_path" ]]; then
+            content="$(cat "$mat_path")"
+            emit_content "$content"
+            echo "[resolve-reference] tier 3 (materialized): $mat_path" >&2
+            return 0
+        fi
+        if [[ "$TIER" == "3" ]]; then
+            echo "ERROR: tier 3 forced but materialized copy not found for: $REF" >&2
+            return 3
+        fi
+    fi
+
+    echo "ERROR: could not resolve reference at any tier: $REF" >&2
+    echo "  Tier 1 (local): not found in src/ tree walking up from $PWD" >&2
+    echo "  Tier 2 (remote): fetch from $RESOLVE_REFERENCE_REPO failed" >&2
+    echo "  Tier 3 (materialized): not found in $SCRIPT_DIR/../references/included/" >&2
+    return 2
+}
+
+resolve
+
+
+references/included/skills/software-dev/project-detection/
+
+references/included/skills/software-dev/code-review-guidance/
+
 # Execute Upsert — Project Execution Controller
 
 A controller skill that drives feature implementation from request to
 completion. It does NOT do the work itself — it orchestrates a pipeline of
-PRD creation, task breakdown, subagent execution, and documentation updates.
+self-update, tech establishment, PRD creation, task breakdown, subagent
+execution with per-story code review, and documentation updates.
 
 ## Overview
 
@@ -1969,12 +2357,41 @@ This skill is a generalized version of the Infrahub project controller
 exist and simply chains subagents through them, this skill has the
 intelligence to:
 
-1. **Assess** whether a request is large enough to warrant the full pipeline
-2. **Create a PRD** if one doesn't exist (for large requests)
-3. **Break the PRD into tasks** if task files don't exist
-4. **Execute tasks** via subagents, chaining through the project
-5. **Update the PRD** when scope changes, and regenerate affected tasks
-6. **Update documentation** (project docs + PRD/task files) as the final phase
+1. **Self-update** all skills to the latest version before starting
+2. **Assess** whether a request is large enough to warrant the full pipeline
+3. **Establish technologies** — detect the project's tech stack and inject it
+   as a binding constraint into every subagent dispatch (so subagents never
+   use npm when the project uses pnpm, never use npx when the project uses
+   pnpm dlx, etc.)
+4. **Create a PRD** if one doesn't exist (for large requests)
+5. **Break the PRD into tasks** if task files don't exist
+6. **Execute tasks** via subagents, with a per-story code review before
+   commit, chaining through the project
+7. **Update the PRD** when scope changes, and regenerate affected tasks
+8. **Update documentation** (project docs + PRD/task files) as the final phase
+
+## Skill Invocation Fallback
+
+If this skill is NOT registered in the agent's skill registry (agents do
+not always auto-register skills from skills-src), read the `SKILL.md`
+manually at the skill's installed path, plus these reference files the
+skill depends on:
+
+- `references/tasks-processor.md` — the per-story work protocol
+- `references/greenfield-prd.md` — PRD creation (only if no PRD exists)
+- `references/tasks-from-prd.md` — task breakdown (only if no tasks exist)
+- `references/triage-heuristic.md` — request size assessment
+- `references/parallel-dispatch.md` — parallel execution and merge
+  reconciliation (when multiple stories are dependency-ready)
+- `references/included/skills/software-dev/project-detection/SKILL.md` —
+  tech stack detection (bundled via includeTree; read this if
+  project-detection is not separately installed)
+- `references/included/skills/software-dev/code-review-guidance/SKILL.md` —
+  code review checklist (bundled via includeTree; read this if
+  code-review-guidance is not separately installed)
+
+The skill's phases, status conventions, and autonomy rules are binding
+whether the skill was invoked through the registry or read manually.
 
 ## Architecture
 
@@ -1982,16 +2399,24 @@ intelligence to:
 User Request
     │
     ▼
-Phase 1: Assess ─────── small? ──→ Direct execution (no pipeline)
+Phase 1: Self-Update ── pnpm dlx skills add levonk/skills-releases --all
+    │                     (skip if SKIP_SELF_UPDATE=1)
+    ▼
+Phase 2: Assess ─────── small? ──→ Direct execution (no pipeline)
     │ large
     ▼
-Phase 2: PRD ────────── exists? ──→ skip creation
+Phase 3: Establish Technologies ── detect package manager, build system,
+    │                              test runner, linter → tech context block
+    │                              (binding constraint for all subagents)
+    ▼
+Phase 4: PRD ────────── exists? ──→ skip creation
     │ missing
     ▼
-Phase 3: Tasks ──────── exist? ──→ skip breakdown
+Phase 5: Tasks ──────── exist? ──→ skip breakdown
     │ missing
     ▼
-Phase 4: Execute ────── loop: subagent per runnable story
+Phase 6: Execute ────── loop: subagent per runnable story
+    │                     dev subagent → review subagent → fix loop → commit
     │                     (blocked stories marked [!] Blocked, skipped)
     │                     ┌── no more tasks you can do ──→ Disruption Handoff
     │                     │   AND more tasks to do?
@@ -2000,33 +2425,33 @@ Phase 4: Execute ────── loop: subagent per runnable story
     │                     │    unrecoverable failure)
     │                     │   invoke `handoff` skill, then terminate
     ▼                     ▼
-Phase 5: Blocker Report ─ present all blockers with question/options/rec/why
+Phase 7: Blocker Report ─ present all blockers with question/options/rec/why
     │
     ▼
-Phase 6: Document ───── update PRD, task files, project docs
+Phase 8: Document ───── update PRD, task files, project docs
 ```
 
 **Disruption Handoff** (see the include above): if the pipeline reaches a
 state where there are no more tasks you can do but there are more tasks to
 do (any story is `[ ] Todo`, `[~] In-Progress`, or `[!] Blocked`), invoke
 the `handoff` skill to capture context before terminating. Clean
-completions (all `[x] Done`) skip the handoff — Phase 6 is the final step.
+completions (all `[x] Done`) skip the handoff — Phase 8 is the final step.
 
 ## Execution Mode: Autonomous
 
 **This skill runs to completion. It does not pause between stories to ask
-the user whether to continue.** The Phase 4 execution loop dispatches
+the user whether to continue.** The Phase 6 execution loop dispatches
 subagents for every runnable story, marks blocked stories `[!] Blocked`,
 and proceeds to the next runnable story without stopping. Only after no
-more runnable stories remain does the skill present the Phase 5 Blocker
+more runnable stories remain does the skill present the Phase 7 Blocker
 Report.
 
 Do not insert confirmation prompts between stories. Do not ask "should I
 proceed to the next phase?" after a story completes. Do not stop the
 pipeline on the first blocker. The only valid stop conditions are:
 
-1. All stories are `[x] Done` — proceed to Phase 6.
-2. All remaining stories are transitively blocked — present Phase 5, then
+1. All stories are `[x] Done` — proceed to Phase 8.
+2. All remaining stories are transitively blocked — present Phase 7, then
    invoke `handoff`.
 3. Disruption (context limit, user pause, unrecoverable failure) — invoke
    `handoff`.
@@ -2037,7 +2462,46 @@ skill's phases, status conventions, and autonomy rules are binding only
 when the skill is formally invoked — a session-context summary is not a
 substitute for invocation.
 
-## Phase 1: Assess
+## Phase 1: Self-Update
+
+Before any other work, ensure all skills are at the latest version. This
+prevents stale skill logic from driving the pipeline — especially important
+when resuming from a handoff that may have been created by an older skill
+version.
+
+### Command
+
+```bash
+devbox run -- pnpm dlx skills add levonk/skills-releases --all
+```
+
+This installs/updates all skills from the public distribution repo. The
+command uses `pnpm dlx` (never `npx`) per the canonical tech-stack table
+inlined above — pnpm is the package manager, `pnpm dlx` is the ad-hoc
+package execution tool.
+
+### Skip Conditions
+
+- **`SKIP_SELF_UPDATE=1`** — environment variable to skip self-update
+  entirely (useful in CI or air-gapped environments where the latest version
+  is already installed).
+- **Resume after handoff with version match** — if resuming from a handoff
+  and the skill version in the handoff file matches the currently installed
+  version, self-update can be skipped. If the versions differ, run the
+  self-update and warn the user that the pipeline may behave differently
+  from the session that created the handoff.
+
+### After Self-Update
+
+If the self-update changed any skill versions, re-invoke this skill
+(execute-upsert) to pick up the new logic — do not continue with the old
+skill instance loaded in context. The re-invocation is a fresh start; the
+handoff file (if resuming) provides the state.
+
+If the self-update made no changes (all skills already at latest), proceed
+to Phase 2.
+
+## Phase 2: Assess
 
 Determine whether the request is large enough to warrant the full pipeline.
 
@@ -2055,18 +2519,101 @@ If the request is small (fails the heuristic), confirm with the user:
 > full PRD → tasks → execute pipeline. Which would you prefer?"
 
 If the user chooses direct execution, implement the change without the
-pipeline. Otherwise, proceed to Phase 2.
+pipeline. Otherwise, proceed to Phase 3.
 
 If the request is large, briefly summarize your assessment and proceed to
-Phase 2.
+Phase 3.
 
-## Phase 2: PRD
+## Phase 3: Establish Technologies
+
+Detect the project's tech stack and establish it as a binding constraint for
+all subagent dispatches. This prevents subagents from reaching for the wrong
+tools (e.g., `npm`/`npx` in a pnpm project, `jest` in a Vitest project,
+`pip install` when `uv` is canonical).
+
+### Why This Phase Exists
+
+Without explicit tech establishment, subagents default to whatever they
+"remember" — frequently `npm`/`npx` for Node projects. The canonical
+tech-stack table (inlined above from `includes/tech-stack-table.md`) declares
+pnpm as the package manager and `pnpm dlx` as the ad-hoc runner, but
+subagents do not always read includes that were inlined into the
+orchestrator's context. This phase produces a **tech context block** that is
+injected verbatim into every subagent dispatch prompt, so the subagent
+cannot miss it.
+
+### Detection
+
+Run the bundled `project-detection` skill (materialized at
+`references/included/skills/software-dev/project-detection/`) to detect:
+
+- **Package manager** — pnpm, npm, yarn, bun, uv, pip, cargo, go mod
+- **Build system** — Nx, Turbo, cargo, go, just, Make, Maven, Gradle
+- **Test runner** — Vitest, Jest, cargo test, go test, pytest, bats
+- **Linter** — ESLint (antfu), Biome, clippy, golangci-lint, shellcheck
+- **Container runtime** — Docker, podman
+- **CI/CD platform** — GitHub Actions, GitLab CI, CircleCI
+
+```bash
+# Run the bundled detection script
+./references/included/skills/software-dev/project-detection/scripts/detect-all-systems.sh . --json
+```
+
+If `project-detection` is separately installed as a skill, invoke it through
+the skill registry instead. The bundled copy is the fallback for
+standalone execute-upsert installs.
+
+### Tech Context Block
+
+Produce a tech context block from the detection results. This block is
+injected into every subagent dispatch prompt in Phase 6 (Execute). Format:
+
+```text
+## Tech Context (Binding Constraint)
+
+This project uses the following tools. Use them, not alternatives.
+
+- Package manager: <pnpm|npm|yarn|bun|uv|pip|cargo|go mod>
+- Ad-hoc runner: <pnpm dlx|npx|yarn dlx|bunx|uvx|cargo binstall|go install>
+  (per the tech-stack table: pnpm dlx for Node, uvx for Python,
+  cargo binstall for Rust, go install for Go — never npx)
+- Build system: <Nx|Turbo|cargo|go|just|Make|Maven|Gradle>
+- Test runner: <Vitest|Jest|cargo test|go test|pytest|bats>
+- Linter: <ESLint|Biome|clippy|golangci-lint|shellcheck>
+- Container runtime: <Docker|podman>
+- CI/CD: <GitHub Actions|GitLab CI|CircleCI>
+
+System tools run via: devbox run -- <command>
+Never use: npm, npx, yarn, jest, biome (unless the project explicitly uses them)
+```
+
+### Devbox Remediation
+
+If a required tool is missing (e.g., `pnpm` not found, `just` not found),
+follow the devbox remediation protocol (inlined above from
+`includes/devbox-remediation.md`): add the tool to `devbox.json` via
+`devbox add <package>` and run via `devbox run -- <command>`. Do NOT install
+tools on the host via `npm`, `brew`, `apt`, `pip install --user`, `pipx`,
+`cargo install`, or `go install` — add them to `devbox.json` instead.
+
+### After Establishment
+
+Store the tech context block in the PRD file's frontmatter (or in a
+sidecar file `internal-docs/feature/YYYY/MM/{slug}/tech-context.txt` if no
+PRD exists yet). Every subagent dispatch in Phase 6 receives this block as
+a binding constraint. If the tech stack changes during execution (e.g., a
+story introduces a new dependency), update the tech context block and
+re-inject it into subsequent dispatches.
+
+Proceed to Phase 4.
+
+## Phase 4: PRD
 
 ### If a PRD exists
 
 - Locate the PRD file under `internal-docs/feature/YYYY/MM/{slug}/`.
 - Read it to understand the scope.
-- Proceed to Phase 3.
+- Proceed to Phase 5.
 
 ### If no PRD exists
 
@@ -2087,14 +2634,14 @@ Phase 2.
 - If the PRD is incomplete or off-target, provide feedback and re-dispatch the
   subagent with the feedback.
 
-## Phase 3: Tasks
+## Phase 5: Tasks
 
 ### If task files exist
 
 - Locate the task index file
   (`internal-docs/feature/YYYY/MM/{slug}/tasks/index-[PRD-NAME].md`).
 - Read it to understand the story breakdown and current status.
-- Proceed to Phase 4.
+- Proceed to Phase 6.
 
 ### If no task files exist
 
@@ -2115,7 +2662,7 @@ Phase 2.
 
 ### If the PRD was updated during execution
 
-When the PRD is updated (see Phase 5 — PRD Update), the task files are
+When the PRD is updated (see Phase 4 — PRD Update), the task files are
 potentially stale. The controller must:
 
 1. Identify which stories are affected by the PRD changes.
@@ -2126,12 +2673,12 @@ potentially stale. The controller must:
    existing work may need to be reconciled manually.
 4. Update the index file to reflect any new, changed, or removed stories.
 
-## Phase 4: Execute
+## Phase 6: Execute
 
 **Core principle: run as much as possible.** When a story is blocked, mark it
 `[!] Blocked` with the reason in the index and proceed to the next runnable
 story. Do NOT stop the pipeline and wait for user direction on the first
-blocker — keep going, then present a consolidated blocker report in Phase 5.
+blocker — keep going, then present a consolidated blocker report in Phase 7.
 
 ### Resume Detection (run before dispatching any subagent)
 
@@ -2161,9 +2708,14 @@ so you don't re-create branches or re-run completed stories.
      (highest story ID) and resume from there.
    - If a story's branch already exists AND the index marks it
      `[~] In-Progress`, the prior subagent left mid-work on that branch.
-     Either resume the subagent on that branch (if the work is recoverable)
-     or `git reset --hard <checkpoint>` on that branch and re-dispatch.
-     Do NOT create a new branch.
+     Before assuming the subagent is still working, verify liveness — see
+     `references/parallel-dispatch.md` → "Verifying Subagent Liveness (on
+     Resume After a Crash)". A worktree that exists but has no recent
+     commits or file modifications is a tombstone from a crashed session,
+     not active work. Either resume the subagent on that branch (if the
+     work is recoverable and the subagent is alive) or
+     `git reset --hard <checkpoint>` on that branch and re-dispatch a
+     fresh subagent. Do NOT create a new branch.
    - If a story's branch does NOT exist, proceed normally — create the
      branch as part of the subagent dispatch.
 
@@ -2223,6 +2775,14 @@ For each task story that isn't completed yet:
    story. Re-running a completed story wastes effort and risks clobbering
    completed work on its branch.
 
+   **Parallel dispatch**: If two or more `[ ] Todo` stories have all
+   dependencies `[x] Done` and the stories do not modify the same files,
+   dispatch them as parallel background subagents — one per story, each in
+   its own git worktree. See `references/parallel-dispatch.md` for the
+   worktree setup, merge reconciliation protocol, and collision handling.
+   The sequential loop below applies to stories that must run one at a
+   time (shared-file conflicts, single-runnable-story phases).
+
 2. **Create a pre-task commit checkpoint**: Before dispatching the subagent,
    follow the Pre-Task Commit Checkpoint protocol (see the include above).
    Commit any pending work from prior stories or orchestrator-side changes,
@@ -2250,6 +2810,13 @@ For each task story that isn't completed yet:
    (e.g., `04-002-add-jwt-middleware`). This tag marks the repo state
    immediately before the story's subagent begins work.
 
+   **Tagging fallback**: If `git-tag.sh` is not materialized into the
+   target project (it is a skills-src build artifact, not present in
+   consumer repos by default), skip the pre/post tagging protocol. Use
+   plain `git commit` for checkpoints. The tags are a nice-to-have for
+   greppable story boundaries, not a functional requirement — the
+   commit history itself is the audit trail.
+
 3. **Launch a subagent** to execute the story. The subagent receives:
    - **Goal**: Implement the story by following the task-processing protocol
      defined in `references/tasks-processor.md` (the tasks-processor workflow's
@@ -2257,6 +2824,12 @@ For each task story that isn't completed yet:
    - **Inputs**: The story file path, the project's `AGENTS.md` path, the
      task directory path, and the work protocol from
      `references/tasks-processor.md`.
+   - **Tech Context Block**: The binding tech context block produced in
+     Phase 3 (Establish Technologies). Inject it verbatim into the dispatch
+     prompt. The subagent MUST use the tools declared in the block — never
+     `npm`/`npx` in a pnpm project, never `jest` in a Vitest project, never
+     host-level installs when `devbox run --` is the runner. This is a
+     binding constraint, not a suggestion.
    - **Constraints**: Follow the tasks-processor workflow's work protocol
      exactly (as inlined in `references/tasks-processor.md`) — mark tasks
      in-progress, run tests, verify acceptance criteria, commit with
@@ -2277,6 +2850,45 @@ For each task story that isn't completed yet:
      in the index file, check the commit exists and includes both code and
      task file updates, and run the smallest check that would fail if the
      work is wrong (typecheck or targeted test).
+
+   **Run a code review subagent on the story commit.** After the dev
+   subagent has committed its work and the orchestrator has verified the
+   story is `[x] Done`, dispatch a review subagent that follows the
+   `code-review-guidance` skill (bundled at
+   `references/included/skills/software-dev/code-review-guidance/SKILL.md`).
+   The review subagent receives:
+   - **Goal**: Review the story commit against the code-review-guidance
+     checklist and return a structured verdict.
+   - **Inputs**: The story commit hash (or range `pre-tag..post-tag`), the
+     story file path (for acceptance criteria context), the tech context
+     block (so the reviewer knows what "correct" looks like — e.g., pnpm
+     test, not npm test).
+   - **Mode**: Automated (default) or human-in-the-loop (if
+     `skill-config.toml` `[review] mode = "human"`). In automated mode, the
+     review subagent returns a structured verdict
+     (`REVIEW_VERDICT:CLEAN|NEEDS_FIXES|BLOCKED`) without pausing for human
+     input. In human-in-the-loop mode, the review subagent presents findings
+     to the user and waits for direction.
+   - **What to return**: The structured verdict per the Review Output Format
+     in the code-review-guidance skill.
+
+   **Act on the review verdict** (automated mode):
+   - `CLEAN` — proceed to the grm final commit (step 5 below).
+   - `NEEDS_FIXES` — re-dispatch the dev subagent with the review findings
+     as feedback. The dev subagent fixes the issues, commits, and the
+     orchestrator re-runs the review. Loop until `CLEAN` or the dev
+     subagent returns `BLOCKED` (then mark the story `[!] Blocked` with the
+     review findings in the `## Blocker` section).
+   - `BLOCKED` — the review found issues requiring human input or a design
+     decision. Mark the story `[!] Blocked` with the review findings in the
+     `## Blocker` section, and continue to the next runnable story.
+
+   **Human-in-the-loop mode**: If `skill-config.toml` configures
+   `[review] mode = "human"`, the review subagent presents findings to the
+   user instead of returning a structured verdict. The orchestrator waits
+   for the user's direction before proceeding. This breaks the autonomous
+   execution mode — use it only for projects that require human sign-off on
+   every story.
 
    **Run the `git-repository-management` skill at story finish.** After the
    subagent has committed its work and the orchestrator has verified the
@@ -2309,12 +2921,19 @@ For each task story that isn't completed yet:
    transitively-blocked stories `[!] Blocked` with reason
    `"Dependency <NN-NNN> is blocked"`.
 
+   **Emit progress after every subagent completion.** Whether dispatching
+   sequentially or in parallel, report a brief progress update to the user
+   after each subagent finishes: which story completed, test counts, and
+   how many subagents are still running (if parallel). A silent orchestrator
+   looks stalled — do not go quiet during subagent waits. See
+   `references/parallel-dispatch.md` → "Progress Emission" for the format.
+
 6. **Handle PRD updates during execution**: If a subagent discovers that the
    PRD needs updating (e.g., a requirement is infeasible, scope needs to
    change, a new requirement emerged):
    - Pause the execution loop.
    - Update the PRD with the discovered changes.
-   - Follow the "If the PRD was updated during execution" process in Phase 3
+   - Follow the "If the PRD was updated during execution" process in Phase 5
      to regenerate affected task files.
    - Resume the execution loop.
 
@@ -2329,13 +2948,13 @@ follow the **Disruption Handoff** protocol defined in the include above —
 commit pending orchestrator-side changes, invoke the `handoff` skill with
 the current execution state, and tell the user the handoff path + resume
 command. Do not silently terminate with work remaining. Clean completions
-(all `[x] Done`) skip the handoff — proceed to Phase 5/6.
+(all `[x] Done`) skip the handoff — proceed to Phase 7/8.
 
-## Phase 5: Blocker Report
+## Phase 7: Blocker Report
 
 After the execution loop ends (no more runnable stories), if ANY stories are
 `[!] Blocked`, present a consolidated blocker report to the user BEFORE
-proceeding to Phase 6 (Document). The report must include every blocked story
+proceeding to Phase 8 (Document). The report must include every blocked story
 with the four required fields: the question, the options, the recommendation,
 and why it was recommended.
 
@@ -2385,15 +3004,15 @@ stories, and pick up the now-unblocked stories.
 
 - If the user resolves a blocker in the conversation, update the story file
   (remove the `## Blocker` section, set status back to `[ ] Todo`), update
-  the index, commit, and re-enter the Phase 4 execution loop for that story.
+  the index, commit, and re-enter the Phase 6 execution loop for that story.
 - If the user says "stop here" or does not resolve the blockers, proceed to
-  Phase 6 (Document) with the blocked stories left as `[!] Blocked` — the
+  Phase 8 (Document) with the blocked stories left as `[!] Blocked` — the
   documentation phase will record them as deferred with reasons.
 - Do NOT silently leave blockers unresolved — the report must be the last
-  thing the user sees before Phase 6, and Phase 6 must reference the
+  thing the user sees before Phase 8, and Phase 8 must reference the
   blockers in the PRD's "Deferred Items" section.
 
-## Phase 6: Document
+## Phase 8: Document
 
 After all stories are completed (or when the user pauses execution):
 
@@ -2482,7 +3101,26 @@ no work should be left dirty in the tree.
 
 - **This skill**: `~/p/gh/levonk/skills-src/src/current/skills/execution/execute-upsert/SKILL.md`
 - **PRD creation workflow (inlined)**: `references/greenfield-prd.md` — the greenfield-prd workflow's content, inlined at build time via `---
-description: Generate a Product Requirements Document (PRD) from a brief feature prompt
+workflow: "Greenfield PRD"
+slug: "greenfield-prd"
+description: "Generate a Product Requirements Document (PRD) from a brief feature prompt"
+use: "When creating a new feature PRD from a brief feature request, before task breakdown"
+role: "Product Manager"
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
+tags:
+  - "ai/workflow/software-dev/greenfield/prd"
+  - "prd"
+  - "feature-planning"
+see-also:
+  - workflow: "tasks-from-prd"
+    relationship: "next-step"
+    description: "Consumes the PRD this workflow produces to generate task stories"
+  - skill: "execute-upsert"
+    relationship: "complement"
+    description: "Orchestrates this workflow (PRD creation), task breakdown, and execution as a pipeline"
 ---
 
 ---
@@ -2992,7 +3630,7 @@ Three properties make the PRD executable by a weaker model:
 
 7. **Generate Task Files**
    - Generate task files based on the PRD.
-   - Use the ../tasks/tasks-from-prod.md workflow to generate the task files
+   - Use the ../tasks/tasks-from-prd.md workflow to generate the task files
 
 ## PRD Template Definition
 
@@ -3098,7 +3736,29 @@ Stop and report back (do not improvise) if:
 - Prioritize clarity and completeness for a **junior developer** over brevity.
 `
 - **Task breakdown workflow (inlined)**: `references/tasks-from-prd.md` — the tasks-from-prd workflow's content, inlined at build time via `---
-description: Generating a Task List from a PRD
+workflow: "Tasks from PRD"
+slug: "tasks-from-prd"
+description: "Generate a parallelizable task story list from an existing PRD"
+use: "When breaking a PRD into implementable task stories with dependency tracking"
+role: "Technical Lead"
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
+tags:
+  - "ai/workflow/software-dev/tasks/from-prd"
+  - "task-generation"
+  - "parallel-stories"
+see-also:
+  - workflow: "greenfield-prd"
+    relationship: "previous-step"
+    description: "Produces the PRD this workflow consumes"
+  - workflow: "tasks-processor"
+    relationship: "next-step"
+    description: "Executes the task stories this workflow produces"
+  - skill: "execute-upsert"
+    relationship: "complement"
+    description: "Orchestrates PRD creation, task breakdown, and execution as a pipeline"
 ---
 
 ---
@@ -3855,7 +4515,26 @@ The process explicitly requires a pause after generating parent tasks to get use
 Assume the primary reader of the task list is a **junior developers** who will implement the feature in parallel with other junior developers.
 `
 - **Task execution workflow (inlined)**: `references/tasks-processor.md` — the tasks-processor workflow's content, inlined at build time via `---
-description: Process Tasks
+workflow: "Tasks Processor"
+slug: "tasks-processor"
+description: "Execute task stories created by tasks-from-prd, tracking progress in the index file"
+use: "When implementing task stories from a generated task index, marking progress and committing per story"
+role: "Developer"
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
+tags:
+  - "ai/workflow/software-dev/tasks/processor"
+  - "task-execution"
+  - "progress-tracking"
+see-also:
+  - workflow: "tasks-from-prd"
+    relationship: "previous-step"
+    description: "Produces the task stories this workflow executes"
+  - skill: "execute-upsert"
+    relationship: "complement"
+    description: "Orchestrates PRD creation, task breakdown, and execution as a pipeline"
 ---
 
 ---
@@ -4487,16 +5166,22 @@ When working with task lists, the AI must:
 6. After implementing a sub‑task, update the file and then pause for user approval.
 `
 - **Source workflow files** (for attribution, not runtime): `src/current/workflows/software-dev/greenfield/greenfield-prd.md.tmpl`, `src/current/workflows/software-dev/tasks/tasks-from-prd.md.tmpl`, `src/current/workflows/software-dev/tasks/tasks-processor.md.tmpl`
+- **Project-detection skill (bundled)**: `references/included/skills/software-dev/project-detection/` — materialized at build time via `references/included/skills/software-dev/project-detection/`. Used in Phase 3 to detect the project's tech stack
+- **Code-review-guidance skill (bundled)**: `references/included/skills/software-dev/code-review-guidance/` — materialized at build time via `references/included/skills/software-dev/code-review-guidance/`. Used in Phase 6 for per-story code review
+- **Tech context output**: `internal-docs/feature/YYYY/MM/{slug}/tech-context.txt` (or PRD frontmatter)
 - **PRD output**: `internal-docs/feature/YYYY/MM/{slug}/feat-YYYYMMDDHHmm-{slug}.md`
 - **Task output**: `internal-docs/feature/YYYY/MM/{slug}/tasks/`
 
 ### Reference Files
 
 - `references/triage-heuristic.md` — Decision matrix for assessing request size
-- `references/documentation-update.md` — Detailed guidance for Phase 5 documentation updates
+- `references/documentation-update.md` — Detailed guidance for Phase 8 documentation updates
 - `references/greenfield-prd.md` — Inlined greenfield-prd workflow (PRD creation process and template)
 - `references/tasks-from-prd.md` — Inlined tasks-from-prd workflow (task breakdown process and output format)
 - `references/tasks-processor.md` — Inlined tasks-processor workflow (task execution and completion protocol)
+- `references/parallel-dispatch.md` — Parallel subagent dispatch, worktree setup, merge reconciliation, and progress emission
+- `references/included/skills/software-dev/project-detection/SKILL.md` — Bundled project-detection skill (tech stack detection)
+- `references/included/skills/software-dev/code-review-guidance/SKILL.md` — Bundled code-review-guidance skill (per-story code review checklist)
 
 ### Project Info
 

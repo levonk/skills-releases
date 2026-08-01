@@ -79,6 +79,12 @@ This project is already packaged in nixpkgs (`nixpkgs#$PROJECT`), so a reasonabl
 
 - Add `flake.nix` with `packages.default` and `apps.default`, plus optional named outputs (`#latest`, `#source`) for version selection. Note: `#vX.Y.Z` (tag-pinning) only works for Source Build Flakes, not Prebuilt Tarball Flakes with a post-release bump workflow.
 - Add `devbox.json` for reproducible development environments (if not present)
+<!-- BEGIN conditional: Platform Scope (Inherent Platform Specificity) -->
+<!-- INCLUDE this clause ONLY when platform_scope is "darwin_only" or "linux_only" (Step 4a). -->
+<!-- If platform_scope=all, DELETE this comment block and the line below it. -->
+<!-- Fill $SCOPE_FAMILY ("macOS" or "Linux") and $EXCLUDED_FAMILY from detect-platform-scope.sh (Step 4a). -->
+- The project is inherently `$SCOPE_FAMILY`-only (`$SCOPE_RATIONALE`). The flake targets only `$SCOPE_FAMILY` Nix systems; users on `$EXCLUDED_FAMILY` will see "package not available" — this is correct, as the software cannot run on `$EXCLUDED_FAMILY` by design. Cross-compilation is not attempted.
+<!-- END conditional: Platform Scope (Inherent Platform Specificity) -->
 - Update README install section to include Nix (flakes) and Devbox instructions
 - Mirror changes to translated READMEs (e.g., `README.ko.md`)
 - Update `docs/getting-started/installation.md` with `### Nix (Flakes)` subsection (if present)

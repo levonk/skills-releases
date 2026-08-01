@@ -213,3 +213,106 @@ if __name__ == "__main__":
 - The `example-script.py.template` template includes the PEP 723 header and detection patterns so new skills inherit them automatically
 - When converting workflows to skills, extract deterministic phases into scripts that include the PEP 723 header and detection patterns at the top
 - When updating an existing skill (Mode C upsert), audit bundled Python scripts for the PEP 723 header and add it where missing — propose the change, do not silently apply
+
+## Template-Syntax Paths in Repos (Copier/Jinja/Chezmoi)
+
+Some repositories use template engines that produce file paths containing
+`{{variable}}` syntax — **copier** (Jinja2), **chezmoi** (Go templates), and
+**cookiecutter** (Jinja2) are the most common. For example, a copier boilerplate
+repo may have paths like:
+
+```
+apps/cli/bash/core/files/.agents/workflows/{{package_name}}-git.md.jinja
+```
+
+These paths are **literal filenames on disk** — the `{{package_name}}` is not
+expanded until a user runs `copier copy`. Git tracks them as-is.
+
+### How This Breaks Scripts
+
+Scripts that process git output can fail on these paths in several ways:
+
+1. **JSON escaping**: `{` and `}` are valid in JSON strings, but a naive
+   `json_escape` that only handles `\`, `"`, `\n`, `\t`, `\r` can still produce
+   valid JSON that **confuses downstream LLM consumers** — the `{{...}}` looks
+   like template syntax to the AI parsing the JSON, causing it to misinterpret
+   the data. Always use `jq -jRs` for JSON string escaping when available — it
+   handles all control characters and produces unambiguous output.
+
+2. **`printf` format strings**: If a path containing `%s` or `%d` is passed as
+   a `printf` *format* argument (not as a `%s` parameter), it will be
+   interpreted as a format specifier. Always use `printf '%s' "$path"` — never
+   `printf "$path"`.
+
+3. **Shell globbing**: `{{` and `}}` are not glob characters in bash, but if a
+   script uses `eval` or unquoted expansion in a context where brace expansion
+   applies, `{{package_name}}` could be misinterpreted. Always quote path
+   variables: `"$file"`, not `$file`.
+
+4. **Regex matching**: A regex like `^FILES:(.*)$` correctly captures
+   `{{package_name}}` paths, but a regex that uses `{n,m}` quantifiers could
+   misparse `{{` as the start of a quantifier. Use fixed-string matching
+   (`[[ "$line" == FILES:* ]]`) or escape braces in regex (`\{\{`).
+
+5. **`xargs` and `find -exec`**: Paths with `{{}}` work fine with `xargs -I{}` —
+   but only if the placeholder is not `{` (which conflicts with the path
+   syntax). Use `xargs -I@` or `find -exec ... {} +` with proper quoting.
+
+### Defensive Patterns for Scripts
+
+When writing or updating scripts that may run against template-engine repos:
+
+```bash
+# ✅ GOOD: Use jq for JSON escaping (handles all edge cases)
+json_escape() {
+    if command -v jq >/dev/null 2>&1; then
+        jq -jRs 'rtrimstr("\n")'
+    else
+        # Fallback: handle \ " \n \t \r (covers most git output)
+        local s=$(cat)
+        s="${s//\\/\\\\}"; s="${s//\"/\\\"}"
+        s="${s//$'\n'/\\n}"; s="${s//$'\t'/\\t}"; s="${s//$'\r'/\\r}"
+        printf '%s' "$s"
+    fi
+}
+
+# ✅ GOOD: Always use -- to separate paths from options
+git add -- "$file"
+git diff -- "$file"
+
+# ✅ GOOD: Quote all path variables
+echo "FILE:$file"          # not: echo FILE:$file
+printf '%s\n' "$path"      # not: printf "$path\n"
+
+# ✅ GOOD: Use fixed-string matching when possible
+[[ "$line" == FILES:* ]]   # not: [[ "$line" =~ ^FILES: ]]
+
+# ❌ BAD: printf with path as format string
+printf "$path\n"           # breaks on %s, %d, {{}} in some contexts
+
+# ❌ BAD: Unquoted path in command
+git add $file              # breaks on spaces, {{}} with eval
+```
+
+### When Updating Existing Skills (Mode C Audit)
+
+When auditing a skill's bundled scripts for Mode C upsert, check:
+
+1. **JSON output paths**: If the script emits JSON, does `json_escape` use `jq`
+   when available? If not, propose upgrading to the jq-based escaper.
+2. **Path handling**: Are all git commands using `--` before path arguments?
+   Are all path variables quoted?
+3. **`printf` usage**: Are there any `printf "$var"` calls that should be
+   `printf '%s' "$var"`?
+4. **Test against template repos**: If the skill processes git output (like
+   `git-repository-management` does), test against a repo with `{{}}` paths
+   (e.g. `levonk-base-boilerplate`) to verify the output is valid and
+   unambiguous.
+
+### Known Affected Repos
+
+- `levonk-base-boilerplate` — copier/Jinja2 templates with `{{package_name}}`
+  in file paths and file contents
+- Any chezmoi dotfiles repo — Go template syntax `{{ .var }}` in source paths
+  (the `dotfiles` repo uses `.chezmoitemplates/` with this pattern)
+- Cookiecutter-generated repos — `{{cookiecutter.project_name}}` in paths

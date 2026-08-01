@@ -89,3 +89,19 @@ Use when the project does not have published binary releases and uses Cargo.
     );
 }
 ```
+
+**Platform scope narrowing**: When Step 4a's `detect-platform-scope.sh` reports
+`platform_scope=darwin_only` or `linux_only`, replace
+`flake-utils.lib.eachDefaultSystem` with `flake-utils.lib.eachSystem target_platforms`
+where `target_platforms` is the JSON array from Step 4a converted to a Nix list.
+For example, a darwin-only project:
+
+```nix
+  outputs = { self, nixpkgs, nixpkgs-darwin-legacy, flake-utils, ... }@inputs:
+    flake-utils.lib.eachSystem [ "x86_64-darwin" "aarch64-darwin" ] (system:
+      ...
+```
+
+This ensures the flake only instantiates outputs for platforms the project
+actually supports. Do NOT attempt cross-compilation to the excluded family.
+See `references/architecture-analysis.md` — Inherent Platform Scope.

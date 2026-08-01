@@ -110,11 +110,69 @@ real-world seals degrade. Treat as accidental protection only.
 | "No returns" + low price | Often stolen or broken | Avoid |
 | Seller can't meet at carrier store | Can't verify activation | Meet at carrier store to test activation |
 
-**Verification checklist**: (1) Check IMEI on carrier checker and blacklist
-database. (2) Verify iCloud/activation lock removed (factory reset, set up
-to home screen — don't just trust "wiped"). (3) Test with your SIM — confirm
-activation and signal. (4) Check battery health. (5) Inspect screen for
-burn-in (OLED) and touch. (6) Test cameras, speakers, microphones, buttons.
-(7) Verify water damage indicators (if accessible).
+## Used Phone In-Person Verification
+
+A phone that boots to the home screen today can lock you out after the next
+reset — Activation Lock, Factory Reset Protection (FRP), and carrier
+blacklisting all survive a "wipe" and can surface only when **you** reset the
+device. The only reliable test is to factory reset and walk through setup
+**while the seller is present, before paying**. For the full procedure
+(do-with-seller vs do-later split, walk-away triggers, payment protection),
+see
+[`acquisition/references/handoff-verification.md`](../../../acquisition/references/handoff-verification.md).
+
+### Do with the seller (before paying)
+
+1. **Get the IMEI/serial** (`*#06#` or Settings → About) and run it on the
+   carrier's activation checker **and** a blacklist database (Swappa, CTIA
+   Stolen Phone Checker). Blacklisted = unusable. Walk away.
+2. **Confirm the seller's accounts are signed out** (Apple Account, Google,
+   Samsung). If signed in, require a full sign-out before paying.
+3. **Confirm Find My / FRP is off.** Apple: Settings → Apple Account → Find My
+   → Find My iPhone off. Android: no Google account remaining after sign-out
+   clears FRP.
+4. **Factory reset and walk through setup to the home screen.** Watch for an
+   Activation Lock screen (Apple) or "Verify your account" / FRP screen
+   (Android). Any lock screen = walk away.
+5. **Test with your SIM** — confirm activation and signal on your carrier.
+   Meet at a carrier store if possible; they can verify activation on the spot.
+6. **Get the original receipt and a bill of sale** (date, seller name, IMEI,
+   price, signature). Photograph the receipt next to the IMEI. See **Receipt
+   retention** below.
+7. **Pay with a protected method** (credit card or PayPal Goods & Services).
+   Avoid cash / Zelle / Venmo Friends & Family — no recourse if the phone is
+   blacklisted later.
+
+### Do later (after a clean handoff)
+
+- Set up your own accounts and enable Find My.
+- Install OS updates and confirm the phone still activates.
+- Check battery health (Settings → Battery → Battery Health on iOS;
+  AccuBattery on Android).
+- Inspect screen for OLED burn-in and touch dead-zones; test cameras,
+  speakers, microphones, buttons.
+- Check recall status by model (CPSC, manufacturer recall pages).
+- Back up the receipt (scan/photo with IMEI visible, dated).
+
+## Receipt Retention — Critical for Lock Removal
+
+**Keep the original receipt for every phone, no matter where you buy it.**
+Apple and carriers will only remove an Activation Lock or lift a contested
+blacklist for the **owner of record with original proof of purchase**. This
+applies whether you buy from the manufacturer, an authorized distributor, or a
+third party:
+
+- **From the manufacturer or an authorized distributor:** save the invoice. A
+  refurb can ship with a leftover lock, or you may need to prove ownership
+  years later to remove a forgotten lock.
+- **From a third party / marketplace:** require the seller's original receipt
+  **plus** a bill of sale. Without proof of ownership, Apple/carrier will not
+  remove a lock, and you have no defense if the phone is reported stolen later.
+- **Back it up:** scan or photograph the receipt with the IMEI visible, date
+  it, and store it with your purchase records. Paper fades and gets lost.
+
+The same principle applies to computers and any account-tied device — see
+`computers.md` and
+[`acquisition/references/handoff-verification.md`](../../../acquisition/references/handoff-verification.md).
 
 <!-- vim: set ft=markdown -->

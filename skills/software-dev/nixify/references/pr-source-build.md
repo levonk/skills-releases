@@ -120,6 +120,18 @@ Builds and runs successfully on `<platform>`.
 - Darwin builds include `libiconv`; modern `rustPlatform` handles Security framework linking without the deprecated `apple_sdk` compatibility stub.
 - No breaking changes to existing build paths.
 
+<!-- BEGIN conditional: Platform Scope (Inherent Platform Specificity) -->
+<!-- INCLUDE this section ONLY when platform_scope is "darwin_only" or "linux_only" (Step 4a). -->
+<!-- If platform_scope=all, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $SCOPE_FAMILY ("macOS" or "Linux") and $EXCLUDED_FAMILY ("Linux" or "macOS") -->
+<!-- from detect-platform-scope.sh (Step 4a) output. -->
+
+## Platform scope
+
+This project is inherently `$SCOPE_FAMILY`-only — it depends on platform-specific APIs (`$SCOPE_RATIONALE`) that are not available on `$EXCLUDED_FAMILY`. The flake targets only `$SCOPE_FAMILY` Nix systems (`$TARGET_PLATFORMS`); users on `$EXCLUDED_FAMILY` will see "package not available for this system" when attempting `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO`, which is correct — the software cannot run on `$EXCLUDED_FAMILY` by design, not due to a flake limitation. Cross-compilation is not attempted because the required platform APIs do not exist on the target.
+
+<!-- END conditional: Platform Scope (Inherent Platform Specificity) -->
+
 ## Scope
 
 The PR scope is well-contained — additive only, no existing functionality affected.

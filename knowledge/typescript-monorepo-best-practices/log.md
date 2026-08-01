@@ -1,5 +1,22 @@
 # Directory Update Log
 
+## 2026-07-30
+
+* **Ingest**: Created
+  [parallel-export-collisions.md](parallel-export-collisions.md) — documents
+  the failure mode where parallel subagents independently choose export
+  names and modify barrel files (`src/index.ts`), colliding on merge
+  (TS2308 errors, barrel file merge conflicts). Prevention: forbid
+  subagents from modifying barrel exports — the orchestrator reconciles
+  exports during merge with full visibility into every story's chosen names.
+  Resolution: rename the newer module's colliding symbol with a
+  module-specific prefix (`FetchFn` → `ActorFetchFn`). Includes the merge
+  reconciliation protocol, the "which symbol to rename" decision table, and
+  the "when parallel dispatch is not safe" guidance. Sourced from the
+  seodata-execute workflow (commit 2c23734) and the execute-upsert skill's
+  parallel-dispatch reference. Added to [index.md](index.md) and
+  [overview.md](overview.md.tmpl) table.
+
 ## 2026-07-28
 
 * **Cross-link**: Added a Related Concepts entry in

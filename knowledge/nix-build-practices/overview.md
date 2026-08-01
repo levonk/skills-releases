@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Nix Build Practices Overview
-description: Synthesis of Nix build practices — flake structure, devbox as Nix abstraction, package verification via search.nixos.org, and reproducible builds with lock files.
-tags: [nix, flakes, devbox, reproducible, builds, overview, synthesis]
+description: Synthesis of Nix build practices — flake structure, devbox as Nix abstraction, package verification via search.nixos.org, reproducible builds with lock files, inherent platform scope detection, and partial platform coverage with hybrid fallback flakes.
+tags: [nix, flakes, devbox, reproducible, builds, overview, synthesis, platform-scope, partial-coverage]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  knowledge-basis: "2026-07-31"
+  last-used: "2026-07-31"
 sources:
   - id: adr-20251219001-nix-direnv-dev-environment
     resource: internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md
@@ -14,6 +14,12 @@ sources:
   - id: adr-20251226001-devbox-direnv-dev-environment
     resource: internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md
     title: levonk-base-boilerplate
+  - id: nixify-skill-v2.15.0
+    resource: ../../skills/software-dev/nixify/SKILL.md.tmpl
+    title: nixify skill v2.15.0 — platform scope and hybrid fallback
+  - id: nubjs-nub-169
+    resource: https://github.com/nubjs/nub/issues/169
+    title: nubjs/nub#169 — prebuilt chosen over from-source (vendored runtime tree)
 ---
 
 ---
@@ -113,28 +119,55 @@ If any answer is "no," revise before publishing.
 # Nix Build Practices Overview
 
 This bundle documents practices for Nix-based build and development environments.
-Each concept was extracted from ADRs and project conventions — the decisions
-that ensure reproducible builds, correct package references, and practical
-abstraction over raw Nix.
+Each concept was extracted from ADRs, the nixify skill, and project conventions
+— the decisions that ensure reproducible builds, correct package references,
+practical abstraction over raw Nix, and correct platform targeting.
 
 ## The Nix Build Stack
 
+The bundle has two layers: a **build pipeline** (4 phases that every Nix
+project passes through) and a **platform strategy** layer (2 concepts that
+govern which platforms the flake targets and how to handle gaps in prebuilt
+release coverage). The platform strategy is orthogonal to the pipeline — it
+is consulted at the structure phase to scope `allSystems` and at the
+verification phase to compute coverage.
+
 ```
-flake-structure → devbox-abstraction → package-verification → reproducible-builds
+Build pipeline:
+  flake-structure → devbox-abstraction → package-verification → reproducible-builds
+
+Platform strategy (orthogonal, consulted at structure + verification):
+  inherent-platform-scope → partial-platform-coverage
 ```
 
-| Phase | Practice | Prevents |
-|-------|----------|----------|
-| Structure | [Nix Flake Structure](nix-flake-structure.md) | Missing inputs, unclear outputs, non-reproducible shells |
-| Abstraction | [Devbox as Nix Abstraction](devbox-as-nix-abstraction.md) | Complex Nix syntax, steep learning curve |
-| Verification | [Package Verification](package-verification.md) | Non-existent packages, renamed attributes, version mismatches |
-| Reproducibility | [Reproducible Builds](reproducible-builds.md) | Different builds across machines, unpinned dependencies |
+| Layer | Phase | Practice | Prevents |
+|-------|-------|----------|----------|
+| Pipeline | Structure | [Nix Flake Structure](nix-flake-structure.md) | Missing inputs, unclear outputs, non-reproducible shells |
+| Pipeline | Abstraction | [Devbox as Nix Abstraction](devbox-as-nix-abstraction.md) | Complex Nix syntax, steep learning curve |
+| Pipeline | Verification | [Package Verification](package-verification.md) | Non-existent packages, renamed attributes, version mismatches |
+| Pipeline | Reproducibility | [Reproducible Builds](reproducible-builds.md) | Different builds across machines, unpinned dependencies |
+| Strategy | Scope | [Inherent Platform Scope](inherent-platform-scope.md) | Broken builds on unsupported platforms, unnecessary cross-compilation |
+| Strategy | Coverage | [Partial Platform Coverage](partial-platform-coverage.md) | "Package not available" on platforms the project could build from source |
+
+### How the Layers Interact
+
+1. **Inherent platform scope** runs first — it determines `target_platforms`,
+   the set of systems the flake will target. A macOS-only app narrows to
+   darwin; a cross-platform CLI keeps all 4 systems.
+2. **Partial platform coverage** is computed relative to `target_platforms` —
+   not the hardcoded 4-system set. A darwin-only project that ships both
+   darwin binaries has full coverage of its scope, even though it ships no
+   Linux binaries.
+3. The flake's `allSystems`, `assets`, and `meta.platforms` are scoped to
+   `target_platforms`. When coverage is partial and source build is feasible,
+   the hybrid fallback variant makes `#default` fall back to source on the
+   missing platforms.
 
 ## Scope
 
 This bundle covers **Nix-based build and development** — flake structure, devbox
-abstraction, package verification, and reproducible builds. It does **not**
-cover:
+abstraction, package verification, reproducible builds, inherent platform
+scope, and partial platform coverage. It does **not** cover:
 
 - Devbox/direnv/just workflow — see
   [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
@@ -142,11 +175,15 @@ cover:
   [cicd-testing-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/overview.md).
 - Container build patterns — see
   [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md).
+- Upstream contribution practices (forking, PR etiquette) — see
+  [upstream-contribution-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/upstream-contribution-practices/overview.md).
 
 ## Sources
 
 - `internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md` — boilerplate (66 lines)
 - `internal-docs/adr/adr-20251226001-devbox-direnv-dev-environment.md` — boilerplate (65 lines)
+- `src/current/skills/software-dev/nixify/SKILL.md.tmpl` — nixify skill v2.14.0 (hybrid fallback) and v2.15.0 (platform scope)
+- `https://github.com/nubjs/nub/issues/169` — prebuilt chosen over from-source (vendored runtime tree)
 - Project conventions: package verification via search.nixos.org
 
 ## Related Knowledge Bundles
@@ -157,6 +194,8 @@ cover:
   for reproducible builds
 - [container-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/container-best-practices/overview.md) —
   Container builds on Nix base images
+- [upstream-contribution-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/upstream-contribution-practices/overview.md)
+  — The nixify skill consumes this bundle when forking upstream repos
 
 ---
 

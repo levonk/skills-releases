@@ -1,5 +1,27 @@
 ---
-description: Generating a Task List from a PRD
+workflow: "Tasks from PRD"
+slug: "tasks-from-prd"
+description: "Generate a parallelizable task story list from an existing PRD"
+use: "When breaking a PRD into implementable task stories with dependency tracking"
+role: "Technical Lead"
+date:
+  created: "2026-07-11"
+  knowledge-basis: "2026-07-30"
+  last-used: "2026-07-30"
+tags:
+  - "ai/workflow/software-dev/tasks/from-prd"
+  - "task-generation"
+  - "parallel-stories"
+see-also:
+  - workflow: "greenfield-prd"
+    relationship: "previous-step"
+    description: "Produces the PRD this workflow consumes"
+  - workflow: "tasks-processor"
+    relationship: "next-step"
+    description: "Executes the task stories this workflow produces"
+  - skill: "execute-upsert"
+    relationship: "complement"
+    description: "Orchestrates PRD creation, task breakdown, and execution as a pipeline"
 ---
 
 ---
