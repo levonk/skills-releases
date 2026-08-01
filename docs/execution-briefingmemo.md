@@ -31,4 +31,4 @@ This skill implements a deterministic multi-agent decision-making system that tr
 
 - **Full skill**: [`skills/execution/briefingmemo/SKILL.md`](skills/execution/briefingmemo/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-01T21:48:06Z
+- **Generated**: 2026-08-01T21:58:42Z

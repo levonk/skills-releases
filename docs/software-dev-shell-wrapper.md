@@ -136,4 +136,4 @@ resolve mode exits 0 with the wrapped command on stdout.
 
 - **Full skill**: [`skills/software-dev/shell-wrapper/SKILL.md`](skills/software-dev/shell-wrapper/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-01T21:48:06Z
+- **Generated**: 2026-08-01T21:58:42Z
