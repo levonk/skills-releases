@@ -68,6 +68,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+# Timeout configuration (seconds). Override via environment.
+# Probes: lookups (brew list, mise which, rtk rewrite) — short.
+# Installs: network fetches (not currently used in Python include, but
+# available for callers that need it).
+_PROBE_TIMEOUT = float(os.environ.get("CLTOOL_PROBE_TIMEOUT_SECS", "30"))
+_INSTALL_TIMEOUT = float(os.environ.get("CLTOOL_INSTALL_TIMEOUT_SECS", "120"))
+
 
 def _walk_up_find(*patterns: str) -> Path | None:
     """Walk up from cwd looking for any of the given filenames. Return the dir containing the first match."""
@@ -284,41 +291,46 @@ def resolve_tool(tool: str) -> dict:
     # 4. Package manager lookup
     if shutil.which("brew"):
         try:
-            subprocess.run(["brew", "list", tool], capture_output=True, check=True)
+            subprocess.run(["brew", "list", tool], capture_output=True, check=True,
+                           timeout=_PROBE_TIMEOUT)
             prefix = subprocess.run(
-                ["brew", "--prefix", tool], capture_output=True, text=True
+                ["brew", "--prefix", tool], capture_output=True, text=True,
+                timeout=_PROBE_TIMEOUT
             ).stdout.strip()
             if prefix:
                 p = Path(prefix) / "bin" / tool
                 if p.is_file() and os.access(p, os.X_OK):
                     return {"status": "found", "path": str(p)}
             brew_prefix = subprocess.run(
-                ["brew", "--prefix"], capture_output=True, text=True
+                ["brew", "--prefix"], capture_output=True, text=True,
+                timeout=_PROBE_TIMEOUT
             ).stdout.strip()
             p = Path(brew_prefix) / "bin" / tool
             if p.is_file() and os.access(p, os.X_OK):
                 return {"status": "found", "path": str(p)}
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
     if shutil.which("mise"):
         try:
             result = subprocess.run(
-                ["mise", "which", tool], capture_output=True, text=True
+                ["mise", "which", tool], capture_output=True, text=True,
+                timeout=_PROBE_TIMEOUT
             )
             if result.returncode == 0 and result.stdout.strip():
                 return {"status": "found", "path": result.stdout.strip()}
-        except FileNotFoundError:
+        except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
     if shutil.which("asdf"):
         try:
             result = subprocess.run(
-                ["asdf", "which", tool], capture_output=True, text=True
+                ["asdf", "which", tool], capture_output=True, text=True,
+                timeout=_PROBE_TIMEOUT
             )
             if result.returncode == 0 and result.stdout.strip():
                 return {"status": "found", "path": result.stdout.strip()}
-        except FileNotFoundError:
+        except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
     # 5. Repo-root fallback dirs — searched LAST (least secure: a cloned repo
@@ -468,9 +480,10 @@ def _rtk_supports(tool: str, args: list[str]) -> bool:
         result = subprocess.run(
             ["rtk", "rewrite", "--", tool, *args],
             capture_output=True, text=True,
+            timeout=_PROBE_TIMEOUT,
         )
         return result.returncode in (0, 3)
-    except (subprocess.SubprocessError, FileNotFoundError):
+    except (subprocess.SubprocessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
 
 

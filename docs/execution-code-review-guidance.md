@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **execution** · Status: ready · Version: 1.3.0
+> Category: **execution** · Status: ready · Version: 1.4.0
 
 Systematic code review checklist covering infrastructure, schemas, integrations, security, performance, accessibility, and cross-cutting concerns. Use when reviewing a pull request, conducting a PR review, working through a code review checklist before merging, or reviewing a single story commit as part of an automated execution pipeline. Triggers on 'review this code', 'code review checklist', 'PR review', 'pull request review', 'review this PR', or 'review story commit'. Do NOT trigger on general coding questions, bug fixes, feature implementation, or writing new code — this skill is for reviewing existing changes, not authoring them.
 
@@ -13,7 +13,7 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 |-------|-------|
 | Name | `code-review-guidance` |
 | Category | `execution` |
-| Version | `1.3.0` |
+| Version | `1.4.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -30,15 +30,19 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 1. **Gather context** — read the PR description, linked issues, and the diff.
 2. **Understand data flow** — trace how data moves through the app; note any new
    patterns and why they were introduced.
-3. **Run the checklist** — work through each category below; flag blockers and
+3. **Run automated validation** — run the bundled `code-quality-validation`
+   pipeline (see [Automated Validation Pass](#automated-validation-pass) below)
+   to get deterministic lint/format/test/security results before the manual
+   checklist.
+4. **Run the checklist** — work through each category below; flag blockers and
    suggestions separately.
-4. **Surface schema/integration risk** — call out anything that requires
+5. **Surface schema/integration risk** — call out anything that requires
    coordination (migrations, API consumers, feature flags).
-5. **Write the review** — lead with blockers, then suggestions, then nits.
+6. **Write the review** — lead with blockers, then suggestions, then nits.
    Reference the specific checklist item for each finding.
 
 ## Related Skills
-- **code-quality-validation** (skill, related) — Automated quality checks (lint, test, security scan) that complement manual review
+- **code-quality-validation** (skill, bundled-dependency) — Bundled via includeTree for offline availability. Provides the quality-validator.sh orchestrator and language-specific detectors/scanners that the reviewer runs during the Dynamic pass to get deterministic lint/format/test/security results before applying the manual checklist. Without this bundle, the reviewer must rely on ad-hoc tool invocation; with it, the reviewer gets the same phased validation pipeline (lint → format → test → security) that CI uses
 - **refactor-planning** (skill, related) — For review findings that warrant a structured refactoring effort
 - **execute-upsert** (skill, dependent) — Project execution controller that invokes this skill for per-story code review during the execution loop
 - **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides the actual security patterns (banned C functions, hardcoded credential detection, crypto algorithm governance, certificate validation, SSH hardening, security audit playbook) that the Security review category references. Without this bundle, the security category is advisory only — the review subagent has no patterns to check against
@@ -51,4 +55,4 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 
 - **Full skill**: [`skills/execution/code-review-guidance/SKILL.md`](skills/execution/code-review-guidance/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-01T09:54:06Z
+- **Generated**: 2026-08-01T21:48:06Z

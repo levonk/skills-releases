@@ -10,6 +10,9 @@
 - [Make Build Scripts Nix-Aware](#make-build-scripts-nix-aware)
 - [Ensure Lockfiles in npm Tarballs](#ensure-lockfiles-in-npm-tarballs)
 - [Inspecting Existing nixpkgs Derivations](#inspecting-existing-nixpkgs-derivations)
+- [Build-Time Network Fetches](#build-time-network-fetches)
+- [Gitignored Lockfiles](#gitignored-lockfiles)
+- [Postinstall Home-Directory Writes](#postinstall-home-directory-writes)
 
 ---
 
@@ -398,3 +401,193 @@ Nix-Rust packaging gaps from the project source:
    reproducible environment. Also check `docs/`, `README.md`, and install
    scripts for services the binary talks to that may not have a crate-level
    signal (e.g. a project that shells out to `ffmpeg` or `imagemagick`).
+
+---
+
+## Build-Time Network Fetches
+
+**CRITICAL**: Nix builds run in a sandbox with **no network access**. Any
+build step that fetches resources from the network at build time will fail
+inside the Nix sandbox. This is distinct from runtime network access (which
+is fine) — it is specifically about fetches that happen during `npm run
+build`, `cargo build`, `next build`, or equivalent.
+
+**Common offenders:**
+
+1. **`next/font/google`** (Next.js) — fetches Google Fonts (Inter, Roboto,
+   etc.) at build time. The Nix build fails with a network error during
+   `next build`. This is the most common build-time network fetch in
+   Next.js projects. (Reference: 9router PR #1405 — the prototype had to
+   neutralize `next/font/google`'s build-time fetch of Inter, scoped to
+   the Nix derivation only.)
+
+2. **Remote asset downloads** — build scripts that `curl`/`wget` assets
+   (images, fonts, binaries) during the build.
+
+3. **API calls during build** — telemetry, analytics, or feature-flag
+   calls that fire during the build step.
+
+4. **`postinstall` scripts with network calls** — some packages fetch
+   prebuilt binaries during `npm install` (e.g. `esbuild`, `sharp`,
+   `@swc/core`). Nix's `fetchNpmDeps` prefetches these offline, but
+   packages that bypass the npm lifecycle hooks can still fail.
+
+**How to detect:**
+
+```bash
+# Next.js font fetches
+grep -r "next/font/google" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" .
+grep -r "next/font" --include="*.ts" --include="*.tsx" . | grep -i "google\|inter\|roboto"
+
+# Remote downloads in build scripts
+grep -rE "curl |wget |fetch\(" scripts/ build/ Makefile 2>/dev/null
+grep -rE "https?://" next.config.* webpack.config.* 2>/dev/null
+
+# Postinstall network calls
+grep -r "postinstall" package.json
+```
+
+**How to handle:**
+
+- **Scope the fix to the Nix derivation only** — do NOT touch the
+  Docker/npm build path. The project's own CI and Docker builds need
+  network access; only the Nix sandbox doesn't.
+- **`next/font/google`**: Replace with a local font import or a
+  build-time environment variable that disables the fetch. For example,
+  set `NEXT_FONT_GOOGLE_MOCKED=1` (or similar) in the Nix derivation's
+  `preBuild` and patch the font import to fall back to a system font
+  when that variable is set. Alternatively, vendor the font files into
+  the repo and use `next/font/local`.
+- **Remote asset downloads**: Vendor the assets into the repo, or use
+  Nix's `fetchurl`/`fetchzip` to prefetch them and pass the paths via
+  environment variables.
+- **API calls during build**: Guard with an environment variable
+  (`BUILD_OFFLINE=1`) that skips the call when set. Set it in the Nix
+  derivation's `preBuild`.
+
+**Why this matters**: A project that builds fine in Docker or CI can fail
+silently in Nix because the sandbox blocks network. The failure message is
+often cryptic (a hung connection or DNS error) and doesn't obviously point
+to a build-time fetch. Detecting these before writing the flake saves hours
+of debugging.
+
+---
+
+## Gitignored Lockfiles
+
+**CRITICAL**: Nix's `fetchNpmDeps` (used by `buildNpmPackage`) requires a
+`package-lock.json` to prefetch dependencies deterministically offline. If
+the project gitignores `package-lock.json` — either because it uses
+`pnpm-lock.yaml`/`yarn.lock` instead, or because it has no lockfile at all
+— the Nix build cannot compute the dependency hash.
+
+This is distinct from the "Lockfiles in npm Tarballs" section above, which
+covers `package-lock.json` excluded from npm-published tarballs. This
+section covers the case where the lockfile is absent from the git
+repository entirely.
+
+**How to detect:**
+
+```bash
+# Check if package-lock.json is gitignored
+git check-ignore package-lock.json
+
+# Check if any lockfile exists
+ls package-lock.json pnpm-lock.yaml yarn.lock bun.lock 2>/dev/null
+
+# Check .gitignore for lockfile patterns
+grep -E "package-lock|yarn.lock|pnpm-lock|bun.lock" .gitignore
+```
+
+**How to handle:**
+
+- **Generate the lockfile as a pre-build step in the Nix derivation**:
+  Run `npm install --package-lock-only` (or `npm install --lock-only`) in
+  the `preConfigure` phase to generate `package-lock.json` before
+  `fetchNpmDeps` runs. This keeps the lockfile out of the repo but
+  makes it available for the Nix build.
+- **Generate and commit the lockfile**: If the maintainer is open to it,
+  generate `package-lock.json` and commit it. This is the simplest fix
+  but may conflict with the project's policy of not committing lockfiles
+  (e.g. when using pnpm as the primary package manager).
+- **Keep the lockfile Nix-only**: Generate the lockfile in a separate
+  directory or as a build artifact that is not committed to the repo.
+  Document this in the PR body so reviewers understand why the lockfile
+  appears in the Nix build but not in the repo.
+- **For monorepos with multiple lockfiles**: Some projects have separate
+  `package.json` files in subdirectories (e.g. a root app and a `cli/`
+  wrapper), each needing its own lockfile. Generate lockfiles for each
+  subdirectory that `fetchNpmDeps` needs to prefetch. (Reference: 9router
+  PR #1405 — the prototype had to generate `package-lock.json` for both
+  the root app and `cli/`.)
+
+**Tradeoff**: Committing lockfiles makes the Nix build simpler but may
+conflict with the project's package manager policy. Generating them in
+the Nix build keeps the repo clean but adds complexity to the flake.
+Discuss with the maintainer in the PR body.
+
+---
+
+## Postinstall Home-Directory Writes
+
+**CRITICAL**: Some packages have `postinstall` scripts that write to the
+user's home directory at install time (e.g. `~/.<project>/runtime/`).
+These scripts fail in the Nix sandbox because:
+
+1. The Nix store is read-only — you cannot write to `~/.<project>/`
+   during the build.
+2. The build runs as a non-root user with no home directory access.
+3. Even if the write succeeded, it would be in the builder's
+   ephemeral home, not the end user's home.
+
+This is related to but distinct from the "Runtime Asset Dependencies"
+pattern in Complex Distribution Requirements above. That section covers
+binaries that expect sibling directories at runtime. This section covers
+install-time scripts that write outside the build tree.
+
+**Common offenders:**
+
+1. **`better-sqlite3`** — compiles a native SQLite addon during
+   `postinstall` and may write to a runtime directory.
+2. **Systray libraries** — may install tray icons or helpers to a
+   runtime directory.
+3. **CLIs with self-update mechanisms** — some CLIs download runtime
+   assets to `~/.<project>/runtime/` during `postinstall`.
+
+**How to detect:**
+
+```bash
+# Check package.json for postinstall scripts
+grep -r "postinstall" package.json
+
+# Check for home-directory writes in install scripts
+grep -rE "HOME|~/\." scripts/ install.* postinstall.* 2>/dev/null
+
+# Check for runtime directory patterns
+grep -rE "\.9router|\.<project>|runtime/" package.json scripts/ 2>/dev/null
+```
+
+**How to handle:**
+
+- **Skip the postinstall script in the Nix build**: Set
+  `npmFlags = [ "--ignore-scripts" ]` in `buildNpmPackage` to skip
+  all lifecycle scripts, or use `dontNpmInstall = true` and handle
+  installation manually. This prevents the postinstall from running
+  during the build.
+- **Fall back to bundled alternatives at runtime**: Many projects have
+  fallback behavior when the postinstall assets are absent. For example,
+  9router falls back from `better-sqlite3` (native addon) to `sql.js`
+  (pure JS) and from systray to no-tray behavior when the runtime
+  directory is missing. Document this fallback in the PR body.
+- **Provide the assets via Nix**: If the project requires the
+  postinstall assets and has no fallback, use a Nix derivation to
+  build/place them in the correct location relative to the binary,
+  then wrap the binary with `makeWrapper` to set the path.
+
+**Why this matters**: A project that installs fine via `npm install` can
+fail in Nix because the postinstall script tries to write to a
+home directory that doesn't exist in the sandbox. The error is often a
+permission denied or ENOENT that doesn't obviously point to the
+postinstall script. (Reference: 9router PR #1405 — `better-sqlite3` /
+systray postinstall was skipped during the Nix build and fell back to
+bundled `sql.js` + no-tray behavior at runtime.)

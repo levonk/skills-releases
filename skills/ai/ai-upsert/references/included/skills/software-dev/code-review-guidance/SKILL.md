@@ -1,18 +1,18 @@
 ---
 name: code-review-guidance
 description: "Systematic code review checklist covering infrastructure, schemas, integrations, security, performance, accessibility, and cross-cutting concerns. Use when reviewing a pull request, conducting a PR review, working through a code review checklist before merging, or reviewing a single story commit as part of an automated execution pipeline. Triggers on 'review this code', 'code review checklist', 'PR review', 'pull request review', 'review this PR', or 'review story commit'. Do NOT trigger on general coding questions, bug fixes, feature implementation, or writing new code — this skill is for reviewing existing changes, not authoring them."
-version: 1.3.0
+version: 1.4.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-31"
-  last-used: "2026-07-31"
+  knowledge-basis: "2026-08-01"
+  last-used: "2026-08-01"
 tags: ["ai/skill", "code-review", "pr-review", "checklist", "story-review", "automated-review"]
 see-also:
   - skill: code-quality-validation
-    relationship: "related"
-    description: "Automated quality checks (lint, test, security scan) that complement manual review"
+    relationship: "bundled-dependency"
+    description: "Bundled via includeTree for offline availability. Provides the quality-validator.sh orchestrator and language-specific detectors/scanners that the reviewer runs during the Dynamic pass to get deterministic lint/format/test/security results before applying the manual checklist. Without this bundle, the reviewer must rely on ad-hoc tool invocation; with it, the reviewer gets the same phased validation pipeline (lint → format → test → security) that CI uses"
   - skill: refactor-planning
     relationship: "related"
     description: "For review findings that warrant a structured refactoring effort"
@@ -1510,6 +1510,8 @@ references/included/knowledge/python-services-practices/
 
 references/included/knowledge/rust-development-practices/
 
+references/included/skills/software-dev/code-quality-validation/
+
 # Code Review Guidance
 
 Systematic code review checklist for pull requests and pre-merge review. Covers
@@ -1521,12 +1523,76 @@ cross-cutting concerns so reviewers can catch issues before they reach productio
 1. **Gather context** — read the PR description, linked issues, and the diff.
 2. **Understand data flow** — trace how data moves through the app; note any new
    patterns and why they were introduced.
-3. **Run the checklist** — work through each category below; flag blockers and
+3. **Run automated validation** — run the bundled `code-quality-validation`
+   pipeline (see [Automated Validation Pass](#automated-validation-pass) below)
+   to get deterministic lint/format/test/security results before the manual
+   checklist.
+4. **Run the checklist** — work through each category below; flag blockers and
    suggestions separately.
-4. **Surface schema/integration risk** — call out anything that requires
+5. **Surface schema/integration risk** — call out anything that requires
    coordination (migrations, API consumers, feature flags).
-5. **Write the review** — lead with blockers, then suggestions, then nits.
+6. **Write the review** — lead with blockers, then suggestions, then nits.
    Reference the specific checklist item for each finding.
+
+## Reviewer Personas
+
+When working through the checklist, adopt the persona that matches the
+category you are reviewing. Each persona has a distinct focus and a
+deterministic counterpart in the bundled `code-quality-validation` pipeline:
+
+- **Security Sentinel** — OWASP Top 10, cryptographic standards, sensitive
+  data handling, secret detection. Deterministic counterpart: the
+  `code-quality-validation` security phase (secret scanning, dependency
+  auditing, vulnerability scanning).
+- **Architectural Guardian** — monorepo structure, domain boundaries, build
+  and deployment configuration, schema and integration contracts. Deterministic
+  counterpart: the `code-quality-validation` lint phase (static analysis,
+  architecture rules, path alias checks).
+- **Performance Profiler** — algorithmic efficiency, resource usage, caching,
+  N+1 queries, batch sizes. Deterministic counterpart: the
+  `code-quality-validation` test phase (benchmarks, coverage).
+- **Maintainability Mentor** — clean code, DRY, naming, readability,
+  documentation where intent is non-obvious, modularity (files under 500 lines,
+  focused on at most 3 domains). Deterministic counterpart: the
+  `code-quality-validation` format phase (style consistency, readability).
+
+The personas are a framing device, not separate agents — one reviewer cycles
+through all four lenses. The deterministic counterparts ground each persona
+in tool output rather than subjective judgment.
+
+## Automated Validation Pass
+
+Before the manual checklist, run the bundled `code-quality-validation` skill
+to get deterministic results. The skill is materialized at build time via
+`includeTree` at
+`references/included/skills/software-dev/code-quality-validation/` relative to
+this skill's root (standalone) or the orchestrator's root (when bundled via
+`includeTree` in a parent skill like `execute-upsert`). If the path is not
+found, use `scripts/resolve-reference.sh skills/software-dev/code-quality-validation`
+for the three-tier fallback.
+
+Run the validation pipeline:
+
+```bash
+# Complete validation (lint + format + test + security)
+./references/included/skills/software-dev/code-quality-validation/scripts/quality-validator.sh complete
+
+# Or specific phases
+./references/included/skills/software-dev/code-quality-validation/scripts/quality-validator.sh lint
+./references/included/skills/software-dev/code-quality-validation/scripts/quality-validator.sh test
+./references/included/skills/software-dev/code-quality-validation/scripts/quality-validator.sh security
+```
+
+Capture the output and use it as evidence in the manual checklist. Any
+deterministic failure (lint error, test failure, security finding) is an
+automatic blocker — the manual checklist then determines whether there are
+additional issues the tools cannot catch.
+
+If the project uses devbox, run the validator through devbox:
+
+```bash
+devbox run -- ./references/included/skills/software-dev/code-quality-validation/scripts/quality-validator.sh complete
+```
 
 ## Review Checklist
 
@@ -1645,13 +1711,16 @@ author knows the review was intentional.
    a synchronous review session.
 2. **Static pass** — read the diff top to bottom without commenting; build a
    mental model of the change.
-3. **Checklist pass** — walk through each category above; record findings with
-   file/line references.
-4. **Dynamic pass** — if feasible, check out the branch and run the app or tests
+3. **Automated validation pass** — run the bundled `code-quality-validation`
+   pipeline (see [Automated Validation Pass](#automated-validation-pass) above).
+   Any deterministic failure is an automatic blocker.
+4. **Checklist pass** — walk through each category above; record findings with
+   file/line references. Use the automated validation output as evidence.
+5. **Dynamic pass** — if feasible, check out the branch and run the app or tests
    to validate behavior.
-5. **Synthesize** — group findings into blockers (must fix before merge),
+6. **Synthesize** — group findings into blockers (must fix before merge),
    suggestions (should fix soon), and nits (optional polish).
-6. **Communicate** — post the review; offer to pair on any blocker rather than
+7. **Communicate** — post the review; offer to pair on any blocker rather than
    just describing the problem.
 
 ## Review Modes
@@ -1685,16 +1754,24 @@ for human input on every story.
    - The story file path (for acceptance criteria context)
    - The project's tech context (package manager, test runner, linter — so
      the reviewer knows what "correct" looks like)
-2. **Review subagent runs the checklist** on the diff:
+2. **Review subagent runs the automated validation pass** — invoke the
+   bundled `code-quality-validation` pipeline (see
+   [Automated Validation Pass](#automated-validation-pass)) to get
+   deterministic lint/format/test/security results. Any failure is an
+   automatic blocker.
+3. **Review subagent runs the checklist** on the diff:
    - Skip categories that are clearly out of scope for the story (e.g.,
      Accessibility for a backend-only story). State which categories were
      skipped.
-   - Run the project's test suite and lint commands to validate the dynamic
-     pass. Use the tech context to invoke the correct commands (e.g.,
-     `devbox run -- pnpm test`, not `npm test`).
-3. **Review subagent returns a structured verdict** (see Review Output Format
+   - Use the automated validation output as evidence for the Security,
+     Cross-Cutting Concerns / Testing, and Performance categories.
+   - If the validation pipeline was unavailable (e.g., no devbox), run the
+     project's test suite and lint commands directly. Use the tech context
+     to invoke the correct commands (e.g., `devbox run -- pnpm test`, not
+     `npm test`).
+4. **Review subagent returns a structured verdict** (see Review Output Format
    below).
-4. **Orchestrator acts on the verdict**:
+5. **Orchestrator acts on the verdict**:
    - `CLEAN` — proceed to commit finalization.
    - `NEEDS_FIXES` — dispatch the dev subagent again with the review findings
      as feedback. Loop until clean or the dev subagent returns `BLOCKED`.

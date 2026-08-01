@@ -53,7 +53,22 @@
 #   - go:     go (`go install <pkg>@latest`); no fallback
 #   When the binary is not_found and a devbox.json exists up the tree, the
 #   `recommendation` field tells the caller to add the binary to devbox.json.
+#
+# Timeout configuration (env vars):
+#   CLTOOL_PROBE_TIMEOUT_SECS   (default 30)  — lookups: brew list, mise which,
+#     nix eval, devbox run -- command -v, etc.
+#   CLTOOL_INSTALL_TIMEOUT_SECS (default 120) — network installs: devbox add,
+#     nix profile install, uv tool install.
+#   DEVBOX_PROBE_TIMEOUT_SECS   (default 15)  — devbox run -- probes specifically.
+#   Exec mode (-- <tool> [args]) is never timed — it's the user's command.
 set -euo pipefail
+
+# --- Timeout configuration ---
+# Probes (brew list, mise which, nix eval, etc.): short — these are lookups.
+# Installs (devbox add, nix profile install, uv tool install): long — network fetches.
+# Override via environment. macOS lacks timeout(1); see run_timed fallback.
+probe_timeout="${CLTOOL_PROBE_TIMEOUT_SECS:-30}"
+install_timeout="${CLTOOL_INSTALL_TIMEOUT_SECS:-120}"
 
 # --- Parse args: runner mode vs exec mode vs resolve mode ---
 exec_mode=0
@@ -101,33 +116,48 @@ walk_up() {
     return 1
 }
 
-# --- Hang-safe devbox run ---
-# Run `devbox run -- <cmd>` with a timeout. If devbox hangs (broken wrapper
-# recursion, nix store issues), kill it and return 124 (timeout). This prevents
-# the resolver from hanging forever when devbox is broken.
-# Override timeout via DEVBOX_PROBE_TIMEOUT_SECS (default 15).
-devbox_run_timed() {
-    local _timeout="${DEVBOX_PROBE_TIMEOUT_SECS:-15}"
+# --- Hang-safe command runner ---
+# Run <cmd...> with a timeout (seconds). If the command hangs, kill it and
+# return 124 (matching timeout(1) convention). stdout is preserved via temp
+# file in the background+kill fallback so command substitution works.
+# Uses timeout(1) if available, gtimeout(1) (GNU coreutils on macOS), or
+# falls back to background + kill.
+run_timed() {
+    local _timeout="$1"; shift
     if command -v timeout >/dev/null 2>&1; then
-        timeout "$_timeout" devbox run -- "$@"
+        timeout "$_timeout" "$@"
     elif command -v gtimeout >/dev/null 2>&1; then
-        gtimeout "$_timeout" devbox run -- "$@"
+        gtimeout "$_timeout" "$@"
     else
-        # No timeout(1) available — fall back to background + kill pattern.
-        devbox run -- "$@" &
+        # No timeout(1) — background + kill, capturing stdout via temp file
+        # so command substitution works. Stderr passes through normally.
+        local _tmp; _tmp="$(mktemp 2>/dev/null || echo "/tmp/ctd.$$.tmp")"
+        "$@" >"$_tmp" 2>&1 &
         local _pid=$!
         local _elapsed=0
         while kill -0 "$_pid" 2>/dev/null; do
             if [[ "$_elapsed" -ge "$_timeout" ]]; then
                 kill -9 "$_pid" 2>/dev/null
                 wait "$_pid" 2>/dev/null || true
+                rm -f "$_tmp"
                 return 124
             fi
             sleep 1
             _elapsed=$((_elapsed + 1))
         done
-        wait "$_pid"
+        wait "$_pid"; local _rc=$?
+        cat "$_tmp" 2>/dev/null; rm -f "$_tmp"
+        return "$_rc"
     fi
+}
+
+# --- Hang-safe devbox run ---
+# Run `devbox run -- <cmd>` with a timeout. If devbox hangs (broken wrapper
+# recursion, nix store issues), kill it and return 124 (timeout). This prevents
+# the resolver from hanging forever when devbox is broken.
+# Override timeout via DEVBOX_PROBE_TIMEOUT_SECS (default 15).
+devbox_run_timed() {
+    run_timed "${DEVBOX_PROBE_TIMEOUT_SECS:-15}" devbox run -- "$@"
 }
 
 # --- Ensure a package is listed in devbox.json, walking up from cwd ---
@@ -145,7 +175,7 @@ ensure_devbox_package() {
 
     # If devbox is available, prefer `devbox add` (idempotent in devbox).
     if command -v devbox >/dev/null 2>&1; then
-        (cd "$devbox_dir" && devbox add "$pkg" >/dev/null 2>&1) || true
+        (cd "$devbox_dir" && run_timed "$install_timeout" devbox add "$pkg" >/dev/null 2>&1) || true
         return 0
     fi
 
@@ -397,15 +427,15 @@ search_standard_paths() {
 
     # Package manager lookup
     if command -v brew >/dev/null 2>&1; then
-        if brew list "$tool" >/dev/null 2>&1; then
+        if run_timed "$probe_timeout" brew list "$tool" >/dev/null 2>&1; then
             local prefix
-            prefix="$(brew --prefix "$tool" 2>/dev/null || true)"
+            prefix="$(run_timed "$probe_timeout" brew --prefix "$tool" 2>/dev/null || true)"
             if [[ -n "$prefix" && -x "$prefix/bin/$tool" ]]; then
                 echo "FOUND:$prefix/bin/$tool"
                 return 0
             fi
             local brew_prefix
-            brew_prefix="$(brew --prefix)/bin"
+            brew_prefix="$(run_timed "$probe_timeout" brew --prefix 2>/dev/null || true)/bin"
             if [[ -x "$brew_prefix/$tool" ]]; then
                 echo "FOUND:$brew_prefix/$tool"
                 return 0
@@ -413,13 +443,13 @@ search_standard_paths() {
         fi
     fi
     if command -v mise >/dev/null 2>&1; then
-        if mise_path="$(mise which "$tool" 2>/dev/null || true)" && [[ -n "$mise_path" ]]; then
+        if mise_path="$(run_timed "$probe_timeout" mise which "$tool" 2>/dev/null || true)" && [[ -n "$mise_path" ]]; then
             echo "FOUND:$mise_path"
             return 0
         fi
     fi
     if command -v asdf >/dev/null 2>&1; then
-        if asdf_path="$(asdf which "$tool" 2>/dev/null || true)" && [[ -n "$asdf_path" ]]; then
+        if asdf_path="$(run_timed "$probe_timeout" asdf which "$tool" 2>/dev/null || true)" && [[ -n "$asdf_path" ]]; then
             echo "FOUND:$asdf_path"
             return 0
         fi
@@ -470,7 +500,7 @@ resolve_tool() {
         local devbox_json_dir
         devbox_json_dir="$(walk_up devbox.json 2>/dev/null || true)"
         if [[ -n "$devbox_json_dir" ]] && command -v devbox >/dev/null 2>&1; then
-            (cd "$devbox_json_dir" && devbox add "$tool" >/dev/null 2>&1) || true
+            (cd "$devbox_json_dir" && run_timed "$install_timeout" devbox add "$tool" >/dev/null 2>&1) || true
             if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
                 echo "FOUND:$path"
                 return 0
@@ -500,7 +530,7 @@ resolve_tool() {
                     return 0
                 fi
                 # 2b. devbox add + recheck inside devbox
-                (cd "$devbox_json_dir" && devbox add "$tool" >/dev/null 2>&1) || true
+                (cd "$devbox_json_dir" && run_timed "$install_timeout" devbox add "$tool" >/dev/null 2>&1) || true
                 if (cd "$devbox_json_dir" && devbox_run_timed command -v "$tool" >/dev/null 2>&1); then
                     echo "WRAPPER:devbox run --"
                     return 0
@@ -536,15 +566,18 @@ resolve_tool() {
                 fi
             fi
         fi
-        # direnv
-        if command -v direnv >/dev/null 2>&1; then
-            if [[ -z "${DIRENV_DIR:-}" ]]; then
-                if walk_up .envrc >/dev/null 2>&1; then
-                    echo "WRAPPER:direnv export &&"
-                    return 0
-                fi
-            fi
-        fi
+        # direnv: NOT emitted as a wrapper prefix.
+        # direnv activation is eval-based (`eval "$(direnv export bash)"`),
+        # not prefix-based. The wrapper_prefix mechanism (`$wrapper "$@"`)
+        # cannot activate direnv — `direnv export && git ...` fails because
+        # `direnv export` requires a shell argument and outputs shell code to
+        # stdout, it does not execute the following command.
+        # When inside direnv (DIRENV_DIR set), tools are already on PATH and
+        # found by the PATH check above. When outside direnv, the exec mode
+        # (line ~671) handles activation correctly via
+        # `eval "$(direnv export bash)" && exec "$tool"`. The wrapper_prefix
+        # path skips direnv entirely and falls through to nix / standard paths.
+        # See internal-docs/issues/direnv-wrapper-prefix-broken.md for details.
         # nix
         if command -v nix >/dev/null 2>&1; then
             if [[ -z "${IN_NIX_SHELL:-}" ]]; then
@@ -605,9 +638,9 @@ resolve_tool() {
     if command -v nix >/dev/null 2>&1; then
         # Search: check if the package exists in nixpkgs (fast, non-destructive).
         # nix eval succeeds if the package exists, fails otherwise.
-        if nix eval nixpkgs#"${tool}".meta.mainProgram >/dev/null 2>&1; then
+        if run_timed "$probe_timeout" nix eval nixpkgs#"${tool}".meta.mainProgram >/dev/null 2>&1; then
             # Package exists — install it.
-            nix profile install nixpkgs#"${tool}" >/dev/null 2>&1 || true
+            run_timed "$install_timeout" nix profile install nixpkgs#"${tool}" >/dev/null 2>&1 || true
             # Recheck PATH after install.
             if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
                 echo "FOUND:$path"
@@ -628,7 +661,7 @@ resolve_tool() {
     if command -v uv >/dev/null 2>&1; then
         # Try to install the tool from PyPI via uv.
         # uv tool install fails fast if the package doesn't exist.
-        if uv tool install "${tool}" >/dev/null 2>&1; then
+        if run_timed "$install_timeout" uv tool install "${tool}" >/dev/null 2>&1; then
             # Recheck PATH after install.
             if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
                 echo "FOUND:$path"

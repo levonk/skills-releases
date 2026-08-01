@@ -65,6 +65,7 @@ The project currently requires users to clone the repository and build from sour
 - **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific dependencies.
 - **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
 - **Clean uninstall** — `nix profile remove` leaves no residue. No orphaned global packages.
+- **NixOS / home-manager compatible** — `npm install -g` doesn't work on NixOS's read-only store; a flake with `packages.default` lets NixOS users install declaratively via `home.packages` in home-manager.
 
 <!-- BEGIN conditional: Relationship to nixpkgs -->
 <!-- INCLUDE this section ONLY when check-nixpkgs.sh (Step 10) reported project_in_nixpkgs: true. -->

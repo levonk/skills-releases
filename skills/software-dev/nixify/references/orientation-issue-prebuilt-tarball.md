@@ -48,6 +48,7 @@ This issue tracks adding Nix flake support to the upstream project so users can 
 - **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific linking.
 - **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
 - **Clean uninstall** — `nix profile remove` leaves no residue.
+- **NixOS / home-manager compatible** — `npm install -g` doesn't work on NixOS's read-only store; a flake with `packages.default` lets NixOS users install declaratively via `home.packages` in home-manager.
 
 ## Current gap
 

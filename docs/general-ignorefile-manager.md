@@ -52,4 +52,4 @@ alphabetized. Comments explaining *why* a pattern exists are missing.
 
 - **Full skill**: [`skills/general/ignorefile-manager/SKILL.md`](skills/general/ignorefile-manager/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-01T09:54:06Z
+- **Generated**: 2026-08-01T21:48:06Z

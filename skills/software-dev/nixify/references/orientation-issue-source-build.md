@@ -49,6 +49,7 @@ This issue tracks adding Nix flake support to the upstream project so users can 
 - **Zero-install runs**: `nix run` fetches from binary cache when available. No clone, no compile, no `cargo build`.
 - **No system pollution**: `nix profile add` adds to a user-specific profile. Uninstall cleanly with `nix profile remove`. No orphaned global packages.
 - **Atomic upgrades / downgrades**: profiles are switched atomically. No half-upgraded state.
+- **NixOS / home-manager compatible**: `npm install -g` doesn't work on NixOS's read-only store; a flake with `packages.default` lets NixOS users install declaratively via `home.packages` in home-manager.
 
 ## Current gap
 

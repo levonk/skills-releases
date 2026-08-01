@@ -9,6 +9,17 @@ BINARY="${1:?Usage: validate-flake.sh <binary-name> [project-name]}"
 PROJECT_NAME="${2:-}"
 VERBOSE="${3:-}"
 
+# Structural guard: a nixify flake MUST expose package outputs, not just
+# devShells. A devShell-only flake cannot be installed via nix run / nix
+# profile add / home-manager. (Reference: 9router PR #1405 review feedback.)
+if ! grep -qE 'packages\.' flake.nix 2>/dev/null; then
+  echo "FAILED: flake.nix has no packages output — devShell-only flakes are not installable"
+  echo "  A nixify flake must expose packages.<system>.default (or a named output)"
+  echo "  so users can run: nix run github:... / nix profile add github:..."
+  exit 1
+fi
+echo "ok: flake.nix exposes package outputs"
+
 run_step() {
   local desc="$1"
   shift

@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `947b1f7d38d1b19b1667955499ca395623c1eea5` · Branch: `env/dev` · Generated: 2026-08-01T09:54:06Z
+> Commit: `73bec407e649bbc76477b6a35193bd9e49f7d619` · Branch: `env/dev` · Generated: 2026-08-01T21:48:06Z
 
 ## Overview
 
@@ -21,6 +21,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-upsert | Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, an... | [Synopsis](ai-ai-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
+| code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](ai-code-quality-validation.md) |
 | code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](ai-code-review-guidance.md) |
 | git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](ai-git-repository-management.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
@@ -61,6 +62,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | briefingmemo | Use when making high-stakes business decisions, strategic choices, partnership evaluations, or an... | [Synopsis](execution-briefingmemo.md) |
+| code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](execution-code-quality-validation.md) |
 | code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](execution-code-review-guidance.md) |
 | execute-upsert | Generic project execution controller that drives feature implementation from request to completio... | [Synopsis](execution-execute-upsert.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](execution-project-detection.md) |
@@ -81,6 +83,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
 | cicd-upsert | Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI images, security... | [Synopsis](software-dev-cicd-upsert.md) |
 | cli-tool-upsert | Create, update, and optimize CLI programs and scripts for AI agent consumption. Two tiers: embedd... | [Synopsis](software-dev-cli-tool-upsert.md) |
+| code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](software-dev-code-quality-validation.md) |
 | code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](software-dev-code-quality-validation.md) |
 | code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](software-dev-code-review-guidance.md) |
 | codebase-tutorial | Generate beginner-friendly tutorials from codebases. Use when asked to analyze a repository, expl... | [Synopsis](software-dev-codebase-tutorial.md) |

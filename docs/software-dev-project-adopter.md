@@ -82,4 +82,4 @@ For ADR references and detailed configuration links, see [ADR References](refere
 
 - **Full skill**: [`skills/software-dev/project-adopter/SKILL.md`](skills/software-dev/project-adopter/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-01T09:54:06Z
+- **Generated**: 2026-08-01T21:48:06Z

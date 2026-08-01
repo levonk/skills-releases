@@ -1,11 +1,11 @@
 ---
 name: nixify
 description: Add Nix flake support to a project so it can be installed via nix run github:... or nix profile add github:.... Use when the user wants to make a project installable via Nix flakes from a remote GitHub repository, add devbox.json for reproducible development environments, or package a project for Nix profile installation. Covers forking, cloning, architecture analysis, flake template selection, documentation updates, CI setup, and PR creation.
-version: 2.15.0
+version: 2.16.0
 date:
   created: "2026-06-01"
-  knowledge-basis: "2026-07-31"
-  last-used: "2026-07-31"
+  knowledge-basis: "2026-08-01"
+  last-used: "2026-08-01"
 tags:
   - "nix"
   - "nixos"
@@ -1547,6 +1547,8 @@ devbox as Nix abstraction, package verification, reproducible builds,
 
 5. **Analyze distribution complexity**: If no prebuilt tarballs (AND the project does not ship runtime assets beside the binary — see Step 4's MANDATORY rule), analyze the project for complex multi-component distribution (runtime assets, native addons, workspace exclusions). See `references/architecture-analysis.md` for decision guidance, success/failure patterns, and build script Nix-awareness tips.
 
+    **CRITICAL — devShell-only flakes are NOT an acceptable nixify deliverable**: The entire purpose of this skill is to make a project installable via `nix run github:...` / `nix profile add github:...`. A flake that only exposes `devShells.default` (a development environment) but no `packages` output cannot be installed — it can only provide a shell for hacking on the source. If the project is too complex to package from source and has no prebuilt tarballs, **STOP and file an orientation issue** documenting the packaging gap — do NOT submit a PR with a devShell-only flake. A devShell-only PR will receive review feedback pointing out the missing `packages.default` (see 9router PR #1405 — the reviewer noted the flake "covers a `devShells.default`... but doesn't yet expose a `packages.default` you could actually install/run"). The orientation issue should document what makes the project hard to package (build-time network fetches, postinstall home-directory writes, gitignored lockfiles — see `references/architecture-analysis.md`) so a follow-up PR can address them.
+
 6. **Fork and clone**: Run `scripts/fork-and-clone.sh <owner> <repo> <has_direct_access> <current_user>`. Use `--dry-run` to preview. Always rebase from upstream after cloning.
 
 7. **Detect release trigger mechanism**: Run `scripts/check-release-trigger.sh` from within the cloned repo. This inspects `.github/workflows/` for how releases are created (`secrets.GITHUB_TOKEN` vs PAT/App token) and outputs a JSON recommendation (`trigger: scheduled_lag_check` or `release_published`). **Store the `trigger` value — it determines which workflow template to use at Step 16.** This prevents the GITHUB_TOKEN trap where a `release: published` workflow silently never fires because GitHub does not start new runs from `GITHUB_TOKEN`-authored events.
@@ -1647,6 +1649,7 @@ devbox as Nix abstraction, package verification, reproducible builds,
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | `nix run .` fails with "not tracked by Git" | `flake.nix` is untracked | `git add flake.nix` |
+| `validate-flake.sh` fails with "no packages output" | flake.nix only has `devShells` — no `packages` output | A devShell-only flake is NOT an acceptable nixify deliverable. Either implement a `packages.<system>.default` output (see Step 12 templates), or STOP and file an orientation issue documenting the packaging gap. See Step 5 — CRITICAL guard |
 | `devbox run build` fails with "command not found" | Devbox not installed or not in PATH | `curl -fsSL https://get.jetify.dev/devbox \| bash` or `brew install jetify-com/devbox/devbox` |
 | `devbox.json` schema validation fails | Invalid JSON or missing required fields | Verify JSON syntax and check against devbox schema |
 | Darwin build fails with `apple_sdk_11_0 removed` | Deprecated `apple_sdk` reference | Use `pkgs.darwin.apple_sdk.frameworks.Security` (not `apple_sdk_11_0`); see `references/flake-templates/darwin-framework-note.md` |
