@@ -122,4 +122,4 @@ Use this skill when:
 
 - **Full skill**: [`skills/software-dev/project-configuration/SKILL.md`](skills/software-dev/project-configuration/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-01T22:01:31Z
+- **Generated**: 2026-08-02T19:08:09Z

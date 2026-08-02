@@ -1,5 +1,59 @@
 # Directory Update Log
 
+## 2026-08-01 (fifth revision — standard interview questions)
+
+* **Addition**: Created 1 new concept page:
+  - [standard-interview-questions.md](standard-interview-questions.md) —
+    Frameworks and generic fallback answers for the predictable questions
+    nearly every interview asks. Covers the opening ("how are you"), the
+    departure reason (pull factor over push factor), the employment gap,
+    "why our company" (specificity requirement), the 5-year plan, the
+    overqualified challenge (Value Multiplier Reframe), the
+    underqualified challenge (transferable skills + ramp plan), management
+    style, being-managed style, communication style, and a quick-reference
+    table for other standard questions (tell me about yourself, greatest
+    weakness/strength, why should we hire you, salary expectations,
+    failure, conflict, motivation, interviewing elsewhere). Each question
+    has a best-answer framework, a generic fallback, and a "what not to
+    say" list. Closes with the Fallback Principle: forward-looking,
+    role-relevant, red-flag-free, concrete enough to be credible.
+* **Update: standard-interview-questions.md**: Added §11 "What questions
+  do you have for me?" — the audience-aware question. Broken out by who
+  is asking: recruiter screening call (process and role-fit questions),
+  subordinate (psychological safety, management style, what to preserve
+  vs. fix), peer (collaboration, decision-making, cross-team friction),
+  manager (gaps, success definition, biggest challenge), and skip-manager
+  (strategic altitude, business impact, funding and prioritization). Each
+  audience gets best questions, a generic fallback, and "what not to ask."
+  Includes a cross-audience safe question, a closing question, and the
+  meta-strategy (always have questions, match to audience, ask one that
+  emerged from the conversation, don't ask what the website answers, close
+  forward-looking). Updated the quick-reference table entry and the
+  frontmatter description to reference the new section.
+* **Update: index.md**: Added the new concept page under the "Interview &
+  Hiring Process" section, with updated description mentioning the
+  audience-aware question.
+* **Update: overview.md**: Added the new concept page to the Interview &
+  Hiring Process synthesis (with updated description), and added it as a
+  companion reference for the screening-call and interview pipeline stages.
+
+## 2026-08-01 (fourth revision — content exclusion)
+
+* **Addition**: Created 1 new concept page:
+  - [content-exclusion-and-disclosure-prevention.md](content-exclusion-and-disclosure-prevention.md)
+    — What must never appear in a resume or professional document:
+    protected-class information (race, religion, gender, age, disability,
+    marital status, national origin), controversial topics (politics,
+    firearms, alcohol/tobacco, cannabis), personal/private information (SSN,
+    full address, financial info), unprofessional content (email addresses,
+    social media, hobbies), negative content (employer criticism, salary
+    disputes), the disclosure audit checklist, and the "forward to a
+    stranger" test.
+* **Update: index.md**: Added new "Content Exclusion & Disclosure
+  Prevention" section listing the concept page.
+* **Update: overview.md**: Added new "Content Exclusion & Disclosure
+  Prevention" subsection in the concepts synthesis.
+
 ## 2026-07-31 (third revision — source audit)
 
 * **Source audit**: Conducted a systematic audit of all 10 source video

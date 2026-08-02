@@ -49,8 +49,8 @@ the candidate's side.
 | Resume submission | ATS parser | 200–500ms | Machine-readable layout | [ATS Reality vs Myths](ats-reality-vs-myths.md) |
 | Resume scan | Recruiter | 7.4 seconds | F-shaped scan, left third | [Visual Scanning Patterns](visual-scanning-patterns.md) |
 | Resume read | Hiring manager | 2–4 minutes | Ownership, metrics, relevance | [Metrics and Quantification](metrics-and-quantification.md), [Ownership Verbs](ownership-verbs.md) |
-| Screening call | Recruiter | 15–30 min | Pattern match, communication, salary fit | [Recruiter Communication](recruiter-communication.md) |
-| Interviews | Hiring manager + peers | 45–60 min each | Team fit, gaps, cultural fit | [Interview Strategy](interview-strategy.md) |
+| Screening call | Recruiter | 15–30 min | Pattern match, communication, salary fit | [Recruiter Communication](recruiter-communication.md), [Standard Interview Questions](standard-interview-questions.md) |
+| Interviews | Hiring manager + peers | 45–60 min each | Team fit, gaps, cultural fit | [Interview Strategy](interview-strategy.md), [Standard Interview Questions](standard-interview-questions.md) |
 | Offer & negotiation | Recruiter + hiring manager | Days | Band placement, sign-on leverage | [Salary Negotiation](salary-negotiation.md) |
 
 ## How the Concepts Fit Together
@@ -103,6 +103,13 @@ the candidate's side.
   the benchmark candidate trap, silver medalist strategy, managerial
   desperation, the 5-minute decision, culture fit as bias shield, and
   asking the right questions.
+- **[Standard Interview Questions](standard-interview-questions.md)** —
+  Frameworks and generic fallback answers for the predictable questions
+  every interview asks: the opening, the departure reason, the employment
+  gap, the 5-year plan, the overqualified/underqualified challenge,
+  management and communication style, and the audience-aware "what
+  questions do you have for me?" (recruiter, subordinate, peer, manager,
+  skip-manager). The preparation layer for the five-minute decision.
 - **[Recruiter Communication](recruiter-communication.md)** — Recruiters as
   professional matchmakers, the intake meeting pattern matching,
   optimizing for recruiter discovery, and information boundaries (what not
@@ -117,6 +124,13 @@ the candidate's side.
   dog-whistle phrases and the managerial fears behind them.
 - **[Value Multiplier Reframe](value-multiplier-reframe.md)** — Reposition
   overqualification as ROI, not liability.
+
+### Content Exclusion & Disclosure Prevention (what never to include)
+
+- **[Content Exclusion and Disclosure Prevention](content-exclusion-and-disclosure-prevention.md)**
+  — Protected-class information, politics, religion, alcohol/tobacco,
+  firearms, personal details, negative content, and the disclosure audit
+  checklist. The "forward to a stranger" test.
 
 ## What This Bundle Is Not
 

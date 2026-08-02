@@ -45,6 +45,7 @@ to any job seeker — not specific to any individual candidate.
 ### Interview & Hiring Process
 
 * [Interview Strategy](interview-strategy.md) — Team composition, fast-track scenario, OE/OA metrics, cultural fit (Googliness), the benchmark candidate trap, silver medalist strategy, managerial desperation, the 5-minute decision, culture fit as bias shield, and asking the right questions
+* [Standard Interview Questions](standard-interview-questions.md) — Frameworks and generic fallback answers for the predictable questions every interview asks: the opening, the departure reason, the gap, the 5-year plan, the overqualified/underqualified challenge, management and communication style, and the audience-aware "what questions do you have for me?" (recruiter, subordinate, peer, manager, skip-manager)
 * [Recruiter Communication](recruiter-communication.md) — Recruiters as matchmakers, intake meeting pattern matching, recruiter discovery, and information boundaries (what not to share with agency recruiters)
 * [Salary Negotiation](salary-negotiation.md) — Salary bands, sign-on bonuses as an alternative, the ramp-up-time justification, and scripts for the salary expectations question
 
@@ -52,6 +53,10 @@ to any job seeker — not specific to any individual candidate.
 
 * [Age Bias Coded Language](age-bias-coded-language.md) — Dog-whistle phrases recruiters use ("fast-paced," "high energy"), and the managerial fears behind them
 * [Value Multiplier Reframe](value-multiplier-reframe.md) — How to reposition overqualification as ROI: zero training cost, mentorship capacity, and immediate productivity
+
+### Content Exclusion & Disclosure Prevention
+
+* [Content Exclusion and Disclosure Prevention](content-exclusion-and-disclosure-prevention.md) — What must never appear in a resume or professional document: protected-class information, politics, religion, alcohol/tobacco, firearms, personal details, and the disclosure audit checklist
 
 ## Reference
 

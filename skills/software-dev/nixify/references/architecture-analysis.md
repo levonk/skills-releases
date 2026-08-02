@@ -452,12 +452,30 @@ grep -r "postinstall" package.json
 - **Scope the fix to the Nix derivation only** — do NOT touch the
   Docker/npm build path. The project's own CI and Docker builds need
   network access; only the Nix sandbox doesn't.
-- **`next/font/google`**: Replace with a local font import or a
-  build-time environment variable that disables the fetch. For example,
-  set `NEXT_FONT_GOOGLE_MOCKED=1` (or similar) in the Nix derivation's
-  `preBuild` and patch the font import to fall back to a system font
-  when that variable is set. Alternatively, vendor the font files into
-  the repo and use `next/font/local`.
+- **`next/font/google`**: Use `postPatch` to replace the font import with
+  a no-op stub. The Nix build falls back to the system sans-serif stack
+  already in the Tailwind/base CSS; Docker/npm builds keep the real
+  self-hosted Google font. Concrete pattern (from 9router PR #1405):
+
+  ```nix
+  postPatch = ''
+    node -e '
+      const fs = require("fs");
+      const p = "src/app/layout.js";
+      let s = fs.readFileSync(p, "utf8");
+      s = s.replace(/import \{ Inter \} from "next\/font\/google";\n/, "");
+      s = s.replace(/const inter = Inter\(\{[^}]*\}\);/, "const inter = { variable: \"\" };");
+      fs.writeFileSync(p, s);
+    '
+  '';
+  ```
+
+  Alternatively, vendor the font files into the repo and use
+  `next/font/local`.
+- **Next.js telemetry**: Set `env.NEXT_TELEMETRY_DISABLED = "1";` in the
+  derivation. Next.js telemetry makes a network call during `next build`
+  that fails in the sandbox. This is a build-time network fetch even for
+  projects that don't use `next/font/google`.
 - **Remote asset downloads**: Vendor the assets into the repo, or use
   Nix's `fetchurl`/`fetchzip` to prefetch them and pass the paths via
   environment variables.
@@ -569,10 +587,26 @@ grep -rE "\.9router|\.<project>|runtime/" package.json scripts/ 2>/dev/null
 
 **How to handle:**
 
-- **Skip the postinstall script in the Nix build**: Set
-  `npmFlags = [ "--ignore-scripts" ]` in `buildNpmPackage` to skip
-  all lifecycle scripts, or use `dontNpmInstall = true` and handle
-  installation manually. This prevents the postinstall from running
+- **Set `HOME=$TMPDIR` in `buildPhase`**: This redirects any home-directory
+  writes to the sandbox's temp directory. Some packages check `$HOME`
+  before running postinstall logic, so this prevents the write attempt
+  even if the script runs. Use this alongside `--ignore-scripts` for
+  defense in depth:
+
+  ```nix
+  buildPhase = ''
+    runHook preBuild
+    # Prevent postinstall scripts from writing to ~/.<project>/
+    export HOME=$TMPDIR
+    npm ci --ignore-scripts
+    # ...
+  '';
+  ```
+
+- **Skip the postinstall script in the Nix build**: Use
+  `npm ci --ignore-scripts` (in a `stdenv.mkDerivation`) or
+  `npmFlags = [ "--ignore-scripts" ]` (in `buildNpmPackage`) to skip
+  all lifecycle scripts. This prevents the postinstall from running
   during the build.
 - **Fall back to bundled alternatives at runtime**: Many projects have
   fallback behavior when the postinstall assets are absent. For example,

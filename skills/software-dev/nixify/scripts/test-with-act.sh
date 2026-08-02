@@ -207,7 +207,7 @@ run_act() {
     echo "[test-with-act] UBUNTU validation FAILED (via act)."
     echo "[test-with-act] Common fixes:"
     echo "  - Missing runtime deps: run scripts/detect-runtime-deps.sh"
-    echo "  - cleanSource issues: see references/flake-templates/source-build-rust.md"
+    echo "  - cleanSource issues: see references/flake-templates/source-build/rust.md"
     echo "  - Linux autoPatchelf: see references/flake-templates/prebuilt-tarball.md"
   fi
   return $result

@@ -85,11 +85,11 @@ Use when the project publishes prebuilt release tarballs. Preserves exact layout
       pkgs = nixpkgs.legacyPackages.${system};
     in
       # === REPLACE THIS BLOCK with the language-specific source build ===
-      # Example for Bun (see references/flake-templates/source-build-bun.md):
+      # Example for Bun (see references/flake-templates/source-build/bun.md):
       #   pkgs.stdenv.mkDerivation { ... bun build --compile ... }
-      # Example for Rust (see references/flake-templates/source-build-rust.md):
+      # Example for Rust (see references/flake-templates/source-build/rust.md):
       #   pkgs.rustPlatform.buildRustPackage { ... }
-      # Example for Go (see references/flake-templates/source-build-go.md):
+      # Example for Go (see references/flake-templates/source-build/go.md):
       #   pkgs.buildGoModule { ... }
       throw "sourceFor not implemented — fill in from source-build-<lang>.md";
   in {
@@ -273,9 +273,9 @@ failing on the ones the project didn't ship a binary for.
       pkgs = nixpkgs.legacyPackages.${system};
     in
       # === REPLACE THIS BLOCK with the language-specific source build ===
-      # Example for Rust (see references/flake-templates/source-build-rust.md):
+      # Example for Rust (see references/flake-templates/source-build/rust.md):
       #   pkgs.rustPlatform.buildRustPackage { ... }
-      # Example for Go (see references/flake-templates/source-build-go.md):
+      # Example for Go (see references/flake-templates/source-build/go.md):
       #   pkgs.buildGoModule { ... }
       throw "sourceFor not implemented — fill in from source-build-<lang>.md";
 

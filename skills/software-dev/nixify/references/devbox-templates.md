@@ -90,7 +90,7 @@ them. Example with a detected runtime dependency:
 
 The same detection applies to the devShell in `flake.nix` — add detected
 runtime packages to `devShells.default.buildInputs` as well. See
-`references/flake-templates/source-build-rust.md` for the devShell pattern.
+`references/flake-templates/source-build/rust.md` for the devShell pattern.
 
 ---
 
