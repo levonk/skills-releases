@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status: ready · Version: 1.9.0
+> Category: **software-dev** · Status: ready · Version: 1.10.0
 
 Comprehensive git repository workflow for status analysis, change organization, and commit management with secret scanning and rollback-safe ordering. Use when needing to organize and commit changes, manage git workflow, batch commits, push with backup branches, tag releases, or make a single checkpoint commit. Triggers on 'commit changes', 'organize git', 'git workflow', 'batch commit', 'checkpoint commit', or 'repository management'. Do NOT trigger on general git questions, branch creation, or merge requests.
 
@@ -13,7 +13,7 @@ Comprehensive git repository workflow for status analysis, change organization, 
 |-------|-------|
 | Name | `git-repository-management` |
 | Category | `software-dev` |
-| Version | `1.9.0` |
+| Version | `1.10.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -46,6 +46,9 @@ bash ./scripts/git-repo-init.bash --init-only [TARGET-DIR]  # (conditional) Full
 ./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # Push commits + tags
 ./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD (user-requested only)
 ./scripts/git-rollback.sh --to <tag-or-sha> [--slug <slug>] [path]  # Roll back to a tag/SHA (creates backup branch)
+./scripts/git-archive.sh --identify [path]                          # Identify branches/tags to archive
+./scripts/git-archive.sh --archive --ref <name>... [path]           # Archive specific refs (rename to archive/...)
+./scripts/git-archive.sh --prune [--retention-months N] --confirm [path]  # Prune old archive refs
 ```
 
 > **Working in a subdirectory?** All scripts automatically discover the repository root from any subdirectory. You can also pass the target path explicitly:
@@ -90,4 +93,4 @@ The workflow consists of 7 phases: Script Discovery, Repository Initialization (
 
 - **Full skill**: [`skills/software-dev/git-repository-management/SKILL.md`](skills/software-dev/git-repository-management/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-02T19:08:09Z
+- **Generated**: 2026-08-03T01:25:43Z

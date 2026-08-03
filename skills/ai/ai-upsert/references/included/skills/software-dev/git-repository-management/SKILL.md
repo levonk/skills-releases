@@ -1,13 +1,13 @@
 ---
 name: git-repository-management
 description: Comprehensive git repository workflow for status analysis, change organization, and commit management with secret scanning and rollback-safe ordering. Use when needing to organize and commit changes, manage git workflow, batch commits, push with backup branches, tag releases, or make a single checkpoint commit. Triggers on 'commit changes', 'organize git', 'git workflow', 'batch commit', 'checkpoint commit', or 'repository management'. Do NOT trigger on general git questions, branch creation, or merge requests.
-version: 1.9.0
+version: 1.10.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  knowledge-basis: "2026-07-31"
-  last-used: "2026-07-31"
+  knowledge-basis: "2026-08-02"
+  last-used: "2026-08-02"
 tags: ["ai/skill", "git", "version-control", "repository-management", "commit-organization", "tagging", "rollback-safety"]
 see-also:
   - skill: project-detection
@@ -1779,6 +1779,9 @@ bash ./scripts/git-repo-init.bash --init-only [TARGET-DIR]  # (conditional) Full
 ./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # Push commits + tags
 ./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD (user-requested only)
 ./scripts/git-rollback.sh --to <tag-or-sha> [--slug <slug>] [path]  # Roll back to a tag/SHA (creates backup branch)
+./scripts/git-archive.sh --identify [path]                          # Identify branches/tags to archive
+./scripts/git-archive.sh --archive --ref <name>... [path]           # Archive specific refs (rename to archive/...)
+./scripts/git-archive.sh --prune [--retention-months N] --confirm [path]  # Prune old archive refs
 ```
 
 > **Working in a subdirectory?** All scripts automatically discover the repository root from any subdirectory. You can also pass the target path explicitly:
@@ -1874,6 +1877,48 @@ This entry point is also the first phase of the Full Repository Cleanup
 workflow (Phase 1: Repository Initialization). When the target is already a git
 repo, the phase is a no-op and the workflow proceeds directly to Phase 2.
 
+### Branch & Tag Archiving
+
+An entry point for archiving stale branches and tags with structured naming.
+Use when:
+
+- The user says "archive branches", "clean up old tags", "prune stale refs",
+  or "archive this branch".
+- A repository has accumulated auto-generated branches (`cascade/...`),
+  pre-push snapshots (`scratch/...`), or checkpoint tags (`tags/auto/...`).
+- Periodic maintenance to keep the ref namespace clean.
+
+**Handoffs**: 1-3 (identify → archive → optional prune)
+
+```bash
+# 1. Identify archive candidates (prints ARCHIVE_CANDIDATE/KEEP/REVIEW lines)
+./scripts/git-archive.sh --identify [path]
+
+# AI reviews the list and selects refs to archive
+
+# 2. Archive specific refs (renames to archive/{branches,tags}/{type}/YYYY/MM/YYYYMMDD-{slug})
+./scripts/git-archive.sh --archive --ref <name> --ref <name>... [path]
+
+# 3. Prune archive refs older than N months (default 6, requires --confirm)
+./scripts/git-archive.sh --prune [--retention-months 6] --confirm [path]
+```
+
+All phases support `--dry-run`. The script auto-detects the main branch
+(`env/dev`, `main`, `master`, etc.) and defers to repo conventions when the
+upstream remote is not owned by the configured primary owner (default:
+`levonk`; override with `--primary-owner`; disable with `--force`).
+
+**Archive format**: `archive/{branches,tags}/{type}/YYYY/MM/YYYYMMDD-{slug}[-pre|-post]`
+
+Where `{type}` is a conventional-commit type (`feat`, `fix`, `chore`, `doc`,
+`refactor`, etc.) plus `auto` for IDE-generated refs and `scratch` for
+transient snapshots. The date is derived from the ref's last commit, not the
+current date, so archives group by when the work happened.
+
+See [Branch & Tag Archiving](references/branch-tag-archiving.md) for the full
+format specification, classification rules, the ownership exception, and
+phase-by-phase details.
+
 ## Core Workflow
 
 ### Architecture: Hybrid AI + Deterministic Script
@@ -1939,8 +1984,8 @@ For tagging HEAD, automatic run tagging, tag format, tag creation commands, tagg
 
 ### File Paths
 - Main skill: `config/ai/skills/software-dev/git-repository-management/SKILL.md`
-- Scripts: `scripts/git-collect.sh`, `scripts/git-commit-batch.sh`, `scripts/git-push.sh`, `scripts/git-tag.sh`, `scripts/git-rollback.sh`, `scripts/git-repo-manager.sh`, `scripts/git-status-helper.sh`, `scripts/git-repo-init.bash` (bundled from `levonk/dotfiles`), `scripts/git-vcs-config.bash` (dependency of `git-repo-init.bash`)
-- References: `references/workflow-phases.md`, `references/commit-organization.md`, `references/commit-templates.md`, `references/workflow-automation.md`, `references/quality-checks.md`, `references/tagging-and-pushing.md`, `references/git-status-digest.md`, `references/repository-initialization.md`
+- Scripts: `scripts/git-collect.sh`, `scripts/git-commit-batch.sh`, `scripts/git-push.sh`, `scripts/git-tag.sh`, `scripts/git-rollback.sh`, `scripts/git-archive.sh`, `scripts/git-repo-manager.sh`, `scripts/git-status-helper.sh`, `scripts/git-repo-init.bash` (bundled from `levonk/dotfiles`), `scripts/git-vcs-config.bash` (dependency of `git-repo-init.bash`)
+- References: `references/workflow-phases.md`, `references/commit-organization.md`, `references/commit-templates.md`, `references/workflow-automation.md`, `references/quality-checks.md`, `references/tagging-and-pushing.md`, `references/branch-tag-archiving.md`, `references/git-status-digest.md`, `references/repository-initialization.md`
 
 ### Related Skills
 - project-detection (dependency)

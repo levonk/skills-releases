@@ -1,5 +1,27 @@
 # Directory Update Log
 
+## 2026-08-02
+
+* **Ingest**: Created
+  [build-tool-selection.md](build-tool-selection.md) — documents the
+  three-layer TypeScript build tool model: `tsc --noEmit` for type-checking
+  (always in CI, never for bundling), **tsup** for library bundling
+  (esbuild speed + `.d.ts` generation in one step, ESM+CJS multi-format
+  output), and **Rolldown** for application/CLI bundling (Rust-based,
+  Rollup-compatible plugin API, esbuild-level speed, powers Vite 8+).
+  Includes the decision matrix (library → tsup, app/CLI → Rolldown,
+  type-check → tsc), combined CI workflow, migration paths (tsc→tsup for
+  libraries, Rollup→Rolldown for apps), and the `tsgo` note (faster tsc
+  preview, same layer when stable). Sourced from the Rolldown 1.0
+  announcement, tsup docs, and TypeScript compiler docs. Added to
+  [index.md](index.md). Cross-linked from
+  [pnpm-nx-monorepo.md](pnpm-nx-monorepo.md),
+  [explicit-file-extensions.md](explicit-file-extensions.md), and
+  [javascript-typescript-fundamentals.md](javascript-typescript-fundamentals.md)
+  Related Concepts. Triggered by a user query that initially referenced a
+  non-existent "Togo" bundler — corrected to Rolldown (the real Rust-based
+  Rollup successor) after source verification.
+
 ## 2026-07-30
 
 * **Ingest**: Created

@@ -1,8 +1,8 @@
 ---
 type: Synthesis
 title: Container Best Practices Overview
-description: Synthesis of container best practices extracted from real failure modes — base image selection, layer caching, build context, multi-stage builds, process supervision, supply-chain pinning, linting, compose dependency ordering, runtime hardening, registry cache strategy, build-time secret hygiene, Node.js production hardening, and Dockerfile package cleanup.
-tags: [docker, containers, dockerfile, docker-compose, buildkit, security, nodejs, best-practices, overview, synthesis]
+description: Synthesis of container best practices extracted from real failure modes — base image selection, layer caching, build context, multi-stage builds, process supervision, supply-chain pinning, linting, compose dependency ordering, runtime hardening, registry cache strategy, build-time secret hygiene, Node.js production hardening, Dockerfile package cleanup, and deterministic image versioning from Git state.
+tags: [docker, containers, dockerfile, docker-compose, buildkit, security, nodejs, versioning, best-practices, overview, synthesis]
 date:
   created: "2026-07-17"
   knowledge-basis: "2026-07-17"
@@ -131,7 +131,7 @@ that prevents it.
 ```
 base-image → layer-order → context-hygiene → multi-stage → process-model → pin-digest → lint
                                                                                           ↓
-                            secrets → registry-cache → compose-ordering → runtime-hardening
+                            secrets → registry-cache → compose-ordering → runtime-hardening → versioning
 ```
 
 Each phase has practices that prevent specific failure modes:
@@ -153,6 +153,7 @@ Each phase has practices that prevent specific failure modes:
 | Dockerfile | [Dockerfile Best Practices](dockerfile-best-practices.md) | Bloated layers, package cache retention, missing healthchecks, root-by-default images |
 | Build strategy | [Container Runtime Essentials](container-runtime-essentials.md) | Rebuilding from source when a pre-built image exists; single-arch :latest for mixed fleets; QEMU segfaults on Rust/C++ builds; missing --push for multi-platform |
 | Monorepo | [Nx Monorepo Docker Patterns](nx-monorepo-docker-patterns.md) | Per-app Dockerfiles reinstalling the full workspace; CI rebuilding every app image on every commit; Nx cache and Docker cache operating in isolation |
+| Versioning | [Deterministic Image Versioning](image-versioning.md) | Non-deterministic image tags (CI build numbers, timestamps, `latest`); no traceability from running image to source commit; multi-arch builds emitting different version strings per platform; Git smudge/clean filters silently failing in CI and shallow clones |
 
 ## Scope
 
@@ -163,7 +164,9 @@ dependency ordering, runtime hardening (including docker.sock and TCP daemon
 prohibitions, image scanning), Node.js production container hardening,
 Dockerfile package cleanup patterns, and the build-strategy decision tree
 (pre-built vs Dockerfile vs Nix, multi-arch mandates, QEMU avoidance, sidecar
-usage, entrypoint/healthcheck file naming). It does **not** cover:
+usage, entrypoint/healthcheck file naming), and deterministic image versioning
+(Git-derived version strings, OCI labels, post-deployment override). It does
+**not** cover:
 
 - Container orchestration (Kubernetes, Nomad) — separate bundle.
 - Container runtime daemon configuration (Docker daemon, containerd, podman

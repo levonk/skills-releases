@@ -1,7 +1,7 @@
 ---
 type: Practice
 title: Standard Interview Questions
-description: Frameworks and generic fallback answers for the predictable questions nearly every interview asks — the opening, the departure reason, the gap, the 5-year plan, the overqualified/underqualified challenge, management and communication style, and the audience-aware "what questions do you have for me?" (recruiter, subordinate, peer, manager, skip-manager). Prepare the structure, not a memorized script.
+description: Frameworks and generic fallback answers for the predictable questions nearly every interview asks — the opening, the departure reason, the gap, the 5-year plan, the overqualified/underqualified challenge, management and communication style, and the two audience-aware questions ("what questions do you have for me?" and "what concerns do you have about this role?") that change by who is asking. Prepare the structure, not a memorized script.
 tags: [interview, interview-questions, fallback-answers, management-style, communication, employment-gap, overqualified, career-narrative]
 date:
   created: "2026-08-01"
@@ -560,20 +560,248 @@ End every interview with a forward-looking question:
 This signals engagement, gives you the timeline, and opens the door to
 address any lingering concern before the conversation ends.
 
+## 12. "What concerns do you have about this role?" — The Audience-Aware Concern
+
+This is the mirror image of §11. When an interviewer asks if you have
+concerns, the right concern depends on **who can address it**. Raising a
+strategic concern to a subordinate wastes it — they can't act on it. Raising
+a tactical concern to a skip-manager signals you can't see the strategic
+layer. The mismatch is the failure mode, not the concern itself.
+
+### The meta-strategy
+
+1. **Always have one concern.** "No concerns" signals naivety or
+   disengagement — a thoughtful candidate always has something they want to
+   understand better.
+2. **Frame it as a question, not a complaint.** "I'm curious about…" or "I'd
+   want to understand…" beats "I'm worried about…" — the former signals
+   curiosity, the latter signals negativity.
+3. **Match the concern to the audience.** Raise what that person can
+   actually address or speak to.
+4. **Have a follow-up ready.** If they answer your concern, acknowledge it
+   and either let it go or ask one more — don't belabor it.
+5. **Don't raise dealbreakers here.** If something is a genuine dealbreaker
+   (compensation far below your floor, a toxic signal you observed), raise
+   it with the recruiter privately, not in a group interview.
+
+### Recruiter screening call
+
+The recruiter can speak to: process, timeline, compensation band, role
+level, basic role mechanics. They cannot speak to team dynamics, technical
+architecture, or strategic direction.
+
+**Best concerns:**
+- "I'd want to understand the timeline for this role — is there urgency to
+  fill it, or is it a planned expansion?"
+- "What level is this scoped at, and is there flexibility on level if the
+  fit is strong?"
+- "What does the compensation band look like for this level?" (see [Salary
+  Negotiation](salary-negotiation.md))
+- "Is this a backfill or a new role? That affects how I'd think about the
+  first 90 days."
+
+**Generic fallback:**
+> "I'd want to understand the timeline and whether this is a backfill or a
+> new role — that shapes how I'd think about ramp-up."
+
+**What not to raise:** Team culture concerns, technical architecture
+questions, strategic direction — the recruiter won't know, and it signals
+you don't understand their role.
+
+### Subordinate (potential direct report)
+
+The subordinate can speak to: day-to-day reality, team morale, how the
+manager actually operates, what's frustrating. They cannot speak to
+strategy, budget, or org-level decisions.
+
+**Best concerns:**
+- "I'd want to understand how the team feels about the current direction —
+  is there buy-in, or is there friction?"
+- "What's something that's been tried and didn't work? I'd want to avoid
+  repeating it."
+- "How does the team feel about [specific thing the role would change]?
+  I'd want to make sure I'm not walking into resistance."
+
+**Generic fallback:**
+> "I'd want to understand how the team feels about the direction — is there
+> buy-in, or things that have been tried and didn't work? I'd want to start
+> by listening before changing anything."
+
+**What not to raise:** Compensation, org strategy, budget concerns — the
+subordinate can't address them and it puts them in an awkward position.
+
+### Peer (fellow IC or same-level manager)
+
+The peer can speak to: collaboration patterns, cross-team friction,
+technical reality, how things actually get done. They cannot speak to your
+compensation or the hiring decision.
+
+**Best concerns:**
+- "I'd want to understand how this team collaborates with [adjacent team] —
+  is there friction I should be aware of?"
+- "How does work actually get prioritized day-to-day? Is it formal, or
+  more ad-hoc?"
+- "What's the technical debt situation — is the team able to invest in
+  paying it down, or is it all feature work?"
+
+**Generic fallback:**
+> "I'd want to understand how this team collaborates with adjacent teams —
+  is there friction I should be aware of? And how does work get
+  prioritized day-to-day?"
+
+**What not to raise:** The peer's personal career dissatisfaction, salary,
+or questions that sound like you're evaluating them rather than the role.
+
+### Manager (hiring manager — your prospective boss)
+
+The manager can speak to: scope, resources, team health, expectations,
+budget, the actual problem they're hiring you to solve. This is the person
+who can address the most substantive concerns.
+
+**Best concerns:**
+- "I'd want to understand the resource picture — is the team funded for
+  what's being asked, or is this a 'do more with less' situation?"
+- "What's the biggest risk to this role succeeding? What would make you
+  look back and say 'that didn't work'?"
+- "How does this role fit into the team's current structure — am I
+  replacing someone, or is this net-new headcount? The dynamics are
+  different."
+- "What's your management style, and how do you like to be kept in the
+  loop? I'd want to make sure I'm a good fit for how you operate."
+
+**Generic fallback:**
+> "I'd want to understand the resource picture — is the team funded for
+> what's being asked? And what's the biggest risk to this role succeeding?
+> I'd want to make sure I'm walking in with eyes open."
+
+**What not to raise:** Compensation specifics (recruiter's domain), the
+manager's personal performance, or concerns that sound like you're
+challenging their judgment rather than understanding their constraints.
+
+### Skip-manager (hiring manager's manager — VP/SVP level)
+
+The skip-manager can speak to: strategic direction, org-level priorities,
+funding trajectory, where this team sits in the broader org. They cannot
+speak to day-to-day execution or individual team dynamics.
+
+**Best concerns:**
+- "I'd want to understand where this team sits in the org's strategic
+  priorities — is it a growth area, or is it being maintained?"
+- "What's the funding trajectory for this area over the next 12–18 months?
+  Is the team growing, stable, or under pressure?"
+- "How does this team's work connect to the top-level business goals? I'd
+  want to make sure I'm aligned with where the org is actually investing."
+
+**Generic fallback:**
+> "I'd want to understand where this team sits in the org's strategic
+> priorities — is it a growth area, or being maintained? And what's the
+> funding trajectory for this area over the next year?"
+
+**What not to raise:** Tactical concerns about tooling, process, or daily
+workflow (that's the manager's or peers' domain), or concerns about the
+skip-manager's own position.
+
+### Cross-audience: the concern that works everywhere
+
+If you can only prepare one concern that is safe with any audience:
+
+> "I'd want to understand what success looks like for this role at the
+> 12-month mark — what would tell you this was the right hire?"
+
+This works for the same reason the cross-audience question in §11 works:
+each person can answer at their own altitude. The recruiter answers at the
+process level, the subordinate at the collaboration level, the peer at the
+team-contribution level, the manager at the outcomes level, the
+skip-manager at the strategic level.
+
+### When to raise a real concern
+
+If you have a genuine concern that could be a dealbreaker — not a
+curiosity, but something that would make you decline the offer — raise it
+with the **recruiter** privately, not in a panel interview. The recruiter
+is the neutral channel for compensation, visa, relocation, and
+title-level concerns. Raising a dealbreaker in front of the hiring manager
+puts both of you in an awkward position and can short-circuit the process
+before you've had a chance to evaluate the full picture.
+
 ## Other Standard Questions (Quick Reference)
 
 | Question | Best-answer framework | Generic fallback |
 |----------|----------------------|------------------|
 | "Tell me about yourself." | Present → past → future, anchored in this role | "I'm a [role] who's spent the last [N] years [core work]. Before that I [one line]. I'm here because I want to [direction this role enables]." |
+| "Walk me through your resume." | Chronological, ~2 minutes, highlighting transitions and the "why" behind each move; end on why this role is next | "Started in [first role] doing [core work], moved to [next role] because [transition reason], which led to [current role] where I [core achievement]. I'm here because [this role] is the natural next step." |
+| "What are you looking for in your next role?" | Three concrete attributes this role offers, framed as growth not escape (distinct from "why are you leaving" which is push, and "why our company" which is about them) | "Three things: [scope this role offers], [challenge this role owns], [team or culture attribute]. This role hits all three, which is why I'm here." |
+| "What would you do in your first 30/60/90 days?" | Listen → diagnose → ship: 30 days = learn the system and people, 60 days = identify the highest-leverage problem and start, 90 days = deliver something measurable | "First 30 days: listen — meet everyone, learn the system, understand how decisions get made. 60 days: identify the highest-leverage problem and start on it. 90 days: ship something measurable, even if small, to build trust." |
+| "When can you start?" | Honest date with a brief reason; if currently employed, give 2–3 weeks for a clean handoff; if available, say so but don't sound desperate | "I can start [date] — I want to give my current team a clean handoff, which takes about two weeks. If there's urgency, I can discuss an earlier start." |
+| "What do you do outside of work?" / "What are your hobbies?" | One safe, genuine answer with no protected-class signal (see [Content Exclusion](content-exclusion-and-disclosure-prevention.md)) — avoid politics, religion, health, family status, or anything that could bias the interviewer | "Outside of work I [safe hobby: 'read history' / 'hike' / 'build side projects']. It keeps me [genuine benefit: 'curious' / 'balanced' / 'sharp']." |
+| "How do you stay current with technology / industry trends?" | Concrete practices, not vague claims — name specific sources, communities, or habits | "I [specific practice: 'read [specific newsletter/blog]' / 'attend [specific conference]' / 'build small side projects to try new tools']. Recently I [specific recent example]." |
+| "What would your previous boss / direct reports say about you?" | Honest, specific, and framed as a strength the interviewer cares about — not a generic "they'd say I'm great" | "My boss would say I [specific strength with evidence: 'own problems end-to-end — I took on the X project and shipped it']. My direct reports would say I [specific strength: 'give them real ownership and don't micromanage']." |
+| "Describe your ideal work environment." | Match the company's actual culture — describe what they already are, if it's true for you; if it's not, that's useful information for both sides | "I work best in [environment that matches this company: 'a fast-moving team that ships often' / 'a collaborative environment where people own problems end-to-end']. From what I've learned about [company], that seems like a fit." |
+| "How do you handle stress / pressure?" | A concrete coping mechanism plus evidence it works — not "I work well under pressure" (everyone says that) | "When things get intense I [specific practice: 'prioritize ruthlessly and communicate what's slipping early' / 'break the problem into the smallest next step and just start']. At [past role] during [specific high-pressure situation], that's what got us through." |
+| "Why did you choose this career path?" | A genuine origin story that connects to the present — not a rehearsed narrative; if you're a career changer, name the moment of the pivot and why | "I started in [origin], and what pulled me toward [current field] was [specific moment or realization]. That's still what drives me — [connection to the role's work]." |
 | "What's your greatest weakness?" | A real weakness with a concrete mitigation you've already implemented | "I used to [real tendency]. I've addressed it by [specific change], and [evidence it's working]." |
 | "What's your greatest strength?" | The strength most relevant to this role, with a concrete example | "[Strength] — at [past role] that meant [specific outcome]." |
 | "Why should we hire you?" | Three reasons mapped to the role's stated needs | "Three reasons: [skill this role needs], [evidence you've done it], [fit with the team's gap]." |
 | "What are your salary expectations?" | Deflect to their range (see [Salary Negotiation](salary-negotiation.md)) | "I've researched [company] compensation. What does an average offer look like for this level?" |
-| "Do you have questions for us?" | Always yes — audience-aware: match the question to who is asking (see [§11 above](#11-what-questions-do-you-have-for-me--the-audience-aware-question) and [Interview Strategy — Asking Good Questions](interview-strategy.md#asking-good-questions)) | "What does success look like for this role, and what would tell you six months in that this was the right hire?" |
+| "Do you have questions for us?" | Always yes — audience-aware: match the question to who is asking (see [§11](#11-what-questions-do-you-have-for-me--the-audience-aware-question) and [Interview Strategy — Asking Good Questions](interview-strategy.md#asking-good-questions)) | "What does success look like for this role, and what would tell you six months in that this was the right hire?" |
+| "What concerns do you have about this role?" | Audience-aware: match the concern to who can address it (see [§12](#12-what-concerns-do-you-have-about-this-role--the-audience-aware-concern)) | "I'd want to understand what success looks like at the 12-month mark — what would tell you this was the right hire?" |
 | "Tell me about a time you failed." | A real failure, what you learned, what you changed | "At [role] I [specific failure]. What I learned was [lesson], and I changed [specific behavior] — which is why [later outcome] went better." |
 | "Tell me about a conflict at work." | A real disagreement, how you resolved it, the outcome | "I disagreed with [peer] on [issue]. I [specific step to resolve], we landed on [decision], and the outcome was [result]." |
 | "What motivates you?" | A specific, honest driver tied to the role's work | "I'm motivated by [specific: 'shipping things people rely on' / 'turning around a struggling system']. This role does that directly." |
 | "Are you interviewing elsewhere?" | Honest but bounded (see [Recruiter Communication — Information Boundaries](recruiter-communication.md#information-boundaries-what-not-to-share-with-agency-recruiters)) | "I'm in a few conversations, but I'm being selective — this role is a strong fit and I'd like to see it through." |
+
+## Summary: Full Question Index
+
+Every question covered on this page, with its section link and whether it
+needs audience-specific treatment (the answer fundamentally changes based
+on who is asking) or is self-directed (the answer is about you and stays
+constant across audiences).
+
+| # | Question | Section | Audience-specific? | Cross-reference |
+|---|----------|---------|-------------------|-----------------|
+| 1 | "How are you?" | [§1](#1-how-are-you--the-opening) | No — self-directed | — |
+| 2 | "Why are you leaving your current role?" | [§2](#2-why-are-you-leaving-your-current-role) | No — self-directed | [Recruiter Communication — Confessional Booth Trap](recruiter-communication.md#the-confessional-booth-trap) |
+| 3 | "What have you been doing the last few years / over the break?" | [§3](#3-what-have-you-been-doing-the-last-few-years--over-the-break-employment-gap) | No — self-directed | — |
+| 4 | "Why our company?" | [§4](#4-why-our-company) | No — self-directed | [Application Strategy](application-strategy.md) |
+| 5 | "Where do you want to be in 5 years?" | [§5](#5-where-do-you-want-to-be-in-5-years) | No — self-directed | — |
+| 6 | "Why are you applying to a position you're overqualified for?" | [§6](#6-why-are-you-applying-to-a-position-youre-overqualified-for) | No — self-directed | [Value Multiplier Reframe](value-multiplier-reframe.md) |
+| 7 | "Why are you applying to a position you're not qualified for?" | [§7](#7-why-are-you-applying-to-a-position-youre-not-qualified-for) | No — self-directed | [Safe Pair of Hands — Transferable Skills](safe-pair-of-hands-positioning.md) |
+| 8 | "How do you like to manage people?" | [§8](#8-how-do-you-like-to-manage-people) | No — self-directed | — |
+| 9 | "How do you like to be managed?" | [§9](#9-how-do-you-like-to-be-managed) | No — self-directed | — |
+| 10 | "How do you communicate?" | [§10](#10-how-do-you-communicate) | No — self-directed | — |
+| 11 | "What questions do you have for me?" | [§11](#11-what-questions-do-you-have-for-me--the-audience-aware-question) | **Yes** — other-directed | [Interview Strategy — Asking Good Questions](interview-strategy.md#asking-good-questions) |
+| 12 | "What concerns do you have about this role?" | [§12](#12-what-concerns-do-you-have-about-this-role--the-audience-aware-concern) | **Yes** — other-directed | — |
+| — | "Tell me about yourself." | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "Walk me through your resume." | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What are you looking for in your next role?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What would you do in your first 30/60/90 days?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "When can you start?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What do you do outside of work?" / hobbies | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | [Content Exclusion](content-exclusion-and-disclosure-prevention.md) |
+| — | "How do you stay current with technology?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What would your previous boss / direct reports say about you?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "Describe your ideal work environment." | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "How do you handle stress / pressure?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "Why did you choose this career path?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What's your greatest weakness?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What's your greatest strength?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "Why should we hire you?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What are your salary expectations?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | [Salary Negotiation](salary-negotiation.md) |
+| — | "Tell me about a time you failed." | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "Tell me about a conflict at work." | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "What motivates you?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | — |
+| — | "Are you interviewing elsewhere?" | [Quick Reference](#other-standard-questions-quick-reference) | No — self-directed | [Recruiter Communication — Information Boundaries](recruiter-communication.md#information-boundaries-what-not-to-share-with-agency-recruiters) |
+
+### Why only §11 and §12 are audience-specific
+
+The test: does the answer **fundamentally change** based on who is asking,
+or does it stay constant with only emphasis shifting? §11 and §12 are
+**other-directed** — you are literally asking about or responding to *them*,
+so the answer must match what that person can address. Every other question
+is **self-directed** — the answer is about you (your story, your weakness,
+your strength, your failure, your motivation), and the core doesn't change
+by audience. What shifts is at most the altitude — a skip-manager gets the
+strategic framing, a peer gets the tactical framing — but that's a dial, not
+a different answer.
 
 ## The Fallback Principle
 

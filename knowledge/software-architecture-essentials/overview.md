@@ -160,7 +160,7 @@ philosophy → project-structure → data-access → configuration → distribut
 | Protocols | [Communication Protocols](communication-protocols.md) | Wrong protocol for the client, latency, or P2P requirement; ignoring browser support and NAT traversal |
 | Security | [System Security Basics](system-security-basics.md) | Plaintext secrets, implicit trust inside the cluster, untraceable breaches |
 | Services | [Application Layer and Microservices](application-layer-microservices.md) | Monolith forced into microservices too early, missing service discovery |
-| Resilience | [Resilience Patterns](resilience-patterns.md) | No choke point, static-only concurrency limits, retry-storms without budgets, relying on the mesh for internal fan-out |
+| Resilience | [Resilience Patterns](resilience-patterns.md) | Unbounded fan-out (the canonical invariant violation), no choke point, static-only concurrency limits, retry-storms without budgets, relying on Hystrix or the mesh for internal fan-out, unbounded log emission on the failure path |
 | Decentralization | [Decentralized P2P Architecture](decentralized-p2p-architecture.md) | Forcing client-server onto a censorship-resistance requirement, wrong state model for P2P, browser-as-node pitfalls |
 | Cost | [Cost-Aware System Design](cost-aware-system-design.md) | Unbounded metered API bills, no cost attribution, wrong pricing model |
 | Revenue | [Business Models Around Open Protocols](business-models-around-open-protocols.md) | Toll-based models on open protocols, middleman arbitrage, ads inside contracts |

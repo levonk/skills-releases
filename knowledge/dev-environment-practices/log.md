@@ -1,5 +1,17 @@
 # Directory Update Log
 
+## 2026-08-02
+
+* **Ingest**: Created [branch-tag-hygiene.md](branch-tag-hygiene.md) —
+  documents the practice for archiving stale branches and tags into a
+  structured `archive/{branches,tags}/{type}/YYYY/MM/YYYYMMDD-{slug}` namespace.
+  Covers the ownership exception (defer to repo conventions when upstream is
+  not owned by the primary account), periodic pruning with retention windows,
+  and the failure mode of unmanaged ref accumulation. Sourced from real-world
+  accumulation in `levonk/dotfiles` (75 branches, 29 tags over 2 months) and
+  the `git-repository-management` skill v1.10.0 `git-archive.sh` script. Added
+  to [index.md](index.md).
+
 ## 2026-07-30
 
 * **Ingest**: Created [devbox-broken-override.md](devbox-broken-override.md) —

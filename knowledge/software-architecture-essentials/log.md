@@ -1,5 +1,52 @@
 # Directory Update Log
 
+## 2026-08-02
+
+* **Ingest**: Significantly expanded
+  [resilience-patterns.md](resilience-patterns.md) with material from the
+  April 2026 outage post-mortem on unbounded goroutine fan-out. Added six new
+  sections that reframe the page around the root-cause invariant:
+  1. **The Canonical Invariant** — leads the page now: "Never allow unbounded
+     concurrency or unbounded fan-out; every parallelizable operation must
+     have an explicit, enforced limit." Includes the generalized form ("No
+     component may create work faster than the slowest downstream dependency
+     can safely absorb it") and the operational law ("Every system must be
+     designed so that a single pathological request cannot multiply itself
+     into a cluster-wide resource collapse").
+  2. **The Amplification Cascade** — the April 2026 outage walkthrough:
+     20k goroutines to 20k memcached dials to ephemeral port exhaustion to
+     TIME_WAIT to memcached failures to millions of error logs to blocking
+     write(2) to 10× OS threads to GC pressure to OOM to restart to
+     instant re-failure. Includes a stage-by-stage table and notes the
+     cascade is self-reinforcing (restart does not clear TIME_WAIT).
+  3. **The Meta-Rule** — connects the invariant to N+1 queries, unbounded
+     recursion, unbounded retries, unbounded queues, unbounded goroutines,
+     unbounded log emission, and unbounded memory growth as one pattern.
+  4. **Hystrix: Necessary but Not Sufficient** — Hystrix is a downstream
+     isolation tool; it caps concurrency at the RPC boundary, not inside
+     your handler. The outage was caused by internal unbounded concurrency,
+     not downstream slowness. Hystrix would have caught the symptoms
+     (memcached latency) but not the cause (20k goroutines). Notes that
+     Netflix archived Hystrix and recommends Resilience4j or NCL for new
+     work.
+  5. **Tool-Class Feature Matrix** — Hystrix vs Envoy Circuit Breakers vs
+     Netflix Concurrency Limits vs Go errgroup/SetLimit vs Go
+     net/http Transport vs Service Mesh adaptive concurrency vs Retry
+     Budgeting, scored on prevents-unbounded-fan-out,
+     prevents-unbounded-connections, prevents-downstream-overload, and
+     adaptive. Only ICL directly prevents the root cause.
+  6. **Request Lifecycle Diagram** — Mermaid flowchart showing where each
+     tool class applies (Client → Handler → Internal Fan Out → Connection
+     Pool → RPC Calls → External Services) and what each limits via
+     dashed edges. Annotates that the April 2026 cascade started at the
+     Internal Fan Out node because no ICL was attached.
+  Also added two new anti-patterns (unbounded fan-out as the root cause;
+  unbounded log emission on the failure path), a new decision-checklist item
+  (bound log throughput), a new See Also link to root-cause-first.md, and
+  two new sources (Netflix Concurrency Limits, the April 2026 post-mortem).
+  Updated the index.md and overview.md.tmpl descriptions to reflect the
+  canonical invariant as the lead.
+
 ## 2026-07-29
 
 * **Addition**: Authored [resilience-patterns.md](resilience-patterns.md)

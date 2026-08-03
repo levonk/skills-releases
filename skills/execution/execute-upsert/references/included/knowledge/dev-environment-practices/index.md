@@ -24,3 +24,4 @@ project migrations.
 * [Devbox Broken Override](devbox-broken-override.md) - When devbox cannot build the environment at all (nixpkgs pin missing a package on a platform), override devbox-wrapped commands with direct package-manager equivalents rather than blocking
 * [Mandatory Testing Workflow](mandatory-testing-workflow.md) - TDD, regression tests for bug fixes, quality gates before completion; enforced via pre-commit and CI
 * [Shell Scripting Best Practices](shell-scripting-best-practices.md) - Strict mode, PATH guards, git gates, dry-runs, logging, and shellcheck/shfmt/bats verification for safe shell scripts
+* [Branch & Tag Hygiene](branch-tag-hygiene.md) - Archive stale branches and tags into a structured namespace; ownership exception for upstream repos; periodic pruning with retention windows

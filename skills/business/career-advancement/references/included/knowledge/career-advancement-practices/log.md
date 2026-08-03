@@ -1,5 +1,211 @@
 # Directory Update Log
 
+## 2026-08-02 (eighth revision — comprehensive gap fill: 27 new concept pages)
+
+* **Audit**: Conducted a systematic gap audit of the bundle against the full
+  candidate-side hiring pipeline. Identified 27 missing concepts across 8
+  categories: interview formats, post-interview/offers, job search strategy,
+  resume writing, career lifecycle, wellbeing/brand, and platform/positioning.
+* **Addition**: Created 27 new concept pages via 6 parallel subagents:
+
+  **Interview Formats (5):**
+  - [technical-interview-preparation.md](technical-interview-preparation.md)
+    — Coding interviews (live, whiteboard, IDE), system design (4-step
+    framework), take-home assignments, think-out-loud protocol, LeetCode
+    patterns, failure modes, stuck recovery
+  - [behavioral-interview-framework.md](behavioral-interview-framework.md)
+    — STAR/PAR/CAR methods, lead-with-result variant, 7-theme story bank
+    (leadership, conflict, failure, ambiguity, influence, delivery, growth),
+    common mistakes
+  - [panel-group-interview.md](panel-group-interview.md) — Reading the room
+    (decision-maker, skeptic, silent), redirect technique, managing dominant
+    vs quiet panelists, breadth-over-depth calibration
+  - [case-interview.md](case-interview.md) — Consulting-style cases: 4-step
+    framework, MECE principle, case types (market sizing, profitability,
+    M&A, market entry), math under pressure, cases outside consulting
+  - [presentation-demo-interview.md](presentation-demo-interview.md) —
+    Audience analysis, narrative arc, slide design, Q&A protocol,
+    show-don't-tell for demos, common failure modes
+
+  **Post-Interview & Offers (5):**
+  - [interview-follow-up.md](interview-follow-up.md) — Thank you notes
+    (timing, format, content), follow-up cadence, "no response is a
+    response" principle
+  - [offer-evaluation.md](offer-evaluation.md) — Total comp: base, equity
+    (RSUs/ISOs/NSOs, vesting, cliffs, exercise windows, acceleration),
+    bonuses, benefits, intangibles, offer comparison matrix, red flags
+  - [counter-offer-dynamics.md](counter-offer-dynamics.md) — Statistics on
+    counter-offer failure, why they rarely work, when one might make sense,
+    handling script, burned bridge risk
+  - [reference-management.md](reference-management.md) — Who to list, how to
+    prepare them, what they'll be asked, "references available upon request"
+    debate, coaching without scripting
+  - [background-check-preparation.md](background-check-preparation.md) — Check
+    types, disqualifiers, pre-emption, timelines, FCRA rights
+
+  **Job Search Strategy (4):**
+  - [job-search-strategy.md](job-search-strategy.md) — Funnel math, 70-20-10
+    rule, tracking systems, pipeline concept, weekly cadence, stuck-stage
+    diagnosis
+  - [networking-relationship-building.md](networking-relationship-building.md)
+    — Informational interviews, weak ties (Granovetter), give-before-you-ask,
+    dormant tie reactivation, referral right/wrong way
+  - [achievement-mining.md](achievement-mining.md) — Calendar archaeology,
+    email/PM search, performance reviews, before/after framing, quarterly
+    accomplishment inventory
+  - [job-board-strategy.md](job-board-strategy.md) — Board landscape,
+    easy-apply trap, referral-first principle, application timing
+
+  **Resume Writing (4):**
+  - [resume-format-selection.md](resume-format-selection.md) — Chronological
+    vs functional vs hybrid, why functional triggers suspicion, stealth
+    chronological technique
+  - [section-selection.md](section-selection.md) — What to include/omit by
+    seniority, optional sections, ordering conventions, skills section debate
+  - [quantifying-leadership.md](quantifying-leadership.md) — Mentorship,
+    culture-building, engineering excellence, org design, influence without
+    authority metrics
+  - [portfolio-work-samples.md](portfolio-work-samples.md) — GitHub repos,
+    case studies, design/writing portfolios, portfolio-as-proof, maintenance
+
+  **Career Lifecycle (5):**
+  - [career-transition.md](career-transition.md) — Bridge strategy,
+    credibility building, narrative pivot, transferable skills, stepping
+    stone approach
+  - [rejection-recovery.md](rejection-recovery.md) — Emotional dimension,
+    asking for feedback, "no" as data (pattern diagnosis by stage), when to
+    reapply
+  - [resignation-offboarding.md](resignation-offboarding.md) — Resignation
+    conversation, notice periods, exit interview, knowledge transfer,
+    preserving relationships
+  - [severance-negotiation.md](severance-negotiation.md) — What's negotiable,
+    separation agreement, OWBPA timelines, when to involve a lawyer
+  - [promotion-internal-mobility.md](promotion-internal-mobility.md) —
+    Sponsorship vs mentorship, visibility, promotion case, internal transfer,
+    the "stale" problem
+
+  **Wellbeing & Brand (4):**
+  - [burnout-job-search-fatigue.md](burnout-job-search-fatigue.md) — Search
+    fatigue signs, search sprint approach, maintaining momentum, identity
+    diversification, when to seek professional help
+  - [personal-brand.md](personal-brand.md) — Speaking, writing, open
+    source/community channels, give-before-you-ask, niche authority, when
+    brand accelerates search
+  - [remote-work-positioning.md](remote-work-positioning.md) — Remote-ready
+    signals, remote interview, async communication, remote-first vs
+    remote-friendly, red flags
+  - [recruiter-outreach.md](recruiter-outreach.md) — Outbound contact: who
+    to target, outreach message, follow-up cadence, recruiter network
+
+* **Update: index.md**: Restructured into 11 sections (Resume System
+  Architecture, Resume Content & Writing, Resume Structure & Scannability,
+  Positioning & Strategy, Job Search Strategy, ATS & Platform Reality,
+  Interview & Hiring Process, Offer & Negotiation, Career Lifecycle
+  Management, Age Bias & Overqualification, Content Exclusion). Added all
+  27 new concept pages with descriptions.
+* **Update: overview.md**: Added all 27 new concepts to the synthesis
+  sections, with new subsections for Job Search Strategy, Offer &
+  Negotiation, and Career Lifecycle Management.
+* **Bundle total**: Now 49 concept pages covering the full candidate-side
+  hiring pipeline from resume architecture through severance negotiation.
+
+## 2026-08-02 (seventh revision — pattern abstraction from candidate-specific specs)
+
+* **Addition**: Created 9 new concept pages, abstracted from patterns
+  documented candidate-specifically in the resume system AGENTS.md and
+  STYLE-GUIDE.md but applicable to any job seeker:
+  - [resume-architecture-and-lineage.md](resume-architecture-and-lineage.md)
+    — Multi-tier resume system (archive → working resume → tailored
+    variants), root-first lineage rule, single-use exception, extraction
+    markers, YAML-primary model. The biggest missing concept — about the
+    *system* of managing resume variants, not individual bullets.
+  - [job-description-tailoring-workflow.md](job-description-tailoring-
+    workflow.md) — 5-step process for tailoring a resume to a specific JD:
+    ingest, gap analysis, mutate, verify ATS compatibility, output package.
+    Distinct from application-strategy (which is about which jobs to target).
+  - [chronological-accuracy-and-name-changes.md](chronological-accuracy-and-
+    name-changes.md) — Time-appropriate names in archives, modern names in
+    current documents, recognizability exception for rebranded employers,
+    consistent date format, no unexplained gaps.
+  - [award-and-recognition-framing.md](award-and-recognition-framing.md) —
+    Three-part rule for internal awards: name in quotes, one-phrase
+    explanation, link to business outcome. External vs internal award
+    treatment.
+  - [bullet-autonomy-principle.md](bullet-autonomy-principle.md) — Every
+    bullet must stand alone with action, object, outcome. The sub-point trap.
+    The action-object-outcome test. When to merge vs split.
+  - [collaboration-framing.md](collaboration-framing.md) — Lead with
+    strategic impact of collaboration, not participation. Three collaboration
+    types (cross-functional, vendor, enterprise). The committee trap.
+  - [credibility-section-for-senior-careers.md](credibility-section-for-
+    senior-careers.md) — Condensing pre-2012 or early-career roles into a
+    single narrative paragraph with metrics but no dates or role titles.
+    Retains credibility signal without age signal. Distinct from age-bias-
+    coded-language (what to remove) because this is about what to retain.
+  - [application-funnel-stages.md](application-funnel-stages.md) — S0-S5
+    funnel with measurable conversion objectives per stage. Stage-by-stage
+    optimization. The optimization trade-off (never sacrifice S4 for S1).
+    Context-specific variant selection.
+  - [answer-sheet-terminology-guide.md](answer-sheet-terminology-guide.md)
+    — Companion document explaining jargon, internal terms, and acronyms for
+    reviewers. Living documentation. Not a resume artifact.
+* **Update: linkedin-profile-optimization.md**: Expanded with 5 new sections
+  from AGENTS.md §13 — Headline Strategy (formula, length, keyword load),
+  About/Summary Section (5-part structure, tone, length), Experience Entries
+  (narrative format, media attachments), Skills & Endorsements (pinned
+  skills, search volume over precision, remove legacy), and Featured Section
+  (highest-visibility content, recommended items). Updated frontmatter
+  description and knowledge-basis date.
+* **Update: index.md**: Added new "Resume System Architecture" section with
+  4 concepts (Resume Architecture, Application Funnel Stages, JD Tailoring
+  Workflow, Answer Sheet). Added 5 new concepts to existing sections: Bullet
+  Autonomy, Award Framing, Collaboration Framing (Resume Content);
+  Credibility Section (Resume Structure); Chronological Accuracy
+  (Positioning). Updated LinkedIn description to reflect expanded content.
+* **Update: overview.md**: Added new "Resume System Architecture" subsection
+  to the concepts synthesis. Added 5 new concepts to existing subsections.
+  Updated LinkedIn description. Updated frontmatter description, tags, and
+  knowledge-basis date.
+* **Source**: Internal observation — patterns documented candidate-
+  specifically in the resume system AGENTS.md (§1-2, §4.6, §5.1, §8-11, §13,
+  §14) and STYLE-GUIDE.md (§5.1-5.6) were identified as general practices
+  applicable to any job seeker and abstracted into reusable concept pages.
+  The bundle now covers the full system lifecycle: architecture → content →
+  structure → positioning → platform → interview → negotiation, plus the
+  cross-cutting concerns of age bias and content exclusion.
+
+## 2026-08-02 (sixth revision — strategic abstraction & technology-outcome framing)
+
+* **Addition**: Created 2 new concept pages:
+  - [strategic-abstraction.md](strategic-abstraction.md) — Why the
+    abstraction level of every bullet must match the seniority of the target
+    role. Defines four altitudes (implementation, team, org, enterprise),
+    the narrow-callout trap (singling out one technology when the actual
+    impact was a broader pattern of organizational change), how to elevate
+    altitude (identify pattern → list instances → name business outcome →
+    scope the impact), when to stay at low altitude (IC roles, technical
+    credibility sections, genuinely narrow achievements), and the altitude
+    variety balance test by target role. Cross-references Ownership Verbs,
+    Technology-Outcome Framing, Safe Pair of Hands, and Metrics.
+  - [technology-outcome-framing.md](technology-outcome-framing.md) — Why
+    every technology reference must be framed as a means to a business end.
+    The Early-Adopter Trap: "early in its lifecycle" framing signals
+    buzzword-chasing, recklessness, and fashion-following rather than
+    strategic judgment. The two failures (technology as achievement,
+    novelty as qualification). The three-part reframe structure (problem →
+    technology as solution → outcome). The motivation test and the "so
+    what" test. When technology can lead (ATS keyword matching). Age-signal
+    overlap with "early" qualifiers. Cross-references Strategic Abstraction,
+    Fluff Elimination, Ownership Verbs, Age Bias, and Safe Pair of Hands.
+* **Update: index.md**: Added both new concept pages under the "Resume
+  Content & Writing" section with descriptions.
+* **Update: overview.md**: Added both new concepts to the Resume Content
+  synthesis subsection.
+* **Source**: Internal observation from a resume review — the "Evangelized
+  Kubernetes" callout was judged insufficient at executive altitude, and
+  "early in its lifecycle" was judged to signal technology-for-technology's-
+  sake. Both observations generalized into reusable concepts.
+
 ## 2026-08-01 (fifth revision — standard interview questions)
 
 * **Addition**: Created 1 new concept page:
@@ -30,6 +236,31 @@
   emerged from the conversation, don't ask what the website answers, close
   forward-looking). Updated the quick-reference table entry and the
   frontmatter description to reference the new section.
+* **Update: standard-interview-questions.md**: Added §12 "What concerns
+  do you have about this role?" — the mirror image of §11, audience-aware
+  by who can address the concern. Broken out by: recruiter (timeline,
+  level, compensation band), subordinate (team buy-in, what's been tried),
+  peer (cross-team friction, prioritization, tech debt), manager
+  (resources, biggest risk, management style fit), and skip-manager
+  (strategic priorities, funding trajectory). Includes the meta-strategy
+  (always have one concern, frame as curiosity not complaint, match to
+  audience, raise dealbreakers with recruiter privately), a cross-audience
+  safe concern, and when to raise a real concern.
+* **Update: standard-interview-questions.md**: Expanded the quick-reference
+  table with 10 previously missing questions: "walk me through your
+  resume," "what are you looking for in your next role," "what would you
+  do in your first 30/60/90 days," "when can you start," "what do you do
+  outside of work" / hobbies (cross-linked to Content Exclusion), "how do
+  you stay current with technology," "what would your previous boss /
+  direct reports say about you," "describe your ideal work environment,"
+  "how do you handle stress / pressure," and "why did you choose this
+  career path." Each gets a best-answer framework and a generic fallback.
+* **Update: standard-interview-questions.md**: Added a full question
+  index summary table cross-linking all 12 full sections and 21
+  quick-reference questions, with an "audience-specific?" column marking
+  only §11 and §12 as audience-specific (other-directed), and a
+  "cross-reference" column linking to related concept pages. Closes with
+  a rationale for why only §11 and §12 need the audience treatment.
 * **Update: index.md**: Added the new concept page under the "Interview &
   Hiring Process" section, with updated description mentioning the
   audience-aware question.

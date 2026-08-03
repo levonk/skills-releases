@@ -67,4 +67,4 @@ Provides real-time suggestions and improvements for prompts users are actively w
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-02T19:08:09Z
+- **Generated**: 2026-08-03T01:25:43Z

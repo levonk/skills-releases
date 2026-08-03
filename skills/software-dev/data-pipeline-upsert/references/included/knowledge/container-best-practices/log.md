@@ -1,5 +1,53 @@
 # Directory Update Log
 
+## 2026-08-02
+
+* **Ingest**: Created a new concept page
+  [image-versioning.md](image-versioning.md) covering deterministic image
+  versioning from Git state, sourced from the reconstructed "Canonical Docker
+  Image Versioning Spec" (Copilot share 58jfrWSQ83wu6fwm25Ddf). The page
+  documents practices not previously in the bundle:
+  1. **Version string format** — `<epoch>.<semver>-<commit>-<dirty>` as the
+     single source of truth, with epoch manually incremented only when the
+     versioning scheme changes, semver derived from the nearest Git tag
+     (`v1.4.2` → `1.4.2`, ahead-of-tag → `1.4.2+3`), short SHA, and `-dirty`
+     flag for uncommitted changes.
+  2. **Canonical extraction script** — `scripts/version.sh` as the sole
+     generator, deterministic across CI environments, no reliance on CI
+     environment variables as the primary source.
+  3. **Version file generation over Git keyword expansion** — generate a real
+     `.version` file instead of using smudge/clean filters; the file is
+     portable across Docker / Podman / Buildx / Nix / GitOps and safe for
+     shallow clones and ephemeral CI workspaces.
+  4. **Dockerfile integration** — `ARG VERSION` / `ARG GIT_COMMIT` /
+     `ARG BUILD_DATE` plus OCI labels (`org.opencontainers.image.version`,
+     `.revision`, `.created`, `.source`) and `COPY .version /app/.version`
+     for runtime introspection.
+  5. **Multi-arch buildx rule** — compute the version **once** before
+     invoking `docker buildx build --platform` so every platform gets the
+     same string (per-platform computation produces divergent tags).
+  6. **Tagging rules** — always push `<full-version>`; push `<major.minor>`
+     only on clean tags; push `latest` only on main.
+  7. **Post-deployment version override** — three deterministic mechanisms:
+     Kubernetes ConfigMap overlay (preferred), Docker/Podman bind mount
+     override, and runtime environment variable override via entrypoint
+     logic. All layer on top of the build-time version without rebuilding.
+  8. **Avoid: Git smudge/clean filters** — folded inline as an "Avoid"
+     callout per the normative stance rule. Documents why smudge/clean
+     breaks reproducibility, multi-arch builds, Docker build contexts, CI
+     shallow clones, GitOps workflows, and cross-platform consistency. Notes
+     that Git has no built-in keyword identifiers (the `ident` attribute
+     expands `$Id$` to the blob SHA-1, not commit/tag/semver).
+  Added 4 sources: the Copilot share, gitattributes smudge/clean docs, OCI
+  image-spec annotations, and docker buildx multi-platform docs. Cross-linked
+  to [pin-image-digests](pin-image-digests.md) (input pinning vs output
+  pinning), [registry-cache-strategy](registry-cache-strategy.md),
+  [container-runtime-hardening](container-runtime-hardening.md),
+  [buildkit-secrets](buildkit-secrets.md), and
+  [container-runtime-essentials](container-runtime-essentials.md). Updated
+  [overview.md](overview.md.tmpl) lifecycle table, scope, description, and
+  tags, and [index.md](index.md) with the new entry.
+
 ## 2026-07-28
 
 * **Ingest**: Created a new concept page

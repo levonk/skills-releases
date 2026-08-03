@@ -1,7 +1,7 @@
 ---
 type: Synthesis
 title: TypeScript Monorepo Best Practices Overview
-description: Synthesis of TypeScript monorepo conventions — explicit file extensions, safe path aliases, ESLint composition, pnpm + Nx, Vitest testing, package/app naming, code style, and monorepo structure.
+description: Synthesis of TypeScript monorepo conventions — explicit file extensions, safe path aliases, ESLint composition, pnpm + Nx, Vitest testing, package/app naming, code style, monorepo structure, and build tool selection (Rolldown/tsup/tsc).
 tags: [typescript, monorepo, pnpm, nx, eslint, vitest, best-practices, overview, synthesis]
 date:
   created: "2026-07-17"
@@ -148,6 +148,7 @@ Each phase has practices that prevent specific failure modes:
 | Parallelism | [Parallel Export Collisions](parallel-export-collisions.md) | Parallel subagents collide on barrel file exports (TS2308), barrel merge conflicts from independent naming choices |
 | Style | [Code Style](code-style.md) | Quote/indent/style drift, `interface`/`type` inconsistency |
 | Fundamentals | [JavaScript and TypeScript Fundamentals](javascript-typescript-fundamentals.md) | Missing JSDoc typing, unsafe error handling, config drift, import boundary violations |
+| Build tools | [Build Tool Selection](build-tool-selection.md) | Using tsc for bundling (no tree-shaking), using a bundler for type-checking (silent type errors), esbuild for libraries (no `.d.ts` without separate tsc pass) |
 
 ## Canonical Tech-Stack Choices
 
@@ -173,6 +174,9 @@ kept in sync via the templater at build time.
 | node | External dependency version management (monorepo) | **`catalog:` protocol** (versions centralized in `pnpm-workspace.yaml`, `catalogMode: strict`) | Hardcoded version ranges duplicated across sub-package `package.json` files, `"*"` (resolves to latest registry release — does NOT inherit from root) | `workspace:*` remains for internal workspace packages; `catalog:` is for external registry deps. See `typescript-monorepo-best-practices/pnpm-nx-monorepo.md` |
 | node | Ad-hoc package execution (host / pnpm workspace) | **`pnpm dlx <pkg>`** (for packages not installed) or **`pnpm exec <cmd>`** (for workspace-installed binaries) | `npx`, `bunx`, `yarn dlx`, `bun x` | None — `pnpm dlx`/`pnpm exec` always, even when contributing to upstream projects that use a different package manager |
 | node | Test runner (TypeScript) | **Vitest** | Jest, Mocha/Chai, Playwright Test Runner | Playwright is still used for E2E browser automation — just not as the primary test runner |
+| node | Type-checking (CI) | **`tsc --noEmit`** | Bundler-only builds (esbuild/Rolldown strip types without checking) | Non-negotiable — always run alongside any bundler. `tsgo` (native Go port) replaces `tsc` here when stable. See `typescript-monorepo-best-practices/build-tool-selection.md` |
+| node | Library bundler (npm packages) | **tsup** (esbuild wrapper + `.d.ts` via tsc) | `tsc` alone (no tree-shaking/minification/multi-format), esbuild directly (no `.d.ts`), Rollup (slower, more config) | For publishable libraries needing ESM+CJS+`.d.ts`. See `typescript-monorepo-best-practices/build-tool-selection.md` |
+| node | Application/CLI bundler | **Rolldown** (Rust, Rollup-compatible API, powers Vite 8+) | Rollup (10-30x slower), webpack (complex), esbuild for apps (limited plugin API) | Vite 8+ uses Rolldown as its bundled backend — no separate config needed for Vite projects. See `typescript-monorepo-best-practices/build-tool-selection.md` |
 | node | Linter | **ESLint** (`@antfu/eslint-config` + `@job-aide/tools-lint-eslint-config`) | Biome, XO | — |
 | node | Formatter | **ESLint stylistic rules** (via antfu) — no separate formatter | Prettier, Biome | — |
 | node | ORM (TypeScript) | **Drizzle ORM** | Prisma, Kysely, raw SQL | — |
@@ -229,7 +233,7 @@ kept in sync via the templater at build time.
 
 This bundle covers **TypeScript monorepo conventions** — file extensions, path
 aliases, ESLint composition, pnpm + Nx, Vitest testing, naming
-conventions, and monorepo structure. It does **not** cover:
+conventions, monorepo structure, and build tool selection. It does **not** cover:
 
 - Framework-specific patterns (Next.js, NestJS, Express server setup) — those
   can be ingested as separate concepts.
@@ -237,8 +241,6 @@ conventions, and monorepo structure. It does **not** cover:
   framework-specific bundles.
 - CSS/Tailwind conventions — the `tools-css-config` and `tools-tailwind-config`
   packages cover these internally.
-- Build tooling like esbuild/rollup/webpack — these are implementation choices
-  subordinate to the monorepo conventions here.
 
 ## Relationship to Existing Project Assets
 
