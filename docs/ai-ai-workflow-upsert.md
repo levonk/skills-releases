@@ -17,20 +17,6 @@ Create new workflows, modify and improve existing workflows, and convert between
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-### What Workflows Provide
-
-1. **Repeatable processes** - Multi-step procedures with clear phases (Initialize, Plan, Apply, Verify, Deliver)
-2. **Template/Wrapper pattern** - Content template + frontmatter wrapper, separable and reusable
-3. **Step-based execution** - Sequences of prompts/tools with defined concurrency and safety controls
-
-### Workflow Architecture
-
-1. **Wrapper file** — `config/ai/workflows/<category>/<name>.md.tmpl`: YAML frontmatter (metadata, triggering) + `includeTemplate` call pulling in the content template.
-2. **Content template** — `config/ai/templates/<category>/<name>-template.md`: The workflow steps and logic, no frontmatter. Reusable across wrappers.
-3. **Bundled resources** — Workflows do NOT support `scripts/`, `references/`, `evals/`, or `assets/` subdirectories. If a workflow needs these, convert it to a skill (see Mode B in `ai-upsert`, or Mode B below for the reverse direction).
-
 ## Related Skills
 - **base-workflow-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
@@ -41,4 +27,4 @@ Create new workflows, modify and improve existing workflows, and convert between
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

@@ -25,14 +25,6 @@ Generate a project's README.md from scratch (greenfield) or update an existing o
 - `brownfield`
 - `greenfield`
 
-## Instructions
-
-- **Human tone**: Write for a developer browsing GitHub, not an AI loading context. Full sentences are fine; marketing language is acceptable for the overview
-- **Copy-paste ready**: Every command block must be runnable as-is
-- **Real paths**: Use actual file paths from the project, not template placeholders
-- **Concise**: Aim for 100-200 lines. A README is a landing page, not a manual
-- **No duplication**: If content exists in AGENTS.md or the developer guide, link to it rather than copying
-
 ## Related Skills
 - **agent-file-upsert** (skill, complement) — Generates AGENTS.md hierarchy — run first, then readme-upsert so README can link to AGENTS.md
 - **ai-upsert** (skill, sibling) — Same upsert family — handles AI skill creation and updates
@@ -44,4 +36,4 @@ Generate a project's README.md from scratch (greenfield) or update an existing o
 
 - **Full skill**: [`skills/ai/readme-upsert/SKILL.md`](skills/ai/readme-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

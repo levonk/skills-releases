@@ -17,20 +17,6 @@ Plan and execute systematic evolutionary refactors based on Michael Feathers' 'W
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
-## Quick Start
-
-```
-1. Verify clean state — typecheck, build, lint, tests pass; git tree clean; on a feature branch
-2. Analyze the codebase — identify code smells, security issues, legacy tech, pattern opportunities
-3. Create a prioritized task list — urgent first, foundational second, dependent/low-priority last
-4. Execute tasks in order — verify (typecheck/build/lint/test) after each step, commit after each step
-5. Confirm clean state at the end — same gates as step 1
-```
-
-> **Why evolutionary?** Big-bang refactors break things silently. Small,
-> verified increments keep the system working at every step and make rollback
-> trivial (revert the last commit).
-
 ## Related Skills
 - **code-quality-validation** (skill, related) — For comprehensive code quality checks that validate each refactor step
 - **git-repository-management** (skill, related) — For commit organization and rollback-safe checkpoints between refactor steps
@@ -40,4 +26,4 @@ Plan and execute systematic evolutionary refactors based on Michael Feathers' 'W
 
 - **Full skill**: [`skills/software-dev/refactor-planning/SKILL.md`](skills/software-dev/refactor-planning/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

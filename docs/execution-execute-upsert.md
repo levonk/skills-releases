@@ -17,26 +17,6 @@ Generic project execution controller that drives feature implementation from req
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-This skill is a generalized version of the Infrahub project controller
-(`do-proj-infrahub.md`). Where the Infrahub controller assumes tasks already
-exist and simply chains subagents through them, this skill has the
-intelligence to:
-
-1. **Self-update** all skills to the latest version before starting
-2. **Assess** whether a request is large enough to warrant the full pipeline
-3. **Establish technologies** — detect the project's tech stack and inject it
-   as a binding constraint into every subagent dispatch (so subagents never
-   use npm when the project uses pnpm, never use npx when the project uses
-   pnpm dlx, etc.)
-4. **Create a PRD** if one doesn't exist (for large requests)
-5. **Break the PRD into tasks** if task files don't exist
-6. **Execute tasks** via subagents, with a per-story code review before
-   commit, chaining through the project
-7. **Update the PRD** when scope changes, and regenerate affected tasks
-8. **Update documentation** (project docs + PRD/task files) as the final phase
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **trigger-guard** (template, over-triggering-guard) — Prevents triggering on requests that don't need the full pipeline
@@ -54,4 +34,4 @@ intelligence to:
 
 - **Full skill**: [`skills/execution/execute-upsert/SKILL.md`](skills/execution/execute-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

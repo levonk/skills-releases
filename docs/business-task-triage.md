@@ -17,27 +17,6 @@ Apply the Agent Organization 26-tier prioritization framework to triage tasks, r
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-The Agent Organization uses a three-dimensional prioritization framework:
-
-1. **Work Type** — 26 tiers from Security Incidents (Tier 1) to Backlog (Tier 26)
-2. **Requestor Priority** — Adjustments based on who is making the request (±3 tiers)
-3. **Cost/Capacity** — Shared Services capacity constraints by effort level
-
-This skill helps you apply this framework to make consistent, defensible prioritization decisions.
-
-## When to Use
-
-Use this skill when you need to:
-
-- Evaluate a new request or task against the prioritization framework
-- Determine whether to accept, defer, reject, or escalate work
-- Apply the Eisenhower matrix (Urgent/Important) to task prioritization
-- Calculate effective priority considering requestor and cost factors
-- Resolve priority conflicts between competing requests
-- Document prioritization decisions with clear rationale
-
 ## Related Skills
 - **org-development** (template, related) — Organizational development skill defining the entity and department structure used for requestor adjustments
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
@@ -46,4 +25,4 @@ Use this skill when you need to:
 
 - **Full skill**: [`skills/business/task-triage/SKILL.md`](skills/business/task-triage/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

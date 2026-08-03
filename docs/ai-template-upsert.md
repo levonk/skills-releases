@@ -17,20 +17,6 @@ Create new reusable templates, modify and improve existing templates, and audit 
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-### What Templates Provide
-
-1. **Reusable structures** - Standardized formats for consistent output generation across prompts, agents, and workflows
-2. **Variable schemas** - Defined inputs with types, defaults, and rendering rules
-3. **Composable contracts** - Templates that can be safely used by workflows like `ai-prompt-create` without additional explanation
-
-### Template Architecture
-
-1. **Frontmatter** — `template`, `slug`, `description`, `use`, `engine`, `outputs_to`, `variables.schema`, `date`.
-2. **Body** — Section structure, rendering rules, partials/includes documentation.
-3. **Meta-template contract** — `templates/meta/template-template.md` defines the canonical structure for new or significantly revised templates.
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
@@ -43,4 +29,4 @@ Create new reusable templates, modify and improve existing templates, and audit 
 
 - **Full skill**: [`skills/ai/template-upsert/SKILL.md`](skills/ai/template-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

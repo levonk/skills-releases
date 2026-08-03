@@ -27,32 +27,6 @@ Generate or update hierarchical AGENTS.md documentation for AI agents working in
 - `convention-detection`
 - `delta-analysis`
 
-## Quick Start
-
-When invoked, this skill analyzes the codebase and creates or updates:
-- `AGENTS.md` (Root — primary; CLAUDE.md/AGENT.md maintained as referral or symlink)
-- `apps/**/AGENTS.md` (Sub-projects)
-- `packages/**/AGENTS.md` (Sub-packages)
-- `internal-docs/oos/` (Out-of-scope documentation)
-- `internal-docs/improvements/` (Potential improvements — INDEX.md + date-stamped files)
-- `internal-docs/anti-patterns/` (Things NOT to do — INDEX.md with 🛑 + date-stamped files)
-
-## Instructions
-
-- **Token Efficiency**: Prioritize small, actionable guidance over encyclopedic text
-- **Examples**: Always provide real file paths as examples
-- **Commands**: Ensure commands are copy-paste ready
-- **Hierarchy**: Agents should read the closest `AGENTS.md` first
-- **Structured Data**: Use markdown tables for any tabular data in AGENTS.md files (categories, compliance scores, file inventories, etc.). Markdown tables are readable by both humans and AI agents without learning a custom format. Avoid JSON blocks, TOON, or other custom notations in documentation — markdown tables are the standard.
-
-Example:
-```markdown
-| Category | Rating | Status | Source Files |
-|----------|--------|--------|--------------|
-| Auth     | 100%   | ✅ Full | src/auth/    |
-| API      | 75%    | ⚠️ Partial | src/api/  |
-```
-
 ## Related Skills
 - **readme-upsert** (skill, related) — Generate or update README documentation with similar hierarchical principles
 - **ai-upsert** (skill, complement) — For creating new AI skills — pairs with agent-file-upsert for full AI guidance setup
@@ -65,4 +39,4 @@ Example:
 
 - **Full skill**: [`skills/ai/agent-file-upsert/SKILL.md`](skills/ai/agent-file-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

@@ -27,25 +27,6 @@ Comprehensive detection of project types, build systems, package managers, and C
 - `tooling`
 - `foundational-component`
 
-## Quick Start
-
-```bash
-# Detect all systems in a project
-./scripts/detect-all-systems.sh /path/to/project
-
-# Detect specific categories
-./scripts/detect-build-systems.sh /path/to/project
-./scripts/detect-ci-cd-systems.sh /path/to/project
-./scripts/detect-workspace-configs.sh /path/to/project
-
-# Extract build targets from existing configurations
-./scripts/extract-build-targets.sh generate /path/to/project
-./scripts/extract-build-targets.sh show /path/to/project
-
-# Get detailed analysis
-./scripts/analyze-project-structure.sh /path/to/project --verbose
-```
-
 ## Related Skills
 - **project-adopter** (skill, dependent) — Uses project-detection for comprehensive project analysis before adoption
 - **project-configuration** (skill, dependent) — Uses project-detection to understand existing tooling before configuration
@@ -57,4 +38,4 @@ Comprehensive detection of project types, build systems, package managers, and C
 
 - **Full skill**: [`skills/ai/project-detection/SKILL.md`](skills/ai/project-detection/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

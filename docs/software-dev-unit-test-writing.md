@@ -17,16 +17,6 @@ Write unit tests in the style of Roy Osherove's 'The Art of Unit Testing' — re
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
-## Quick Start
-
-1. **Pick a unit** — one behavior of one logical unit (a function, a class method).
-2. **Name the test** using the three-part pattern: `MethodUnderTest_Scenario_ExpectedOutcome`.
-3. **Arrange** — set up the minimal state and inputs.
-4. **Act** — call the unit under test exactly once.
-5. **Assert** — verify the single observable outcome.
-6. **Run** — the test should fail for the right reason before the code exists (TDD), or pass for the right reason after.
-7. **Review against the three pillars** — readable? maintainable? trustworthy? (see below)
-
 ## Related Skills
 - **code-quality-validation** (skill, related) — Test execution and validation as part of the broader quality gate
 - **code-review-guidance** (skill, related) — Review test code with the same rigor as production code
@@ -37,4 +27,4 @@ Write unit tests in the style of Roy Osherove's 'The Art of Unit Testing' — re
 
 - **Full skill**: [`skills/software-dev/unit-test-writing/SKILL.md`](skills/software-dev/unit-test-writing/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

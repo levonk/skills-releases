@@ -17,21 +17,6 @@ Create new Java applications, update and improve existing Java projects, and con
 | Status | `` |
 | Owner |  |
 
-## References
-
-- `references/maven-project-setup.md` — pom.xml structure, dependency
-  management, profiles, plugins (surefire, failsafe, shade, assembly), BOMs,
-  reproducible builds
-- `references/gradle-project-setup.md` — build.gradle.kts, Gradle wrapper,
-  version catalogs, configuration cache, multi-project builds, Kotlin DSL
-- `references/java-testing.md` — JUnit 5, Mockito, Testcontainers, AssertJ,
-  surefire/failsafe split, integration tests
-- `references/java-containerization.md` — JRE vs JDK in containers,
-  multi-stage builds, Alpine openjdk17 vs Debian JDK, JVM container flags,
-  Spring Boot layered jars
-- `references/jvm-tuning.md` — heap sizing, GC selection (G1/ZGC/Parallel),
-  container-aware flags, JFR/JMC profiling, class data sharing
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
@@ -45,4 +30,4 @@ Create new Java applications, update and improve existing Java projects, and con
 
 - **Full skill**: [`skills/software-dev/java-app-upsert/SKILL.md`](skills/software-dev/java-app-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

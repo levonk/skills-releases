@@ -11,6 +11,46 @@ date:
 
 # Bundle Update Log
 
+## 2026-08-02 (update)
+* **Update**: Updated [comparison/llm-runtime-selection.md](comparison/llm-runtime-selection.md)
+  with two new sections distilled from a levonk-ai-playground implementation
+  session:
+  - **Model Download Sharing** — documents that model weights on disk are
+    runtime-agnostic (standard HuggingFace format in the shared HF cache);
+    both SGLang and vLLM mount the same `huggingface` cache directory, so
+    switching runtimes does not require re-downloading models. Includes a
+    shared-vs-runtime-specific cache mount table and the quantization
+    compatibility caveat (download is shared, but kernel support is
+    runtime-specific).
+  - **Quantization Format Comparison** — adds a llama.cpp column to the
+    quant support matrix and provides per-quant scoring (1-100 scale, 1=best)
+    with visual indicators (🏆 ✅ - ⚠️ 🛑) across four dimensions: accuracy,
+    VRAM footprint, throughput, and performance-per-size ratio. Splits
+    quant-inherent characteristics (accuracy, VRAM — same across runtimes)
+    from runtime-dependent performance (throughput, perf/size — differs by
+    runtime). Includes a selection shortcut for the common in-VRAM case.
+  Added three new sources: SGLang server arguments reference, SGLang
+  installation docs (image tag pinning), and the levonk-ai-playground
+  runner-lib.sh runtime-agnostic runner library.
+
+## 2026-08-02
+* **Ingest**: Added [comparison/llm-runtime-selection.md](comparison/llm-runtime-selection.md)
+  — concept page documenting scenario-driven LLM runtime selection on a
+  single GPU box (NVIDIA DGX Spark GB10 128GB). Distilled from
+  ADR-202608021744 in levonk-ai-playground. Covers five runtimes across
+  non-overlapping scenario classes: SGLang (cu130 default for supported
+  in-VRAM models needing max throughput on Blackwell), vLLM (fallback for
+  models/quants/parallelism SGLang does not support or where production
+  maturity wins), llama.cpp/ggml (first-mover for brand-new architectures
+  and GGUF-only quants not yet in the server runtimes), Colibri (frontier
+  MoE that must stream experts from NVMe and cannot fit in 128GB VRAM),
+  and Glom (sandboxed code execution for code-model output). Includes a
+  scenario-to-runtime mapping, per-model-type defaults, a full runtime
+  comparison matrix, a selection decision tree, operational notes per
+  runtime, agent-loop integration (all runtimes expose OpenAI-compatible
+  APIs on different host ports), common anti-patterns, and review triggers.
+* **Update**: Listed the new comparison page in [index.md](index.md).
+
 ## 2026-07-29
 * **Ingest**: Added [cross-domain/agent-integration-standards.md](cross-domain/agent-integration-standards.md)
   — concept page documenting the three cross-domain agent-integration

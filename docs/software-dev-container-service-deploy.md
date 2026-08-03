@@ -17,13 +17,6 @@ Deploy multi-container services using docker-compose (local/dev) or Ansible dock
 | Status | `` |
 | Owner |  |
 
-## References
-
-- `references/docker-compose.md` — Branch A: docker-compose for local/dev
-- `references/ansible-deploy.md` — Branch B: Ansible docker_container for prod
-
----
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **container-image-build** (skill, complement) — Builds the images this skill deploys
@@ -32,4 +25,4 @@ Deploy multi-container services using docker-compose (local/dev) or Ansible dock
 
 - **Full skill**: [`skills/software-dev/container-service-deploy/SKILL.md`](skills/software-dev/container-service-deploy/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

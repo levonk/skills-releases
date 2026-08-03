@@ -17,22 +17,6 @@ Create and embed diagrams in technical documentation (ADR, design docs, README, 
 | Status | `` |
 | Owner |  |
 
-## References
-
-- [`references/tool-selection.md`](references/tool-selection.md) — pointer to
-  the bundle's `diagram-tool-selection.md`.
-- [`references/mermaid-syntax.md`](references/mermaid-syntax.md) — pointer to
-  the bundle's `mermaidjs.md`.
-- [`references/plantuml-syntax.md`](references/plantuml-syntax.md) — pointer
-  to the bundle's `plantuml.md`.
-- [`references/excalidraw-workflow.md`](references/excalidraw-workflow.md) —
-  pointer to the bundle's `excalidraw.md`.
-- [`documentation-diagram-practices overview`](references/included/knowledge/documentation-diagram-practices/overview.md)
-  — the canonical knowledge bundle, materialized for offline standalone use.
-  Read before authoring.
-- `scripts/resolve-reference.sh` — three-tier fallback resolver (local → URL →
-  materialized) for any runtime lookups of bundle content.
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
@@ -43,4 +27,4 @@ Create and embed diagrams in technical documentation (ADR, design docs, README, 
 
 - **Full skill**: [`skills/content/diagram-upsert/SKILL.md`](skills/content/diagram-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

@@ -17,54 +17,6 @@ Create, update, and convert data pipelines across Apache Airflow (DAG authoring)
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-### What This Skill Does
-
-1. **Creates data pipelines from scratch** — scaffolds an Airflow DAG, Spark
-   job, or dbt model with proper structure, idempotency, retries, and data
-   quality checks.
-2. **Audits and improves existing pipelines** — identifies missing idempotency,
-   retry gaps, SLA violations, partitioning problems, caching opportunities,
-   and data quality test gaps.
-3. **Converts between pipeline types** — migrates cron jobs to Airflow DAGs,
-   converts Spark jobs to dbt models, or restructures a pipeline from one
-   tool to another while preserving business logic.
-
-### Core Principles
-
-- **Idempotency is mandatory** — every pipeline task must be safe to re-run.
-  Use upserts, MERGE statements, and partition overwrites. Never append
-  without a deduplication strategy.
-- **Retries with backoff** — every task gets `retries` and `retry_delay` with
-  exponential backoff. Transient failures (network, resource) must not fail
-  the pipeline.
-- **Data quality gates** — validate data before and after transformation.
-  Use Great Expectations, Soda, or dbt tests as gates, not afterthoughts.
-- **Partitioning matters** — partition large datasets by date or key to
-  enable incremental processing and efficient reads.
-- **Separate orchestration from computation** — Airflow orchestrates, Spark
-  computes, dbt transforms. Do not embed heavy computation in DAG code.
-- **Observability** — every pipeline emits structured logs, metrics, and
-  lineage. Failed runs must be diagnosable from logs alone.
-- **Incremental over full reload** — prefer incremental materializations
-  (dbt incremental, Spark partition-aware) over full table reloads.
-- **Test locally before deploying** — use Testcontainers for integration
-  tests, run dbt tests locally, and validate Spark jobs on sample data.
-
-## References
-
-- `references/airflow-dag-authoring.md` — DAG structure, idempotency, task
-  boundaries, XCom, sensors, operators vs TaskFlow API, catchup, retries,
-  SLAs, KubernetesExecutor patterns
-- `references/spark-job-development.md` — Spark job structure, partitioning,
-  caching, broadcast joins, memory tuning, DataFrame API vs SQL, UDFs
-- `references/dbt-model-development.md` — models, tests, snapshots,
-  materializations (table/view/incremental/ephemeral), macros, packages,
-  seeds
-- `references/pipeline-testing.md` — data quality testing (Great Expectations,
-  Soda), pipeline testing patterns, Testcontainers for integration tests
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
@@ -77,4 +29,4 @@ Create, update, and convert data pipelines across Apache Airflow (DAG authoring)
 
 - **Full skill**: [`skills/software-dev/data-pipeline-upsert/SKILL.md`](skills/software-dev/data-pipeline-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

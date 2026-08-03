@@ -17,24 +17,6 @@ Draft, review, and improve business emails using a structured framework that pri
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-### What This Skill Does
-
-1. **Draft new emails** — from a brief, ask, or set of bullet points
-2. **Review and improve existing emails** — audit against the framework, propose fixes
-3. **Convert rough notes or chat messages** — into polished, structured emails
-
-### Email Architecture (Four Layers)
-
-1. **Subject line** — triage tag (Action / Decision / Update / Risk) + topic
-2. **First sentence** — the ask, decision, risk, or update. No warm-up.
-3. **Body** — two to five lines of facts with names, numbers, and dates
-4. **Close** — recommendation or next step, owner and deadline
-
-See `references/email-framework.md` for the full principle set and default
-structure template.
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **task-triage** (skill, complement) — Prioritization framework for triaging tasks — use before writing email to determine if the request warrants an email at all
@@ -43,4 +25,4 @@ structure template.
 
 - **Full skill**: [`skills/business/biz-email-upsert/SKILL.md`](skills/business/biz-email-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

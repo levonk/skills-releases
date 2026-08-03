@@ -17,13 +17,6 @@ Build container images for mixed-architecture fleets (x86_64 + aarch64). Three b
 | Status | `` |
 | Owner |  |
 
-## References
-
-- `references/wrap-prebuilt.md` — Branch A: wrapping pre-built upstream images
-- `references/dockerfile-buildx.md` — Branch B: multi-stage Dockerfile + buildx
-- `references/nix-flake-build.md` — Branch C: Nix flake container builds
-- `references/multi-arch.md` — Multi-arch manifest management, tagging, verification
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **container-service-deploy** (skill, complement) — Deploys the images this skill builds — compose for dev, Ansible for prod
@@ -33,4 +26,4 @@ Build container images for mixed-architecture fleets (x86_64 + aarch64). Three b
 
 - **Full skill**: [`skills/software-dev/container-image-build/SKILL.md`](skills/software-dev/container-image-build/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

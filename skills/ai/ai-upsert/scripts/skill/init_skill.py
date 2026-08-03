@@ -655,14 +655,30 @@ def load_template(template_name: str) -> str:
 
 def load_skill_md_template() -> str:
     """Load references/skill/skill-template.md — the single source of truth for
-    the scaffolded SKILL.md. The whole file IS the template; init_skill.py
-    substitutes <skill-name>, <YYYY-MM-DD>, and <Skill Title> placeholders.
+    the scaffolded SKILL.md (wrapper pattern). The whole file IS the template;
+    init_skill.py substitutes <skill-name>, <YYYY-MM-DD>, and <Skill Title>
+    placeholders.
     """
     skill_root = get_skill_root()
     ref_path = skill_root / "references" / "skill" / "skill-template.md"
 
     if not ref_path.exists():
         print(f"Error: skill-template.md not found: {ref_path}")
+        sys.exit(1)
+
+    with open(ref_path, "r") as f:
+        return f.read()
+
+
+def load_instructions_template() -> str:
+    """Load references/skill/instructions-template.md — the template for
+    INSTRUCTIONS.md (the actual skill content loaded after refresh).
+    """
+    skill_root = get_skill_root()
+    ref_path = skill_root / "references" / "skill" / "instructions-template.md"
+
+    if not ref_path.exists():
+        print(f"Error: instructions-template.md not found: {ref_path}")
         sys.exit(1)
 
     with open(ref_path, "r") as f:
@@ -698,7 +714,7 @@ def create_skill_structure(skill_name: str, output_path: str) -> None:
     created_date = datetime.now().strftime('%Y-%m-%d')
     skill_title = skill_name.replace('-', ' ').title()
 
-    # Create SKILL.md from the template embedded in references/skill-template.md
+    # Create SKILL.md from the template (wrapper pattern)
     # The reference file is the single source of truth for skill structure.
     skill_md_template = load_skill_md_template()
     skill_md_content = skill_md_template.replace("<skill-name>", skill_name)
@@ -707,6 +723,16 @@ def create_skill_structure(skill_name: str, output_path: str) -> None:
 
     with open(skill_dir / "SKILL.md", "w") as f:
         f.write(skill_md_content)
+
+    # Create INSTRUCTIONS.md from the instructions template
+    # This is the actual skill content (outcome, guardrails, process, etc.)
+    instructions_template = load_instructions_template()
+    instructions_content = instructions_template.replace("<skill-name>", skill_name)
+    instructions_content = instructions_content.replace("<YYYY-MM-DD>", created_date)
+    instructions_content = instructions_content.replace("<Skill Title>", skill_title)
+
+    with open(skill_dir / "INSTRUCTIONS.md", "w") as f:
+        f.write(instructions_content)
 
     # Create example script from template
     example_script_template = load_template("example-script.py.template")
@@ -722,6 +748,18 @@ def create_skill_structure(skill_name: str, output_path: str) -> None:
     # bundles, other skills) via the three-tier fallback resolver at runtime.
     with open(skill_dir / "scripts" / "resolve-reference.sh.tmpl", "w") as f:
         f.write('{' * 3 + ' include "includes/resolve-reference.sh" . ' + '}' * 3 + '\n')
+
+    # refresh.sh — the daily refresh + sandbox + print-body script.
+    # This is the core of the wrapper pattern: SKILL.md runs this script,
+    # which ensures the skill is current then prints INSTRUCTIONS.md.
+    with open(skill_dir / "scripts" / "refresh.sh.tmpl", "w") as f:
+        f.write('{' * 3 + ' include "includes/refresh.sh" . ' + '}' * 3 + '\n')
+
+    # nono-profile.json — the bundled sandbox profile for refresh.sh.
+    # Used by nono to sandbox `pnpm dlx skills update` with filesystem
+    # and network restrictions. See ADR: skill-refresh-sandbox-selection.
+    with open(skill_dir / "references" / "nono-profile.json.tmpl", "w") as f:
+        f.write('{' * 3 + ' include "includes/nono-profile.json" . ' + '}' * 3 + '\n')
 
     # Ensure uv is available in the nearest devbox.json so PEP 723 Python
     # scripts in the skill can run. Walk up from the skill directory to find
@@ -745,18 +783,20 @@ def create_skill_structure(skill_name: str, output_path: str) -> None:
         f.write(gitignore_template)
 
     print(f"✓ Skill created at: {skill_dir}")
-    print(f"✓ Directory structure:")
-    print(f"  - SKILL.md (main skill file)")
-    print(f"  - scripts/ (executable code)")
-    print(f"  - references/ (documentation)")
+    print(f"✓ Directory structure (wrapper pattern):")
+    print(f"  - SKILL.md (thin wrapper — runs refresh.sh, reads INSTRUCTIONS.md)")
+    print(f"  - INSTRUCTIONS.md (actual skill content — outcome, guardrails, process)")
+    print(f"  - scripts/ (executable code — includes refresh.sh, cli-tool-discovery.sh, resolve-reference.sh)")
+    print(f"  - references/ (documentation — includes nono-profile.json)")
     print(f"  - assets/ (output resources)")
     print(f"  - evals/ (test cases)")
     print(f"\nNext steps:")
-    print(f"1. Edit SKILL.md to add skill content")
-    print(f"2. Add scripts/references/assets as needed")
-    print(f"3. Delete example files you don't need")
-    print(f"4. Test with evals/evals.json")
-    print(f"5. Package with: devbox run -- python scripts/package_skill.py {skill_dir}")
+    print(f"1. Edit SKILL.md frontmatter (description, tags, source URL)")
+    print(f"2. Edit INSTRUCTIONS.md to add skill content (outcome, guardrails, process)")
+    print(f"3. Add skill-specific scripts/references/assets as needed")
+    print(f"4. Delete example files you don't need")
+    print(f"5. Test with evals/evals.json")
+    print(f"6. Package with: devbox run -- python scripts/package_skill.py {skill_dir}")
     print(f"   (or: python scripts/package_skill.py {skill_dir} if devbox is unavailable)")
 
 

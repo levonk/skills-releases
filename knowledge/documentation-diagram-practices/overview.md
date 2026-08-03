@@ -124,6 +124,7 @@ tool-selection → mermaid (inline, render-portability) → plantuml (precise, s
 | Mermaid | [Mermaid Practices](mermaidjs.md) | Parse errors from unquoted labels, `<br/>` stripped by pre-processors, broken decision nodes |
 | PlantUML | [PlantUML Practices](plantuml.md) | Missing `@startuml`/`@enduml`, server-only rendering, layout sprawl, unreadable sequence diagrams |
 | Excalidraw | [Excalidraw Practices](excalidraw.md) | Binary blob in git, lost sketch history, hand-drawn diagrams where precision is required |
+| Contrast | [Color Contrast Practices](color-contrast.md) | Light text on pastel fills, sub-WCAG contrast ratios, labels that vanish on dim screens and in print |
 
 ## Scope
 
@@ -133,7 +134,10 @@ considerations that keep diagrams working across markdown renderers (GitHub,
 Obsidian, VS Code, static site generators). It does **not** cover:
 
 - General technical writing — see a dedicated writing bundle.
-- Diagram design aesthetics (color theory, visual hierarchy) — out of scope.
+- Diagram design aesthetics (palette selection, visual hierarchy, brand color
+  choices) — out of scope. **Color contrast for readability is in scope** as an
+  accessibility concern; see
+  [Color Contrast Practices](color-contrast.md).
 - Rendering tool installation — see
   [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
 - Build system integration for diagram pipelines — see

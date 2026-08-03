@@ -25,29 +25,6 @@ Comprehensive code quality validation supporting multiple languages with linting
 - `security`
 - `formatting`
 
-## Quick Start
-
-```bash
-# Run complete quality validation
-./scripts/quality-validator.sh complete
-
-# Run specific validation phases
-./scripts/quality-validator.sh lint        # Linting only
-./scripts/quality-validator.sh format      # Formatting check
-./scripts/quality-validator.sh test        # Testing only
-./scripts/quality-validator.sh security    # Security scanning
-./scripts/quality-validator.sh fix         # Auto-fix issues
-```
-
-## References
-
-- **Language Support**: See `references/supported-languages.md`
-- **Configuration Guide**: See `references/configuration.md`
-- **Output Formats**: See `references/output-formats.md`
-- **Error Handling & Security**: See `references/error-handling-security.md`
-- **Security Patterns**: See `references/security-scanning.md`
-- **CI Integration**: See `references/ci-integration.md`
-
 ## Related Skills
 - **project-detection** (skill, dependency) — Required for automatic project type detection and language identification
 - **ai-development-loop** (skill, dependent) — Uses code-quality-validation for iterative quality checks during development
@@ -57,4 +34,4 @@ Comprehensive code quality validation supporting multiple languages with linting
 
 - **Full skill**: [`skills/execution/code-quality-validation/SKILL.md`](skills/execution/code-quality-validation/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

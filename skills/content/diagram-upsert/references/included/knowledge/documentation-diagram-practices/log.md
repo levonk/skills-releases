@@ -1,5 +1,18 @@
 # Directory Update Log
 
+## 2026-08-02
+
+* **Ingest**: Added [color-contrast.md](color-contrast.md) — new concept page
+  documenting the hard rule against hosting light text on pastel/light fills.
+  Covers Mermaid `classDef`/`style` `color` pairing, PlantUML `skinparam`
+  `FontColor`/`BackgroundColor` pairing, Excalidraw per-element `strokeColor`/
+  `backgroundColor`, WCAG AA 4.5:1 target, and grayscale/print checks.
+  Motivated by a real failure: ELI5 Git Merge Mermaid diagrams used pastel
+  fills with white text (~1.3:1 contrast, unreadable). Updated
+  [index.md](index.md) listing, [overview.md](overview.md) synthesis table,
+  and the scope statement (color contrast for readability is in scope as
+  accessibility; palette aesthetics remain out of scope).
+
 ## 2026-07-26
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
 

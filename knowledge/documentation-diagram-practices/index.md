@@ -17,3 +17,4 @@ from real ADRs and documentation fixes.
 * [Mermaid Practices](mermaidjs.md) - Quoting labels, `<br/>` line breaks, decision node syntax, and avoiding markdown pre-processor stripping
 * [PlantUML Practices](plantuml.md) - Text-based diagrams for sequence/class/state, server vs local rendering, `@startuml`/`@enduml` hygiene
 * [Excalidraw Practices](excalidraw.md) - Hand-drawn whiteboard diagrams, `.excalidraw` JSON storage, and when sketching beats precision
+* [Color Contrast Practices](color-contrast.md) - Never host light text on pastel fills; pair dark text with light fills or light text with dark fills; target WCAG AA 4.5:1

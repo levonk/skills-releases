@@ -17,10 +17,6 @@ Use when making high-stakes business decisions, strategic choices, partnership e
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-This skill implements a deterministic multi-agent decision-making system that transforms strategic questions into well-researched decisions through a structured committee process.
-
 ## Related Skills
 - **think-assist** (skill, dependency) — Thinking-method library consumed by this skill's committee
 - **peer-review** (skill, optional) — Blind peer-review round that can be added before the CSO memo
@@ -31,4 +27,4 @@ This skill implements a deterministic multi-agent decision-making system that tr
 
 - **Full skill**: [`skills/execution/briefingmemo/SKILL.md`](skills/execution/briefingmemo/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

@@ -17,66 +17,6 @@ Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI
 | Status | `` |
 | Owner |  |
 
-## Overview
-
-### What This Skill Does
-
-1. **Creates CI/CD pipelines from scratch** — detects the project's build
-   system, test framework, and deployment target, then generates a pipeline
-   with incremental builds, security scans, and guardrails.
-2. **Audits and improves existing pipelines** — identifies slow steps, missing
-   security, missing provenance, tooling misalignment, and proposes fixes.
-3. **Sets up pre-built CI images** — publishes a container image with all build
-   tools pre-installed to a registry (GHCR, etc.), rebuilds only when the
-   environment definition changes.
-4. **Aligns tooling versions** — ensures devbox.json, Justfile, CI, Dockerfile,
-   and deployment tools all reference the same versions from a single source.
-
-### Core Principles
-
-- **Incremental builds first** — detect what changed, build only that. Profile
-  filtering, not workflow-level path triggers (avoids required-checks deadlock).
-- **Pre-built CI images** — bake the toolchain into a container once, reuse
-  everywhere. Rebuild only when the environment definition changes.
-- **No secrets in images** — multi-stage builds, BuildKit secrets, `.dockerignore`
-  as a mandatory security gate (not an optimization). Scan images before publishing.
-- **Security as gates, not afterthoughts** — secret scanning early, SAST,
-  dependency scanning, container scanning. Gate on critical/high, report on
-  medium/low.
-- **Provenance/lineage** — sign artifacts, generate SBOMs, embed git SHA/tag/
-  branch in deployed packages. Verify signatures before deployment.
-- **DRY CI files** — reusable workflows, composite actions, job matrices. No
-  copy-pasted workflow definitions.
-- **Tooling alignment** — single source of truth for tool versions (devbox.json
-  or equivalent). CI, Dockerfile, Justfile all read from it. Task runner recipes
-  must work with or without `devbox run` wrappers (two-layer unwrapping).
-- **CI hygiene** — `concurrency: cancel-in-progress` to cancel redundant runs,
-  `timeout-minutes` on every job, least-privilege `permissions:` scoping,
-  `shell: bash -l {0}` when running inside containers (GitHub Actions uses
-  `--noprofile --norc` by default, silently ignoring PATH setup).
-- **Local testability** — pipelines must be testable locally with `act` before
-  pushing. Handle secret format differences (act uses single-line base64, real
-  CI uses multi-line PEM). Handle container file ownership mismatches.
-- **Interactive vs automatic** — optimizations and quality improvements are
-  automatic. Build process changes that affect the project's existing workflow
-  are proposed interactively with user confirmation.
-
-## References
-
-- `references/incremental-builds.md` — Path filters, git-diff patterns, dependency-aware filtering, required-checks deadlock avoidance
-- `references/prebuilt-images.md` — When to use pre-built CI images, rebuild triggers, GHCR publishing, caching strategies
-- `references/container-hygiene.md` — Multi-stage builds, BuildKit secrets, .dockerignore, pre-publish scanning
-- `references/security-scans.md` — Scanning pipeline order, tool selection, SARIF integration, gating configuration
-- `references/guardrails-gates.md` — Branch protection, required checks, merge queues, blocking vs quality gates
-- `references/versioning-tagging.md` — Semantic versioning, conventional commits, automated changelogs, git tag hygiene
-- `references/provenance-lineage.md` — SLSA provenance, SBOM generation, cosign signing, OCI labels, verification
-- `references/deployment-validation.md` — Smoke tests, health checks, canary/blue-green, when each is appropriate vs overkill
-- `references/testing-strategies.md` — Test pyramid, parallel execution, test splitting, flaky management, coverage gates
-- `references/modular-parallel.md` — Reusable workflows, composite actions, job matrices, DRY CI file organization
-- `references/tooling-alignment.md` — Single source of truth for tool versions, devbox/Justfile/CI/Dockerfile alignment
-- `references/interactive-vs-automatic.md` — Decision framework for automatic vs interactive CI changes
-- `references/audit-checklist.md` — Full audit checklist for existing CI/CD pipelines
-
 ## Related Skills
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **container-image-build** (skill, complement) — Builds container images for services — cicd-upsert builds the CI environment image and the pipeline that uses it
@@ -88,4 +28,4 @@ Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI
 
 - **Full skill**: [`skills/software-dev/cicd-upsert/SKILL.md`](skills/software-dev/cicd-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

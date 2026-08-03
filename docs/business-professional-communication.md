@@ -17,20 +17,6 @@ Craft clear, professional internal business communications across email, chat, m
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
-## Quick Start
-
-1. **Choose the channel** — match urgency and complexity to the medium (see
-   [Channel Selection](#channel-selection) below or
-   [Channel Selection Matrix](references/channel-selection.md) for detail)
-2. **Structure the message** — subject, BLUF opening, concise body, clear call
-   to action (see [Message Structure](#message-structure))
-3. **Set the tone** — professional, respectful, approachable (see
-   [Tone and Style](#tone-and-style))
-4. **Apply best practices** — share proactively, credit specifically, give
-   constructive feedback (see [Best Practices](#best-practices))
-5. **Use a template** — start from [Message Templates](references/message-templates.md)
-   for common scenarios
-
 ## Related Skills
 - **biz-email-upsert** (skill, related) — Business email creation framework — use for drafting and reviewing specific business emails with structured templates
 - **task-triage** (skill, related) — Business task organization — use to prioritize work before communicating about it
@@ -39,4 +25,4 @@ Craft clear, professional internal business communications across email, chat, m
 
 - **Full skill**: [`skills/business/professional-communication/SKILL.md`](skills/business/professional-communication/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

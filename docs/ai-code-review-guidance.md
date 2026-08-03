@@ -25,22 +25,6 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 - `story-review`
 - `automated-review`
 
-## Quick Start
-
-1. **Gather context** — read the PR description, linked issues, and the diff.
-2. **Understand data flow** — trace how data moves through the app; note any new
-   patterns and why they were introduced.
-3. **Run automated validation** — run the bundled `code-quality-validation`
-   pipeline (see [Automated Validation Pass](#automated-validation-pass) below)
-   to get deterministic lint/format/test/security results before the manual
-   checklist.
-4. **Run the checklist** — work through each category below; flag blockers and
-   suggestions separately.
-5. **Surface schema/integration risk** — call out anything that requires
-   coordination (migrations, API consumers, feature flags).
-6. **Write the review** — lead with blockers, then suggestions, then nits.
-   Reference the specific checklist item for each finding.
-
 ## Related Skills
 - **code-quality-validation** (skill, bundled-dependency) — Bundled via includeTree for offline availability. Provides the quality-validator.sh orchestrator and language-specific detectors/scanners that the reviewer runs during the Dynamic pass to get deterministic lint/format/test/security results before applying the manual checklist. Without this bundle, the reviewer must rely on ad-hoc tool invocation; with it, the reviewer gets the same phased validation pipeline (lint → format → test → security) that CI uses
 - **refactor-planning** (skill, related) — For review findings that warrant a structured refactoring effort
@@ -55,4 +39,4 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 
 - **Full skill**: [`skills/ai/code-review-guidance/SKILL.md`](skills/ai/code-review-guidance/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T01:25:43Z
+- **Generated**: 2026-08-03T17:56:44Z

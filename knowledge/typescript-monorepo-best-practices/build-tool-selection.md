@@ -2,7 +2,7 @@
 type: Practice
 title: Build Tool Selection — Rolldown vs tsup vs tsc
 description: Choose the right TypeScript build tool by layer — tsc --noEmit for type-checking in CI, tsup for library bundling (ESM+CJS+.d.ts with esbuild speed), Rolldown for full application/CLI bundling (Rust speed, Rollup plugin compatibility, powers Vite 8+). Never use tsc for bundling; never use a bundler for type-checking.
-tags: [typescript, build-tool, bundler, rolldown, tsup, tsc, esbuild, vite, library-publishing, ci, type-checking]
+tags: [typescript, build-tool, bundler, rolldown, tsup, tsc, esbuild, vite, library-publishing, ci]
 date:
   created: "2026-08-02"
   knowledge-basis: "2026-08-02"
@@ -177,14 +177,6 @@ CI pipeline:
 In an Nx monorepo, each project's `project.json` defines its own `build`
 target pointing to the right tool. The `typecheck` target always runs
 `tsc --noEmit` regardless of the build tool.
-
-### What About `tsgo`?
-
-`tsgo` is Microsoft's native port of the TypeScript compiler (Go-based,
-preview). It is a **faster `tsc`** — same type-checking correctness, 5-10x
-faster. When stable, it replaces `tsc` in the type-checking layer above.
-It does not change the layer model: `tsgo --noEmit` for type-checking,
-tsup/Rolldown for bundling. Until tsgo is stable, continue using `tsc`.
 
 ## Rationale
 
