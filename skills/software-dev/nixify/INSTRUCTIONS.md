@@ -1349,6 +1349,71 @@ devbox as Nix abstraction, package verification, reproducible builds,
 - Git configured with GitHub access
 - Fork permissions on the target repository (if third-party)
 
+## Workflow Overview
+
+The diagram below shows the decision flow from project analysis through
+template selection. Each diamond is a deterministic script-driven check;
+rectangles are work phases. The **critical routing decision** is Step 5 →
+Step 12: the complexity classifier output (`is_complex`) determines which
+Node.js template to use — this is the gate that prevents the
+`buildNpmPackage`-on-a-complex-project failure mode.
+
+```mermaid
+flowchart TD
+    S1["Step 1-3: Check existing flake,<br/>detect access, search prior work"]
+    S4a["Step 4a: detect-platform-scope.sh"]
+    S4b["Step 4b: check-releases.sh"]
+    S5["Step 5: Analyze distribution complexity"]
+
+    S4a --> S4b
+    S4b --> R1{"Prebuilt tarballs<br/>and not force_source_build?"}
+    R1 -- "Yes" --> R2{"partial_platform_coverage?"}
+    R1 -- "No, or force_source_build" --> S5
+
+    R2 -- "false" --> T_PRE["Step 12: prebuilt-tarball.md<br/>(standard)"]
+    R2 -- "true + source feasible" --> T_HYBRID["Step 12: prebuilt-tarball.md<br/>(hybrid fallback)"]
+    R2 -- "true + not feasible" --> T_PRE
+
+    S5 --> R3{"Node.js project?"}
+    R3 -- "Yes" --> S5C["Step 5: classify-node-complexity.sh"]
+    R3 -- "No" --> S11["Step 11: inspect-nixpkgs-derivation.sh"]
+
+    S5C --> R4{"is_complex?"}
+    R4 -- "false" --> SUB["Step 5b: subagent validation<br/>(skipped if no factors)"]
+    R4 -- "true" --> SUB
+
+    SUB --> S11
+    S11 --> R5{"Language?"}
+
+    R5 -- "Rust" --> T_RUST["source-build/rust.md"]
+    R5 -- "Node simple" --> T_NODE["source-build/node.md<br/>(buildNpmPackage)"]
+    R5 -- "Node complex" --> T_NODEC["source-build/node-complex.md<br/>(stdenv + fetchNpmDeps)"]
+    R5 -- "Bun" --> T_BUN["source-build/bun.md"]
+    R5 -- "Go" --> T_GO["source-build/go.md"]
+    R5 -- "Python" --> T_PY["source-build/python.md"]
+    R5 -- "Other" --> T_OTHER["source-build/&lt;lang&gt;.md"]
+
+    T_PRE --> S13["Steps 13-28: devbox, gitignore,<br/>docs, CI, format, lint,<br/>scan, validate, push, PR"]
+    T_HYBRID --> S13
+    T_RUST --> S13
+    T_NODE --> S13
+    T_NODEC --> S13
+    T_BUN --> S13
+    T_GO --> S13
+    T_PY --> S13
+    T_OTHER --> S13
+
+    style S5C fill:#fff3e0,stroke:#e65100
+    style R4 fill:#fff3e0,stroke:#e65100
+    style T_NODEC fill:#e8f5e9,stroke:#2e7d32
+```
+
+**Key**: The orange nodes (Step 5 classifier + `is_complex` decision) are the
+new deterministic gate added to prevent the 9router failure mode. The green
+node (`node-complex.md`) is the template that should have been selected.
+When `is_complex=true`, the agent MUST use `node-complex.md` — the
+classifier output is authoritative, not gut feel.
+
 ## Steps
 
 1. **Check for existing flake**: Run `scripts/check-existing-flake.sh <owner> <repo>`. If flake exists, abort — inspect the existing flake to see if it needs updates instead of replacement.
@@ -1375,6 +1440,22 @@ devbox as Nix abstraction, package verification, reproducible builds,
 
 5. **Analyze distribution complexity**: If no prebuilt tarballs (AND the project does not ship runtime assets beside the binary — see Step 4's MANDATORY rule), analyze the project for complex multi-component distribution (runtime assets, native addons, workspace exclusions). See `references/architecture-analysis.md` for decision guidance, success/failure patterns, and build script Nix-awareness tips.
 
+    **MANDATORY — run the complexity classifier for Node.js projects**: If the project uses Node.js (npm/pnpm), run `scripts/classify-node-complexity.sh <project-dir> --verbose` to deterministically detect the four complexity factors that distinguish a simple project (`source-build/node.md` → `buildNpmPackage`) from a complex one (`source-build/node-complex.md` → `stdenv.mkDerivation` + `fetchNpmDeps`):
+    1. `monorepo_separate_lockfiles` — subdirectories with their own `package.json`
+    2. `custom_build_scripts` — build script does more than a standard single command
+    3. `postinstall_complications` — native addons (`better-sqlite3`, `sharp`, `esbuild`) or postinstall scripts
+    4. `build_time_network_fetches` — `next/font/google`, Next.js telemetry, `curl`/`wget` in build scripts
+
+    The script outputs JSON with `is_complex`, `complexity_factors`, `recommended_template`, `signals`, and `subagent_checks`. **Store the entire JSON output** — `is_complex` and `complexity_factors` are consumed at Step 12 to select the correct template, and `subagent_checks` drives the subagent validation below. **Do NOT override `is_complex=false` to use the simple template when the script reports `is_complex=true`** — the script's detection is conservative (it only reports a factor when it finds a concrete signal). If you believe the script has a false positive, present the signal to the user and let them decide; do not silently pick the simpler template.
+
+    **MANDATORY — subagent validation for non-deterministic complexity checks**: When the classifier reports `needs_subagent_validation: true`, spawn a background subagent (`subagent_explore` profile for read-only research) to verify each item in the `subagent_checks` array. These are checks the script cannot make deterministically:
+    - Whether a custom build script is compatible with `npm ci --offline` + `npm run build` in a sandbox
+    - Whether the project has a runtime fallback when postinstall assets are absent (e.g. `better-sqlite3` → `sql.js`)
+    - Whether a build-time network fetch can be neutralized via `postPatch` without breaking the build output
+    - Which subdirectory's build script drives the full build (the `makeWrapper` entry point should be the CLI launcher, not the raw server)
+
+    The subagent should read the project's build scripts, `package.json`, and relevant source files to answer each check. **Store the subagent's findings** — they are consumed at Step 12 to fill in the `postPatch`, `installPhase`, and `makeWrapper` sections of the flake. Do NOT proceed to Step 12 until the subagent validation completes (or the user explicitly skips it).
+
     **CRITICAL — devShell-only flakes are NOT an acceptable nixify deliverable**: The entire purpose of this skill is to make a project installable via `nix run github:...` / `nix profile add github:...`. A flake that only exposes `devShells.default` (a development environment) but no `packages` output cannot be installed — it can only provide a shell for hacking on the source. If the project is too complex to package from source and has no prebuilt tarballs, **STOP and file an orientation issue** documenting the packaging gap — do NOT submit a PR with a devShell-only flake. A devShell-only PR will receive review feedback pointing out the missing `packages.default` (see 9router PR #1405 — the reviewer noted the flake "covers a `devShells.default`... but doesn't yet expose a `packages.default` you could actually install/run"). The orientation issue should document what makes the project hard to package (build-time network fetches, postinstall home-directory writes, gitignored lockfiles — see `references/architecture-analysis.md`) so a follow-up PR can address them.
 
 6. **Fork and clone**: Run `scripts/fork-and-clone.sh <owner> <repo> <has_direct_access> <current_user>`. Use `--dry-run` to preview. Always rebase from upstream after cloning.
@@ -1396,8 +1477,8 @@ devbox as Nix abstraction, package verification, reproducible builds,
     - Binary releases (and `force_source_build` is false) -> `references/flake-templates/binary-release.md` — **store `flake_type=prebuilt_tarball`**
     - No releases, or `force_source_build=true` -> Source Build Flake by language:
       - Rust/Cargo -> `references/flake-templates/source-build/rust.md`
-      - Node.js (npm/pnpm), simple single-package -> `references/flake-templates/source-build/node.md`
-      - Node.js (npm/pnpm), complex (monorepo with separate lockfiles, custom build scripts, postinstall complications, build-time network fetches) -> `references/flake-templates/source-build/node-complex.md`
+      - Node.js (npm/pnpm), simple single-package -> `references/flake-templates/source-build/node.md`. **Use ONLY when Step 5's `classify-node-complexity.sh` reported `is_complex: false`** — i.e. the project has a single `package.json` with a single lockfile, no custom build script (no `scripts/` references, no multi-step `&&` chains with copy/bundle, no `cli:pack` wrapper), no postinstall native addons (`better-sqlite3`, `sharp`, `esbuild`, etc.), and no build-time network fetches (`next/font/google`, Next.js telemetry, `curl`/`wget` in build). If ANY of these are true, use `node-complex.md` instead. Do NOT pick this template by gut feel — the classifier output is the authoritative routing signal.
+      - Node.js (npm/pnpm), complex -> `references/flake-templates/source-build/node-complex.md`. **Use when Step 5's `classify-node-complexity.sh` reported `is_complex: true`** — i.e. any of: monorepo with separate lockfiles (subdirectories with own `package.json`), custom build scripts (build references a script file, has multi-step copy/bundle commands, or has a `cli:pack` wrapper), postinstall complications (`better-sqlite3`/`sharp`/`esbuild`/postinstall script), or build-time network fetches (`next/font/google`, Next.js telemetry, `curl`/`wget` in build). This template uses `stdenv.mkDerivation` + `fetchNpmDeps` (one per lockfile), `HOME=$TMPDIR`, `patchShebangs`, `--ignore-scripts`, and version from `importJSON ./package.json`. Fill in the `postPatch`, `installPhase`, and `makeWrapper` sections using the subagent validation findings from Step 5.
       - Bun (`bun build --compile`) -> `references/flake-templates/source-build/bun.md`
       - Go -> `references/flake-templates/source-build/go.md`
       - Python -> `references/flake-templates/source-build/python.md`
@@ -1469,7 +1550,7 @@ devbox as Nix abstraction, package verification, reproducible builds,
 
 25. **Update changelog (if applicable)**: If CHANGELOG.md exists, add entry under `## Unreleased` -> `### Added`. See `references/changelog-entry.md`.
 
-26. **Validate PR cleanliness**: Verify no merge commits, no unrelated changes, clean linear history from upstream/main to HEAD. There should be exactly two commits: the feature commit (Step 17) and the style commit (Step 20, if format/lint produced changes).
+26. **Validate PR cleanliness**: Run `scripts/validate-pr-cleanliness.sh <base-ref> --expected-commits 2` (where `<base-ref>` is `origin/master` or the upstream default branch). The script checks for merge commits (linear history — rebase, never merge), commit count (should be 1-2: the feature commit from Step 17 and the optional style commit from Step 20), and that all changed files match nixify artifact patterns (`flake.nix`, `devbox.json`, `.gitignore`, `.github/workflows/nix.yml`, `nix/`, `README*.md`, `CHANGELOG.md`, etc.). If it exits non-zero, fix the reported issues before pushing — do NOT push a branch with merge commits or unrelated changes.
 
 27. **Generate PR description**: Use the appropriate PR template — **branch on `flake_type` (Step 12), `hybrid_fallback` (Step 12), `include_devbox` (Step 13), and `platform_scope` (Step 4a)**: `source_build` -> `references/pr-source-build.md` (devbox always included); `prebuilt_tarball` + `hybrid_fallback=false` + `include_devbox=false` (default) -> `references/pr-prebuilt-tarball.md` (no devbox mentions); `prebuilt_tarball` + `hybrid_fallback=false` + `include_devbox=true` (user explicitly asked) -> `references/pr-prebuilt-tarball-devbox.md`; `prebuilt_tarball` + `hybrid_fallback=true` -> `references/pr-prebuilt-tarball.md` and include the hybrid fallback clause from the template (documents that `#default` falls back to source on platforms without a prebuilt binary). **When `platform_scope` is `darwin_only` or `linux_only`** (Step 4a), include the "Platform scope" clause from the PR template (documents why the flake only targets one OS family — pre-empts the "why no Linux/macOS?" review comment). Prebuilt Tarball PRs must not advertise tag-pinning for the prebuilt `#default` output (the `#source` output works at any tag since it builds from source). **Handle the conditional "Relationship to nixpkgs" section** using the Step 10 output: if `project_in_nixpkgs: true`, keep the section and fill the `$PROJECT`/`$NIXPKGS_VERSION`/`$LATEST_RELEASE`/`$NIXPKGS_DARWIN_STABLE_VERSION` placeholders and pick the correct x86_64-darwin clause from `x86_64_darwin_in_meta`; if `project_in_nixpkgs: false`, delete the entire `<!-- BEGIN conditional -->` ... `<!-- END conditional -->` block. Present to user for review. Do NOT open PR automatically. **When you do open it, follow the "CRITICAL — How to post these bodies to GitHub" guard at the top of the template file**: substitute the `$UPSTREAM_*`/`$CURRENT_USER`/`<issue-number>` placeholders by text replacement, write the body to a file, and post with `gh pr create --body-file` — never `--body` with an inline string, never an unquoted heredoc (backticks get command-substituted to empty and `\n` ends up literal in the stored body).
 
@@ -1509,6 +1590,72 @@ devbox as Nix abstraction, package verification, reproducible builds,
 | `nix run github:...` fails on Linux for a macOS-only app (or vice versa) | The project is inherently platform-specific (Step 4a detected `darwin_only` or `linux_only`); the flake correctly only targets the supported OS family | This is correct behavior — the excluded platform is the project's design constraint, not a flake bug. Do NOT attempt cross-compilation. The PR body's "Platform scope" clause documents this. See `references/architecture-analysis.md` — Inherent Platform Scope |
 | `detect-platform-scope.sh` reports `darwin_only` but the project also builds on Linux | Conflicting or over-eager signals (e.g. `cocoa` crate used for optional macOS UI, but CLI works on Linux) | Check the `signals` array in the script output. If a signal is wrong (e.g. a crate is optional, not required), override with `platform_scope=all` and `target_platforms` set to the full 4-system list. Note the override in the PR body. See Step 4a — Manual override |
 | `detect-platform-scope.sh` reports `all` but the project is actually macOS-only | Signals were too weak (e.g. no CI matrix, no platform-specific crates, just a README mention the script missed) | Manually set `platform_scope=darwin_only` and `target_platforms=["x86_64-darwin","aarch64-darwin"]`. The script is conservative — it prefers false negatives over false positives. See Step 4a — Manual override |
+
+
+## Definition of Done
+
+Before declaring the nixify run complete, verify every item below. Items
+marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Build and Install
+
+- [ ] **[script]** `nix flake check --no-build` passes (Step 22)
+- [ ] **[script]** `nix build` succeeds (Step 22)
+- [ ] **[script]** `nix run . -- --help` produces output (Step 22)
+- [ ] **[script]** `nix run .#<project-name> -- --help` produces output (Step 22 — the `.#<project-name>` output exists and runs)
+- [ ] **[manual]** The flake `version` matches the latest release from `check-releases.sh` (Step 4b) — a stale version serves a superseded release
+
+### Template Selection (the 9router failure mode)
+
+- [ ] **[script]** For Node.js projects: `classify-node-complexity.sh` was run and its `recommended_template` was used (Step 5 → Step 12)
+- [ ] **[manual]** The selected template matches the project's actual build complexity — if `is_complex=true`, `source-build/node-complex.md` was used (NOT `source-build/node.md`)
+- [ ] **[manual]** For complex Node.js projects: the subagent validation (Step 5b) completed and its findings were incorporated into `postPatch`, `installPhase`, and `makeWrapper`
+
+### Platform Scope
+
+- [ ] **[manual]** `allSystems` and `meta.platforms` are scoped to `target_platforms` from Step 4a — no excluded OS family is present
+- [ ] **[manual]** For source-build flakes: the `nixpkgs-darwin-legacy` input pinned to `nixpkgs-24.05-darwin` is present (Step 12 MANDATORY rule) — unless the project is `aarch64-darwin` only
+- [ ] **[manual]** When `hybrid_fallback=true`: `#default` falls back to source on platforms without a prebuilt binary, `#prebuilt` is only on platforms with a release asset
+
+### Devbox (source-build only)
+
+- [ ] **[manual]** `devbox.json` exists and is committed (Step 13)
+- [ ] **[manual]** `devbox.lock` is committed (NOT gitignored) — it pins exact nixpkgs revisions
+- [ ] **[manual]** `act` is in the `packages` array (required for Step 16b CI validation)
+- [ ] **[manual]** Runtime service packages from Step 12b are in the `packages` array
+
+### CI and Hash Automation
+
+- [ ] **[manual]** `.github/workflows/nix.yml` exists and uses the correct `trigger` from Step 7 (`scheduled_lag_check` or `release_published`)
+- [ ] **[manual]** For prebuilt tarballs: the hash automation workflow exists and `ASSET_MAP` covers all platforms with release assets
+- [ ] **[script]** `test-with-act.sh` passes in `--both` mode (ubuntu via act AND darwin via direct nix) — unless the project is platform-specific (Step 4a)
+
+### Documentation
+
+- [ ] **[manual]** README has Nix install instructions matching the `flake_type` (Step 15) — prebuilt tarball READMEs must not advertise tag-pinning for `#default`
+- [ ] **[manual]** When `project_in_nixpkgs: true`: the "Relationship to nixpkgs" section is present in both the issue and PR bodies with filled placeholders
+- [ ] **[manual]** When `project_in_nixpkgs: false`: the conditional section is deleted from both templates
+
+### Hygiene
+
+- [ ] **[script]** `scan-artifacts.sh` exits zero — no resolved `$HOME` paths, usernames, or hostnames in nixify artifacts (Step 21)
+- [ ] **[script]** `validate-pr-cleanliness.sh` exits zero — no merge commits, 1-2 commits, all files are nixify artifacts (Step 26)
+- [ ] **[script]** `validate-pr-issue.sh` exits zero for both the issue and the PR — no literal `\n`, no stripped backticks, no unsubstituted placeholders (Step 28)
+- [ ] **[manual]** Format and lint are clean (Step 18-19) — `format-artifacts.sh` and `lint-artifacts.sh` produced no outstanding findings
+- [ ] **[manual]** `.gitignore` has `/result` and `/result-*` (Step 14)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `nix build` passes but `nix run .#<project-name> -- --help` fails → the `.#<project-name>` output is missing or broken (Step 22)
+- The flake builds but `version` is hardcoded to a stale value → users install a superseded release (Step 12)
+- `classify-node-complexity.sh` reported `is_complex: true` but `source-build/node.md` was used → wrong template, will fail on complex projects (Step 5 → Step 12)
+- `devbox.json` is committed but `devbox.lock` is gitignored → environment is not reproducible (Step 13)
+- `scan-artifacts.sh` has HARD findings that were dismissed without fixing → identity leak in the PR (Step 21)
+- `validate-pr-issue.sh` exits non-zero but the PR was opened anyway → corrupted body visible to reviewers (Step 28)
 
 
 ## Context Declaration

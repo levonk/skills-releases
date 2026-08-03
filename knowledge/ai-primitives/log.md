@@ -11,6 +11,31 @@ date:
 
 # Bundle Update Log
 
+## 2026-08-03
+* **Ingest**: Added [comparison/model-assessment.md](comparison/model-assessment.md)
+  — concept page documenting a twelve-criterion framework for assessing an
+  LLM before adoption. Covers benchmark methodology disclosure (scores must
+  ship with the methodology, not just the table), open weights vs open model
+  (OSAID 1.0) vs neither, active vs total parameter counts for MoE models
+  (with reference points for Mixtral, DeepSeek-V3, Qwen3-235B, GLM-5.2),
+  on-disk model size at the chosen quantization, license and weights
+  availability verification via the Hugging Face API (the 60-second check
+  that catches decoy repos with high likes and zero shards), published
+  per-million-token pricing (input, cached input, cache writes, output),
+  independent third-party evaluations (HELM, LMArena, Artificial Analysis —
+  vendor blogs do not count), languages supported, tools supported,
+  modality coverage (image, text, audio, video — distinguishing "accepts"
+  from "generates"), max knowledge basis date (cutoff vs release date), and
+  Hugging Face adoption stats (downloads, likes, derivatives). Each criterion
+  pairs the question to ask with the verification step and the failure mode
+  it catches. Includes a criterion map, an assessment workflow ordering
+  (weights check → evidence → cost → fit → adoption), common anti-patterns,
+  and review triggers. Sources: Stanford CRFM HELM, LMArena, Artificial
+  Analysis, Presenc AI open-weight license landscape, LockML license guide,
+  OSI OSAID 1.0, the DeepSeek-V3 technical report, and OpenAI/Anthropic
+  pricing pages.
+* **Update**: Listed the new comparison page in [index.md](index.md).
+
 ## 2026-08-02 (update)
 * **Update**: Updated [comparison/llm-runtime-selection.md](comparison/llm-runtime-selection.md)
   with two new sections distilled from a levonk-ai-playground implementation

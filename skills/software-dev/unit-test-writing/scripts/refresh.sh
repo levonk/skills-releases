@@ -113,17 +113,49 @@ SANDBOX_CMD=""
 NONO_PROFILE="$SKILL_DIR/references/nono-profile.json"
 
 if [ "$ALREADY_SANDBOXED" -eq 0 ]; then
-  # Check if nono is available
-  if command -v nono >/dev/null 2>&1; then
+  # Use cli-tool-discovery to find nono through the full resolution chain
+  # (devbox shell → devbox run → mise → nix → PATH → package managers).
+  # This respects the devbox.json environment and the mandatory devbox rule
+  # in skills-src AGENTS.md.
+  if [ -x "$CLI_DISCOVERY" ]; then
+    NONO_RESOLVE="$("$CLI_DISCOVERY" nono --json 2>/dev/null || echo "")"
+    if [ -n "$NONO_RESOLVE" ]; then
+      NONO_STATUS=""
+      if command -v jq >/dev/null 2>&1; then
+        NONO_STATUS="$(echo "$NONO_RESOLVE" | jq -r '.status // empty' 2>/dev/null || echo "")"
+      fi
+      if [ -z "$NONO_STATUS" ]; then
+        NONO_STATUS="$(echo "$NONO_RESOLVE" | grep -o '"status"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*: *"\(.*\)"/\1/' 2>/dev/null || echo "")"
+      fi
+      case "$NONO_STATUS" in
+        found)
+          SANDBOX_CMD="nono"
+          ;;
+        wrapper)
+          # Extract wrapper command (e.g., "devbox run --")
+          if command -v jq >/dev/null 2>&1; then
+            NONO_WRAPPER="$(echo "$NONO_RESOLVE" | jq -r '.wrapper // empty' 2>/dev/null || echo "")"
+          fi
+          if [ -z "$NONO_WRAPPER" ]; then
+            NONO_WRAPPER="$(echo "$NONO_RESOLVE" | grep -o '"wrapper"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*: *"\(.*\)"/\1/' 2>/dev/null || echo "")"
+          fi
+          SANDBOX_CMD="$NONO_WRAPPER nono"
+          ;;
+      esac
+    fi
+  fi
+  # Fallback: bare command -v if cli-tool-discovery is unavailable
+  if [ -z "$SANDBOX_CMD" ] && command -v nono >/dev/null 2>&1; then
     SANDBOX_CMD="nono"
-  elif command -v devbox >/dev/null 2>&1 && devbox run -- command -v nono >/dev/null 2>&1; then
-    SANDBOX_CMD="devbox run -- nono"
   fi
 fi
 
 run_update() {
   if [ -n "$SANDBOX_CMD" ] && [ -f "$NONO_PROFILE" ]; then
     # Sandboxed update via nono with bundled profile
+    # shellcheck disable=SC2086 — SANDBOX_CMD and PNPM_RUNNER are intentionally
+    # unquoted: they may contain multi-word commands like "devbox run -- nono"
+    # or "pnpm dlx" that must word-split into separate arguments.
     $SANDBOX_CMD run --profile "$NONO_PROFILE" -- \
       $PNPM_RUNNER skills update "$SKILL_NAME"
   else
@@ -132,6 +164,7 @@ run_update() {
     # - already inside a nono session (parent handles it), or
     # - native Windows (no lightweight sandbox available)
     # The trust model treats levonk/skills-releases as a trusted source.
+    # shellcheck disable=SC2086 — PNPM_RUNNER may be a multi-word command.
     $PNPM_RUNNER skills update "$SKILL_NAME"
   fi
 }

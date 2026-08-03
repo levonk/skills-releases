@@ -377,21 +377,42 @@ List of key dependencies and their purposes.
 
 #### TypeScript/Node.js Projects
 
+External dependency versions are centralized in the `catalog:` block of the
+root `pnpm-workspace.yaml` (per the `typescript-monorepo-best-practices` bundle
+— `pnpm-nx-monorepo` concept). Sub-package `package.json` files reference them
+via `"catalog:"` and **never** duplicate a version range. `"*"` does NOT inherit
+from root — it resolves to the latest registry release and is forbidden.
+
+`configure-nodejs.sh` creates `pnpm-workspace.yaml` with the catalog and
+`catalogMode: strict` automatically. To rewrite an existing `package.json`'s
+external deps to `catalog:` references, run with
+`PROJECT_ADOPTER_CATALOG_REFS=1`; otherwise the catalog is created but the
+package.json versions are left as-is (unreferenced catalog).
+
 Use `yq-go` to update `package.json`:
 
 ```bash
-# Add standard dependencies
-yq eval '.devDependencies["@job-aide/tools-lint-eslint-config"] = "^1.0.0"' package.json -i
-yq eval '.devDependencies["@job-aide/tools-vitest-config"] = "^1.0.0"' package.json -i
-yq eval '.devDependencies["typescript"] = "^5.6.0"' package.json -i
-yq eval '.devDependencies["vitest"] = "^2.0.0"' package.json -i
+# Add standard dependencies — internal workspace packages use workspace:*
+yq eval '.devDependencies["@job-aide/tools-lint-eslint-config"] = "workspace:*"' package.json -i
+yq eval '.devDependencies["@job-aide/tools-vitest-config"] = "workspace:*"' package.json -i
+# External registry deps use catalog: (version pinned in pnpm-workspace.yaml)
+yq eval '.devDependencies["typescript"] = "catalog:"' package.json -i
+yq eval '.devDependencies["vitest"] = "catalog:"' package.json -i
 
-# Add scripts
-yq eval '.scripts.build = "tsc"' package.json -i
+# Add scripts. Build tool depends on project type (build-tool-selection concept):
+#   library → tsup (ESM+CJS+.d.ts via esbuild)
+#   app/CLI → next build (Rolldown-backed from Next 15) or rolldown
+# tsc --noEmit is always the type-check layer, never the build layer.
+yq eval '.scripts.build = "tsup"' package.json -i          # library
 yq eval '.scripts.test = "vitest"' package.json -i
 yq eval '.scripts.lint = "eslint . --ext .ts,.tsx"' package.json -i
 yq eval '.scripts.typecheck = "tsc --noEmit"' package.json -i
 ```
+
+For supply-chain hardening (`overrides`, `patchedDependencies`,
+`onlyBuiltDependencies`, `.pnpmfile.mjs`, `packageExtensions`), edit
+`pnpm-workspace.yaml` — these settings are silently ignored in `package.json#pnpm`
+on pnpm 11+ (issue #11536). See the `pnpm-supply-chain` knowledge concept.
 
 #### Rust Projects
 

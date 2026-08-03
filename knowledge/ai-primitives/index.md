@@ -14,6 +14,7 @@ prompts, memory, rules, hooks, and the upsert skills that produce them.
 * [Composition Chain](composition/composition-chain.md) - How primitives compose: templates → prompts → workflows → skills → agents → committees
 * [Comparison Matrix](comparison/primitive-comparison.md) - Full comparison across all dimensions (role, scope, autonomy, loading, reusability, personality, reasoning, and more)
 * [LLM Runtime Selection](comparison/llm-runtime-selection.md) - Scenario-driven selection of LLM serving runtimes on a single GPU box (SGLang default, vLLM fallback, llama.cpp bring-up, Colibri frontier MoE, Glom code execution); distilled from ADR-202608021744
+* [LLM Model Assessment](comparison/model-assessment.md) - Twelve-criterion framework for assessing an LLM before adoption (benchmark methodology, open weights vs open model, active vs total MoE parameters, on-disk size, license and weights availability, per-million-token pricing, independent evals, languages, tools, modalities, knowledge cutoff, Hugging Face stats)
 
 ### Primitive Types
 

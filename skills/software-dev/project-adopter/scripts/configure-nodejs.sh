@@ -33,6 +33,254 @@ check_yq() {
     fi
 }
 
+# Find the pnpm workspace root by searching upward for pnpm-workspace.yaml.
+# Falls back to the given project path when no workspace is found (single-package project).
+find_workspace_root() {
+    local start_path="$1"
+    local current="$start_path"
+    while [[ "$current" != "/" && -n "$current" ]]; do
+        if [[ -f "$current/pnpm-workspace.yaml" ]]; then
+            echo "$current"
+            return 0
+        fi
+        current="$(dirname "$current")"
+    done
+    echo "$start_path"
+}
+
+# External dependencies that belong in the pnpm catalog (registry deps only).
+# Internal workspace packages (workspace:*) and github: URLs are excluded.
+CATALOG_DEPS="next react react-dom typescript @antfu/ni better-auth @better-auth/drizzle-adapter bcryptjs class-variance-authority clsx dotenv drizzle-kit drizzle-orm jose lucide-react only-allow postgres radix-ui server-only stripe swr tailwind-merge tailwindcss tw-animate-css zod @browserbasehq/stagehand @tailwindcss/postcss @testing-library/react @testing-library/jest-dom @testing-library/user-event @types/node @types/react @types/react-dom autoprefixer eslint eslint-config-next globby imagemin imagemin-mozjpeg imagemin-pngquant imagemin-webp jsdom modern-errors modern-errors-beautiful modern-errors-bugs modern-errors-clean modern-errors-cli modern-errors-process modern-errors-serialize modern-errors-winston postcss skillman skills-detector vitest yakbak @next/font commander express cors helmet tsup rolldown"
+
+# Configure pnpm-workspace.yaml at the workspace root with a catalog block,
+# catalogMode: strict, and supply-chain hardening features (onlyBuiltDependencies,
+# overrides scaffold). Always runs in both adopt and standardize modes so the
+# catalog exists even when package.json files are not rewritten to reference it.
+configure_pnpm_workspace() {
+    local project_path="$1"
+    local mode="$2"
+    local app_type="$3"
+    local project_type="$4"
+
+    local ws_root
+    ws_root="$(find_workspace_root "$project_path")"
+    local ws_file="$ws_root/pnpm-workspace.yaml"
+
+    log_info "Configuring pnpm-workspace.yaml at $ws_root (mode: $mode)"
+
+    # Workspace packages globs (only written when creating a fresh file at the
+    # project root; an existing workspace file is left intact for the packages
+    # list and only the catalog/supply-chain blocks are ensured).
+    if [[ ! -f "$ws_file" ]]; then
+        cat > "$ws_file" << 'EOF'
+packages:
+  # pnpm workspace package globs — adjust to match your monorepo layout.
+  # See https://pnpm.io/workspaces for the glob syntax.
+  - "apps/*"
+  - "packages/*"
+
+# Strict catalog enforcement: `pnpm add <pkg>@<version>` is refused when the
+# version is outside the catalog. Edit the catalog first to bump a dependency.
+# https://pnpm.io/catalogs/
+catalogMode: strict
+
+# Centralized external dependency versions. Sub-package package.json files
+# reference these via "catalog:" (shorthand for "catalog:default"). When a
+# package.json is not yet migrated, the catalog still pins the canonical
+# version for future `pnpm add` calls.
+catalog:
+  next: ^15.1.0
+  react: ^18.3.1
+  react-dom: ^18.3.1
+  typescript: ^5.6.0
+  "@antfu/ni": ^0.21.0
+  better-auth: ^1.1.1
+  "@better-auth/drizzle-adapter": ^1.5.0-beta.9
+  bcryptjs: ^2.4.3
+  class-variance-authority: ^0.7.0
+  clsx: ^2.1.1
+  dotenv: ^16.4.5
+  drizzle-kit: ^0.30.0
+  drizzle-orm: ^0.36.0
+  jose: ^5.9.6
+  lucide-react: ^0.460.0
+  only-allow: ^1.2.1
+  postgres: ^3.4.5
+  radix-ui: ^1.0.0
+  server-only: ^0.0.1
+  stripe: ^17.4.0
+  swr: ^2.2.5
+  tailwind-merge: ^2.5.4
+  tailwindcss: ^3.4.15
+  tw-animate-css: ^1.0.0
+  zod: ^3.23.8
+  "@browserbasehq/stagehand": ^1.0.0
+  "@tailwindcss/postcss": ^4.0.0
+  "@testing-library/react": ^16.0.1
+  "@testing-library/jest-dom": ^6.6.3
+  "@testing-library/user-event": ^14.5.2
+  "@types/node": ^22.9.0
+  "@types/react": ^18.3.12
+  "@types/react-dom": ^18.3.1
+  autoprefixer: ^10.4.20
+  eslint: ^9.0.0
+  eslint-config-next: ^15.1.0
+  globby: ^14.0.2
+  imagemin: ^9.0.0
+  imagemin-mozjpeg: ^10.0.0
+  imagemin-pngquant: ^10.0.0
+  imagemin-webp: ^8.0.0
+  jsdom: ^25.0.1
+  modern-errors: ^7.0.0
+  modern-errors-beautiful: ^2.0.0
+  modern-errors-bugs: ^1.0.0
+  modern-errors-clean: ^2.0.0
+  modern-errors-cli: ^1.0.0
+  modern-errors-process: ^3.0.0
+  modern-errors-serialize: ^4.0.0
+  modern-errors-winston: ^2.0.0
+  postcss: ^8.4.49
+  skillman: ^0.1.0
+  skills-detector: ^0.1.0
+  vitest: ^2.1.0
+  yakbak: ^1.0.0
+  "@next/font": ^15.1.0
+  commander: ^9.0.0
+  express: ^4.18.0
+  cors: ^2.8.5
+  helmet: ^6.0.0
+  # Build tools (see build-tool-selection knowledge concept):
+  #   tsup     — library bundling (ESM+CJS+.d.ts via esbuild)
+  #   rolldown — application/CLI bundling (Rust speed, Rollup plugins)
+  tsup: ^8.3.0
+  rolldown: ^1.0.0
+
+# Supply-chain hardening (see pnpm-supply-chain knowledge concept).
+# All of these live in pnpm-workspace.yaml, NOT package.json#pnpm —
+# pnpm 11+ silently ignores pnpm.* in package.json (issue #11536).
+
+# Allowlist of packages permitted to run postinstall/preinstall/install
+# lifecycle scripts. pnpm 10+ blocks all build scripts by default.
+# Add a package here only after verifying it needs its build script.
+# https://pnpm.io/settings#onlybuiltdependencies
+onlyBuiltDependencies:
+  - esbuild        # builds its native binary
+  - sharp          # downloads platform binaries
+  - "@biomejs/biome" # fetches its binary
+  - swc            # builds native bindings
+
+# Force a single version across the entire dependency tree, including
+# transitive deps no package.json directly declares. Primary tool for
+# CVE remediation on transitive packages. Uncomment and edit as needed.
+# https://pnpm.io/settings#overrides
+# overrides:
+#   lodash@<4.17.21: 4.17.21
+EOF
+        log_info "✓ Created pnpm-workspace.yaml with catalog (catalogMode: strict) and supply-chain hardening"
+    else
+        # File exists — ensure the catalog block is present without clobbering
+        # the user's packages list. We only append missing catalog entries via
+        # yq when yq (go) is available; otherwise we leave the file untouched
+        # and log a warning.
+        if check_yq >/dev/null 2>&1; then
+            local dep
+            for dep in $CATALOG_DEPS; do
+                # yq treats keys with special chars as quoted; use the eval form.
+                if ! yq eval -e ".catalog.\"$dep\"" "$ws_file" >/dev/null 2>&1; then
+                    yq eval ".catalog.\"$dep\" = \"\"" "$ws_file" -i 2>/dev/null || true
+                fi
+            done
+            # Ensure catalogMode and onlyBuiltDependencies exist.
+            yq eval ".catalogMode = \"strict\"" "$ws_file" -i 2>/dev/null || true
+            log_info "✓ Ensured catalog entries in existing pnpm-workspace.yaml"
+        else
+            log_warn "yq (go) unavailable — leaving existing pnpm-workspace.yaml untouched. Manually add the catalog block per the typescript-monorepo-best-practices bundle."
+        fi
+    fi
+}
+
+# Rewrite external dependency versions in package.json to "catalog:" references.
+# Gated by PROJECT_ADOPTER_CATALOG_REFS=1 — when not set, the catalog section is
+# created in pnpm-workspace.yaml but package.json versions are left as-is (the
+# catalog exists but nothing references it yet). Internal workspace: deps and
+# github: URLs are preserved.
+migrate_package_json_to_catalog() {
+    local project_path="$1"
+    local pkg="$project_path/package.json"
+
+    if [[ "${PROJECT_ADOPTER_CATALOG_REFS:-0}" != "1" ]]; then
+        log_info "PROJECT_ADOPTER_CATALOG_REFS not set — leaving package.json versions as-is (catalog created but unreferenced)"
+        return 0
+    fi
+
+    if [[ ! -f "$pkg" ]]; then
+        return 0
+    fi
+
+    if ! check_yq >/dev/null 2>&1; then
+        log_warn "yq unavailable — cannot migrate package.json to catalog: references"
+        return 0
+    fi
+
+    log_info "Migrating package.json external deps to catalog: references"
+    local dep current
+    for dep in $CATALOG_DEPS; do
+        # dependencies
+        current="$(yq eval ".dependencies.\"$dep\"" "$pkg" 2>/dev/null || echo "")"
+        if [[ -n "$current" && "$current" != "null" && "$current" != "catalog:"* && "$current" != "workspace:"* && "$current" != "github.com"* ]]; then
+            yq eval ".dependencies.\"$dep\" = \"catalog:\"" "$pkg" -i
+        fi
+        # devDependencies
+        current="$(yq eval ".devDependencies.\"$dep\"" "$pkg" 2>/dev/null || echo "")"
+        if [[ -n "$current" && "$current" != "null" && "$current" != "catalog:"* && "$current" != "workspace:"* && "$current" != "github.com"* ]]; then
+            yq eval ".devDependencies.\"$dep\" = \"catalog:\"" "$pkg" -i
+        fi
+    done
+    log_info "✓ Migrated package.json external deps to catalog: references"
+}
+
+# Configure the build tool based on app_type / project_type per the
+# build-tool-selection knowledge concept:
+#   library → tsup (ESM+CJS+.d.ts via esbuild, one config, one step)
+#   web/cli/api (apps) → Next.js build (Rolldown-backed from Next 15) or Rolldown
+# tsc --noEmit is always the type-check layer (already wired as `typecheck`).
+configure_build_tool() {
+    local project_path="$1"
+    local mode="$2"
+    local app_type="$3"
+    local project_type="$4"
+
+    # tsup for library packages
+    if [[ "$app_type" == "library" || "$project_type" == "library" ]]; then
+        if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/tsup.config.ts" ]]; then
+            cat > "$project_path/tsup.config.ts" << 'EOF'
+import { defineConfig } from 'tsup'
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm', 'cjs'],
+  dts: true,           // generate .d.ts via tsc
+  clean: true,
+  sourcemap: true,
+  treeshake: true,
+})
+EOF
+            log_info "✓ Created tsup.config.ts (library bundler per build-tool-selection)"
+        fi
+
+        if [[ -f "$project_path/package.json" ]] && check_yq >/dev/null 2>&1; then
+            # Library build uses tsup, not `next build` or `tsc`.
+            yq eval '.scripts.build = "tsup"' "$project_path/package.json" -i
+            yq eval '.devDependencies.tsup = "catalog:"' "$project_path/package.json" -i 2>/dev/null || \
+                yq eval '.devDependencies += {"tsup": "catalog:"}' "$project_path/package.json" -i
+        fi
+    fi
+    # App/CLI builds: Next.js (web/api) uses `next build` (Rolldown-backed from
+    # Next 15). For a non-Next CLI, Rolldown is the recommended bundler — left
+    # to the developer to add `rolldown.config.mjs` since CLI bundling needs
+    # project-specific input/output decisions.
+}
+
 # Configure Node.js/TypeScript project
 configure_nodejs_project() {
     local project_path="$1"
@@ -48,6 +296,18 @@ configure_nodejs_project() {
     elif [[ "$mode" == "standardize" ]]; then
         create_package_json "$project_path" "$mode" "$app_type" "$project_type"
     fi
+
+    # Configure pnpm-workspace.yaml (catalog + supply-chain hardening).
+    # Always runs so the catalog exists even when package.json is not migrated.
+    configure_pnpm_workspace "$project_path" "$mode" "$app_type" "$project_type"
+
+    # Migrate package.json external deps to catalog: references. Gated by
+    # PROJECT_ADOPTER_CATALOG_REFS=1 — when unset, package.json versions are
+    # left as-is and the catalog is created but unreferenced.
+    migrate_package_json_to_catalog "$project_path"
+
+    # Configure the build tool per build-tool-selection (tsup for libraries).
+    configure_build_tool "$project_path" "$mode" "$app_type" "$project_type"
 
     # Handle tsconfig.json
     if [[ -f "$project_path/tsconfig.json" ]] || [[ "$mode" == "standardize" ]]; then
@@ -145,7 +405,7 @@ add_standardize_package_json_scripts() {
                 ;;
             "cli")
                 yq eval '.scripts += {"start": "node dist/index.js"}' "$project_path/package.json" -i
-                yq eval '.scripts += {"link": "npm link"}' "$project_path/package.json" -i
+                yq eval '.scripts += {"link": "pnpm link"}' "$project_path/package.json" -i
                 ;;
             "api")
                 yq eval '.scripts += {"dev:watch": "next dev --watch"}' "$project_path/package.json" -i
@@ -322,14 +582,16 @@ add_standardize_package_json_deps() {
                 ;;
         esac
 
-        # Add engines configuration (from boilerplate)
+        # Add engines configuration (from boilerplate). Pin pnpm to 9.5+ for
+        # catalog: support; node to an active LTS major. "*" is forbidden — it
+        # resolves to the latest registry release, not "inherit from root".
         yq eval '.devEngines.runtime.name = "node"' "$project_path/package.json" -i
-        yq eval '.devEngines.runtime.version = "*"' "$project_path/package.json" -i
+        yq eval '.devEngines.runtime.version = ">=20.0.0"' "$project_path/package.json" -i
         yq eval '.devEngines.packageManager.name = "pnpm"' "$project_path/package.json" -i
-        yq eval '.devEngines.packageManager.version = "*"' "$project_path/package.json" -i
-        yq eval '.engines.node = "*"' "$project_path/package.json" -i
-        yq eval '.engines.pnpm = "*"' "$project_path/package.json" -i
-        yq eval '.packageManager = "pnpm@*"' "$project_path/package.json" -i
+        yq eval '.devEngines.packageManager.version = ">=9.5.0"' "$project_path/package.json" -i
+        yq eval '.engines.node = ">=20.0.0"' "$project_path/package.json" -i
+        yq eval '.engines.pnpm = ">=9.5.0"' "$project_path/package.json" -i
+        yq eval '.packageManager = "pnpm@9.15.0"' "$project_path/package.json" -i
         yq eval '.modeline = "/* vim: set ft=json: */"' "$project_path/package.json" -i
 
         log_info "✓ Added standardize dependencies to package.json"
@@ -426,23 +688,23 @@ create_package_json() {
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "*"
+      "version": ">=20.0.0"
     },
     "packageManager": {
       "name": "pnpm",
-      "version": "*"
+      "version": ">=9.5.0"
     }
   },
   "engines": {
-    "node": "*",
-    "pnpm": "*"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.5.0"
   },
-  "packageManager": "pnpm@*",
+  "packageManager": "pnpm@9.15.0",
   "modeline": "/* vim: set ft=json: */"
 }
 EOF
 
-        log_info "✓ Created package.json"
+        log_info "✓ Created package.json (external deps use catalog: — see pnpm-workspace.yaml)"
     fi
 }
 
@@ -817,3 +1079,7 @@ export -f configure_framework_configs
 export -f configure_nextjs_config
 export -f configure_vite_config
 export -f configure_testing_configs
+export -f find_workspace_root
+export -f configure_pnpm_workspace
+export -f migrate_package_json_to_catalog
+export -f configure_build_tool

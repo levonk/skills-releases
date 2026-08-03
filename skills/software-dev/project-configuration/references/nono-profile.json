@@ -13,7 +13,7 @@
   ],
   "net_allow": [
     "registry.npmjs.org",
-    "raw.githubusercontent.com"
+    "github.com"
   ],
   "net_deny": [
     "*"

@@ -57,8 +57,18 @@
 # Timeout configuration (env vars):
 #   CLTOOL_PROBE_TIMEOUT_SECS   (default 30)  — lookups: brew list, mise which,
 #     nix eval, devbox run -- command -v, etc.
-#   CLTOOL_INSTALL_TIMEOUT_SECS (default 120) — network installs: devbox add,
-#     nix profile install, uv tool install.
+#   CLTOOL_INSTALL_TIMEOUT_SECS (default 45)  — network installs: devbox add,
+#     nix profile install, uv tool install. Reduced from 120s to 45s to avoid
+#     blocking the resolver for 6+ minutes when multiple install fallbacks fire
+#     for a missing tool. Real installs in a devbox/nix environment typically
+#     complete in under 30s; 45s is a safe ceiling. Set higher if on a slow
+#     connection and you want installs to succeed rather than fail fast.
+#   CLTOOL_INSTALL_DISABLED     (default 0)   — set to 1 to skip ALL install
+#     fallbacks (devbox add, nix profile install, uv tool install). Resolve-only
+#     mode: the script checks PATH, wrappers, standard locations, and package
+#     managers, but never attempts to install a missing tool. Use this when
+#     you only need to find a tool that already exists, not bootstrap one.
+#     Also set by wrapper-helpers.sh's probe_devbox() when devbox is broken.
 #   DEVBOX_PROBE_TIMEOUT_SECS   (default 15)  — devbox run -- probes specifically.
 #   Exec mode (-- <tool> [args]) is never timed — it's the user's command.
 set -euo pipefail
@@ -68,7 +78,8 @@ set -euo pipefail
 # Installs (devbox add, nix profile install, uv tool install): long — network fetches.
 # Override via environment. macOS lacks timeout(1); see run_timed fallback.
 probe_timeout="${CLTOOL_PROBE_TIMEOUT_SECS:-30}"
-install_timeout="${CLTOOL_INSTALL_TIMEOUT_SECS:-120}"
+install_timeout="${CLTOOL_INSTALL_TIMEOUT_SECS:-45}"
+install_disabled="${CLTOOL_INSTALL_DISABLED:-0}"
 
 # --- Parse args: runner mode vs exec mode vs resolve mode ---
 exec_mode=0
@@ -174,7 +185,9 @@ ensure_devbox_package() {
     local devbox_json="$devbox_dir/devbox.json"
 
     # If devbox is available, prefer `devbox add` (idempotent in devbox).
-    if command -v devbox >/dev/null 2>&1; then
+    # Skipped when CLTOOL_INSTALL_DISABLED=1 — falls through to the JSON edit
+    # fallback below, which records the package without running devbox add.
+    if [[ "$install_disabled" -eq 0 ]] && command -v devbox >/dev/null 2>&1; then
         (cd "$devbox_dir" && run_timed "$install_timeout" devbox add "$pkg" >/dev/null 2>&1) || true
         return 0
     fi
@@ -497,9 +510,10 @@ resolve_tool() {
         # c. `devbox add <tool>` then retry — install into the project's
         #    devbox environment. devbox add is idempotent; failures are
         #    non-fatal (the tool may not be a nixpkgs package under this name).
+        #    Skipped when CLTOOL_INSTALL_DISABLED=1 (resolve-only mode).
         local devbox_json_dir
         devbox_json_dir="$(walk_up devbox.json 2>/dev/null || true)"
-        if [[ -n "$devbox_json_dir" ]] && command -v devbox >/dev/null 2>&1; then
+        if [[ "$install_disabled" -eq 0 ]] && [[ -n "$devbox_json_dir" ]] && command -v devbox >/dev/null 2>&1; then
             (cd "$devbox_json_dir" && run_timed "$install_timeout" devbox add "$tool" >/dev/null 2>&1) || true
             if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
                 echo "FOUND:$path"
@@ -530,10 +544,13 @@ resolve_tool() {
                     return 0
                 fi
                 # 2b. devbox add + recheck inside devbox
-                (cd "$devbox_json_dir" && run_timed "$install_timeout" devbox add "$tool" >/dev/null 2>&1) || true
-                if (cd "$devbox_json_dir" && devbox_run_timed command -v "$tool" >/dev/null 2>&1); then
-                    echo "WRAPPER:devbox run --"
-                    return 0
+                #     Skipped when CLTOOL_INSTALL_DISABLED=1 (resolve-only mode).
+                if [[ "$install_disabled" -eq 0 ]]; then
+                    (cd "$devbox_json_dir" && run_timed "$install_timeout" devbox add "$tool" >/dev/null 2>&1) || true
+                    if (cd "$devbox_json_dir" && devbox_run_timed command -v "$tool" >/dev/null 2>&1); then
+                        echo "WRAPPER:devbox run --"
+                        return 0
+                    fi
                 fi
                 # Still not found inside devbox — fall through to normal flow
                 # and nix/uv fallback (don't return WRAPPER for a tool that
@@ -635,21 +652,25 @@ resolve_tool() {
 
     # b. nix fallback: is nix available? Search nixpkgs for <tool>. If a
     #    package exists, install it via `nix profile install` and recheck PATH.
+    #    Skipped when CLTOOL_INSTALL_DISABLED=1 (resolve-only mode) — the nix
+    #    eval search still runs (it's a fast probe), but the install is skipped.
     if command -v nix >/dev/null 2>&1; then
         # Search: check if the package exists in nixpkgs (fast, non-destructive).
         # nix eval succeeds if the package exists, fails otherwise.
         if run_timed "$probe_timeout" nix eval nixpkgs#"${tool}".meta.mainProgram >/dev/null 2>&1; then
-            # Package exists — install it.
-            run_timed "$install_timeout" nix profile install nixpkgs#"${tool}" >/dev/null 2>&1 || true
-            # Recheck PATH after install.
-            if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
-                echo "FOUND:$path"
-                return 0
-            fi
-            local found
-            if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
-                echo "$found"
-                return 0
+            # Package exists — install it (unless resolve-only mode).
+            if [[ "$install_disabled" -eq 0 ]]; then
+                run_timed "$install_timeout" nix profile install nixpkgs#"${tool}" >/dev/null 2>&1 || true
+                # Recheck PATH after install.
+                if path="$(command -v "$tool" 2>/dev/null || true)" && [[ -n "$path" ]]; then
+                    echo "FOUND:$path"
+                    return 0
+                fi
+                local found
+                if found="$(search_standard_paths)" && [[ -n "$found" ]]; then
+                    echo "$found"
+                    return 0
+                fi
             fi
         fi
     fi
@@ -658,7 +679,8 @@ resolve_tool() {
     #    exists, install it via `uv tool install` and recheck PATH.
     #    (uv tool install fails fast if the package doesn't exist on PyPI,
     #    so the install attempt itself serves as the search.)
-    if command -v uv >/dev/null 2>&1; then
+    #    Skipped when CLTOOL_INSTALL_DISABLED=1 (resolve-only mode).
+    if [[ "$install_disabled" -eq 0 ]] && command -v uv >/dev/null 2>&1; then
         # Try to install the tool from PyPI via uv.
         # uv tool install fails fast if the package doesn't exist.
         if run_timed "$install_timeout" uv tool install "${tool}" >/dev/null 2>&1; then

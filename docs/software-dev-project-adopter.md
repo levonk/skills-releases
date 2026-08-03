@@ -43,4 +43,4 @@ Adopt and establish best practices for projects by overwriting existing preferen
 
 - **Full skill**: [`skills/software-dev/project-adopter/SKILL.md`](skills/software-dev/project-adopter/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T17:56:44Z
+- **Generated**: 2026-08-03T23:23:57Z

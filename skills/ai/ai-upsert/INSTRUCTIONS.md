@@ -2785,11 +2785,18 @@ See `references/skill/anatomy.md` — skills-src Repository Structure for the fu
 
 7. **Ensure all scripts include PEP 723, devbox, rtk, and uv detection patterns**: All bundled scripts must include the PEP 723 inline script metadata header (Python), devbox/rtk detection patterns, and a uv fallback at the top. When `uv` is not available, scripts should fall back to `pip` and ensure `uv` is added to the nearest `devbox.json`. The `init_skill.py` script adds `uv` to `devbox.json` automatically when creating a skill; verify this for manually created skills. See `references/skill/script-execution-standards.md` for full detection code, wrapper patterns (bash and python), and the combined Python template.
 
-8. **Review security**: Ensure no secrets, keys, or sensitive paths are exposed. See `references/skill/security.md`.
+8. **Customize the nono-profile.json for the skill's needs**: The `init_skill.py` scaffolder creates `references/nono-profile.json.tmpl` with a default profile that allows network access to `registry.npmjs.org` and `github.com`, writes to the skill directory, and reads from system paths + pnpm store. Review the skill's scripts and references to determine what the skill actually needs during `pnpm dlx skills update`:
+   - **Network**: If the skill fetches from additional domains (e.g., a CDN, an API), add those domains to `net_allow`. If the skill only needs GitHub (for `git clone` and GitHub API), keep `github.com` and `registry.npmjs.org` (for pnpm package resolution). Remove any domain the skill doesn't use — the principle is least privilege.
+   - **Filesystem reads**: If the skill's scripts read from additional paths (e.g., `~/.config/git`, `/opt/homebrew`), add those paths to `fs_read`. If the skill only writes to its own directory, keep `fs_write` as `["."]`.
+   - **Environment variables**: If the skill's scripts need additional env vars (e.g., `GIT_AUTHOR_NAME`, `PNPM_HOME`), add them to `env`. The default set (PATH, HOME, USER, SHELL, TERM, LANG) covers most cases.
+   - **Test the profile**: After customizing, verify that `nono run --profile references/nono-profile.json -- pnpm dlx skills update <skill-name>` succeeds. If nono blocks a legitimate operation, the error message identifies the blocked resource — add it to the profile and retry.
+   See `references/skill/anatomy.md` — Refresh Script for the full sandbox architecture and the ADR for the selection rationale.
 
-9. **Add evals**: Create `evals/evals.json` and `evals/description_optimization.json` using the templates in `templates/`. See `references/skill/evals-schema.md` for the eval schema and how to run evals.
+9. **Review security**: Ensure no secrets, keys, or sensitive paths are exposed. See `references/skill/security.md`.
 
-10. **Package for distribution**: Run `scripts/skill/package_skill.py` to verify structure and package the skill. See `references/skill/anatomy.md` — What NOT to Include for files that should not be part of a skill.
+10. **Add evals and bats tests**: Create `evals/evals.json` and `evals/description_optimization.json` using the templates in `templates/`. See `references/skill/evals-schema.md` for the eval schema and how to run evals. For skills with scripts, add `.bats` tests in `scripts/tests/` — see existing tests in `git-repository-management/scripts/tests/` and `shell-wrapper/scripts/tests/` for the pattern. Run `just bats` to execute them.
+
+11. **Package for distribution**: Run `scripts/skill/package_skill.py` to verify structure and package the skill. See `references/skill/anatomy.md` — What NOT to Include for files that should not be part of a skill.
 
 ### Mode B: Convert an Existing Workflow to a Skill
 
