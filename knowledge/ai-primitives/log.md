@@ -12,6 +12,56 @@ date:
 # Bundle Update Log
 
 ## 2026-08-03
+* **Update**: Expanded [comparison/model-assessment.md](comparison/model-assessment.md)
+  from twelve to twenty-two criteria. Added ten new criteria covering the
+  gaps most likely to block a production deployment that passed the
+  original twelve:
+  - **Context window (input + output caps)** — input and output share the
+    budget but have separate caps; long-context surcharge above a threshold;
+    lost-in-the-middle degradation. Reference table for Gemini 3.1 Pro,
+    GPT-5.5, Claude Opus 4.7, DeepSeek V4 Pro, Grok 4.20, Llama 4 Maverick.
+  - **Data privacy and retention** — training on inputs vs. retention for
+    abuse monitoring vs. zero-data-retention (ZDR); ZDR eligibility by
+    feature; OpenAI/Anthropic/Google data-controls pages.
+  - **Throughput and latency** — TTFT, inter-token latency, aggregate
+    tokens/sec; benchmark with the workload's prompt distribution, not a
+    synthetic benchmark.
+  - **Rate limits and concurrency** — RPM, TPM, concurrency as independent
+    binding limits; cache-aware ITPM (Anthropic); batch quota as a separate
+    pool; OpenAI tiers 1–5.
+  - **Compliance and data residency** — SOC 2, ISO 27001, HIPAA readiness
+    vs. certification (no such thing as HIPAA certification, only BAAs);
+    regional processing endpoints at a price uplift.
+  - **Fine-tuning and customization** — full FT, LoRA/QLoRA, continued
+    pretraining, provider-hosted fine-tuning, distillation; portable vs.
+    locked snapshots; license restrictions on derivative distribution.
+  - **Structured output** — JSON mode (syntax-only) vs. JSON schema
+    enforcement vs. grammar constraints vs. regex; decoded vs. validated
+    constraints; distinct from tool calling.
+  - **Safety and refusal behavior** — over-refusal rate on legitimate
+    requests; trained refusals vs. filter refusals; system-prompt safety
+    overrides; agentic tool-call refusals.
+  - **Vendor viability and deprecation policy** — notice periods by model
+    class (OpenAI: 6 months GA, 3 months specialized, 2 weeks preview;
+    Anthropic: 6 months from deprecation announcement); lifecycle status
+    (active/legacy/deprecated/retired); vendor runway assessment.
+  - **Release cadence and versioning** — point releases vs. silent updates;
+    old-version retention; version pinning (`model-2026-07-15` vs.
+    `model-latest`); reproducibility.
+  Also improved two existing criteria: **#9 tools** → "Tools and Runtime
+  Integration" (added runtime/parser integration and agent-framework
+  integration, cross-linking the runtime-selection page); **#10 modalities**
+  (added native vs. routed distinction and modality-specific context-token
+  consumption). Updated the criterion map, assessment workflow (evidence
+  now includes 14 and 17; cost now includes 15 and 16; fit now includes 13,
+  18, 19, 20; adoption now includes 21 and 22), anti-patterns (six new
+  anti-patterns for context, privacy, throughput, structured output,
+  deprecation, versioning), and review triggers (five new triggers for
+  deprecation, compliance, QPS, retention, and structured-output
+  requirements). Added sources: OpenAI data-controls, Anthropic data
+  retention, Gemini ZDR, OpenAI rate limits, Anthropic rate limits, OpenAI
+  deprecations, Anthropic deprecations, Anthropic deprecation commitments,
+  and a 2026 context-window guide.
 * **Ingest**: Added [comparison/model-assessment.md](comparison/model-assessment.md)
   — concept page documenting a twelve-criterion framework for assessing an
   LLM before adoption. Covers benchmark methodology disclosure (scores must

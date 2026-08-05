@@ -27,4 +27,4 @@ Apply evidence-backed practices for the candidate side of the hiring pipeline â€
 
 - **Full skill**: [`skills/business/career-advancement/SKILL.md`](skills/business/career-advancement/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T23:23:57Z
+- **Generated**: 2026-08-05T04:08:35Z

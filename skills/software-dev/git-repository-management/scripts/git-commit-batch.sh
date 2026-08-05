@@ -443,6 +443,67 @@ validate_commit_message() {
     return 1
 }
 
+# Check whether commit tagging is disabled by project config.
+# Returns 0 (true) if tagging is ENABLED (the default), 1 (false) if disabled.
+# The config file path is fixed by the commit-tagging-standard include:
+#   .agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml
+# We do a lightweight grep check (no yq dependency) — the config schema for
+# this section is just [commit-tagging] with enabled = true|false.
+commit_tagging_enabled() {
+    local target_root="${REPO_ROOT:-}"
+    [[ -z "$target_root" ]] && target_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "")"
+    [[ -z "$target_root" ]] && return 0  # can't resolve repo root — assume enabled
+    local cfg="$target_root/.agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml"
+    [[ -f "$cfg" ]] || return 0
+    # Look for [commit-tagging] table followed by enabled = false
+    local section
+    section="$(awk '/^\[commit-tagging\]/{f=1;next} /^\[/{f=0} f' "$cfg" 2>/dev/null || true)"
+    if printf '%s' "$section" | grep -Eq 'enabled[[:space:]]*=[[:space:]]*false'; then
+        return 1
+    fi
+    return 0
+}
+
+# Validate that a commit message includes a #tag array as the last line of
+# the body (before any optional footer). Returns 0 if present, 1 if missing.
+# A valid tag line is one or more space-separated #kebab-case tokens, e.g.:
+#   #project-auth #module-jwt #type-feat #skill-grm-created
+# Footers (Closes #N, Fixes #N, Signed-off-by:, etc.) are skipped when
+# locating the tag line — the tag line is the last non-empty, non-footer line.
+validate_commit_tag_array() {
+    local msg="$1"
+    # Body is text after the first blank line
+    [[ "$msg" == *$'\n\n'* ]] || return 1
+    local body="${msg#*$'\n\n'}"
+    # Read body lines into an array
+    local -a lines=()
+    while IFS= read -r line; do
+        lines+=("$line")
+    done <<< "$body"
+    # Scan from the last line upward to find the last non-empty, non-footer line
+    local candidate=""
+    local i
+    for ((i=${#lines[@]}-1; i>=0; i--)); do
+        local line="${lines[$i]}"
+        # Trim leading/trailing whitespace
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        [[ -z "$line" ]] && continue
+        # Recognized footers — skip past them to find the tag line above.
+        # Two footer styles: "Fixes #N" / "Closes #N" (no colon) and
+        # "Signed-off-by: ..." / "Co-authored-by: ..." (with colon).
+        if [[ "$line" =~ ^(Closes|Fixes|Resolves|Refs)[[:space:]]+#[0-9]+ ]] \
+            || [[ "$line" =~ ^(Signed-off-by|Co-authored-by|Reviewed-by|Tested-by): ]]; then
+            continue
+        fi
+        candidate="$line"
+        break
+    done
+    [[ -z "$candidate" ]] && return 1
+    # A valid tag line: one or more #kebab-case tokens, space-separated, nothing else
+    [[ "$candidate" =~ ^#[a-z0-9]+(-[a-z0-9]+)*([[:space:]]+#[a-z0-9]+(-[a-z0-9]+)*)*$ ]]
+}
+
 # Heuristic body-quality check: warn (NOT fail) when the body looks like a
 # file listing rather than prose. A body where >50% of non-empty lines look
 # like file paths (a path-like token with no verbs) is almost certainly
@@ -598,6 +659,7 @@ main() {
     local repo_root
     repo_root=$(discover_repo_root "$target_path")
     cd "$repo_root"
+    export REPO_ROOT="$repo_root"
 
     # Derive slug from branch name if not provided (strip path prefix: chore/foo-bar → foo-bar)
     # On an unborn branch (no commits yet), `git rev-parse --abbrev-ref HEAD`
@@ -634,6 +696,14 @@ main() {
                         echo "ERROR: Got: $current_message" >&2
                         validation_failed=1
                     elif ! validate_commit_subject "$current_message"; then
+                        validation_failed=1
+                    elif commit_tagging_enabled && ! validate_commit_tag_array "$current_message"; then
+                        echo "COMMIT_FAILED:NO_TAG_ARRAY"
+                        echo "ERROR: Commit message must include a #tag array as the last line of the body." >&2
+                        echo "ERROR: Format: blank line, then #project-<slug> #module-<slug> #type-<type> #skill-grm-created" >&2
+                        echo "ERROR: Example: #project-auth #module-jwt #type-feat #skill-grm-created" >&2
+                        echo "ERROR: Disable for this repo via .agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml" >&2
+                        echo "ERROR: Got: $current_message" >&2
                         validation_failed=1
                     else
                         echo "PROCESSING_COMMIT:$((commit_count + 1))"
@@ -689,6 +759,14 @@ main() {
                 echo "ERROR: Got: $current_message" >&2
                 validation_failed=1
             elif ! validate_commit_subject "$current_message"; then
+                validation_failed=1
+            elif commit_tagging_enabled && ! validate_commit_tag_array "$current_message"; then
+                echo "COMMIT_FAILED:NO_TAG_ARRAY"
+                echo "ERROR: Commit message must include a #tag array as the last line of the body." >&2
+                echo "ERROR: Format: blank line, then #project-<slug> #module-<slug> #type-<type> #skill-grm-created" >&2
+                echo "ERROR: Example: #project-auth #module-jwt #type-feat #skill-grm-created" >&2
+                echo "ERROR: Disable for this repo via .agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml" >&2
+                echo "ERROR: Got: $current_message" >&2
                 validation_failed=1
             else
                 echo "PROCESSING_COMMIT:$((commit_count + 1))"
@@ -798,6 +876,19 @@ main() {
 
                 # Validate: subject must not match banned vague/generic patterns
                 if ! validate_commit_subject "$current_message"; then
+                    exit 1
+                fi
+
+                # Validate: every commit must include a #tag array (mandatory,
+                # enforced — see commit-tagging-standard include). Bypass only
+                # via explicit project config with [commit-tagging] enabled = false.
+                if commit_tagging_enabled && ! validate_commit_tag_array "$current_message"; then
+                    echo "COMMIT_FAILED:NO_TAG_ARRAY"
+                    echo "ERROR: Commit message must include a #tag array as the last line of the body." >&2
+                    echo "ERROR: Format: blank line, then #project-<slug> #module-<slug> #type-<type> #skill-grm-created" >&2
+                    echo "ERROR: Example: #project-auth #module-jwt #type-feat #skill-grm-created" >&2
+                    echo "ERROR: Disable for this repo via .agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml" >&2
+                    echo "ERROR: Got: $current_message" >&2
                     exit 1
                 fi
 
@@ -916,6 +1007,19 @@ main() {
 
         # Validate: subject must not match banned vague/generic patterns
         if ! validate_commit_subject "$current_message"; then
+            exit 1
+        fi
+
+        # Validate: every commit must include a #tag array (mandatory,
+        # enforced — see commit-tagging-standard include). Bypass only
+        # via explicit project config with [commit-tagging] enabled = false.
+        if commit_tagging_enabled && ! validate_commit_tag_array "$current_message"; then
+            echo "COMMIT_FAILED:NO_TAG_ARRAY"
+            echo "ERROR: Commit message must include a #tag array as the last line of the body." >&2
+            echo "ERROR: Format: blank line, then #project-<slug> #module-<slug> #type-<type> #skill-grm-created" >&2
+            echo "ERROR: Example: #project-auth #module-jwt #type-feat #skill-grm-created" >&2
+            echo "ERROR: Disable for this repo via .agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml" >&2
+            echo "ERROR: Got: $current_message" >&2
             exit 1
         fi
 

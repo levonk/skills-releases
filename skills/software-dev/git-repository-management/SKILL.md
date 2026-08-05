@@ -1,13 +1,13 @@
 ---
 name: git-repository-management
 description: Comprehensive git repository workflow for status analysis, change organization, and commit management with secret scanning and rollback-safe ordering. Use when needing to organize and commit changes, manage git workflow, batch commits, push with backup branches, tag releases, or make a single checkpoint commit. Triggers on 'commit changes', 'organize git', 'git workflow', 'batch commit', 'checkpoint commit', or 'repository management'. Do NOT trigger on general git questions, branch creation, or merge requests.
-version: 1.10.0
+version: 1.11.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  knowledge-basis: "2026-08-02"
-  last-used: "2026-08-02"
+  knowledge-basis: "2026-08-04"
+  last-used: "2026-08-04"
 tags: ["ai/skill", "git", "version-control", "repository-management", "commit-organization", "tagging", "rollback-safety"]
 see-also:
   - skill: project-detection

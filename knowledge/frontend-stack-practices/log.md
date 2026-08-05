@@ -1,5 +1,20 @@
 # Directory Update Log
 
+## 2026-08-04
+
+* **Update**: Rewrote the Next.js/Turbopack section of
+  [explicit-file-extensions.md](explicit-file-extensions.md) from
+  "Framework Exception" to **"Forced Workaround"** framing. `.ts` is
+  never the right answer — Next.js apps are forced to use it because
+  Turbopack is broken. Added a **support matrix table** showing
+  Turbopack is the lone outlier (every other tool supports `.mts`).
+  Added a "When the issue is fixed, migrate back to `.mts`" callout
+  with a direct link to
+  [#82945](https://github.com/vercel/next.js/issues/82945). Cross-linked
+  to the full workaround details and ESLint configuration in
+  [typescript-monorepo-best-practices/explicit-file-extensions.md](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/explicit-file-extensions.md).
+  Updated `last-used` to 2026-08-04.
+
 ## 2026-07-26
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.

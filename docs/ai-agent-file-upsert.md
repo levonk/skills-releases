@@ -39,4 +39,4 @@ Generate or update hierarchical AGENTS.md documentation for AI agents working in
 
 - **Full skill**: [`skills/ai/agent-file-upsert/SKILL.md`](skills/ai/agent-file-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-03T23:23:57Z
+- **Generated**: 2026-08-05T04:08:35Z

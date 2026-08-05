@@ -28,7 +28,18 @@ assert_not_contains() {
     }
 }
 
+# Disable commit tagging in a test repo (creates the project config override).
+# Usage: disable_tagging <dir>
+disable_tagging() {
+    local dir="$1"
+    local cfg_dir="$dir/.agents/config/skills/levonk/skills-releases/software-dev/git-repository-management"
+    mkdir -p "$cfg_dir"
+    printf '[commit-tagging]\nenabled = false\n' > "$cfg_dir/config.toml"
+}
+
 # Create a temp git repo. Echoes the dir path.
+# Tagging is DISABLED by default so existing tests using tag-free messages pass.
+# Use setup_repo_with_tagging for tests that exercise the tag enforcement.
 # Usage: setup_repo scenario_name
 setup_repo() {
     local scenario="$1"
@@ -39,6 +50,7 @@ setup_repo() {
     git -C "$dir" config user.email "test@test.com"
     git -C "$dir" config user.name "Test"
     git -C "$dir" commit -q --allow-empty -m "initial"
+    disable_tagging "$dir"
     echo "$dir"
 }
 
@@ -52,6 +64,22 @@ setup_unborn_repo() {
     git init -q "$dir"
     git -C "$dir" config user.email "test@test.com"
     git -C "$dir" config user.name "Test"
+    disable_tagging "$dir"
+    echo "$dir"
+}
+
+# Create a temp git repo WITH commit tagging enabled (the default behavior).
+# Use this for tests that verify the NO_TAG_ARRAY enforcement.
+# Usage: setup_repo_with_tagging scenario_name
+setup_repo_with_tagging() {
+    local scenario="$1"
+    local dir="$TEST_BASE/$scenario"
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    git init -q "$dir"
+    git -C "$dir" config user.email "test@test.com"
+    git -C "$dir" config user.name "Test"
+    git -C "$dir" commit -q --allow-empty -m "initial"
     echo "$dir"
 }
 
@@ -350,4 +378,81 @@ BATCH_EOF
         echo "first commit subject should be 'Add a', got: $subj2" >&3
         return 1
     }
+}
+
+# --- tag array enforcement (NO_TAG_ARRAY) ---
+
+@test "rejects commit without tag array when tagging enabled" {
+    local dir; dir="$(setup_repo_with_tagging no-tag-reject)"
+    echo "a" > "$dir/a.txt"
+
+    # Valid body, valid subject, but NO #tag array line
+    local batch
+    batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\n- Needed because the prior approach did not handle edge case Y\nFILES:a.txt\n')
+    local out
+    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug no-tag-reject "$dir" ) 2>&1)" || true
+
+    assert_contains "COMMIT_FAILED:NO_TAG_ARRAY" "$out"
+    # Verify no commit was created (only the initial commit remains)
+    local count
+    count=$(git -C "$dir" rev-list --count HEAD)
+    [[ "$count" == "1" ]] || {
+        echo "expected 1 commit (initial only), got $count" >&3
+        return 1
+    }
+}
+
+@test "accepts commit with tag array when tagging enabled" {
+    local dir; dir="$(setup_repo_with_tagging tag-accept)"
+    echo "a" > "$dir/a.txt"
+
+    # Valid body + valid tag array as last line of body
+    local batch
+    batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\n- Needed because the prior approach did not handle edge case Y\\n\\n#project-test #type-feat #skill-grm-created\nFILES:a.txt\n')
+    local out
+    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug tag-accept "$dir" ) 2>&1)" || true
+
+    assert_contains "COMMIT_SUCCESS" "$out"
+    assert_not_contains "NO_TAG_ARRAY" "$out"
+}
+
+@test "tag array accepted before optional footer" {
+    local dir; dir="$(setup_repo_with_tagging tag-with-footer)"
+    echo "a" > "$dir/a.txt"
+
+    # Tag line followed by a Closes #N footer — tag line is still detected
+    local batch
+    batch=$(printf 'COMMIT:Fix overflow in sidebar\\n\\n- Add null check before rendering sidebar menu\\n- Fixes crash on narrow viewports\\n\\n#project-ui #type-fix #skill-grm-created\\n\\nFixes #42\nFILES:a.txt\n')
+    local out
+    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug tag-footer "$dir" ) 2>&1)" || true
+
+    assert_contains "COMMIT_SUCCESS" "$out"
+    assert_not_contains "NO_TAG_ARRAY" "$out"
+}
+
+@test "tag array enforcement bypassed by project config" {
+    local dir; dir="$(setup_repo tag-config-disable)"
+    echo "a" > "$dir/a.txt"
+
+    # setup_repo created the disable config — commit without tags should pass
+    local batch
+    batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\nFILES:a.txt\n')
+    local out
+    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug tag-config-disable "$dir" ) 2>&1)" || true
+
+    assert_contains "COMMIT_SUCCESS" "$out"
+    assert_not_contains "NO_TAG_ARRAY" "$out"
+}
+
+@test "dry-run rejects commit without tag array when tagging enabled" {
+    local dir; dir="$(setup_repo_with_tagging dry-run-no-tag)"
+    echo "a" > "$dir/a.txt"
+
+    local batch
+    batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\nFILES:a.txt\n')
+    local out
+    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --dry-run --slug dry-run-no-tag "$dir" ) 2>&1)" || true
+
+    assert_contains "COMMIT_FAILED:NO_TAG_ARRAY" "$out"
+    assert_contains "BATCH_COMMIT_DRY_RUN" "$out"
 }

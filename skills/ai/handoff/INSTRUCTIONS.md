@@ -1543,12 +1543,12 @@ flowchart TD
     C5 --> C6["6. Commit handoff document<br/>(git-repository-management)"]
     C6 --> DoneCapture([Handoff written + committed])
 
-    Restore --> R1["1. Analyze handoff<br/>document"]
+    Restore --> R1["1. Analyze handoff<br/>+ verify [~] tasks"]
     R1 --> R2{"Blockers or<br/>missing info?"}
     R2 -->|"Yes"| Ask["Ask clarifying<br/>questions"]
-    R2 -->|"No"| R3["2. Begin first<br/>next step"]
+    R2 -->|"No"| R3["2. Begin first<br/>available [ ] task<br/>(parallelize via subagents)"]
     Ask --> R3
-    R3 --> R4["3. Update handoff<br/>after each step"]
+    R3 --> R4["3. Update DoD marks<br/>+ handoff after each step"]
     R4 --> DoneRestore([Work continues])
 ```
 
@@ -1744,7 +1744,33 @@ See commit: abc123def456
 
 #### 4. Structure the Handoff Document
 
-Use the standard handoff template for consistency. The template includes sections for Current State (completed/blocking), Project Overview, Key Decisions, Technical Context, Next Steps, Success Criteria, Open Questions, Do Not, Suggested Skills, and Additional Context.
+Use the standard handoff template for consistency. The template includes sections for Current State (completed/blocking), Project Overview, Key Decisions, Technical Context, Next Steps, Definition of Done, Success Criteria, Open Questions, Do Not, Suggested Skills, and Additional Context.
+
+**Definition of Done section**: Populate the `## Definition of Done` checkbox
+list from the Next Steps. Each next step becomes one `- [ ] {task pending}`
+line, in priority order. If a task was already started in this session, mark
+it `[~]` (in progress) or `[x]` (done, if verified) instead of `[ ]`. If a
+task is blocked, mark it `[!]` with the blocker in parentheses.
+
+**The section must be self-contained in the handoff document.** The receiving
+session only sees the handoff document — it does NOT have access to this
+skill's INSTRUCTIONS.md or the template reference file. Therefore, the
+generated `## Definition of Done` section must include, verbatim from the
+template:
+
+1. The **mark legend** (`[ ]` pending, `[~]` in progress, `[x]` done,
+   `[!]` blocked) — so the receiving session can interpret the marks without
+   external context.
+2. The **maintenance protocol** (the 6 numbered steps: verify in-progress
+   marks, start next available task, prefer subagents for parallel work, mark done
+   only when verified, record blockers inline, update list as new tasks
+   emerge) — so the receiving session knows how to maintain the marks as it
+   works.
+3. The **populated checkbox list** — the actual tasks, one per line.
+
+Do not strip the legend or protocol text and emit only the checkboxes — that
+would leave the receiving session with marks it cannot interpret and no
+instructions for maintaining them.
 
 See: [`references/handoff-template.md`](references/handoff-template.md)
 
@@ -1827,16 +1853,39 @@ wrong toolchain).
 When presented with a handoff document:
 
 1. **Read and understand** the current state
-2. **Identify the next immediate action** from the Next Steps list
-3. **Check for blockers** in Open Questions/Blocking Issues
-4. **Verify success criteria** are clear and measurable
-5. **Review suggested skills** and invoke if appropriate
+2. **Verify in-progress tasks.** Before trusting the `## Definition of Done`
+   list, re-check every task marked `[~]` (in progress). For each `[~]` task,
+   confirm the work is actually underway — look for evidence in the working
+   tree (`git status`, `git diff`), running processes, or recent edits to the
+   files that task touches. If there is no evidence the task is being worked,
+   demote it back to `[ ]` (pending). A stale `[~]` is worse than an unstarted
+   `[ ]` because it hides available work from the next agent and makes the
+   list lie about the repo's real state.
+3. **Identify the next available task** — the first `[ ]` task in priority
+   order from the Definition of Done list (fall back to the Next Steps list
+   if the handoff has no DoD section)
+4. **Check for blockers** — tasks marked `[!]` in the DoD list and entries in
+   Open Questions/Blocking Issues
+5. **Verify success criteria** are clear and measurable
+6. **Review suggested skills** and invoke if appropriate
 
 #### 2. Begin Work
 
-Start with: "I understand the context. Based on the handoff document, I'm continuing work on [project]. The next step is [first next step]. Let me begin."
+Start with: "I understand the context. Based on the handoff document, I'm continuing work on [project]. The next step is [first available `[ ]` task]. Let me begin."
 
-Then proceed with the first next step without asking questions unless:
+Mark the chosen task `[~]` in the handoff's `## Definition of Done` section
+**before** starting work on it — this signals to any concurrent agent that the
+task is claimed.
+
+**Prefer subagents for parallel work.** Before starting, scan the remaining
+`[ ]` tasks. When two or more are independent (no shared file writes, no
+ordering dependency), launch them as parallel `run_subagent` calls rather than
+working them sequentially — this is the expected mode of operation, not an
+optional optimization. Mark each `[~]` before launching so concurrent agents
+see them as claimed. Do not parallelize tasks that touch the same files or
+depend on each other's output — run those sequentially.
+
+Then proceed with the first available task without asking questions unless:
 - Critical information is missing
 - Success criteria are unclear
 - There are conflicting requirements
@@ -1844,11 +1893,21 @@ Then proceed with the first next step without asking questions unless:
 #### 3. Update Handoff
 
 After completing each major step:
-1. Update the status in the handoff document
-2. Mark completed next steps
-3. Add any new decisions made
-4. Update open questions
-5. Add new files/artifacts created
+1. **Update the Definition of Done marks.** Flip `[~]` → `[x]` only after the
+   task's success criteria are met and verified (build passes, test passes,
+   file exists, etc.) — never mark `[x]` on intent alone. If a task is
+   blocked, mark it `[!]` with the blocker in parentheses on the same line
+   (e.g., `- [!] {task blocked (waiting on upstream API access)}`) and move
+   on to the next `[ ]` task — do not stall the whole list on one blocker.
+2. Update the status in the handoff document
+3. Mark completed next steps
+4. Add any new decisions made
+5. Update open questions
+6. Add new files/artifacts created
+7. **Append newly discovered tasks** as `[ ]` lines in the Definition of Done
+   list, in priority order. Do not silently delete tasks; if a task is no
+   longer relevant, mark it `[x]` with a note
+   (`- [x] {task} (obsolete: reason)`).
 
 ### Best Practices
 

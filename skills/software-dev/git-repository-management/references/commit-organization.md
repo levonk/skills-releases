@@ -198,6 +198,44 @@ This applies to ALL commits made through this skill, in ALL repositories, withou
 
 The script validates this before staging files. If validation fails, fix the message and re-run.
 
+### Mandatory Tag Array (CRITICAL)
+
+**EVERY** commit MUST include a `#tag` array as the last line of the commit
+body. This is on equal footing with the mandatory body and the no-AI-signatures
+rule — it is not optional, not a suggestion, and not a "nice to have."
+
+The `git-commit-batch.sh` script **enforces this hard** — commits missing the
+tag array are rejected with `COMMIT_FAILED:NO_TAG_ARRAY`, the same way bodyless
+commits are rejected with `COMMIT_FAILED:NO_BODY`.
+
+- **Format**: a blank line, then one line of space-separated `#kebab-case`
+  tags, then a blank line before any optional footer:
+  ```
+  feat: Add user authentication with JWT tokens
+
+  - Implement login endpoint with JWT generation
+  - Add session validation middleware
+
+  #project-auth #module-jwt #type-feat #skill-grm-created
+
+  Closes #123
+  ```
+- **The `#skill-grm-created` tag is always present** as the last tag in the
+  array — it identifies the commit's provenance without AI attribution
+- **The agent MUST NOT decide to skip the tag array.** The only bypass is an
+  explicit project config file
+  (`.agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml`
+  with `[commit-tagging] enabled = false`) confirmed by the user. The agent
+  cannot disable tagging based on its own judgment, the triviality of the
+  change, or the silence of the project's docs on tagging
+- **When unsure which tags apply**, use the standard list in the
+  `commit-tagging-standard` section above. A best-guess tag array is always
+  better than omitting it — the script rejects the omission, not a suboptimal
+  tag choice
+- See the `commit-tagging-standard` section (inlined above from
+  `includes/commit-tagging-standard.md`) for the full format, standard tag
+  categories, and the project-override config
+
 ### Body Quality Heuristic (WARNING, not failure)
 
 The script also runs an **advisory** body-quality check after the mandatory
@@ -480,6 +518,8 @@ Add user authentication with JWT tokens
 - Add authentication tests
 - Update API documentation
 
+#project-auth #module-jwt #type-feat #skill-grm-created
+
 Fixes #123
 ```
 
@@ -491,6 +531,8 @@ Refactor database connection pooling
 - Update all database queries to use pool
 - Add connection pool monitoring
 - Update configuration docs
+
+#project-db #module-pool #type-refactor #skill-grm-created
 
 Improves performance under high load by reusing connections
 instead of creating new ones for each query.

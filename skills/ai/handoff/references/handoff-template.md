@@ -78,6 +78,50 @@ any path you touch.
 2. [Following action]
 3. [Future action]
 
+## Definition of Done
+
+A checkbox-tracked task list. The receiving session maintains these marks as it
+works. Each line is one task; do not collapse multiple tasks into one line.
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
+```markdown
+- [ ] {task pending}
+- [ ] {task pending}
+- [ ] {task pending}
+```
+
+**Maintenance protocol (receiving session):**
+1. **Verify in-progress marks.** Before doing anything else, re-check every
+   task marked `[~]`. If the work is not actually underway (no evidence in the
+   working tree, no running process, no recent edit), demote it back to `[ ]`.
+   A stale `[~]` is worse than an unstarted `[ ]` because it hides available
+   work from the next agent.
+2. **Start the next available task.** Pick the first `[ ]` task in priority
+   order. Mark it `[~]` immediately before starting work on it.
+3. **Prefer subagents for parallel work.** When two or more `[ ]` tasks are
+   independent (no shared file writes, no ordering dependency), launch them as
+   parallel `run_subagent` calls rather than working them sequentially — this
+   is the expected mode of operation, not an optional optimization. Mark each
+   `[~]` before launching so concurrent agents see them as claimed. Do not
+   parallelize tasks that touch the same files or depend on each other's
+   output — run those sequentially.
+4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the task's
+   success criteria are met and verified (build passes, test passes, file
+   exists, etc.). Never mark `[x]` on intent alone.
+5. **Record blockers inline.** When a task cannot proceed, mark it `[!]` and
+   append the blocker in parentheses on the same line, e.g.
+   `- [!] {task blocked (waiting on upstream API access)}`. Move on to the
+   next `[ ]` task — do not stall the whole list on one blocker.
+6. **Update the list as work reveals new tasks.** Append newly discovered
+   tasks as `[ ]` lines in priority order. Do not silently delete tasks; if a
+   task is no longer relevant, mark it `[x]` with a note
+   (`- [x] {task} (obsolete: reason)`).
+
 ## Success Criteria
 - [Criteria 1]: [How to verify]
 - [Criteria 2]: [How to verify]
@@ -169,6 +213,41 @@ any path you touch.
 **Solutions to Try**:
 - [Solution 1]
 - [Solution 2]
+
+## Definition of Done
+
+A checkbox-tracked task list. The receiving session maintains these marks as it
+works. Each line is one task; do not collapse multiple tasks into one line.
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
+```markdown
+- [ ] {task pending}
+- [ ] {task pending}
+- [ ] {task pending}
+```
+
+**Maintenance protocol (receiving session):**
+1. **Verify in-progress marks.** Re-check every `[~]` task. If work is not
+   actually underway, demote it back to `[ ]`. A stale `[~]` hides available
+   work from the next agent.
+2. **Start the next available task.** Pick the first `[ ]` task in priority
+   order. Mark it `[~]` before starting.
+3. **Prefer subagents for parallel work.** Launch independent `[ ]` tasks as
+   parallel `run_subagent` calls rather than working them sequentially — this
+   is the expected mode of operation, not an optional optimization. Mark each
+   `[~]` before launching. Do not parallelize tasks that share files or
+   depend on each other's output.
+4. **Mark done only when verified.** Flip `[~]` → `[x]` only after success
+   criteria are met and verified.
+5. **Record blockers inline.** Mark blocked tasks `[!]` with the blocker in
+   parentheses. Move on to the next `[ ]` task.
+6. **Update the list as work reveals new tasks.** Append new tasks as `[ ]` in
+   priority order. Mark obsolete tasks `[x]` with a note rather than deleting.
 
 ## Success Criteria
 

@@ -1,8 +1,8 @@
 ---
 type: Comparison
 title: LLM Model Assessment — Selection Criteria and Verification Checklist
-description: Twelve-criterion framework for assessing an LLM before adoption. Covers benchmark methodology disclosure, open-weights vs open-model verification, active vs total parameter counts for MoE, on-disk model size, license and weights-availability verification, per-million-token pricing, independent third-party evaluations, language and tool support, modality coverage, knowledge cutoff, and Hugging Face adoption signals. Each criterion pairs the question to ask with the verification step and the failure mode it catches.
-tags: [ai-primitives, comparison, model-assessment, llm, evaluation, open-weights, licensing, pricing, benchmarks, huggingface, moe]
+description: Twenty-two-criterion framework for assessing an LLM before adoption. Covers benchmark methodology disclosure, open-weights vs open-model verification, active vs total parameter counts for MoE, on-disk model size, license and weights-availability verification, per-million-token pricing, independent third-party evaluations, language and tool support, modality coverage, knowledge cutoff, Hugging Face adoption signals, context window, data privacy and retention, throughput and latency, rate limits and concurrency, compliance and data residency, fine-tuning and customization, structured output, safety and refusal behavior, vendor viability and deprecation policy, and release cadence. Each criterion pairs the question to ask with the verification step and the failure mode it catches.
+tags: [ai-primitives, comparison, model-assessment, llm, evaluation, open-weights, licensing, pricing, benchmarks, huggingface, moe, context-window, data-privacy, throughput, rate-limits, compliance, fine-tuning, structured-output, safety, deprecation]
 date:
   created: "2026-08-03"
   knowledge-basis: "2026-08-03"
@@ -47,6 +47,33 @@ sources:
   - id: hf-model-hub-economies
     resource: https://arxiv.org/html/2512.03073v1
     title: "Economies of Open Intelligence — Hugging Face Model Hub download/likes dataset and concentration analysis"
+  - id: openai-data-controls
+    resource: https://developers.openai.com/api/docs/guides/your-data
+    title: "OpenAI — Data controls, zero data retention, abuse monitoring, training opt-in"
+  - id: anthropic-data-retention
+    resource: https://platform.claude.com/docs/en/manage-claude/api-and-data-retention
+    title: "Anthropic — API and data retention, zero data retention (ZDR), HIPAA readiness"
+  - id: gemini-zdr
+    resource: https://ai.google.dev/gemini-api/docs/zdr
+    title: "Google — Zero data retention in the Gemini Developer API"
+  - id: openai-rate-limits
+    resource: https://developers.openai.com/api/docs/guides/rate-limits
+    title: "OpenAI — Rate limits (RPM, TPM, RPD), usage tiers 1–5"
+  - id: anthropic-rate-limits
+    resource: https://platform.claude.com/docs/en/api/rate-limits
+    title: "Anthropic — Rate limits (RPM, ITPM, OTPM), cache-aware ITPM"
+  - id: openai-deprecations
+    resource: https://developers.openai.com/api/docs/deprecations
+    title: "OpenAI — Model deprecations and notice periods (6 months GA, 3 months specialized, 2 weeks preview)"
+  - id: anthropic-deprecations
+    resource: https://platform.claude.com/docs/en/about-claude/model-deprecations
+    title: "Anthropic — Model deprecations, lifecycle (active/legacy/deprecated/retired)"
+  - id: anthropic-deprecation-commitments
+    resource: https://www.anthropic.com/research/deprecation-commitments
+    title: "Anthropic — Commitments on model deprecation and preservation"
+  - id: context-window-guide
+    resource: https://www.swfte.com/blog/llm-context-window-explained
+    title: "LLM Context Window Explained (2026) — input/output caps, long-context surcharge, lost-in-the-middle"
   - id: llm-runtime-selection
     resource: ../llm-runtime-selection.md
     title: "LLM Runtime Selection — companion concept page (runtime choice after model choice)"
@@ -54,7 +81,7 @@ sources:
 
 # LLM Model Assessment — Selection Criteria and Verification Checklist
 
-A twelve-criterion framework for assessing an LLM before adoption. Each
+A twenty-two-criterion framework for assessing an LLM before adoption. Each
 criterion pairs the question to ask with the verification step and the failure
 mode it catches. Use this before committing a model to a production path;
 pair with [LLM Runtime Selection](llm-runtime-selection.md) for the serving
@@ -63,8 +90,8 @@ decision after the model decision.
 The criteria split into four groups: **evidence** (does the claim have a
 verifiable source), **cost** (what does it actually cost to run), **fit**
 (does it do what the workload needs), and **adoption** (is anyone else
-running it). Verify evidence and cost first — they are the criteria most
-often lied about by omission.
+running it, and will it still be there tomorrow). Verify evidence and cost
+first — they are the criteria most often lied about by omission.
 
 ## Criterion Map
 
@@ -78,12 +105,22 @@ often lied about by omission.
 | 6 | Per-million-token pricing | Cost | Is there a published per-1M-token price for input, cached input, and output? | Check the provider pricing page; treat "contact sales" as a red flag |
 | 7 | Independent evaluations | Evidence | Are there third-party evals from an org with no stake in the model? | Check HELM, LMArena, Artificial Analysis; vendor blogs do not count |
 | 8 | Languages supported | Fit | Which languages does the model support, and at what quality tier? | Check the model card and the HELM multilingual scenarios |
-| 9 | Tools supported | Fit | Does the model support tool/function calling, and which schemas? | Check the model card for tool-calling format and verified integrations |
-| 10 | Modalities (image, text, audio, video) | Fit | Which input and output modalities does the model handle? | Check the model card; distinguish "accepts" from "generates" |
+| 9 | Tools and runtime integration | Fit | Does the model support tool/function calling, and which runtimes/integrations are verified? | Check the model card for tool-calling format, parallel calls, and verified integrations (vLLM, SGLang, LangChain) |
+| 10 | Modalities (image, text, audio, video) | Fit | Which input and output modalities does the model handle, and is each native or routed? | Check the model card; distinguish "accepts" from "generates", native from routed |
 | 11 | Knowledge cutoff | Fit | What is the latest date the training data covers? | Check the model card; do not confuse release date with cutoff |
 | 12 | Hugging Face stats | Adoption | What are the download counts, likes, and derivative-model counts? | `curl` the HF API for `downloads`, `likes`, and search for derivatives |
+| 13 | Context window (input + output caps) | Fit | What is the max input context, the max output, and is there a long-context surcharge? | Check the model card; input and output share the budget but have separate caps |
+| 14 | Data privacy and retention | Evidence | Does the provider retain prompts, train on inputs, or offer zero-data-retention? | Check the provider's data-controls page; ZDR may require sales approval |
+| 15 | Throughput and latency | Cost | What are tokens/sec, time-to-first-token, and inter-token latency under load? | Check Artificial Analysis; benchmark with the workload's prompt distribution |
+| 16 | Rate limits and concurrency | Cost | What are the RPM, TPM, and concurrency caps at the operator's tier? | Check the provider's rate-limit page; "custom" or "contact sales" is a red flag |
+| 17 | Compliance and data residency | Evidence | Does the model have SOC 2, ISO 27001, HIPAA, GDPR, and regional processing? | Check the provider's compliance page; absence blocks regulated workloads |
+| 18 | Fine-tuning and customization | Fit | Does the model support full FT, LoRA, continued pretraining, or distillation? | Check the model card and provider fine-tuning docs; open weights are required for full FT |
+| 19 | Structured output (JSON mode, grammar) | Fit | Does the model support constrained decoding, JSON schema, or grammar constraints? | Check the model card and runtime docs; distinct from tool calling |
+| 20 | Safety and refusal behavior | Fit | What is the over-refusal rate, and does the safety policy match the workload? | Run workload-specific prompts; check the model card's safety section |
+| 21 | Vendor viability and deprecation policy | Adoption | What is the deprecation notice period, and is the vendor likely to outlive the workload? | Check the provider's deprecation page; 6 months GA / 2 weeks preview is the OpenAI floor |
+| 22 | Release cadence and versioning | Adoption | How often is the model updated, are old versions retained, and are updates breaking? | Check the model's version history and changelog; pin to a specific version in production |
 
-## The Twelve Criteria
+## The Twenty-Two Criteria
 
 ### 1. Benchmark Table Published WITH the Methodology
 
@@ -316,10 +353,11 @@ languages that were not in the eval set.
 **Red flag**: The model card lists supported languages but cites no
 non-English benchmark scores.
 
-### 9. Tools Supported
+### 9. Tools and Runtime Integration
 
-**Ask**: Does the model support tool/function calling, and which schemas
-(OpenAI function calling, Anthropic tool use, Hermes-style, custom)?
+**Ask**: Does the model support tool/function calling, which schemas
+(OpenAI function calling, Anthropic tool use, Hermes-style, custom), and
+which serving runtimes and agent frameworks are verified to work with it?
 
 **Verify**:
 - Check the model card for the tool-calling format and any verified
@@ -328,38 +366,58 @@ non-English benchmark scores.
   former has a dedicated tool-calling format and post-training; the latter
   is a base model with a tool prompt and is less reliable.
 - For agentic workloads, check whether the model supports parallel tool
-  calls, multi-step tool chains, and structured output (JSON mode).
+  calls, multi-step tool chains, and forced tool use (forcing the model to
+  call a specific tool rather than answering in prose).
+- Check **runtime integration** separately from tool calling. A model may
+  support tool calling but only work with one runtime (e.g., vLLM's
+  `--enable-auto-tool-choice --tool-call-parser hermes`), or only with a
+  specific parser. Cross-reference with
+  [LLM Runtime Selection](llm-runtime-selection.md) — the runtime must
+  support the model's tool-calling format, not just the model architecture.
+- Check **agent-framework integration**: LangChain, LlamaIndex, CrewAI,
+  AutoGen, OpenAI Agents SDK. A model that works with the OpenAI client
+  library but no agent framework is harder to deploy in agentic workloads.
 
 **Failure mode caught**: A model is deployed for an agentic workload based
 on a "supports tools" claim, but the support is a prompt template, not a
 trained capability. Tool-call reliability is low and the agent loop fails
-silently.
+silently. Or: the model supports tools, but the chosen runtime does not
+implement the model's tool-call parser, and tool calls never fire.
 
 **Red flag**: The model card says "tool-capable" but names no tool-calling
-format and no verified integration.
+format, no parser, and no verified runtime or framework integration.
 
-### 10. Image, Text, Audio, Video — Supported?
+### 10. Modalities (Image, Text, Audio, Video) — Supported, Native or Routed?
 
-**Ask**: Which input and output modalities does the model handle?
+**Ask**: Which input and output modalities does the model handle, and for
+each, is the modality native or routed through a separate encoder/decoder?
 
 **Verify**:
 - Check the model card. Distinguish **accepts** (the model can take the
   modality as input) from **generates** (the model can produce the
   modality as output). Many "multimodal" models accept images but generate
   only text.
-- For audio and video, check whether the modality is native or routed through
-  a separate encoder/decoder. Native is lower latency; routed is more
-  flexible but adds a hop.
+- For each modality, distinguish **native** (the model architecture
+  processes the modality directly — e.g., a vision-language model with
+  image tokens in the context) from **routed** (the modality passes through
+  a separate encoder/decoder, e.g., Whisper for audio input, a TTS model
+  for audio output). Native is lower latency and cheaper; routed is more
+  flexible but adds a hop, a separate model, and a separate bill.
 - For production use, check the modality-specific pricing. Audio and video
   tokens are typically priced differently from text tokens (e.g., per-minute
-  for audio).
+  for audio, per-frame for video).
+- Check modality-specific context limits. An image may consume 1,000+ text
+  tokens of context; a 1-minute audio clip may consume 10,000+. The
+  effective text context shrinks when modalities are in the prompt.
 
 **Failure mode caught**: A model is deployed for a multimodal workload based
 on a "multimodal" label, but the model only accepts images and generates
-text. The video-generation requirement was never going to be met.
+text. The video-generation requirement was never going to be met. Or: the
+modality is routed, not native, and the operator did not budget for the
+second model or the extra latency hop.
 
 **Red flag**: The model card says "multimodal" without a per-modality
-capability matrix.
+capability matrix that distinguishes accepts/generates and native/routed.
 
 ### 11. Max Knowledge Basis Date
 
@@ -415,21 +473,359 @@ but unproven in production, and no community tooling exists for it.
 
 **Red flag**: High likes, low (or zero) downloads, and no derivative models.
 
+### 13. Context Window (Input + Output Caps)
+
+**Ask**: What is the maximum input context, the maximum output, and is there
+a long-context surcharge above a threshold?
+
+**Verify**:
+- Check the model card for **both** numbers. Input and output share the
+  context budget but have separate caps. A model with 1M total context and
+  8K max output can ingest a codebase but generates short responses; a model
+  with 400K context and 128K max output generates longer responses.
+- Compute the **effective input limit**: total context minus max output.
+  A 1M-context / 64K-output model has an effective input limit of 936K, not
+  1M.
+- Check for a **long-context surcharge**. Most providers charge more per
+  token above a threshold (e.g., 2x past 200K for Gemini, 2x past 272K for
+  GPT-5.x). The headline per-token price (criterion 6) applies only to the
+  short-context tier.
+- Check the **lost-in-the-middle** behavior. Some models retrieve
+  information at the start and end of a long context but miss information in
+  the middle. A 1M context that loses middle facts is not a 1M context for
+  retrieval workloads.
+
+Reference points (mid-2026):
+
+| Model | Total context | Max output | Long-context surcharge |
+|-------|:------------:|:----------:|:----------------------:|
+| Gemini 3.1 Pro | 2M | 64K | 2x past 200K |
+| GPT-5.5 | 1M | 64K | 2x past 272K |
+| Claude Opus 4.7 | 1M | 64K | None |
+| DeepSeek V4 Pro | 1M | 32K | None |
+| Grok 4.20 | 256K | 32K | None |
+| Llama 4 Maverick | 128K | 8K | N/A (self-host) |
+
+**Failure mode caught**: An operator deploys a 1M-context model for a
+long-document workload, assumes 1M input, and hits the output cap at 32K.
+Or: the workload uses 500K context, the surcharge kicks in at 200K, and the
+realized cost is 2x the headline price.
+
+**Red flag**: The model card quotes a single "context window" number with no
+separate output cap and no surcharge threshold.
+
+### 14. Data Privacy and Retention
+
+**Ask**: Does the provider retain prompts, train on inputs, or offer a
+zero-data-retention (ZDR) arrangement? What is the default retention period?
+
+**Verify**:
+- Check the provider's data-controls page (not the model card — privacy
+  policy is provider-level, not model-level).
+- Distinguish three questions:
+  1. **Training on inputs**: Does the provider use API prompts to train
+     models? OpenAI, Anthropic, and Google all default to **no** for paid
+     API tiers (as of 2026). Consumer chat products may differ.
+  2. **Retention for abuse monitoring**: Are prompts logged for abuse
+     detection, and for how long? OpenAI defaults to 30-day retention;
+     Anthropic and Google have similar defaults.
+  3. **Zero Data Retention (ZDR)**: Is there a ZDR arrangement that
+     excludes prompts from abuse-monitoring logs? ZDR typically requires
+     sales approval and may disable features (e.g., OpenAI ZDR forces
+     `store=false`; Anthropic ZDR is per-organization).
+- Check whether ZDR covers the **specific features** the workload uses.
+  Grounding with Google Search stores prompts for 30 days with no opt-out.
+  Some endpoints are ineligible for ZDR.
+- For self-hosted open-weight models, this criterion is moot — no prompts
+  leave the operator's infrastructure.
+
+**Failure mode caught**: An operator deploys a model for a regulated
+workload (healthcare, finance, legal) assuming "API does not train on
+inputs" is sufficient. The 30-day abuse-monitoring retention violates the
+data-handling policy, and ZDR was never requested.
+
+**Red flag**: The provider's data-controls page is silent on retention
+period, or ZDR is "contact sales" with no published eligibility table.
+
+### 15. Throughput and Latency
+
+**Ask**: What are the tokens/sec, time-to-first-token (TTFT), and
+inter-token latency under the workload's expected load?
+
+**Verify**:
+- Check **Artificial Analysis** for independent throughput and latency
+  measurements across providers and models.
+- Distinguish three metrics:
+  - **Time to first token (TTFT)**: latency before the first token streams.
+    Critical for interactive workloads; dominated by prefill.
+  - **Inter-token latency (ITL)**: time between successive output tokens.
+    Critical for streaming UX; dominated by decode.
+  - **Throughput (tokens/sec)**: aggregate output rate. Critical for batch
+    workloads; depends on batching and concurrency.
+- Benchmark with the **workload's prompt distribution**, not a synthetic
+  benchmark. A model that hits 200 tok/s on short prompts may drop to 40
+  tok/s on 64K-context prompts.
+- For self-hosted models, throughput depends on the runtime (see
+  [LLM Runtime Selection](llm-runtime-selection.md)) — SGLang on cu130
+  outperforms vLLM on the same model for supported formats.
+
+**Failure mode caught**: An operator picks a model on price and quality,
+deploys it for an interactive chat workload, and discovers TTFT is 4
+seconds. Users perceive the model as broken even though the answers are
+correct.
+
+**Red flag**: The provider quotes only "tokens/sec" with no TTFT or ITL,
+or quotes throughput on a short-prompt benchmark that does not match the
+workload.
+
+### 16. Rate Limits and Concurrency
+
+**Ask**: What are the RPM (requests per minute), TPM (tokens per minute),
+and concurrency caps at the operator's usage tier? Can the model serve the
+workload's peak QPS?
+
+**Verify**:
+- Check the provider's rate-limit page for the operator's **current tier**,
+  not the top tier. OpenAI tiers 1–5 are spend-graduated; Anthropic tiers
+  are similar.
+- Distinguish the three limits that can bind independently:
+  - **RPM**: counts HTTP calls regardless of size. Binds for many-small-calls
+    workloads (agent tool loops, classification fan-out).
+  - **TPM**: counts input + output tokens. Binds for long-prompt workloads
+    (RAG, long-context). One 80K-token request can exhaust TPM while RPM
+    is at 1%.
+  - **Concurrency**: in-flight calls at once. Binds for streaming sessions
+    held open (agent swarms, long-running tool calls).
+- Check whether **prompt caching affects rate limits**. Anthropic's
+  cache-aware ITPM counts only uncached input tokens, so effective
+  throughput is higher than the raw limit suggests.
+- Check the **batch quota** separately if the workload uses async batch
+  (OpenAI Batch, Anthropic Message Batches). Batch has a separate pool and
+  does not consume realtime TPM.
+
+**Failure mode caught**: An operator deploys an agent loop that fans out
+50 parallel tool calls, each a separate API request. RPM is exhausted at
+call 20, the agent loop stalls, and the failure is silent (retries with
+backoff, not a hard error).
+
+**Red flag**: Rate limits are "custom" or "contact sales" with no published
+per-tier table, or the operator's tier is not named.
+
+### 17. Compliance and Data Residency
+
+**Ask**: Does the model/provider have SOC 2 Type II, ISO 27001, HIPAA,
+GDPR, and regional processing (data residency) for the operator's
+jurisdictions?
+
+**Verify**:
+- Check the provider's compliance page (not the model card — compliance is
+  provider-level).
+- Distinguish **certification** (audited, report available under NDA) from
+  **readiness** (the provider claims the controls but has not been audited).
+  "HIPAA-ready" is not "HIPAA-certified" — there is no such thing as
+  HIPAA certification, only Business Associate Agreements (BAAs).
+- Check **data residency** for regulated workloads. Some providers offer
+  regional processing endpoints (e.g., OpenAI's US-only inference, EU
+  data residency) at a price uplift (typically 10%).
+- Check **DPAs and BAAs** are available for signing. A provider with
+  HIPAA-ready infrastructure but no BAA process is not usable for PHI.
+- For self-hosted open-weight models, compliance is the operator's
+  responsibility — the model itself has no compliance posture, but the
+  infrastructure does.
+
+**Failure mode caught**: An operator deploys a model for a healthcare
+workload, assumes "HIPAA-ready" means usable, and discovers the BAA process
+takes 8 weeks or is not offered for the operator's plan tier.
+
+**Red flag**: The compliance page lists certifications with no report
+availability, or "HIPAA-ready" with no BAA process.
+
+### 18. Fine-Tuning and Customization
+
+**Ask**: Does the model support full fine-tuning, LoRA/QLoRA, continued
+pretraining, distillation, or preference tuning (DPO/KTO)? What is
+required to fine-tune it?
+
+**Verify**:
+- Check the model card and the provider's fine-tuning docs.
+- Distinguish the customization levels:
+  - **Full fine-tuning**: all parameters updated. Requires open weights and
+    significant GPU resources. Only possible for open-weight models.
+  - **LoRA / QLoRA**: low-rank adapters on a frozen base. Cheaper; possible
+    for open-weight models and some provider APIs (OpenAI, Anthropic do not
+    offer LoRA; they offer supervised fine-tuning of a hosted snapshot).
+  - **Continued pretraining**: further pretraining on domain data. Requires
+    open weights and large compute.
+  - **Provider-hosted fine-tuning**: the provider trains a private snapshot
+    on your data. No weight download; the snapshot is served only via the
+    provider's API.
+  - **Distillation**: a smaller model is trained to mimic a larger one.
+    Requires open weights for the student.
+- Check whether the license **permits fine-tuning and derivative
+  distribution**. Llama Community permits fine-tuning but restricts
+  derivative distribution above 700M MAU. CC-BY-NC permits fine-tuning but
+  not commercial use of the derivative.
+- Check whether the provider-hosted fine-tuning produces a **portable**
+  artifact or a **locked** snapshot. A locked snapshot cannot be exported
+  to another provider or self-hosted.
+
+**Failure mode caught**: An operator plans to fine-tune a provider-hosted
+model for a domain-specific workload, then discovers the fine-tuned
+snapshot is locked to the provider, cannot be exported, and the operator
+cannot migrate without retraining from scratch.
+
+**Red flag**: The fine-tuning docs describe only provider-hosted
+fine-tuning with no export path, or the license restricts derivative
+distribution.
+
+### 19. Structured Output (JSON Mode, Grammar Constraints)
+
+**Ask**: Does the model support constrained decoding — JSON mode, JSON
+schema enforcement, grammar constraints, or regex constraints?
+
+**Verify**:
+- Check the model card and the **runtime** docs (this is often a runtime
+  feature, not a model feature — vLLM's `--guided-decoding`, SGLang's
+  `--json-schema`, llama.cpp's GBNF grammars).
+- Distinguish the constraint levels:
+  - **JSON mode**: output is valid JSON (syntax guaranteed, schema not
+    enforced).
+  - **JSON schema enforcement**: output conforms to a specific JSON schema
+    (syntax + structure guaranteed).
+  - **Grammar constraints**: output conforms to a context-free grammar
+    (e.g., GBNF in llama.cpp). Most flexible; can enforce non-JSON formats.
+  - **Regex constraints**: output matches a regex. Simplest constraint.
+- Check whether the constraint is **decoded** (the model is forced to
+  produce valid output at each token) or **validated** (the model produces
+  freely and invalid output is rejected). Decoded constraints are reliable;
+  validated constraints require retries.
+- This criterion is **distinct from tool calling** (criterion 9). Tool
+  calling is about the model deciding to call a tool; structured output is
+  about the model's response format when it answers directly. A model can
+  support one without the other.
+
+**Failure mode caught**: An operator deploys a model for a structured-data
+extraction workload, assumes "supports JSON" means schema enforcement, and
+gets syntactically valid JSON that does not match the expected schema.
+Retries and repair prompts add latency and cost.
+
+**Red flag**: The model card says "JSON mode" but does not distinguish
+syntax-only from schema enforcement, or the runtime does not support
+guided decoding for this model.
+
+### 20. Safety and Refusal Behavior
+
+**Ask**: What is the model's over-refusal rate on legitimate requests, and
+does the safety policy match the workload's risk tolerance?
+
+**Verify**:
+- Run **workload-specific prompts** through the model, including edge cases
+  that are legitimate but might trigger safety filters (e.g., medical
+  questions for a healthcare workload, security questions for a
+  cybersecurity workload, violent-content analysis for a content-moderation
+  workload).
+- Check the model card's safety section for the stated policy and any
+  published refusal rates.
+- Distinguish **trained refusals** (the model itself declines) from
+  **filter refusals** (an input or output filter blocks the request). Filter
+  refusals can sometimes be disabled; trained refusals cannot.
+- Check whether the model supports **system-prompt safety overrides**. Some
+  models allow the system prompt to relax refusals for legitimate
+  workloads; others do not.
+- For agentic workloads, check whether the model refuses to call tools that
+  have safety-relevant side effects (e.g., sending an email, executing
+  code). Over-refusal here breaks the agent loop.
+
+**Failure mode caught**: A model is deployed for a cybersecurity workload
+and refuses to analyze malicious code samples. The workload is legitimate,
+the model is capable, but the safety policy blocks the use case and the
+operator discovers this only in production.
+
+**Red flag**: The model card has no safety section, or the safety policy is
+not documented, or refusal rates are not published.
+
+### 21. Vendor Viability and Deprecation Policy
+
+**Ask**: What is the deprecation notice period for the model, and is the
+vendor likely to outlive the workload's expected lifetime?
+
+**Verify**:
+- Check the provider's deprecation page for the **notice period** by model
+  class:
+  - **Generally available (GA)**: OpenAI guarantees at least 6 months;
+    Anthropic provides 6 months from deprecation announcement.
+  - **Specialized variants** (chat-latest, codex, deep-research): OpenAI
+    provides at least 3 months.
+  - **Preview models**: OpenAI may retire with 2 weeks' notice. Anthropic
+    does not recommend preview models for business-critical workloads.
+- Check the model's **lifecycle status**: active, legacy, deprecated, or
+  retired (Anthropic's terminology). A model in "legacy" status has no
+  announced retirement date but is no longer updated and may be deprecated
+  soon.
+- Assess **vendor viability**: Is the vendor funded for the workload's
+  expected lifetime? A model from a startup with 12 months of runway is a
+  higher deprecation risk than a model from a hyperscaler.
+- For **self-hosted open-weight models**, deprecation is not a vendor
+  risk — the weights are downloaded and the operator controls the lifetime.
+  The risk shifts to **runtime deprecation** (does the runtime continue to
+  support the model architecture?).
+
+**Failure mode caught**: An operator deploys a preview model for a
+production workload, receives a 2-week deprecation notice, and cannot
+migrate in time. Or: a startup vendor shuts down and the hosted model
+disappears with no migration path.
+
+**Red flag**: The model is in "preview" status with no GA commitment, or
+the vendor has no published deprecation policy.
+
+### 22. Release Cadence and Versioning
+
+**Ask**: How often is the model updated, are old versions retained after an
+update, and are updates breaking or backward-compatible?
+
+**Verify**:
+- Check the model's **version history** and changelog. A model updated
+  weekly with no changelog is harder to track than a model updated quarterly
+  with a detailed changelog.
+- Distinguish **point releases** (e.g., `claude-sonnet-4.6` → `4.7`) from
+  **silent updates** (the same model name points to a different underlying
+  version). Silent updates break reproducibility — the same prompt produces
+  different outputs before and after the update.
+- Check whether **old versions remain available** after a new release.
+  OpenAI and Anthropic typically keep the previous version available for a
+  transition period; some providers replace in place.
+- Check whether the model name supports **pinning to a specific version**
+  (e.g., `gpt-5.5-2026-07-15` vs. `gpt-5.5-latest`). Pin in production;
+  use `-latest` only for development.
+- For **self-hosted open-weight models**, versioning is the operator's
+  responsibility — pin to a specific checkpoint commit hash, not a branch.
+
+**Failure mode caught**: An operator deploys `model-latest` in production.
+The vendor silently updates the model, outputs change, and the operator
+cannot reproduce the previous behavior or determine what changed.
+
+**Red flag**: The model has no version pinning option, or the provider
+updates models in place with no changelog or notification.
+
 ## Assessment Workflow
 
 1. **Run the 60-second weights check** (criterion 5) first. If the weights
    are not actually available under a usable license, the other criteria are
    moot.
-2. **Verify evidence** (criteria 1, 2, 3, 7). These are the criteria most
-   often lied about by omission. If the vendor's claims fail verification,
-   discount the rest of the model card proportionally.
-3. **Verify cost** (criteria 4, 6). On-disk size determines infrastructure;
-   per-token pricing determines unit economics.
-4. **Verify fit** (criteria 8, 9, 10, 11). These are workload-specific; a
-   model that fails fit for one workload may pass for another.
-5. **Check adoption** (criterion 12) last. Adoption is a risk signal, not a
-   quality signal — a well-adopted model has community tooling and
-   documented failure modes; a poorly-adopted model does not.
+2. **Verify evidence** (criteria 1, 2, 3, 7, 14, 17). These are the criteria
+   most often lied about by omission. If the vendor's claims fail
+   verification, discount the rest of the model card proportionally.
+3. **Verify cost** (criteria 4, 6, 15, 16). On-disk size determines
+   infrastructure; per-token pricing determines unit economics; throughput
+   and rate limits determine whether the model can serve the workload's
+   peak.
+4. **Verify fit** (criteria 8, 9, 10, 11, 13, 18, 19, 20). These are
+   workload-specific; a model that fails fit for one workload may pass for
+   another.
+5. **Check adoption and longevity** (criteria 12, 21, 22) last. Adoption is
+   a risk signal, not a quality signal. Deprecation policy and release
+   cadence determine whether the model will still be servable for the
+   workload's lifetime.
 
 ## Common Anti-Patterns
 
@@ -447,19 +843,49 @@ but unproven in production, and no community tooling exists for it.
   Artificial Analysis. Vendor self-evaluation is not independent.
 - **"Contact sales for pricing"** — the price is not published, which means
   it is not comparable, which means criterion 6 fails.
+- **"1M context, so it can handle my workload"** — the context window is a
+  shared budget with separate input and output caps, a long-context
+  surcharge, and lost-in-the-middle degradation. Check criterion 13, not
+  just the headline number.
+- **"API does not train on inputs, so privacy is fine"** — training and
+  retention are separate questions. The 30-day abuse-monitoring retention
+  may violate the data-handling policy even when training is off. Check
+  criterion 14.
+- **"Tokens/sec is X, so throughput is fine"** — throughput on a
+  short-prompt benchmark does not predict throughput on the workload's
+  prompt distribution, and TTFT is a separate metric. Check criterion 15
+  with the workload's prompts.
+- **"It supports JSON, so structured output is fine"** — JSON mode
+  (syntax-only) is not JSON schema enforcement (structure guaranteed).
+  Check criterion 19 for the constraint level the workload needs.
+- **"It is the latest model, so it will be around"** — preview models can be
+  retired with 2 weeks' notice. Check criterion 21 for the deprecation
+  policy and lifecycle status.
+- **"I will just use `model-latest`"** — silent updates break
+  reproducibility. Pin to a specific version in production. Check criterion
+  22.
 
 ## Review Triggers
 
 - A new model is announced and the operator is considering adoption.
-- A vendor changes the license on an existing model (re-verify criterion 2
+- A vendor changes the license on an existing model (re-verify criteria 2
   and 5).
 - A provider changes pricing (re-verify criterion 6).
 - An independent eval suite (HELM, LMArena, Artificial Analysis) releases a
   new leaderboard (re-verify criterion 7).
-- The workload's modality, language, or tool-calling requirements change
-  (re-verify criteria 8, 9, 10).
+- The workload's modality, language, tool-calling, context, or
+  structured-output requirements change (re-verify criteria 8, 9, 10, 13,
+  19).
 - The knowledge cutoff becomes stale for a time-sensitive workload
   (re-verify criterion 11; consider RAG or a newer model).
+- A provider announces a deprecation or changes the deprecation policy
+  (re-verify criteria 21 and 22).
+- The workload's compliance or data-residency requirements change (re-verify
+  criterion 17).
+- The workload's peak QPS or prompt distribution changes (re-verify
+  criteria 15 and 16).
+- A provider changes its data-retention or ZDR policy (re-verify criterion
+  14).
 
 ## Cross-References
 

@@ -1,11 +1,11 @@
 ---
 name: handoff
 description: Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation.
-version: 2.3.0
+version: 2.4.0
 date:
   created: "2026-05-25"
-  knowledge-basis: "2026-07-29"
-  last-used: "2026-07-30"
+  knowledge-basis: "2026-08-03"
+  last-used: "2026-08-03"
 tags:
   - "ai/skill"
   - "handoff"

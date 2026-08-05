@@ -1,5 +1,27 @@
 # Directory Update Log
 
+## 2026-08-04
+
+* **Update**: Rewrote the Next.js/Turbopack section of
+  [explicit-file-extensions.md](explicit-file-extensions.md) from
+  "Framework Exception" to **"Forced Workaround"** framing. The
+  original framing validated `.ts` as a legitimate choice for Next.js;
+  the corrected framing makes clear that `.ts` is **never the right
+  answer** — Next.js apps are forced to use it because Turbopack is
+  broken. Added a **support matrix table** showing Turbopack is the
+  lone outlier (every other tool — `tsc`, Node.js, webpack, Vite,
+  Vitest — supports `.mts`). Added a "When the issue is fixed, migrate
+  back to `.mts`" callout with a direct link to
+  [#82945](https://github.com/vercel/next.js/issues/82945). Renamed
+  "What to Use Instead" → "What Next.js Apps Must Do (Temporary)" and
+  "When the Exception Does NOT Apply" → "Where the Workaround Does NOT
+  Apply" to reinforce the temporary nature. The root cause details
+  (Turbopack lacks `resolve.extensionAlias` parity, server/client
+  boundary breaks, Node.js builtins leak, TypeScript warns against
+  `.mts` in bundler projects) and ESLint glob exception config are
+  unchanged. Triggered by user feedback that the original framing
+  made `.ts` look like a sanctioned choice rather than tech debt.
+
 ## 2026-08-02
 
 * **Ingest**: Created

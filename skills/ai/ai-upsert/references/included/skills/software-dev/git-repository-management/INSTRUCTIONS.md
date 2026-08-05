@@ -1473,12 +1473,39 @@ These catch obfuscated secrets and non-obvious patterns that manual grep misses.
 Use `cli-tool-discovery.sh` to locate them if not on PATH.
 
 
-## Commit Message Tagging Standard
+## Commit Message Tagging Standard (MANDATORY — NOT OPTIONAL)
 
-Commits produced by this skill include a **tag array** as the last line of the
-commit body, in `#tag-format`. Tags are metadata for search, filtering, and
-analytics — they do not replace the subject, the body prose, or any project-
-standard footer (ticket references, `Fixes #N`, `Signed-off-by`, etc.).
+**Every commit produced by this skill MUST include a `#tag` array as the last
+line of the commit body. This is not optional, not a suggestion, and not a
+"nice to have." The tag array is a hard requirement on equal footing with the
+mandatory commit body and the no-AI-signatures rule.**
+
+The `git-commit-batch.sh` script **enforces this mechanically** — commits
+missing the tag array are rejected with `COMMIT_FAILED:NO_TAG_ARRAY`, the same
+way bodyless commits are rejected with `COMMIT_FAILED:NO_BODY`. You cannot
+bypass this by omitting the tags; the script will fail the commit.
+
+Tags are metadata for search, filtering, and analytics — they do not replace
+the subject, the body prose, or any project-standard footer (ticket
+references, `Fixes #N`, `Signed-off-by`, etc.).
+
+### Agent MUST NOT decide to skip the tag array
+
+You (the AI agent) **must not** decide on your own to omit the tag array. The
+tag array is mandatory unless ALL of the following are true:
+
+1. A project-level config file exists at
+   `.agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml`
+   inside the repository being committed to, AND
+2. That file contains `[commit-tagging]` with `enabled = false`, AND
+3. The user has explicitly confirmed the override applies to this commit.
+
+If any of these conditions is unmet, the tag array is required. Do not skip it
+because the change "feels too small to tag," because the repo "doesn't seem to
+use tags," because you are unsure which tags apply, or because the project's
+AGENTS.md is silent on tagging. When unsure which tags apply, use the standard
+list below — a best-guess tag array is always better than omitting it (the
+script will reject the omission; it will not reject a suboptimal tag choice).
 
 ### Format
 
@@ -1504,8 +1531,8 @@ Closes #123
 - **Tags are part of the body**, not a git trailer — they do not appear in
   `git log --format="%B"` trailers and are not parsed by `git interpret-trailers`
 - **The footer is optional and project-specific** — the tag line is always
-  present (unless disabled); the footer (`Closes #N`, `Fixes #N`,
-  `Signed-off-by:`, etc.) is added by the project's own conventions
+  present; the footer (`Closes #N`, `Fixes #N`, `Signed-off-by:`, etc.) is
+  added by the project's own conventions
 
 ### Standard Tag Categories
 
@@ -1544,13 +1571,13 @@ does **not** replace any project-standard footer or ticket reference.
 5. **Never tag secrets** — no tag should reference a secret value, key name,
    or internal identifier that would leak sensitive context
 
-### Disabling Tagging (Project Override)
+### Disabling Tagging (Project Override — explicit config only)
 
 A repository can disable commit tagging for a specific skill by creating a
 config file at:
 
 ```
-.agents/config/skills/<github-owner>/<github-repo>/<skill-path>/config.toml
+.agents/config/skills/levonk/skills-releases/software-dev/git-repository-management/config.toml
 ```
 
 Where:
@@ -1574,6 +1601,13 @@ in that repository. Other config keys may be added in the future (e.g.
 **Discovery**: the skill checks for this config file relative to the
 repository root of the repo being committed to (not the skill's own source
 repo). If the file does not exist, tagging is enabled by default.
+
+**This is the ONLY way to disable tagging.** The agent must not disable
+tagging based on its own judgment, the absence of tags in prior commits, the
+perceived triviality of the change, or the silence of the project's
+AGENTS.md/CONTRIBUTING.md on the subject. The `git-commit-batch.sh` script
+reads this config file and skips the `NO_TAG_ARRAY` check only when
+`enabled = false` is present — there is no other bypass.
 
 
 # Git Repository Management
