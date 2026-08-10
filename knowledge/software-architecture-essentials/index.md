@@ -43,3 +43,9 @@ specific architectural concern with the practice that addresses it.
 * [Decentralized P2P Architecture](decentralized-p2p-architecture.md) - Peer-to-peer topology, subscriber-based replication, CRDT/commutative-monoid state, WASM-sandboxed contracts, censorship-resistance, browser-as-node limitations, homelab always-on-node deployment
 * [Cost-Aware System Design](cost-aware-system-design.md) - Per-seat vs per-call billing, fan-out cost amplification, cap-and-shed, flat-rate vs metered contracts, cost-allocation tagging
 * [Business Models Around Open Protocols](business-models-around-open-protocols.md) - Managed nodes, premium clients, curation, identity services, B2B censorship-resistant infra, consulting, seedboxing; why tolls and arbitrage fail on open networks
+* [Plugin Scanner Registration](plugin-scanner-registration.md) - Trait-based plugin registration, dynamic loading vs compile-time, discovery, lifecycle, dependency injection
+* [Rule Engine Design](rule-engine-design.md) - Rule evaluation order, activation profiles, conflict resolution, performance optimization, incremental evaluation
+* [Trait-Based Extensibility](trait-based-extensibility.md) - Trait hierarchies for rules, default impls, trait object vs generic, combinators, trait versioning
+* [Config-Driven Tool Design](config-driven-tool-design.md) - Cross-bundle synthesis: layered config precedence, profile-based activation, schema migration, hot-reload, cross-platform discovery
+* [Event-Driven Linter Architecture](event-driven-linter-architecture.md) - Cross-bundle synthesis: IDE hook integration, event filtering/routing, async processing, backpressure
+* [Multi-Language Scanner Coordination](multi-language-scanner-coordination.md) - Cross-bundle synthesis: language detection, scanner registration, shared interfaces, polyglot project analysis

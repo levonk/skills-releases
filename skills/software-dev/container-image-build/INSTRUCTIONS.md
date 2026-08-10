@@ -1457,6 +1457,48 @@ The critical contracts:
 - **Avoid QEMU for heavy compilation** — use cross-compilation or native hosts
 - **`--push` required for multi-platform** — `--load` only works single-platform
 
+## Definition of Done
+
+Before declaring the container-image-build run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script
+— if the script exits non-zero, the item is NOT done. Items marked
+**[manual]** require the agent to check something the scripts cannot verify.
+
+### Decision Tree (Branch Selection)
+
+- [ ] **[script]** `scripts/check-upstream-image.sh <image-name>` was run before selecting a branch (Step 1)
+- [ ] **[manual]** The selected branch matches the decision tree outcome — Branch A when a pre-built multi-arch image exists, Branch C only when the service genuinely needs Nix at runtime (Decision Tree / Step 2)
+- [ ] **[manual]** The decision was not skipped to jump directly to Branch C (Nix flake) when Branch A or B would have been simpler (Decision Tree mandatory rule)
+
+### Build and Multi-Arch
+
+- [ ] **[script]** `scripts/verify-multi-arch.sh <image:tag>` exits zero — the image manifest covers all target architectures (Step 4)
+- [ ] **[manual]** The build used `--push` for multi-platform builds — not `--load` (which only works single-platform) (Step 5 / Key Principles)
+- [ ] **[manual]** For Branch B: the Dockerfile is multi-stage with no secrets baked in (Key Principles)
+- [ ] **[manual]** For Branch C: the flake documents which build hosts can build which architectures (Branch C overview)
+
+### Registry and Verification
+
+- [ ] **[manual]** The image was pushed to the target registry and verified with `docker manifest inspect` (Step 5)
+- [ ] **[manual]** The manifest covers both `linux/amd64` and `linux/arm64` (or the project's target architectures) — no single-arch `:latest` (Key Principles)
+
+### Artifact Hygiene
+
+- [ ] **[script]** `scripts/scan-artifacts.sh` exits zero on the generated Dockerfile, flake.nix, or CI workflow files — no HARD identity leaks (Step 6)
+- [ ] **[manual]** HARD findings (resolved `$HOME` paths, usernames, hostnames) were fixed before committing — or `--private` was passed with user confirmation (Step 6)
+- [ ] **[manual]** REVIEW items from `scan-artifacts.sh` were confirmed before committing (Step 6)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `verify-multi-arch.sh` exits zero but only `linux/amd64` is in the manifest → the `linux/arm64` slice was never built, mixed-fleet hosts will fail (Step 4)
+- The image was built with `--load` for multi-platform → the local store cannot hold a multi-arch manifest, push silently failed (Step 5)
+- `check-upstream-image.sh` was skipped and Branch C was chosen → a simpler pre-built wrap (Branch A) or Dockerfile (Branch B) may have worked (Decision Tree)
+- `scan-artifacts.sh` has HARD findings dismissed without `--private` confirmation → identity leak in committed files (Step 6)
+- The image is pushed but `docker manifest inspect` was not run → the manifest may be incomplete or malformed (Step 5)
+- A single-arch `:latest` was pushed for a mixed fleet → aarch64 hosts cannot pull a matching image (Key Principles)
+
 ## References
 
 - `references/wrap-prebuilt.md` — Branch A: wrapping pre-built upstream images

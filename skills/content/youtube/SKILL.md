@@ -1,13 +1,13 @@
 ---
 name: youtube-content-analysis
 description: Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video transcripts (with or without timestamps), analyze video content, extract video information, or process YouTube content for further LLM analysis. Triggers on requests like 'get transcript', 'analyze YouTube video', 'extract video content', or 'fetch video metadata'. Do NOT trigger on general video playback questions, downloading video files, non-YouTube platforms, or video editing tasks.
-version: 1.2.0
+version: 1.3.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-02-01"
-  knowledge-basis: "2026-07-30"
-  last-used: "2026-07-30"
+  knowledge-basis: "2026-08-05"
+  last-used: "2026-08-05"
 tags: ["ai/skill", "content-creation", "video-analysis", "transcript-processing"]
 see-also:
   - template: "base-ai-guidance"

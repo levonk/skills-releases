@@ -1350,6 +1350,37 @@ Record the triage decision with clear rationale:
 - **Cost limits high tiers** — Very expensive work requires high priority or escalation
 - **Client relationships matter** — Critical client requests get +2 tier boost
 
+## Definition of Done
+
+Before declaring the Task Triage run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Triage Calculation
+
+- [ ] **[manual]** The base tier was identified by matching the request type to the 26-tier framework (Step 1)
+- [ ] **[manual]** Cross-cutting adjustments (legal, reputational, financial, security) were checked and applied where relevant (Step 2)
+- [ ] **[manual]** The requestor adjustment was applied based on who is making the request (Step 3)
+- [ ] **[manual]** The effective tier was calculated as Base + Cross-Cutting + Requestor, clamped to Tier 1–26 (Step 4)
+- [ ] **[manual]** The cost estimate was categorized (Low / Medium / High / Very High) (Step 5)
+
+### Decision and Documentation
+
+- [ ] **[manual]** The decision matrix was applied crossing Effective Tier with Cost Level (Step 6)
+- [ ] **[manual]** The decision is one of: Auto-accept, Accept, Defer, Reject, or Escalate to CoS (Step 6)
+- [ ] **[manual]** The triage decision is documented with base tier, all adjustments, cost estimate, final decision, and next steps (Step 7)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- A tier number is produced but no adjustments were checked → effective tier is just the base tier, not the real priority (Steps 2-3)
+- The decision is "Accept" but cost was not estimated → the decision matrix was not actually crossed (Steps 5-6)
+- A security implication exists but the tier was not overridden to Tier 1 → security override rule missed (Step 2)
+- The decision is documented but the rationale omits which adjustments were applied → the decision is not defensible on review (Step 7)
+
+
 ## Context Declaration
 
 ### File Paths

@@ -2116,6 +2116,46 @@ resolve mode exits 0 with the wrapped command on stdout.
   shouldn't happen in normal operation (the script is materialized at build
   time), but the fallback ensures the script degrades gracefully.
 
+## Definition of Done
+
+Before declaring the shell-wrapper run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Wrapper Resolution (Steps 1-2)
+
+- [ ] **[script]** `scripts/wrap_command.sh <cmd>` (resolve mode) exits zero and prints a wrapped command on stdout (Step 3)
+- [ ] **[manual]** The environment wrapper layer is present if and only if a wrapper (devbox, mise, flox, direnv, or nix) applies to the current directory and we are not already inside that wrapper's shell (Step 1, Step 3)
+- [ ] **[manual]** The rtk layer is present if and only if rtk is available (resolved via `cli-tool-discovery.sh`) AND the command is rtk-supported — no rtk prefix for excluded/TUI commands (Step 2, Step 3)
+
+### Composition Correctness (Step 3)
+
+- [ ] **[manual]** The wrapped command matches the correct row of the composition table (Step 3): no wrapper + no rtk → `<cmd>`; wrapper only → `<wrapper> <cmd>`; rtk only → `rtk <cmd>`; both → `<wrapper> rtk <cmd>`
+- [ ] **[manual]** The original command follows the prefix unchanged — no arguments dropped, reordered, or mangled (Step 3)
+
+### Edge Cases (Step 4)
+
+- [ ] **[manual]** Chained commands (`&&`, `||`, `|`, `;`, `&`) are wrapped as `<wrapper> bash -c '<cmd>'` so operators are interpreted inside the wrapper environment (Step 4)
+- [ ] **[manual]** Interactive TUI commands (vim, top, htop, tmux, less, more, man, fzf) are not prefixed with rtk even when rtk is available — `rtk rewrite` handles the exclusion (Step 4)
+- [ ] **[manual]** When already inside a wrapper shell (env vars set: `DEVBOX_SHELL`, `MISE_SHELL`, `FLOX_ACTIVE`, `DIRENV_DIR`, `IN_NIX_SHELL`), the wrapper prefix is skipped (Step 4)
+- [ ] **[manual]** When rtk is not found: the rtk layer is skipped silently — no error, no installation attempt without user confirmation (Step 4)
+
+### Execution (Step 3)
+
+- [ ] **[script]** `scripts/wrap_command.sh -- <cmd> [args...]` (exec mode) exits zero only if the underlying wrapped command succeeds (Step 3)
+- [ ] **[manual]** The executed command ran inside the correct environment — tools the project declares (psql, python, gcloud, node) were available, not "command not found" (Step 3)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `wrap_command.sh` prints a wrapped command but the environment wrapper is omitted despite a `devbox.json` present and not already inside a devbox shell → the command will run with system tools, not project tools
+- The wrapped command includes `rtk` prefix for a TUI command like `vim` → rtk will filter stdout and break the TUI
+- A chained command (`git fetch && git status`) is wrapped as `devbox run -- git fetch && git status` (not `bash -c '...'`) → the `&&` is interpreted by the outer shell outside the devbox environment; the second command runs unwrapped
+- The wrapper is applied but we are already inside a devbox shell (`DEVBOX_SHELL` set) → redundant nesting; the command runs in a sub-shell that may differ from the current environment
+- rtk is not found and the agent installs it without asking → unauthorized environment mutation
+
 ## References
 
 - [`references/wrapper-detection.md`](references/wrapper-detection.md) — All

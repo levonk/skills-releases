@@ -35,6 +35,24 @@ Archive refs older than a retention period (default 6 months) can be pruned
 permanently. Pruning is destructive and requires explicit confirmation — always
 run with `--dry-run` first.
 
+### Squash-Merge Detection
+
+Squash-merged branches (common in GitHub PR workflows) have no ancestry link
+to the main branch — `git merge-base --is-ancestor` reports them as
+"unmerged" even though their patch content is already in main. Without
+squash-merge detection, these branches accumulate indefinitely because the
+archiving script misclassifies them as active.
+
+The fix is to use `git cherry <main> <branch>` in addition to
+`merge-base --is-ancestor`. `git cherry` compares commits by patch content
+(equivalence class), not ancestry. Output lines starting with `-` mean the
+commit's patch is already in main; lines starting with `+` mean it is not. If
+all lines are `-` (or output is empty), the branch is fully squash-merged and
+safe to archive.
+
+This pattern was borrowed from `arc90/git-sweep` (inspector.py), which uses
+`git cherry upstream head` to detect squash-merged branches for cleanup.
+
 ## Failure Mode
 
 Without archiving:
@@ -71,6 +89,10 @@ Without archiving:
   workflow.
 - The `git-repository-management` skill v1.10.0 introduced the `git-archive.sh`
   script and the `archive/{branches,tags}/{type}/YYYY/MM/YYYYMMDD-{slug}` format.
+- The `arc90/git-sweep` project (Python, MIT licensed) demonstrated the
+  `git cherry` squash-merge detection pattern and the fetch-before-scan,
+  `--skip`, and confirmation-prompt UX patterns. These were incorporated into
+  `git-archive.sh` in v1.11.0.
 
 ## See Also
 

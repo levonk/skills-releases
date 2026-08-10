@@ -1452,6 +1452,52 @@ Select the best card from `payment_methods` for service payments:
 - **Service provider no-show**: Contact provider; if unresolved, move to next vetted provider from deal-intelligence report
 - **Service quality dispute**: Initiate credit card chargeback process; document with photos/correspondence
 
+## Definition of Done
+
+Before declaring the Shopping Acquisition run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Effort Tier Compliance
+
+- [ ] **[manual]** The workflow depth matches the effort tier from the Deal Intelligence Report — Quick skips negotiation, Standard skips multi-source negotiation, Major/High-value run full workflow (Effort Tier Awareness)
+
+### Negotiation (When Applicable)
+
+- [ ] **[manual]** Agent identity was disclosed at the start of any negotiation — "I am acting as a purchasing agent on behalf of the buyer" (Negotiation — Mandatory disclosure)
+- [ ] **[manual]** The negotiation summary includes item, seller, opening ask, opening offer, final agreed price, inclusions, warranty, conditions, and deadline (Negotiation output)
+- [ ] **[manual]** The negotiation summary includes user action required (Approve / Counter / Decline) (Negotiation output)
+
+### Purchase Notification / Auto-Buy
+
+- [ ] **[manual]** The purchase notification includes exact product name, model/SKU, condition, price, retailer link, and backup retailer (Manual Purchase Notification)
+- [ ] **[manual]** Step-by-step purchase instructions are provided (cashback portal, cart, coupon code, payment card, confirm) (Manual Purchase Notification)
+- [ ] **[manual]** The optimization stack table shows each savings layer and net cost (Manual Purchase Notification)
+- [ ] **[manual]** Time sensitivity (deal expiry, delivery estimate, stock level) is stated (Manual Purchase Notification)
+
+### In-Person Handoff (Used Lockable Devices)
+
+- [ ] **[manual]** For used lockable devices: the handoff verification procedure from `references/handoff-verification.md` is referenced or followed (In-Person Handoff Verification)
+- [ ] **[manual]** The user is reminded to erase/factory reset and walk through setup screens with the seller present before payment (In-Person Handoff Verification)
+
+### Services
+
+- [ ] **[manual]** Service negotiation output includes scope of work, warranty, payment terms, and start date (Service Negotiation output)
+- [ ] **[manual]** Service booking includes a written estimate/contract — never verbal agreement alone (Service Booking)
+- [ ] **[manual]** Payment method uses credit card with best dispute/purchase protection — never wire transfer, cash without receipt, or full upfront payment (Service Payment Protection)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- A negotiation summary is produced but agent disclosure timestamp is missing → mandatory disclosure was not made (Negotiation)
+- Purchase instructions list a retailer but no step-by-step checkout steps → the user cannot execute the purchase (Manual Purchase Notification)
+- The optimization stack shows savings but no net cost line → the user cannot see the actual total (Manual Purchase Notification)
+- A used phone is purchased but handoff verification was not mentioned → the last chance to catch an account lock was missed (In-Person Handoff)
+- A service is booked with a 50% deposit via wire transfer → payment protection rules violated (Service Payment Protection)
+
+
 ## Context Declaration
 
 ### File Paths

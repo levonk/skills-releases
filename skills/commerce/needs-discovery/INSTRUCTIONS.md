@@ -1605,6 +1605,58 @@ Pass the Needs Discovery Brief to the **shopping-deal-intelligence** skill for p
 - `references/domains/consumables.md` — Shelf life, bulk economics, quality/sourcing, storage requirements
 - `references/part-identification.md` — Replacement part vs full product decision, repair cost vs replacement cost analysis, repairability check (soldered/paired/locked components), manufacturer part number identification workflow, part number sources
 
+## Definition of Done
+
+Before declaring the Shopping Needs Discovery run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Effort Tier Compliance
+
+- [ ] **[manual]** For Quick tier items (under $50): questioning was compressed to 1–2 essential questions and deep constraint research was skipped (Effort Tier Awareness)
+
+### Needs Discovery Brief — Structure
+
+- [ ] **[manual]** The brief includes Timeline (Nice-to-have and Essential dates) (Output Format)
+- [ ] **[manual]** The brief includes Effort Tier label (Output Format)
+- [ ] **[manual]** The brief includes Requirements Summary with primary need, type (Product/Service/Both), use case, budget, and key specs (Output Format)
+- [ ] **[manual]** The brief includes a Recommended Products/Services table with Rank, Product/Provider, Type, Why, and Price Range (Output Format)
+- [ ] **[manual]** The brief includes Constraints & Warnings (Output Format)
+- [ ] **[manual]** The brief's Next Step hands off to the deal-intelligence skill (Output Format / Handoff)
+
+### Spec Interpretation
+
+- [ ] **[manual]** Every numeric spec is recorded as `min: <value>` (default) or `ceiling: <value>` (only when the user explicitly capped it) (Section 2.7)
+- [ ] **[manual]** No spec was treated as a target — candidates exceeding a min spec at equal or better value were surfaced as upgrades, not excluded (Section 2.7)
+
+### Questioning and Classification
+
+- [ ] **[manual]** Questions were presented in numbered format with lettered answer choices, pre-filled with best-guess answers, limited to 3–5 per round (Section 2)
+- [ ] **[manual]** The request was classified as Product, Service, or Both before deep questioning (Section 2.5)
+
+### Constraint Research
+
+- [ ] **[manual]** The Level 1 attribute index (`references/constraint-attributes.md`) was loaded to determine which attribute and domain files apply (Section 5)
+- [ ] **[manual]** Only applicable attribute and domain files were loaded — no irrelevant constraints (Section 5)
+
+### Replacement Part (When Applicable)
+
+- [ ] **[manual]** When the user describes a broken item: the part-vs-product decision matrix was applied (Section 2.6)
+- [ ] **[manual]** When a replacement part is viable: the exact manufacturer part number (not just model number) was identified (Section 2.6)
+- [ ] **[manual]** When part identification succeeds: a `Replacement Part` section is included in the brief (Section 2.6)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The brief has recommendations but no Timeline dates → downstream deal-intelligence cannot gate urgency (Output Format)
+- Specs are listed as bare numbers without `min:` or `ceiling:` tags → downstream deal-intelligence cannot tell floors from caps (Section 2.7)
+- A candidate was excluded for exceeding a stated spec → the spec was misread as a target, not a floor (Section 2.7)
+- The brief recommends products but no Constraints & Warnings section → proactive constraint research was skipped (Section 5 / Output Format)
+- The Next Step does not hand off to deal-intelligence → the pipeline is broken (Output Format / Handoff)
+
+
 ## Context Declaration
 
 ### File Paths

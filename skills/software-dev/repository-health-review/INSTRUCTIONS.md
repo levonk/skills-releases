@@ -1615,6 +1615,46 @@ patterns or warnings, and `✓` (plain checkmark) marks successful completion.
 - [Analysis Functions](references/analysis-functions.md) - Bash code implementations for outdated info, conflicting rules, security patterns, and custom analysis
 - [Reporting and Metrics](references/reporting-metrics.md) - Health score calculation, report structure, CI/CD integration, and performance optimization
 
+## Definition of Done
+
+Before declaring the repository-health-review run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Audit Execution
+
+- [ ] **[script]** `scripts/repository-health-review.sh <repo>` exits zero and produces a health score (Quick Start)
+- [ ] **[manual]** All six health categories were evaluated: outdated information, conflicting rules, undocumented standards, lessons from failures, missing tool documentation, security and access patterns (Health Analysis Categories)
+- [ ] **[manual]** No category was skipped or marked "no issues" without actual analysis of its patterns
+
+### Finding Classification
+
+- [ ] **[manual]** Every finding is classified by severity using the shared icons (🔴 critical, 🟡 warning, 🔵 info, 🟢 healthy) — no unclassified findings (Examples)
+- [ ] **[manual]** Critical findings (🔴) are genuine security or data-loss risks — not stylistic preferences elevated to critical
+- [ ] **[manual]** Each finding references the specific file and line/pattern that triggered it — no vague "documentation is outdated" without a path
+
+### Report Completeness
+
+- [ ] **[manual]** The health score (e.g. `82/100`) is present and consistent with the finding counts (critical, warning, info) (Examples)
+- [ ] **[manual]** When `--report` was used: the JSON report contains all findings with severity, file path, category, and recommendation fields
+- [ ] **[manual]** Recommendations are actionable — each points to a concrete fix, not just "improve documentation"
+
+### Pre-Extraction Mode (when applicable)
+
+- [ ] **[manual]** When run with `--pre-extraction`: the migration readiness score is present and the "issues to address before extraction" list is populated (Example 3)
+- [ ] **[manual]** Monorepo-specific paths in documentation and shared secrets in project config are flagged — these are the highest-impact pre-extraction risks
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The script exits zero with a high score but a known hardcoded secret exists in the repo → the security category was not actually scanned; the score is falsely reassuring
+- Findings are listed but none reference a specific file path → the report cannot be acted on; reviewers cannot locate the issues
+- A category reports "healthy" but its analysis function was never run (e.g. `--categories security,outdated` excluded conflicts silently) → the audit is incomplete; the omitted category's issues are invisible
+- The JSON report is generated but severity fields are missing or inconsistent with the human-readable output → downstream CI gates will mis-prioritize
+- Critical findings exist but no recommendation accompanies them → the team knows something is wrong but not how to fix it
+
 ## Context Declaration
 
 ### File Paths

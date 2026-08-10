@@ -1614,6 +1614,40 @@ relevant concept pages before filing:
 | No CONTRIBUTING.md found | Project has no contribution guidelines | Use the skill's default issue structure; present to user for review |
 
 
+## Definition of Done
+
+Before declaring the github-issue run complete, verify every item below. Items
+marked **[script]** are deterministically verified by a script — if the script
+exits non-zero, the item is NOT done. Items marked **[manual]** require the
+agent to check something the scripts cannot verify.
+
+### Pre-Filing Research
+
+- [ ] **[script]** `./scripts/discover-contribution-standards.sh` was run and cached the target repo's contribution standards (or a cache hit within 7-day TTL was used) (Steps)
+- [ ] **[script]** `./scripts/search-existing-work.sh` was run and confirmed no duplicate issue exists (Steps)
+- [ ] **[manual]** The target repository accepts external issues — CONTRIBUTING.md was checked and `blank_issues_enabled` is not false (Prerequisites)
+
+### Issue Content
+
+- [ ] **[manual]** The issue title and body match the target project's conventions (issue templates, labels, structure from the cached standards) (Steps)
+- [ ] **[manual]** The issue body references the upstream repo (not your fork) and uses upstream-relative paths (Knowledge Base — Upstream Identity)
+- [ ] **[manual]** The issue was written to a file and posted with `gh issue create --body-file` — never `--body` with inline strings (Knowledge Base — gh --body-file)
+
+### Human Review and Posting
+
+- [ ] **[manual]** The complete issue content (title + body) was presented to the user for review before posting — no auto-posting (Knowledge Base — Human Review Gate)
+- [ ] **[script]** `./scripts/validate-pr-issue.sh <owner>/<repo> issue <number>` exits zero — the posted body has no literal `\n`, no stripped backticks, no corruption (Steps)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The issue was posted but `search-existing-work.sh` was skipped → a duplicate issue was opened (Steps)
+- `validate-pr-issue.sh` exits non-zero but the issue was posted anyway → corrupted body visible to maintainers (Steps)
+- The issue body was posted with `--body` inline instead of `--body-file` → literal `\n` or stripped backticks corrupted the body (Knowledge Base — gh --body-file)
+- The issue references your fork instead of the upstream repo → maintainers see wrong paths (Knowledge Base — Upstream Identity)
+- The issue was auto-posted without user review → the human review gate was bypassed (Knowledge Base — Human Review Gate)
+
 ## Context Declaration
 
 ### File Paths

@@ -1,8 +1,8 @@
 ---
 type: Synthesis
 title: CI/CD Testing Practices Overview
-description: Synthesis of CI/CD and testing practices — hybrid Playwright/Stagehand testing, shared Dockerized quality scripts, Vitest unified runner, pre-commit/CI parity, and accessibility testing.
-tags: [ci-cd, testing, playwright, stagehand, vitest, quality, overview, synthesis]
+description: Synthesis of CI/CD and testing practices — hybrid Playwright/Stagehand testing, shared Dockerized quality scripts, Vitest unified runner, pre-commit/CI parity, accessibility testing, UI requirements coverage, and UX usability testing.
+tags: [ci-cd, testing, playwright, stagehand, vitest, quality, overview, synthesis, agent-browser, agent-device, finalrun-agent, ui-coverage, ux-usability]
 date:
   created: "2026-07-17"
   knowledge-basis: "2026-07-17"
@@ -124,7 +124,7 @@ test runners across all projects.
 ## The Testing Stack
 
 ```
-vitest-runner → playwright-stagehand → quality-scripts → pre-commit-parity → a11y-testing
+vitest-runner → playwright-stagehand → quality-scripts → pre-commit-parity → a11y-testing → ui-coverage → ux-usability
 ```
 
 | Phase | Practice | Prevents |
@@ -134,6 +134,12 @@ vitest-runner → playwright-stagehand → quality-scripts → pre-commit-parity
 | Quality | [Shared Quality Scripts](shared-quality-scripts.md) | Hook/CI drift, duplicated tool pinning, slow feedback |
 | Parity | [Pre-Commit CI Parity](pre-commit-ci-parity.md) | "Works on my machine", inconsistent enforcement |
 | A11y | [Accessibility Testing](accessibility-testing.md) | WCAG violations, missing a11y in CI |
+| UI Coverage | [UI Requirements Coverage](ui-requirements-coverage.md) | Missing UI elements, unreachable flows, undocumented state changes |
+| UX Usability | [UX Usability Testing](ux-usability-testing.md) | Unusable UIs — elements present but users cannot figure out how to accomplish tasks |
+| Rust CI | [Rust CI Tooling](rust-ci-tooling.md) | No Rust CI content — missing cargo-deny, cargo-audit, cargo-nextest, cross-compilation |
+| Snapshots | [Snapshot Testing (Rust)](snapshot-testing-rust.md) | Brittle assertions for complex output, no snapshot review workflow |
+| Coverage | [Coverage Tooling (Rust)](coverage-tooling-rust.md) | No coverage thresholds, missing HTML reports, no CI integration |
+| Property | [Property-Based Testing (Rust)](property-based-testing-rust.md) | Only example-based tests, missing invariant testing, no shrinking |
 
 ## Canonical Tech-Stack Choices
 
@@ -185,7 +191,7 @@ kept in sync via the templater at build time.
 | tooling | Ad-hoc runner resolution (all ecosystems) | **`cli-tool-discovery.sh --runner <python\|node\|rust\|go>`** | Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` in scripts | The runner mode pairs binary resolution with the canonical invocation. Returns JSON with `script`, `package`, `fallback`, and `recommendation` fields. Single source of truth for "how do I invoke an ad-hoc command in ecosystem X?" — `detect-package-manager.sh` delegates to it for the `runner` field |
 | tooling | Code intelligence (text search) | **ripgrep** (fresh, no index) + **xgrep** (repeated queries, trigram index) + **fzf** (interactive fuzzy) | grep, find, skim | Per ADR-20260520001 §6×2 matrix rows 1, 4, 5 (filename, exact, fuzzy). ripgrep for one-off fresh searches; xgrep for 2–46× faster repeated queries; fzf for interactive selection |
 | tooling | Code intelligence (semantic search) | **semble_rs** (hybrid BM25 + Model2Vec, ephemeral, single Rust binary) | qmd, Sourcegraph Cody | Per ADR-20260520001 §6. Ephemeral index rebuilt every run — zero config. Also provides `digest` for build/CI log compression (-99%) and `tree` for token-efficient codebase trees |
-| tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree |
+| tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree. Setup via the **dev-env-upsert** skill (manages devbox.json + .envrc + justfile as a coupled trio, file-type-aware detection-driven install of the right tool, folds indexing into `prime_impl` per the Standard Developer UX Flow). See `software-architecture-essentials/indexed-ast-tools.md` § Setup via dev-env-upsert. |
 
 ### Notable "considered and rejected" choices
 
@@ -210,7 +216,7 @@ kept in sync via the templater at build time.
 > and
 > [api-auth-payment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/api-auth-payment-practices/overview.md)
 > knowledge bundles. For code knowledge graph tool selection specifically, see
-> [code-knowledge-graph-tools.md](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/code-knowledge-graph-tools.md).
+> [indexed-ast-tools.md](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/indexed-ast-tools.md).
 > This table records the *what*; those bundles record the *why*.
 
 

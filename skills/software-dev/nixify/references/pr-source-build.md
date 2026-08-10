@@ -88,6 +88,24 @@ This project is already in nixpkgs as `nixpkgs#$PROJECT` (currently `$NIXPKGS_VE
 
 <!-- END conditional: Relationship to nixpkgs -->
 
+<!-- BEGIN conditional: nixpkgs Output -->
+<!-- INCLUDE this section ONLY when add_nixpkgs_output=true (Step 11b). -->
+<!-- If add_nixpkgs_output=false, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $PROJECT from check-nixpkgs.sh (Step 10). -->
+
+## nixpkgs output
+
+The flake also exposes a `#nixpkgs` output that wraps the nixpkgs-packaged version of this project:
+
+```bash
+nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO#nixpkgs
+nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO#nixpkgs
+```
+
+The nixpkgs packaging includes distribution patches, postInstall hooks, and runtime dependency setup that a naive from-source flake would miss. The `#nixpkgs` output gives users access to this more complete packaging alongside the from-source `#source` output. Users who want the latest version from source use `#source` or `#default`; users who want the nixpkgs-packaged version with its patches and hooks use `#nixpkgs`.
+
+<!-- END conditional: nixpkgs Output -->
+
 ## Changes
 
 - `flake.nix`: Nix flake with `packages.default`, `apps.default`, `overlays.default`, and `checks`
@@ -102,6 +120,11 @@ This project is already in nixpkgs as `nixpkgs#$PROJECT` (currently `$NIXPKGS_VE
 - Optional: `default.nix` and `shell.nix` for legacy Nix support
 - Optional: `nix/modules/treefmt.nix` for automated formatting
 - Optional: `.github/workflows/cachix.yml` for binary caching
+<!-- BEGIN conditional: Garnix CI -->
+<!-- INCLUDE this line ONLY when include_garnix=true (Step 16c). -->
+<!-- If include_garnix=false, DELETE this comment block and the line below it. -->
+- `garnix.yaml`: Configuration for [Garnix](https://garnix.io) hosted CI (optional — activates when the maintainer installs the Garnix GitHub App; builds all flake outputs across platforms with FOD hash-rot detection)
+<!-- END conditional: Garnix CI -->
 
 ## Testing
 

@@ -1798,7 +1798,7 @@ index live (e.g., `~/p/gh/levonk/infrahub/.agents/handoffs/`).
 | tooling | Ad-hoc runner resolution (all ecosystems) | **`cli-tool-discovery.sh --runner <python\|node\|rust\|go>`** | Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` in scripts | The runner mode pairs binary resolution with the canonical invocation. Returns JSON with `script`, `package`, `fallback`, and `recommendation` fields. Single source of truth for "how do I invoke an ad-hoc command in ecosystem X?" — `detect-package-manager.sh` delegates to it for the `runner` field |
 | tooling | Code intelligence (text search) | **ripgrep** (fresh, no index) + **xgrep** (repeated queries, trigram index) + **fzf** (interactive fuzzy) | grep, find, skim | Per ADR-20260520001 §6×2 matrix rows 1, 4, 5 (filename, exact, fuzzy). ripgrep for one-off fresh searches; xgrep for 2–46× faster repeated queries; fzf for interactive selection |
 | tooling | Code intelligence (semantic search) | **semble_rs** (hybrid BM25 + Model2Vec, ephemeral, single Rust binary) | qmd, Sourcegraph Cody | Per ADR-20260520001 §6. Ephemeral index rebuilt every run — zero config. Also provides `digest` for build/CI log compression (-99%) and `tree` for token-efficient codebase trees |
-| tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree |
+| tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree. Setup via the **dev-env-upsert** skill (manages devbox.json + .envrc + justfile as a coupled trio, file-type-aware detection-driven install of the right tool, folds indexing into `prime_impl` per the Standard Developer UX Flow). See `software-architecture-essentials/indexed-ast-tools.md` § Setup via dev-env-upsert. |
 
 ### Notable "considered and rejected" choices
 
@@ -1823,7 +1823,7 @@ index live (e.g., `~/p/gh/levonk/infrahub/.agents/handoffs/`).
 > and
 > [api-auth-payment-practices](../api-auth-payment-practices/overview.md)
 > knowledge bundles. For code knowledge graph tool selection specifically, see
-> [code-knowledge-graph-tools.md](../software-architecture-essentials/code-knowledge-graph-tools.md).
+> [indexed-ast-tools.md](../software-architecture-essentials/indexed-ast-tools.md).
 > This table records the *what*; those bundles record the *why*.
 
 
@@ -2124,6 +2124,8 @@ references/included/skills/software-dev/project-detection/
 
 references/included/skills/software-dev/code-review-guidance/
 
+references/included/skills/content/diagram-upsert/
+
 # Execute Upsert — Project Execution Controller
 
 A controller skill that drives feature implementation from request to
@@ -2170,6 +2172,11 @@ skill depends on:
 - `references/included/skills/software-dev/code-review-guidance/SKILL.md` —
   code review checklist (bundled via includeTree; read this if
   code-review-guidance is not separately installed)
+- `references/included/skills/content/diagram-upsert/SKILL.md` —
+  diagram creation and embedding guidance (bundled via includeTree; read this
+  if diagram-upsert is not separately installed). Used in Phase 4 (PRD) to
+  produce Mermaid architecture and UX-flow diagrams that the PRD template
+  requires
 
 The skill's phases, status conventions, and autonomy rules are binding
 whether the skill was invoked through the registry or read manually.
@@ -2409,6 +2416,32 @@ Proceed to Phase 4.
   - **Constraints**: Follow the greenfield-prd workflow's template and process
     exactly (as inlined in `references/greenfield-prd.md`). Save to
     `internal-docs/feature/YYYY/MM/{slug}/`.
+  - **Diagrams**: The PRD template includes "Architecture Diagram" and
+    "User Experience Flow (Graphical Apps Only)" sections. The subagent MUST
+    fill both with Mermaid diagrams appropriate to the feature:
+    - **Architecture Diagram** — always required for any substantive
+      program. Show system components, data flow, and external dependencies.
+      For brownfield projects, include both a "Current Architecture"
+      subsection (the system as it exists today) and a "Target Architecture"
+      subsection (the system after this feature is built, with changes
+      highlighted). For greenfield projects, the Target Architecture is the
+      only diagram needed.
+    - **User Experience Flow** — required for graphical apps (web, TUI,
+      mobile, desktop with user-facing screens). Skip for non-graphical work
+      (CLI tools, libraries, batch jobs, API-only services). Use
+      `flowchart` or `stateDiagram-v2` as appropriate. For brownfield
+      graphical apps, include both a "Current UX Flow" subsection and a
+      "Target UX Flow" subsection, same as the architecture diagrams.
+    - Follow the Mermaid syntax conventions from the bundled `diagram-upsert`
+      skill (materialized at
+      `references/included/skills/content/diagram-upsert/`) and its
+      `documentation-diagram-practices` knowledge bundle — quote decision-node
+      labels containing `<br/>` or special characters.
+    The subagent should read
+    `references/included/skills/content/diagram-upsert/SKILL.md` and the
+    bundle's `mermaidjs.md` page before authoring diagrams, and validate
+    them with `scripts/validate-diagram.py` from the bundled diagram-upsert
+    skill before returning the PRD.
   - **What to return**: The path to the saved PRD file.
 - Review the PRD: verify it covers the user's request, has clear scope
   boundaries, and is implementable by a junior developer.
@@ -2876,6 +2909,78 @@ no work should be left dirty in the tree.
    If anything remains, commit it or report it to the user — do not leave
    the tree dirty.
 
+## Definition of Done
+
+Before declaring the Execute Upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Phase 1: Self-Update
+
+- [ ] **[manual]** Self-update ran (`devbox run -- pnpm dlx skills add levonk/skills-releases --all`) unless `SKIP_SELF_UPDATE=1` or resume-with-version-match (Phase 1)
+- [ ] **[manual]** If self-update changed skill versions, execute-upsert was re-invoked to pick up new logic (Phase 1 — After Self-Update)
+
+### Phase 2: Assess
+
+- [ ] **[manual]** The triage heuristic was applied — the request is "large" if it meets 2+ criteria (Phase 2)
+- [ ] **[manual]** If the request was small, the user was asked whether to run the full pipeline or direct execution (Phase 2)
+
+### Phase 3: Establish Technologies
+
+- [ ] **[script]** `./references/included/skills/software-dev/project-detection/scripts/detect-all-systems.sh . --json` was run and produced a tech context block (Phase 3)
+- [ ] **[manual]** The tech context block lists package manager, ad-hoc runner, build system, test runner, linter, container runtime, and CI/CD (Phase 3)
+- [ ] **[manual]** The tech context block was stored in the PRD frontmatter or `tech-context.txt` sidecar (Phase 3)
+
+### Phase 4: PRD
+
+- [ ] **[manual]** If no PRD existed: clarifying questions were asked and a PRD was created via the greenfield-prd workflow (Phase 4)
+- [ ] **[manual]** The PRD includes Architecture Diagram and (for graphical apps) UX Flow Mermaid diagrams (Phase 4)
+- [ ] **[script]** PRD diagrams were validated with `scripts/validate-diagram.py` from the bundled diagram-upsert skill before returning (Phase 4)
+- [ ] **[manual]** The PRD was reviewed for scope coverage, clear boundaries, and implementability by a junior developer (Phase 4)
+
+### Phase 5: Tasks
+
+- [ ] **[manual]** If no task files existed: tasks were broken down via the tasks-from-prd workflow with an index file and per-story files (Phase 5)
+- [ ] **[manual]** Story dependencies are correct — no intra-phase dependencies, each story is self-contained (Phase 5)
+
+### Phase 6: Execute
+
+- [ ] **[manual]** Every `[x] Done` story was skipped — no subagent re-dispatched for completed work (Phase 6 — Resume Detection)
+- [ ] **[manual]** Each subagent dispatch received the tech context block as a binding constraint (Phase 6 Step 3)
+- [ ] **[manual]** A pre-task commit checkpoint was created before each subagent dispatch (Phase 6 Step 2)
+- [ ] **[manual]** A code review subagent was dispatched on each story commit with a structured verdict (CLEAN / NEEDS_FIXES / BLOCKED) (Phase 6 Step 4)
+- [ ] **[manual]** Blocked stories are marked `[!] Blocked` with a `## Blocker` section containing question, options, recommendation, and why (Phase 6 — Blocked Story Convention)
+- [ ] **[manual]** Progress was emitted to the user after every subagent completion (Phase 6 Step 5)
+
+### Phase 7: Blocker Report
+
+- [ ] **[manual]** If any stories are `[!] Blocked`: a consolidated blocker report was presented in the conversation with question, options, recommendation, and why for each (Phase 7)
+- [ ] **[manual]** The report includes a summary of completed, blocked, and remaining Todo stories (Phase 7)
+
+### Phase 8: Document
+
+- [ ] **[manual]** The PRD was updated to reflect what was actually built — status, deviations, deferred items (Phase 8)
+- [ ] **[manual]** The task index has no `[ ] Todo` or `[~] In-Progress` stories (unless user paused) — all are `[x] Done` or `[!] Blocked` with reasons (Phase 8)
+- [ ] **[manual]** Project documentation (README, API docs, architecture docs, AGENTS.md, CHANGELOG.md) was updated (Phase 8)
+- [ ] **[script]** `git status --porcelain` returns empty after the final commit — the tree is clean (Phase 8)
+
+### Disruption Handoff
+
+- [ ] **[manual]** If the pipeline stopped with work remaining: the `handoff` skill was invoked with execution state and the user was told the handoff path + resume command (Disruption Handoff)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- All stories are `[x] Done` but `git status --porcelain` is non-empty → uncommitted changes left in the tree (Phase 8)
+- A subagent completed but no code review was dispatched → the review step was skipped (Phase 6 Step 4)
+- The tech context block was produced but not injected into subagent dispatches → subagents may have used the wrong tools (Phase 6 Step 3)
+- A story is `[!] Blocked` but the `## Blocker` section has no question/options/recommendation/why → the user cannot act on it (Phase 6)
+- The pipeline stopped with `[ ] Todo` stories remaining but no handoff was invoked → work state is lost (Disruption Handoff)
+- The PRD has no Architecture Diagram → the PRD template's diagram requirement was not met (Phase 4)
+
+
 ## Context Declaration
 
 ### File Paths
@@ -2890,7 +2995,7 @@ role: "Product Manager"
 date:
   created: "2026-07-11"
   knowledge-basis: "2026-07-30"
-  last-used: "2026-07-30"
+  last-used: "2026-08-08"
 tags:
   - "ai/workflow/software-dev/greenfield/prd"
   - "prd"
@@ -3398,6 +3503,28 @@ Three properties make the PRD executable by a weaker model:
    - Use explicit, concrete language. Avoid jargon where possible.
    - Assume the primary reader is a **junior developer**.
    - **CRITICAL**: Inline all gathered context in the "Current State" section — never say "as discussed" or "see audit"
+   - **Diagrams**: The PRD template includes "Architecture Diagram" and
+     "User Experience Flow (Graphical Apps Only)" sections. Fill both with
+     Mermaid diagrams appropriate to the feature:
+     - **Architecture Diagram** — always required for any substantive
+       program. Show system components, data flow, and external dependencies
+       as a Mermaid `flowchart`. For brownfield projects, include both a
+       "Current Architecture" subsection (the system as it exists today)
+       and a "Target Architecture" subsection (the system after this feature
+       is built, with changes highlighted). For greenfield projects, the
+       Target Architecture is the only diagram needed.
+     - **User Experience Flow** — required for graphical apps (web, TUI,
+       mobile, desktop with user-facing screens). Skip for non-graphical
+       work (CLI tools, libraries, batch jobs, API-only services). Use
+       `flowchart` or `stateDiagram-v2` as appropriate. For brownfield
+       graphical apps, include both a "Current UX Flow" subsection and a
+       "Target UX Flow" subsection, same as the architecture diagrams.
+     - Follow Mermaid syntax conventions: quote decision-node labels
+       containing `<br/>` or special characters to avoid parse errors.
+     - If the `diagram-upsert` skill is available (bundled or installed),
+       read its `documentation-diagram-practices` knowledge bundle's
+       `mermaidjs.md` page before authoring, and validate diagrams with
+       its `scripts/validate-diagram.py` before saving the PRD.
 
 5. **Save the PRD**
    - File format: Markdown (`.md`).
@@ -3417,7 +3544,7 @@ Three properties make the PRD executable by a weaker model:
 
 Use the following template structure for the output file:
 
-```markdown
+````markdown
 ---
 # Product Requirements Document (PRD)
 
@@ -3453,6 +3580,87 @@ Use the following template structure for the output file:
 
 ## Technical Considerations (Optional)
 - TODO: Note relevant modules, constraints, data models, or integration points.
+
+## Architecture Diagram
+Every substantive program needs a visual representation of its system
+architecture — components, data flow, and external dependencies. This is
+not optional.
+
+### Current Architecture (Brownfield Only)
+> **Skip this subsection** for greenfield projects with no existing
+> architecture to document.
+
+For brownfield projects, document the architecture **as it exists today**
+before this feature is built. This establishes the baseline against which
+the target architecture is compared.
+
+```mermaid
+flowchart TD
+    Client["Client / UI"] --> API["API Layer"]
+    API --> Service["Service Layer"]
+    Service --> DB[("Database")]
+```
+
+### Target Architecture
+Show the architecture **after** this feature is built. For brownfield
+projects, highlight what changes (new components, modified data flow, new
+dependencies) relative to the Current Architecture above. For greenfield
+projects, this is the complete architecture.
+
+```mermaid
+flowchart TD
+    Client["Client / UI"] --> API["API Layer"]
+    API --> Service["Service Layer"]
+    Service --> DB[("Database")]
+    Service --> Ext["New External Service"]
+    Service --> Cache[("New Cache")]
+```
+
+Follow the Mermaid syntax conventions from the `diagram-upsert` skill's
+`documentation-diagram-practices` knowledge bundle (quote decision-node labels
+containing `<br/>` or special characters).
+
+## User Experience Flow (Graphical Apps Only)
+> **Skip this section** for non-graphical work (CLI tools, libraries, batch
+> jobs, API-only services, infrastructure scripts). It applies to web, TUI,
+> mobile, and desktop applications with user-facing screens.
+
+For graphical applications, include Mermaid diagrams showing the user
+experience flow — the screens/states the user navigates through and the
+transitions between them. Use a `flowchart` or `stateDiagram-v2` depending
+on whether the focus is on screen navigation or state transitions.
+
+### Current UX Flow (Brownfield Only)
+> **Skip this subsection** for greenfield projects with no existing UX to
+> document.
+
+For brownfield graphical apps, document the user experience flow **as it
+exists today** before this feature is built.
+
+```mermaid
+flowchart TD
+    Landing["Landing Page"] --> Auth{"Authenticated?"}
+    Auth -- "yes" --> Dashboard["Dashboard"]
+    Auth -- "no" --> Login["Login"]
+    Login --> Dashboard
+```
+
+### Target UX Flow
+Show the UX flow **after** this feature is built. For brownfield apps,
+highlight new screens, changed transitions, or removed steps relative to
+the Current UX Flow above. For greenfield apps, this is the complete flow.
+
+```mermaid
+flowchart TD
+    Landing["Landing Page"] --> Auth{"Authenticated?"}
+    Auth -- "yes" --> Dashboard["Dashboard"]
+    Auth -- "no" --> Login["Login"]
+    Login --> Dashboard
+    Dashboard --> Settings["Settings"]
+    Dashboard --> Feature["New Feature Screen"]
+```
+
+Follow the same Mermaid syntax conventions as the Architecture Diagram.
 
 ## Verification Approach
 | Purpose   | Command                  | Expected Result |
@@ -3508,7 +3716,7 @@ Stop and report back (do not improvise) if:
 ---
 *Generated from PRD template*
 
-```
+````
 
 ## Guardrails
 
@@ -4949,6 +5157,7 @@ When working with task lists, the AI must:
 - **Source workflow files** (for attribution, not runtime): `src/current/workflows/software-dev/greenfield/greenfield-prd.md.tmpl`, `src/current/workflows/software-dev/tasks/tasks-from-prd.md.tmpl`, `src/current/workflows/software-dev/tasks/tasks-processor.md.tmpl`
 - **Project-detection skill (bundled)**: `references/included/skills/software-dev/project-detection/` — materialized at build time via `references/included/skills/software-dev/project-detection/`. Used in Phase 3 to detect the project's tech stack
 - **Code-review-guidance skill (bundled)**: `references/included/skills/software-dev/code-review-guidance/` — materialized at build time via `references/included/skills/software-dev/code-review-guidance/`. Used in Phase 6 for per-story code review
+- **Diagram-upsert skill (bundled)**: `references/included/skills/content/diagram-upsert/` — materialized at build time via `references/included/skills/content/diagram-upsert/`. Used in Phase 4 (PRD) to produce Mermaid architecture and UX-flow diagrams that the PRD template requires
 - **Tech context output**: `internal-docs/feature/YYYY/MM/{slug}/tech-context.txt` (or PRD frontmatter)
 - **PRD output**: `internal-docs/feature/YYYY/MM/{slug}/feat-YYYYMMDDHHmm-{slug}.md`
 - **Task output**: `internal-docs/feature/YYYY/MM/{slug}/tasks/`
@@ -4963,6 +5172,7 @@ When working with task lists, the AI must:
 - `references/parallel-dispatch.md` — Parallel subagent dispatch, worktree setup, merge reconciliation, and progress emission
 - `references/included/skills/software-dev/project-detection/SKILL.md` — Bundled project-detection skill (tech stack detection)
 - `references/included/skills/software-dev/code-review-guidance/SKILL.md` — Bundled code-review-guidance skill (per-story code review checklist)
+- `references/included/skills/content/diagram-upsert/SKILL.md` — Bundled diagram-upsert skill (Mermaid/PlantUML/Excalidraw authoring and validation for PRD diagrams)
 
 ### Project Info
 

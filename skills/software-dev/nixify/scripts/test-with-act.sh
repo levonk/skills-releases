@@ -11,6 +11,13 @@
 #   - act catches Linux-only autoPatchelf issues, glibc linking, ubuntu stdenv
 #   - direct nix catches Darwin framework issues, macOS SDK, darwin stdenv
 #
+# Note: Garnix (https://garnix.io) hosted CI is NOT validated by this script.
+# Garnix is a maintainer-opt-in hosted service that activates when the maintainer
+# installs the Garnix GitHub App — it is not a local workflow and cannot be
+# simulated by `act`. The garnix.yaml (Step 16c) is inert until the app is
+# installed. This script validates the required `.github/workflows/nix.yml`
+# (the contributor-controlled CI), not Garnix.
+#
 # Default mode (--both): run act (ubuntu) THEN direct nix (host). Both must pass.
 # --host-only: skip act, run direct nix only (use when Docker is unavailable;
 #              validates ONLY the host OS — darwin on macOS, linux on Linux)

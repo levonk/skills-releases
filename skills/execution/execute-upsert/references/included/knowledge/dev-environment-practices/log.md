@@ -1,5 +1,28 @@
 # Directory Update Log
 
+## 2026-08-09
+
+* **Add**: [index-staleness-check.md](index-staleness-check.md) — staleness check inside prime_impl that wraps indexed AST tool invocations (reindex when DB missing or >1h old). References async-prime-internal.md for the trigger; does NOT duplicate it.
+* **Update**: Updated [index.md](index.md) with the new concept entry.
+
+## 2026-08-05
+
+* **Ingest**: Authored 4 new Rust dev-environment concept pages sourced from
+  the project-lint audit. Includes one TODO promotion (multi-language-devbox).
+  All pages grounded against current tool versions on 2026-08-05.
+  - [just-recipes-for-rust.md](just-recipes-for-rust.md) — standard justfile
+    recipes for Rust: build, test, clippy, fmt, doc, bench, feature flags
+  - [devbox-rust-versions.md](devbox-rust-versions.md) — pinning Rust
+    toolchain in devbox.json, rustup integration, multi-version management
+  - [direnv-rustup-toolchains.md](direnv-rustup-toolchains.md) — direnv +
+    rustup integration, automatic toolchain switching, PATH management
+  - [multi-language-devbox.md](multi-language-devbox.md) — managing Python +
+    Rust + Node in one devbox (promoted from overview TODO)
+* **Update**: Updated [index.md](index.md) with 4 new concept entries.
+* **Update**: Updated [overview.md](overview.md.tmpl) — promoted
+  `multi-language-devbox.md` from "Future concept candidates" TODO to a real
+  page; annotated remaining 3 TODOs with deferral rationale.
+
 ## 2026-08-02
 
 * **Ingest**: Created [branch-tag-hygiene.md](branch-tag-hygiene.md) —

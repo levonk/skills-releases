@@ -13,6 +13,14 @@ DETECT_SCRIPT="$SCRIPT_DIR/../detect-build-systems.sh"
 EXTRACT_SCRIPT="$SCRIPT_DIR/../extract-build-targets.sh"
 TEST_BASE="/tmp/skill-test/project-detection"
 
+# Speed up cli-tool-discovery.sh probes and skip installs so tests don't hang
+# on devbox run -- (which blocks when the temp dir's devbox.json has no real
+# nix packages). 2-second probe timeout is enough for detection; install
+# fallbacks are unnecessary in test contexts.
+export DEVBOX_PROBE_TIMEOUT_SECS=2
+export CLTOOL_PROBE_TIMEOUT_SECS=2
+export CLTOOL_INSTALL_DISABLED=1
+
 assert_contains() {
     local needle="$1" haystack="$2"
     [[ "$haystack" == *"$needle"* ]] || {

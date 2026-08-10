@@ -25,4 +25,4 @@ Draft, review, and improve business emails using a structured framework that pri
 
 - **Full skill**: [`skills/business/biz-email-upsert/SKILL.md`](skills/business/biz-email-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-05T04:08:35Z
+- **Generated**: 2026-08-10T21:38:16Z

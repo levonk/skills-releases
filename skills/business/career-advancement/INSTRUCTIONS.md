@@ -1853,3 +1853,47 @@ For example, if a candidate's `AGENTS.md` specifies a 2–3 page executive
 resume, that constraint overrides the bundle's general 475–600 word guidance
 (which has an explicit executive exception — see
 [conciseness-and-length.md](references/included/knowledge/career-advancement-practices/conciseness-and-length.md)).
+
+## Definition of Done
+
+Before declaring the Career Advancement run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Resume Audit (Workflow: Resume Improvement)
+
+- [ ] **[manual]** All 10 audit checks from Phase 1 were run (metrics, length, scannability, fluff, verbs, keywords, positioning, recency, ATS, age-bias) (Phase 1)
+- [ ] **[manual]** Audit findings were ranked by impact (Critical / High / Medium / Low) and presented to the user before changes (Phase 2)
+- [ ] **[manual]** Each applied change was verified against the relevant bundle concept page's "common mistakes" section (Phase 3)
+- [ ] **[manual]** The final resume passes the fold test and the 7.4-second scan test (Phase 4)
+- [ ] **[manual]** No new issues were introduced during editing — Phase 1 audit re-run confirms all Critical and High findings resolved (Phase 4)
+
+### Resume Content Quality
+
+- [ ] **[manual]** At least 5 quantified achievements use the X-Y-Z formula (Phase 1 — metrics check)
+- [ ] **[manual]** Bullets lead with ownership verbs, not passive or junior verbs (Phase 1 — verb check)
+- [ ] **[manual]** No buzzwords, personal pronouns, or adverbs that should be replaced with evidence (Phase 1 — fluff check)
+- [ ] **[manual]** Word count is in the sweet spot for the career stage (Phase 1 — length check)
+- [ ] **[manual]** Layout is single-column with standard headers for ATS compatibility (Phase 1 — ATS check)
+
+### Interview Preparation (Workflow: Interview Preparation)
+
+- [ ] **[manual]** 3–5 clarifying questions were prepared for the recruiter, hiring manager, and peers (Phase 2)
+- [ ] **[manual]** If overqualification is a concern, the value-multiplier reframe is prepared (Phase 2)
+- [ ] **[manual]** If age bias is a concern, proactive surfacing language is prepared (Phase 2)
+
+### Salary Negotiation (Workflow: Salary Negotiation)
+
+- [ ] **[manual]** The company's compensation philosophy and typical offers were researched (Phase 1)
+- [ ] **[manual]** Salary expectations deflection scripts are provided to get the recruiter's range first (Phase 2)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The resume has metrics but bullets use passive verbs → ownership-verb check not applied (Phase 1)
+- The resume is concise but layout is two-column → ATS check failed silently (Phase 1)
+- Audit findings were listed but not ranked by impact → user cannot tell what to fix first (Phase 2)
+- Changes were applied but Phase 4 re-audit was skipped → new issues may have been introduced (Phase 4)
+- Interview questions are prepared but no recruiter questions → team-gap research incomplete (Phase 2)

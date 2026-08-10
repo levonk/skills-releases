@@ -142,6 +142,10 @@ Each phase has practices that prevent specific failure modes:
 | Fallback | [Devbox Broken Override](devbox-broken-override.md) | Devbox cannot build environment at all (nixpkgs pin missing a package); subagents block instead of using direct package-manager equivalents |
 | Quality | [Mandatory Testing Workflow](mandatory-testing-workflow.md) | Untested changes, regressions, missing quality gates |
 | Scripts | [Shell Scripting Best Practices](shell-scripting-best-practices.md) | Unsafe shell scripts, missing dry-runs, untested scripts, dirty repo state |
+| Rust Recipes | [Just Recipes for Rust](just-recipes-for-rust.md) | Inconsistent justfile recipes across Rust projects, missing workspace-aware targets |
+| Rust Toolchain | [Devbox Rust Versions](devbox-rust-versions.md) | Unpinned Rust toolchain, drift across developers, missing components |
+| Rust direnv | [Direnv Rustup Toolchains](direnv-rustup-toolchains.md) | Manual toolchain switching, stale CARGO_HOME, slow direnv loading |
+| Multi-Language | [Multi-Language Devbox](multi-language-devbox.md) | PATH conflicts between Rust/Node/Python, missing tree-sitter grammar support |
 
 ## Scope
 
@@ -183,9 +187,16 @@ new concept pages. Append to `log.md` when adding.
 Future concept candidates (not yet in the bundle):
 
 - `remote-dev-environments.md` — devcontainer, GitHub Codespaces, remote Nix
-- `multi-language-devbox.md` — managing Python + Rust + Node in one devbox
-- `devbox-caching.md` — Nix store caching, binary cache configuration
-- `shell-startup-performance.md` — measuring and optimizing direnv activation time
+  — deferred: out of scope for current cycle (no remote dev usage yet)
+- `devbox-caching.md` — Nix store caching, binary cache configuration —
+  deferred: out of scope for current cycle (caching is adequate on local NVMe)
+- `shell-startup-performance.md` — measuring and optimizing direnv activation
+  time — deferred: out of scope for current cycle (no measured latency issue)
+
+Promoted from TODO on 2026-08-05:
+
+- `multi-language-devbox.md` — promoted to a real page; see
+  [Multi-Language Devbox](multi-language-devbox.md)
 
 The shell scripting practices — strict mode, PATH guards, git cleanliness gates,
 dry-run patterns, and shellcheck/shfmt/bats verification — are captured in

@@ -1543,6 +1543,53 @@ Language-specific detection and configuration scripts for each supported languag
 Security-focused validation scripts for secret detection, dependency auditing, and vulnerability scanning.
 
 
+## Definition of Done
+
+Before declaring the code-quality-validation run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script
+— if the script exits non-zero, the item is NOT done. Items marked
+**[manual]** require the agent to check something the scripts cannot verify.
+
+### Linting (Phase 1)
+
+- [ ] **[script]** `quality-validator.sh lint` exits zero (Phase 1)
+- [ ] **[manual]** All detected languages have their linter run — no language was silently skipped due to detection failure (Phase 1)
+
+### Formatting (Phase 2)
+
+- [ ] **[script]** `quality-validator.sh format` exits zero (Phase 2)
+- [ ] **[manual]** Auto-fixable formatting issues were applied via `quality-validator.sh fix` and re-validated (Phase 2)
+
+### Testing (Phase 3)
+
+- [ ] **[script]** `quality-validator.sh test` exits zero (Phase 3)
+- [ ] **[manual]** Unit tests, integration tests, and coverage reporting all ran — no test category was skipped (Phase 3)
+
+### Security (Phase 4)
+
+- [ ] **[script]** `quality-validator.sh security` exits zero (Phase 4)
+- [ ] **[manual]** Dependency scanning, secret detection, and code security analysis all ran — no scanner was silently unavailable (Phase 4)
+
+### Complete Run and Environment
+
+- [ ] **[script]** `quality-validator.sh complete` exits zero (all phases)
+- [ ] **[script]** `quality-validator.sh health-check` exits zero — all required tools are installed and on PATH (Troubleshooting)
+- [ ] **[manual]** The correct environment manager (devbox, mise, Nix, or native) was detected and used — tools were not run against the wrong environment (Environment Integration)
+
+### CI Integration (when applicable)
+
+- [ ] **[manual]** When running in CI: `quality-validator.sh complete --ci` was used and reports (JSON/JUnit XML) were generated for the CI system (CI/CD Integration)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `complete` exits zero but `health-check` reports missing tools → a language's validator was silently skipped because the tool was not installed (Troubleshooting)
+- `lint` passes but the project's actual linter was never invoked → language detection failed and the wrong tool ran (Phase 1)
+- `test` exits zero but coverage reporting was skipped → the coverage gate is not actually enforced (Phase 3)
+- `security` exits zero but secret detection was unavailable → secrets may be present but undetected (Phase 4)
+- The validator ran outside devbox when devbox was available → tools may be wrong versions, results not reproducible (Environment Integration)
+
 ## Context Declaration
 
 ### File Paths

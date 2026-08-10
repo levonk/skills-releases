@@ -1,5 +1,34 @@
 # Directory Update Log
 
+## 2026-08-09
+
+* **Update**: Added "Setup via dev-env-upsert" section to [indexed-ast-tools.md](indexed-ast-tools.md) — documents the dev-env-upsert delegation pattern for indexed AST tool setup (file-type-aware detection, folds into prime_impl, staleness check inside prime_impl, not blanket install). Added See Also links to async-prime-internal.md and index-staleness-check.md.
+
+## 2026-08-05
+
+* **Ingest**: Authored 6 new concept pages sourced from the project-lint
+  audit (linter architecture gaps). Includes 3 cross-bundle synthesis pages
+  (config-driven-tool-design, event-driven-linter-architecture,
+  multi-language-scanner-coordination). All pages grounded against
+  project-lint/Cargo.toml versions on 2026-08-05.
+  - [plugin-scanner-registration.md](plugin-scanner-registration.md) —
+    trait-based plugin registration, dynamic loading vs compile-time,
+    discovery, lifecycle
+  - [rule-engine-design.md](rule-engine-design.md) — rule evaluation order,
+    activation profiles, conflict resolution, incremental evaluation
+  - [trait-based-extensibility.md](trait-based-extensibility.md) — trait
+    hierarchies, default impls, trait object vs generic, combinators
+  - [config-driven-tool-design.md](config-driven-tool-design.md) —
+    cross-bundle synthesis: layered config precedence, profile activation,
+    schema migration, hot-reload
+  - [event-driven-linter-architecture.md](event-driven-linter-architecture.md)
+    — cross-bundle synthesis: IDE hook integration, event routing, async
+    processing, backpressure
+  - [multi-language-scanner-coordination.md](multi-language-scanner-coordination.md)
+    — cross-bundle synthesis: language detection, scanner registration,
+    polyglot project analysis
+* **Update**: Updated [index.md](index.md) with 6 new concept entries.
+
 ## 2026-08-02
 
 * **Ingest**: Significantly expanded

@@ -1,5 +1,25 @@
 # Directory Update Log
 
+## 2026-08-05
+
+* **Ingest**: Authored 3 new concept pages sourced from the project-lint
+  audit. Includes one TODO promotion (dependency-supply-chain) and one
+  cross-bundle synthesis page (security-aware-static-analysis). All pages
+  grounded against current tool versions on 2026-08-05.
+  - [linter-security-patterns.md](linter-security-patterns.md) — security of
+    linter output, untrusted code handling, sandboxing AST parsing, plugin
+    security, telemetry minimization
+  - [security-aware-static-analysis.md](security-aware-static-analysis.md) —
+    cross-bundle synthesis: untrusted code, info leakage, sandboxing,
+    supply-chain security for analysis tools
+  - [dependency-supply-chain.md](dependency-supply-chain.md) — lockfile
+    pinning, cargo-deny/cargo-audit, private registries, SLSA provenance
+    (promoted from overview TODO)
+* **Update**: Updated [index.md](index.md) with 3 new concept entries.
+* **Update**: Updated [overview.md](overview.md.tmpl) — promoted
+  `dependency-supply-chain.md` from "Future concept candidates" TODO to a real
+  page; annotated remaining 4 TODOs with deferral rationale.
+
 ## 2026-07-26
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.

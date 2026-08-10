@@ -1452,6 +1452,59 @@ The essentials:
 - [Test Patterns](references/test-patterns.md) — parametrized tests, mocks vs stubs, fakes, fixtures
 - [Test Anti-Patterns](references/test-anti-patterns.md) — catalog of anti-patterns to avoid
 
+## Definition of Done
+
+Before declaring the unit-test-writing run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Test Structure (AAA)
+
+- [ ] **[manual]** Every test has exactly three sections — Arrange, Act, Assert — separated by blank lines (AAA Pattern)
+- [ ] **[manual]** Each test has exactly one Act — a single call to the unit under test (AAA Pattern: "One Act per test")
+- [ ] **[manual]** Each test has one logical assertion — multiple `expect` calls checking one outcome are fine; checking multiple outcomes is not (AAA Pattern)
+
+### Test Naming
+
+- [ ] **[manual]** Every test name follows `MethodUnderTest_Scenario_ExpectedOutcome` — no `test1`, `shouldWork`, or `testCalculateTotal` names (Test Naming Convention)
+- [ ] **[manual]** The name describes the behavior, not the implementation — a reader knows what the test verifies without reading the body (Test Naming Convention)
+
+### Test Isolation and Determinism
+
+- [ ] **[manual]** Each test is isolated — it does not depend on other tests running first or at all (What Makes a Good Unit Test: Isolated)
+- [ ] **[manual]** Each test is deterministic — no random data, no time-of-day dependencies, no network, no disk, no sleeps (What Makes a Good Unit Test: Deterministic, Fast)
+- [ ] **[manual]** Setup is fresh per test — no shared mutable setup that leaks state between tests (Common Anti-Patterns: Shared mutable setup)
+
+### Trustworthiness
+
+- [ ] **[manual]** The test fails when the code is wrong and passes when the code is right — it never passes for the wrong reason (The Three Pillars: Trustworthy)
+- [ ] **[manual]** For TDD: the test failed for the right reason before the production code existed (Quick Start: Run)
+- [ ] **[manual]** For regression tests: the test fails against the buggy code and passes against the fix (When to Write Tests: Regression tests)
+
+### Anti-Pattern Absence
+
+- [ ] **[manual]** No private methods are tested directly — testing is through the public API (Common Anti-Patterns)
+- [ ] **[manual]** No overspecification — the test does not assert on internal state, call counts, or order that does not matter to the behavior (Common Anti-Patterns)
+- [ ] **[manual]** No test logic in production code — no `if (isTest)` branches; dependencies are injected instead (Common Anti-Patterns)
+- [ ] **[manual]** No sleep-based timing — fake clocks or async polling are used instead (Common Anti-Patterns)
+
+### Test Doubles
+
+- [ ] **[manual]** Stubs and fakes are preferred over mocks — mocks are used only when verifying interactions, not when providing inputs (Test Doubles)
+- [ ] **[manual]** When mocks are used, they assert on interactions that matter to the behavior — not on implementation details (Test Doubles)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The test passes but has two Act calls → it is two tests fused into one; a failure does not isolate which behavior broke
+- The test name is `shouldWork` or `test1` → a reader cannot know what it verifies without reading the body; the test is not readable
+- The test passes but uses shared mutable setup → it may pass in isolation and fail in the full suite (or vice versa); it is not isolated
+- The test asserts on a private method's return value → it couples to implementation; refactoring will break the test even when behavior is correct
+- The test passes for the wrong reason (e.g. the assertion is tautological, or the Act never executes) → it is not trustworthy; it provides no regression protection
+- The test uses `sleep(1000)` to wait for a condition → it is flaky and slow; it will fail intermittently in CI
+
 ## Context Declaration
 
 ### File Paths

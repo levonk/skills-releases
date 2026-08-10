@@ -2546,6 +2546,60 @@ skill. Signs a prompt needs conversion:
 - Needing evals to test triggering accuracy
 - Reference material growing too large for a single prompt file
 
+## Definition of Done
+
+Before declaring the prompt-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[manual]** `scripts/init_prompt.py <prompt-name> --path <output-directory>` ran successfully (Mode A Step 1) — the prompt file and companion README scaffold were created with the correct naming convention
+- [ ] **[manual]** The prompt file exists at `internal-docs/prompts/todo/` (or the user-specified output directory) (Mode A Step 2 / Mode C)
+- [ ] **[manual]** The companion README exists at `internal-docs/prompts/doc/` documenting design decisions, references, and future adjustments (Mode A Step 5)
+
+### Frontmatter/Metadata
+
+- [ ] **[manual]** The filename follows the naming convention: `{project-slug}-prompt-{YYYYMMDDHHMM}-{step}-{parallel}-{prompt-slug}.md` (Mode A Step 1 / Mode C audit)
+- [ ] **[manual]** `date.last-used` is set to the current date (YYYY-MM-DD format) in the prompt frontmatter (Mode A Step 6)
+- [ ] **[manual]** `date.knowledge-basis` and `date.last-used` are updated when changes are applied in Mode C (Mode C Step 6)
+
+### Content Quality
+
+- [ ] **[manual]** The prompt follows the Levonk methodology: DECONSTRUCT → DIAGNOSE → DEVELOP → DELIVER (Mode A Step 2)
+- [ ] **[manual]** The construction checklist is satisfied — contextual information, explicit instructions, sequential steps, file/output instructions, and a success/verification block (Mode A Step 3)
+- [ ] **[manual]** The prompt uses the structured skeleton and task-type patterns (coding, analysis, research) with conditional includes (thinking triggers, "go beyond basics" language, WHY explanations, parallel/sequential guidance, reflection hooks) (Mode A Step 4)
+- [ ] **[manual]** Each prompt is self-contained and executable independently — parallel/sequential numbering is correct (Mode C audit)
+
+### Build/Validation
+
+- [ ] **[manual]** The prompt is runnable as-is — no broken references, no unresolved placeholders (Mode A Step 2)
+- [ ] **[manual]** Patterns and templates are aligned with `config/ai/templates/` (Mode C audit)
+
+### Mode C: Update Discipline
+
+- [ ] **[manual]** Changes were proposed before applying — a prioritized list (Critical / Important / Nice to have) with before/after (Mode C Step 3)
+- [ ] **[manual]** User confirmed before changes were applied (Mode C Step 4)
+- [ ] **[manual]** Approved changes were applied as separate commits (Mode C Step 5)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, keys, or sensitive paths are exposed in the prompt — use indirect references and the Context Declaration (Security)
+- [ ] **[manual]** `see-also` entries follow the cross-linking format with valid relationship types and no circular dependencies (Cross-Linking)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The prompt file exists but has no success/verification block → the AI executing the prompt cannot determine when the task is complete (Mode A Step 3)
+- The companion README was not created → design decisions and future adjustments are undocumented (Mode A Step 5)
+- The filename does not follow the naming convention → the prompt will not be discoverable by tooling that expects the standard format (Mode A Step 1)
+- `date.last-used` is missing or stale → the prompt appears unused (Mode A Step 6)
+- Mode C: changes were applied without user confirmation → the author's intentional deviations were silently overwritten (Mode C Step 4)
+- The prompt repeatedly inlines the same script code → it has outgrown the prompt format and should be converted to a skill via `ai-upsert` (When to Convert to a Skill)
+
+
 ## Context Declaration
 
 ### File Paths

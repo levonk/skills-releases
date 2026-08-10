@@ -1,5 +1,18 @@
 # Directory Update Log
 
+## 2026-08-09
+
+* **Add**: New concept page for nixpkgs upstream contribution practice.
+  - [nixpkgs-contribution.md](nixpkgs-contribution.md) — When a project is
+    not yet in nixpkgs, contribute it upstream using the `pkgs/by-name`
+    convention so all Nix users can install it via
+    `nix profile add nixpkgs#<project>`. The nixpkgs PR body does NOT explain
+    Nix — it is written for nixpkgs maintainers who already know Nix.
+* **Update**: Bumped `date.knowledge-basis` and `date.last-used` to
+  2026-08-09. Added nixpkgs Quick Start manual and nixify skill v2.19.0 to
+  overview sources. Added nixpkgs-contribution to the overview table
+  (Pipeline → Distribution layer).
+
 ## 2026-07-31
 
 * **Backport**: Added 2 new concept pages backported from the nixify skill

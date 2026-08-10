@@ -1727,9 +1727,10 @@ When adopting best practices for a project (per ADR 20260131001 Standard Develop
 
 1. **Health Review** - Run repository health analysis to assess current state (using repository-health-review skill)
 2. **Detect** project type and existing configuration (using project-detection skill)
-3. **Configure** devbox.json with appropriate packages (per ADR 20251226001)
+3. **Configure** devbox.json with appropriate packages — delegate to **dev-env-upsert** `reconcile` (uses project-detection) for stack-matched packages, or `add-packages` for batch additions (per ADR 20251226001).
+3a. **Add indexed AST tool** — Based on file-type-aware detection (source code → CodeGraph; multi-repo workspace → GitNexus with license procurement; non-code docs/PDFs/video → Graphify), delegate to **dev-env-upsert** in ONE call: `uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py setup --packages <tool>,direnv,just --prime-steps "<tool> index .:<tool>" --envrc-async-prime --target .`. Do NOT install all three by default — the detection logic picks one. Do NOT create new `index`/`index_impl` targets — indexing folds into the existing `prime_impl` per the Standard Developer UX Flow. See `references/indexed-ast-tool-setup.md` in the dev-env-upsert skill.
 4. **Set up** justfile with standard targets (build, test, lint, etc. — auto-detecting devbox via `_devbox` helper; implementation in `*_impl` targets)
-5. **Configure** .envrc for direnv integration (per ADR 20251226001)
+5. **Configure** .envrc for direnv integration — delegate to **dev-env-upsert** `update-envrc` (runs `devbox generate direnv --print-envrc` and appends the async prime_impl trigger per `async-prime-internal.md`). Do NOT hand-write .envrc — that duplicates dev-env-upsert and diverges over time (per ADR 20251226001).
 6. **Set up** technology-specific build tools (cargo, nx, pytest, etc. per ADR 20260131001). For TypeScript/Node.js projects, follow the `build-tool-selection` knowledge concept: `tsc --noEmit` for type-checking (always in CI), **tsup** for library bundling, **Rolldown** for app/CLI bundling — never use `tsc` for bundling, never use a bundler for type-checking. `configure-nodejs.sh` wires tsup automatically for `library` app_type.
 7. **Add** shared quality scripts (per ADR 20251218002)
 8. **Configure** testing framework (Vitest for TypeScript per ADR 20251106002)
@@ -1761,7 +1762,7 @@ This skill integrates with project-detection, ai-development-loop, project-confi
 
 ## Repository & Ignore File Management
 
-This skill **delegates** four concerns to dedicated skills rather than reimplementing them:
+This skill **delegates** five concerns to dedicated skills rather than reimplementing them:
 
 | Concern | Delegated To | Why |
 |---------|--------------|-----|
@@ -1769,6 +1770,7 @@ This skill **delegates** four concerns to dedicated skills rather than reimpleme
 | Ignore file generation (`.gitignore`, `.dockerignore`, `.codeiumignore`, `.cursorignore`, `.aiexclude`, `.npmignore`, VS Code excludes, ripgrep config) | **ignorefile-manager** | Single source of truth for ignore patterns across git, docker, jj (`.jj/`), AI indexing tools, npm packaging, IDE, and search. Hand-writing `.gitignore` duplicates concern sources and diverges over time. ignorefile-manager reconciles, audits, and generates from modular concern files. |
 | Repository initialization + committing the adoption changeset | **git-repository-management** | Provides `git-repo-init.bash` (with `NOT_A_GIT_REPO` signal + AI-decides scope), `git-collect.sh` (structured data + quality checks), `git-commit-batch.sh` (vertical grouping, mandatory body validation, pre/post auto-tags for rollback safety), and `git-push.sh` (handles divergence automatically). Calling `git init` / `git add` / `git commit` directly bypasses secret scanning and rollback safety. |
 | README.md creation or update (human-facing entry point) | **readme-upsert** | Owns the README template (`references/README-project-root-template.md.tmpl`), the required-sections list (Project name + overview, Quick Start, Build/Test Commands, Project Structure, AI Agent Documentation), and the README↔AGENTS.md consistency checker (`scripts/verify_consistency.py`). Hand-writing README content via heredocs in `adopt-project.sh` / `configure-*.sh` duplicates the template and bypasses the consistency check; the two copies diverge over time. readme-upsert handles both greenfield (create from template) and brownfield (preserve accurate sections, update stale ones) cases. |
+| devbox.json + .envrc + justfile trio management | **dev-env-upsert** | Owns the devbox+direnv+justfile coupled trio per the Standard Developer UX Flow. Hand-writing devbox.json, .envrc, or prime_impl lines duplicates the coupling logic and diverges over time. dev-env-upsert handles `setup` (batch: add-packages + add-prime-steps + update-envrc in one call), `add-packages`, `remove-packages`, `add-prime-steps`, `update-envrc`, `reconcile` (via project-detection), and `validate`. |
 
 **Invocation pattern** (see Quick Start steps 10, 13, 16, 17):
 
@@ -1840,6 +1842,65 @@ uv run --script scripts/install-knowledge-bundles.py . --private --bundles secre
 For ADR references and detailed configuration links, see [ADR References](references/adr-references.md).
 
 
+## Definition of Done
+
+Before declaring the project-adopter run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Foundation Setup (Steps 1-9)
+
+- [ ] **[manual]** Repository health review was run to assess current state (Step 1)
+- [ ] **[manual]** Project type and existing configuration were detected via project-detection (Step 2)
+- [ ] **[manual]** devbox.json was configured with stack-matched packages via dev-env-upsert `reconcile` or `add-packages` (Step 3)
+- [ ] **[manual]** The indexed AST tool was added via a single dev-env-upsert call (CodeGraph/GitNexus/Graphify based on detection) — not all three (Step 3a)
+- [ ] **[manual]** justfile has standard targets (build, test, lint) with `*_impl` implementations auto-detecting devbox via `_devbox` helper (Step 4)
+- [ ] **[manual]** .envrc was configured via dev-env-upsert `update-envrc` — not hand-written (Step 5)
+- [ ] **[manual]** Technology-specific build tools were set up per ADR 20260131001 (Step 6)
+- [ ] **[manual]** Testing framework was configured (Vitest for TypeScript per ADR 20251106002) (Step 8)
+- [ ] **[manual]** GitHub Actions CI/CD was set up per ADR 20251106014 (Step 9)
+
+### Script-Driven Configuration
+
+- [ ] **[script]** `./scripts/adopt-project.sh` ran the adoption workflow without hand-writing AGENTS.md, README.md, or .gitignore via heredocs (Steps 10, 13, 17)
+- [ ] **[script]** `./scripts/configure-nodejs.sh` (or `configure-python.sh`/`configure-rust.sh`/etc.) ran for the detected stack — not a generic hand-written config (Step 6)
+- [ ] **[manual]** AGENTS.md was created by reading and following the bundled agent-file-upsert SKILL.md — `init-agents-md.py` was NOT called directly from project-adopter (Step 10)
+- [ ] **[manual]** README.md was created by reading and following the bundled readme-upsert SKILL.md — `verify_consistency.py` was NOT called directly from project-adopter (Step 13)
+
+### Knowledge Bundles and Catalog
+
+- [ ] **[script]** `uv run --script scripts/install-knowledge-bundles.py .` ran with stack-matched bundles based on project-detection output (Step 14)
+- [ ] **[manual]** Universal bundles were installed by default; stack-matched bundles were added via `--bundles` based on detected stack (Step 14)
+- [ ] **[manual]** For TypeScript/Node.js: `configure-nodejs.sh` created `pnpm-workspace.yaml` with `catalog:` block, `catalogMode: strict`, and `onlyBuiltDependencies` (Step 15)
+
+### Ignore Files and Git
+
+- [ ] **[manual]** Ignore files were generated via ignorefile-manager (`reconcile` → `audit` → `generate`) — not hand-written (Step 17)
+- [ ] **[manual]** Git repo was initialized and the adoption changeset committed via git-repository-management (`git-collect.sh` → `git-repo-init.bash` if needed → `git-commit-batch.sh --slug project-adoption`) — not via bare `git init`/`git add`/`git commit` (Step 18)
+
+### Post-Adoption Validation
+
+- [ ] **[script]** `./scripts/post-adoption-check.sh {REPO_ROOT}` exits zero — the progressive-disclosure structure is complete (Step 21)
+- [ ] **[manual]** `AGENTS.md` exists and contains a "Developer Guide" link (not a flat hand-written doc) (Step 21)
+- [ ] **[manual]** `.agents/knowledge/developer.md` exists (developer guide was scaffolded by agent-file-upsert) (Step 21)
+- [ ] **[manual]** `.agents/knowledge/bundles/` exists and is non-empty (knowledge bundles were installed) (Step 21)
+- [ ] **[manual]** `internal-docs/oos/`, `internal-docs/improvements/INDEX.md`, and `internal-docs/anti-patterns/INDEX.md` exist (Step 21)
+- [ ] **[manual]** `README.md` exists and contains an "AI Agent Documentation" section (Step 21)
+- [ ] **[manual]** No banned commands (`npx`, `npm `, `yarn `) in kept files (Step 21)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `post-adoption-check.sh` passes but AGENTS.md was hand-written via heredocs → flat single-audience doc, no JIT Index, no Developer Guide link (Step 10)
+- `post-adoption-check.sh` passes but README.md was hand-written → readme-upsert template and consistency check were bypassed (Step 13)
+- `.gitignore` was hand-written instead of generated via ignorefile-manager → concern sources will diverge over time (Step 17)
+- The adoption changeset was committed via bare `git init`/`git add`/`git commit` → secret scanning and rollback safety were bypassed (Step 18)
+- `adopt-project.sh` called `init-agents-md.py` or `verify_consistency.py` directly → the bundled SKILL.md workflows were bypassed (Steps 10, 13)
+- Knowledge bundles were installed but `.agents/knowledge/bundles/` is empty → `install-knowledge-bundles.py` failed silently (Step 14)
+- `post-adoption-check.sh` exits non-zero but the run was declared complete → the progressive-disclosure structure is incomplete (Step 21)
+
 ## Context Declaration
 
 ### File Paths
@@ -1856,6 +1917,7 @@ For ADR references and detailed configuration links, see [ADR References](refere
 - git-repository-management (dependency — repo init + commit adoption changeset)
 - ignorefile-manager (dependency — all ignore file generation)
 - readme-upsert (dependency — README.md creation or update, greenfield + brownfield)
+- dev-env-upsert (dependency — devbox.json + .envrc + justfile trio management)
 - repository-health-review (optional)
 - ai-development-loop (optional)
 - base-ai-guidance (base-framework)

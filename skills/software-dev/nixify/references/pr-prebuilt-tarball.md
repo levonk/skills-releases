@@ -80,6 +80,24 @@ This project is already in nixpkgs as `nixpkgs#$PROJECT` (currently `$NIXPKGS_VE
 
 <!-- END conditional: Relationship to nixpkgs -->
 
+<!-- BEGIN conditional: nixpkgs Output -->
+<!-- INCLUDE this section ONLY when add_nixpkgs_output=true (Step 11b). -->
+<!-- If add_nixpkgs_output=false, DELETE everything from "BEGIN conditional" to "END conditional". -->
+<!-- Fill $PROJECT from check-nixpkgs.sh (Step 10). -->
+
+## nixpkgs output
+
+The flake also exposes a `#nixpkgs` output that wraps the nixpkgs-packaged version of this project:
+
+```bash
+nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO#nixpkgs
+nix profile install github:$UPSTREAM_OWNER/$UPSTREAM_REPO#nixpkgs
+```
+
+The nixpkgs packaging includes distribution patches, postInstall hooks, and runtime dependency setup that a naive from-source flake would miss. The `#nixpkgs` output gives users access to this more complete packaging alongside the prebuilt `#prebuilt` and from-source `#source` outputs. Users who want the official release binary use `#prebuilt` or `#default`; users who want the nixpkgs-packaged version with its patches and hooks use `#nixpkgs`.
+
+<!-- END conditional: nixpkgs Output -->
+
 ## Changes
 
 - `flake.nix`: Nix flake wrapping the prebuilt release tarball as `packages.<system>.default` and `apps.<system>.default`.
@@ -90,6 +108,11 @@ This project is already in nixpkgs as `nixpkgs#$PROJECT` (currently `$NIXPKGS_VE
 - `README.md`: Added Nix installation subsection
 - `README.ko.md`: Mirrored Nix installation subsection (if applicable)
 - `CHANGELOG.md`: Added changelog entry (if applicable)
+<!-- BEGIN conditional: Garnix CI -->
+<!-- INCLUDE this line ONLY when include_garnix=true (Step 16c). -->
+<!-- If include_garnix=false, DELETE this comment block and the line below it. -->
+- `garnix.yaml`: Configuration for [Garnix](https://garnix.io) hosted CI (optional — activates when the maintainer installs the Garnix GitHub App; builds all flake outputs across platforms with FOD hash-rot detection)
+<!-- END conditional: Garnix CI -->
 
 ## Testing
 

@@ -18,3 +18,7 @@ practices.
 * [ansible-vault-distribution](ansible-vault-distribution.md) - Vault variable references for secure distribution at runtime
 * [iron-proxy-egress-firewall](iron-proxy-egress-firewall.md) - CI pipeline egress firewall with allowlist, warn mode, domain validation
 * [vault-troubleshooting](vault-troubleshooting.md) - Common vault corruption issues, git history recovery, docker-based vault editing
+* [regex-dos-prevention](regex-dos-prevention.md) - Catastrophic backtracking in user-supplied regex, Rust regex crate safety, complexity limits
+* [path-traversal-in-scanners](path-traversal-in-scanners.md) - Path traversal in file scanning, canonicalization, symlink validation, sandbox patterns
+* [toml-config-injection](toml-config-injection.md) - TOML injection vectors, safe serde parsing, config file permissions, env var expansion
+* [tree-sitter-grammar-supply-chain](tree-sitter-grammar-supply-chain.md) - Supply-chain risks in tree-sitter grammars, grammar validation, pinning, source review

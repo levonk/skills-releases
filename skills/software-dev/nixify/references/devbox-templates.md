@@ -3,7 +3,7 @@
 ## Table of Contents
 
 - [Rust (Cargo)](#rust-cargo)
-- [Node.js (pnpm/npm/bun)](#nodejs-pnpmnpmbun)
+- [Node.js (npm/pnpm/yarn/bun)](#nodejs-npmpnpyarnbun)
 - [Go](#go)
 - [Python](#python)
 - [Darwin-Specific Notes](#darwin-specific-notes)
@@ -94,7 +94,43 @@ runtime packages to `devShells.default.buildInputs` as well. See
 
 ---
 
-## Node.js (pnpm/npm/bun)
+## Node.js (npm/pnpm/yarn/bun)
+
+**MANDATORY — detect the package manager before selecting a template.** Run
+`scripts/detect-package-manager.sh <project-dir>` to determine which package
+manager the project uses (from lockfile presence or `package.json#packageManager`).
+The script outputs JSON with `package_manager`, `install_cmd`, `build_cmd`,
+`test_cmd`, `dev_cmd`, `devbox_package`, and `nix_builder`. Use the detected
+values to fill in the template below — do NOT hardcode pnpm or npm by default.
+This prevents the failure mode where a project uses npm (`package-lock.json`)
+but the devbox template ships with pnpm commands (see OmniRoute PR #2806 —
+the initial flake used `pnpm install` but the project uses npm, requiring a
+fix-up commit).
+
+### npm (package-lock.json)
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.12.0/.schema/devbox.schema.json",
+  "packages": [
+    "nodejs_20",
+    "act"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to the Devbox environment!'"
+    ],
+    "scripts": {
+      "install": "npm install",
+      "build": "npm run build",
+      "test": "npm test",
+      "dev": "npm run dev"
+    }
+  }
+}
+```
+
+### pnpm (pnpm-lock.yaml)
 
 ```json
 {
@@ -118,7 +154,62 @@ runtime packages to `devShells.default.buildInputs` as well. See
 }
 ```
 
+### yarn (yarn.lock)
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.12.0/.schema/devbox.schema.json",
+  "packages": [
+    "nodejs_20",
+    "yarn",
+    "act"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to the Devbox environment!'"
+    ],
+    "scripts": {
+      "install": "yarn install",
+      "build": "yarn build",
+      "test": "yarn test",
+      "dev": "yarn dev"
+    }
+  }
+}
+```
+
+### bun (bun.lock / bun.lockb)
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.12.0/.schema/devbox.schema.json",
+  "packages": [
+    "bun",
+    "act"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to the Devbox environment!'"
+    ],
+    "scripts": {
+      "install": "bun install",
+      "build": "bun run build",
+      "test": "bun test",
+      "dev": "bun run dev"
+    }
+  }
+}
+```
+
 **Note on `nodejs_20` vs `bun`:** If the project uses `bun` as its runtime/package manager, verify whether `nodejs_20` is still required for any development tooling (e.g., linters, build scripts, or CI tooling that expect a `node` binary). If `bun` covers all runtime needs, remove `nodejs_20` to keep the devbox lean.
+
+**Do NOT add install commands to `init_hook`** — the `init_hook` is for
+welcome messages and environment setup, not for running `npm install` or
+`pnpm install`. Install commands belong in the `scripts` section (where the
+user runs `devbox run install`) or in the flake's `shellHook` (which runs
+automatically on `nix develop`). Adding install to `init_hook` causes
+redundant installs on every shell entry and was flagged as a review issue
+on OmniRoute PR #2806.
 
 ---
 

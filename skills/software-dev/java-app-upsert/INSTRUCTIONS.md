@@ -2178,6 +2178,53 @@ is warranted.
 - `scripts/cli-tool-discovery.sh` — detects devbox/mise/flox/nix wrappers for
   `mvn`, `gradle`, `java`, and other CLI tools before assuming they are on PATH
 
+## Definition of Done
+
+Before declaring the java-app-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Mode Selection
+
+- [ ] **[manual]** The correct mode was selected — no build file → Mode A (create), build file exists + keep system → Mode B (update), build file exists + switch systems → Mode C (convert) (Decision: Create vs Update vs Convert)
+
+### Artifact Structure
+
+- [ ] **[manual]** The project was scaffolded following the selected reference — Maven → `references/maven-project-setup.md`, Gradle → `references/gradle-project-setup.md` (Mode A Step 3)
+- [ ] **[manual]** The standard directory layout (`src/main/java`, `src/test/java`) is used in both Maven and Gradle (Key Principles)
+- [ ] **[manual]** For Mode C: all dependencies (group:artifact:version:scope), plugins, profiles, and resource filtering rules from the source are represented in the target (Mode C Step 1-3)
+- [ ] **[manual]** For Mode C: the old build file was removed and the new one committed in the same commit to preserve history (Mode C Step 5)
+
+### Build and Testing
+
+- [ ] **[script]** `./scripts/cli-tool-discovery.sh mvn` (or `gradle`) detected the build tool wrapper before assuming it is on PATH (Mode A/B Step 2)
+- [ ] **[manual]** JUnit 5, Mockito, AssertJ, and Testcontainers are configured with surefire (unit) / failsafe (integration) split (Mode A Step 4)
+- [ ] **[manual]** The build and test suite pass after each change batch (Mode B Step 4, Mode C Step 4)
+
+### Containerization and JVM Tuning
+
+- [ ] **[manual]** If containerized: a multi-stage Dockerfile with JRE-only runtime is present — no JDK in the production image (Mode A Step 5, Key Principles)
+- [ ] **[manual]** Container-aware JVM flags are set — `-XX:+UseContainerSupport` and `-XX:MaxRAMPercentage` instead of hardcoded `-Xmx` (Mode A Step 6, Key Principles)
+- [ ] **[manual]** For Spring Boot: layered jars are configured (Mode A Step 5)
+
+### Reproducibility and Hygiene
+
+- [ ] **[manual]** Plugin versions are pinned, BOMs / version catalogs are used for dependency alignment, and reproducible-build flags are enabled (Key Principles)
+- [ ] **[manual]** Cache volumes (`java-m2-cache` for Maven, `gradle-cache` for Gradle) are configured in CI and dev containers (Key Principles)
+- [ ] **[script]** `./scripts/scan-artifacts.sh` exits zero — no resolved `$HOME` paths, usernames, or hostnames in `pom.xml`, `build.gradle.kts`, `Dockerfile`, or CI workflow files (Mode A Step 7, Mode B Step 5, Mode C Step 6)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The build passes but the runtime image contains a JDK → multi-stage build was not used, image is bloated (Mode A Step 5)
+- `cli-tool-discovery.sh` was skipped and `mvn`/`gradle` was assumed on PATH → the wrapper (devbox/mise/nix) was not detected, builds fail in the real environment (Mode A Step 2)
+- Unit and integration tests are both run by surefire → the surefire/failsafe split was not configured (Mode A Step 4)
+- The Dockerfile sets `-Xmx` hardcoded instead of `-XX:MaxRAMPercentage` → the JVM is not container-aware (Mode A Step 6)
+- `scan-artifacts.sh` has HARD findings that were dismissed → identity leak in the build files (Mode A Step 7)
+- Mode C conversion compiles but a dependency from the source is missing in the target → dependency parity was not verified (Mode C Step 3)
+
 ## Context Declaration
 
 ### File Paths

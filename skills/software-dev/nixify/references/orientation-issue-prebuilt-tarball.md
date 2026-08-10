@@ -75,6 +75,12 @@ This project is already packaged in nixpkgs (`nixpkgs#$PROJECT`), so a reasonabl
 
 <!-- END conditional: Relationship to nixpkgs -->
 
+<!-- BEGIN conditional: nixpkgs Output -->
+<!-- INCLUDE this clause ONLY when add_nixpkgs_output=true (Step 11b). -->
+<!-- If add_nixpkgs_output=false, DELETE this comment block and the line below it. -->
+- Add a `#nixpkgs` output that wraps the nixpkgs-packaged version — the nixpkgs packaging includes distribution patches, postInstall hooks, and runtime dependency setup that a naive from-source flake would miss. Users can choose between `#prebuilt` (official release binary), `#source` (from-source build), `#nixpkgs` (nixpkgs-packaged version with patches), and `#default` (alias for `#prebuilt`).
+<!-- END conditional: nixpkgs Output -->
+
 ## Proposed change
 
 - Add `flake.nix` with `packages.prebuilt` and `packages.source` (plus `packages.default` aliasing `prebuilt`), so users can choose between the fast prebuilt path (`nix run .#prebuilt`) and the reproducible-from-source path (`nix run .#source`).
@@ -96,6 +102,11 @@ This project is already packaged in nixpkgs (`nixpkgs#$PROJECT`), so a reasonabl
 - Update `docs/getting-started/installation.md` with `### Nix (Flakes)` subsection (if present)
 - Update `docs/index.mdx` landing page install splash with Nix option (if present)
 - Update `docs/contributing/releasing.md` with Nix flake version/hash update step (if present)
+<!-- BEGIN conditional: Garnix CI -->
+<!-- INCLUDE this clause ONLY when include_garnix=true (Step 16c). -->
+<!-- If include_garnix=false, DELETE this comment block and the line below it. -->
+- Add `garnix.yaml` for optional [Garnix](https://garnix.io) hosted CI — builds all flake outputs across platforms with FOD hash-rot detection. Inert until the maintainer installs the Garnix GitHub App; the required `.github/workflows/nix.yml` remains the contributor-controlled CI.
+<!-- END conditional: Garnix CI -->
 
 ## Branch
 
@@ -116,5 +127,10 @@ The changes include:
 - `docs/getting-started/installation.md`: added `### Nix (Flakes)` subsection (if present)
 - `docs/index.mdx`: added Nix code block to install splash (if present)
 - `docs/contributing/releasing.md`: added Nix flake update step (if present)
+<!-- BEGIN conditional: Garnix CI -->
+<!-- INCLUDE this line ONLY when include_garnix=true (Step 16c). -->
+<!-- If include_garnix=false, DELETE this comment block and the line below it. -->
+- `garnix.yaml`: configuration for optional Garnix hosted CI
+<!-- END conditional: Garnix CI -->
 
 Tested locally with `nix run . -- --help`.

@@ -1548,6 +1548,56 @@ Done! Tutorial available at output/flask/index.md
 - Generated tutorials may expose code patterns; review before publishing
 
 
+## Definition of Done
+
+Before declaring the codebase-tutorial run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### File Collection (Step 1)
+
+- [ ] **[script]** `scripts/crawl_codebase.py` exits zero and produces a `files.json` with the project name and collected files (Step 1)
+- [ ] **[manual]** File filtering excluded tests, configs, generated files, `node_modules/`, and binary files — only source code is in the output (Step 1 / Best Practices)
+- [ ] **[manual]** For large codebases (>100 files): aggressive filtering was applied so the abstraction step is not overwhelmed (Limitations)
+
+### Abstractions and Relationships (Steps 2-3)
+
+- [ ] **[manual]** 5-10 core abstractions were identified — not fewer than 5, not so many it becomes overwhelming (Best Practices)
+- [ ] **[manual]** Relationships between abstractions were analyzed and a project summary with relationship map was generated (Step 3)
+
+### Chapter Ordering and Content (Steps 4-5)
+
+- [ ] **[manual]** Chapters are ordered in a teaching sequence that builds from foundational to advanced concepts (Step 4)
+- [ ] **[manual]** Each chapter has motivation, key concepts, usage examples, and code walkthroughs per the output format (Step 5 / Output Format)
+- [ ] **[manual]** Code snippets are aggressively simplified with comments to skip details — not verbatim copies of large functions (Best Practices)
+- [ ] **[manual]** Every concept has a real-world analogy (Best Practices)
+- [ ] **[manual]** Mermaid diagrams are simple (max 5 participants) (Best Practices)
+- [ ] **[manual]** Markdown links between chapters are correct and use proper relative paths (Best Practices)
+
+### Final Assembly (Step 6)
+
+- [ ] **[script]** `scripts/combine_tutorial.py` exits zero and creates the output directory with `index.md` and chapter files (Step 6)
+- [ ] **[manual]** `index.md` has the project summary and a mermaid diagram (Step 6 / Output Format)
+- [ ] **[manual]** Chapter files are named `01_concept_name.md`, `02_...`, etc. in the output directory (Step 6)
+
+### Accuracy and Security
+
+- [ ] **[manual]** Code walkthroughs accurately reflect the actual codebase — no fabricated APIs or invented function signatures (Limitations)
+- [ ] **[manual]** Only repositories with permission to access were crawled (Security Notes)
+- [ ] **[manual]** GitHub tokens (if used) had minimal required permissions (Security Notes)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `combine_tutorial.py` exits zero but `index.md` has no mermaid diagram → the relationship map was not visualized (Step 6)
+- Chapters were written but code snippets are verbatim copies of 200-line functions → the simplification best practice was not applied (Best Practices)
+- 15 abstractions were identified → the count exceeds the 5-10 ideal, the tutorial will overwhelm beginners (Best Practices)
+- `crawl_codebase.py` collected `node_modules/` and test files → filtering was not applied, noise will dominate the tutorial (Step 1)
+- Chapter links point to wrong filenames → readers hit dead links navigating the tutorial (Best Practices)
+- Code walkthroughs describe APIs that do not exist in the codebase → the tutorial teaches fiction, not the actual project (Limitations)
+
 ## Context Declaration
 
 ### File Paths

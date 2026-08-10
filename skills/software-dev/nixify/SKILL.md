@@ -1,11 +1,11 @@
 ---
 name: nixify
-description: Add Nix flake support to a project so it can be installed via nix run github:... or nix profile add github:.... Use when the user wants to make a project installable via Nix flakes from a remote GitHub repository, add devbox.json for reproducible development environments, or package a project for Nix profile installation. Covers forking, cloning, architecture analysis, flake template selection, documentation updates, CI setup, and PR creation.
-version: 2.17.0
+description: Add Nix flake support to a project so it can be installed via nix run github:... or nix profile add github:.... Use when the user wants to make a project installable via Nix flakes from a remote GitHub repository, add devbox.json for reproducible development environments, or package a project for Nix profile installation. Covers forking, cloning, architecture analysis, flake template selection, documentation updates, CI setup, PR creation, nixpkgs superset detection (expose #nixpkgs output when nixpkgs packaging is more complete), and nixpkgs upstream contribution (submit package.nix to NixOS/nixpkgs when the project is not yet packaged). Do NOT trigger on general Nix questions, NixOS configuration, or non-flake Nix usage.
+version: 2.20.0
 date:
   created: "2026-06-01"
-  knowledge-basis: "2026-08-01"
-  last-used: "2026-08-01"
+  knowledge-basis: "2026-08-10"
+  last-used: "2026-08-10"
 tags:
   - "nix"
   - "nixos"

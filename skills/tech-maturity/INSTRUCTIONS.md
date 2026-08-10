@@ -1601,6 +1601,46 @@ Consider integrating maturity assessments into:
 - Architecture review processes
 - Compliance audits
 
+## Definition of Done
+
+Before declaring the tech-maturity run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Assessment Execution
+
+- [ ] **[script]** `python scripts/assess_maturity.py <project> --automated assessments.json` exits zero and generates the report (Quick Start: AI-Driven)
+- [ ] **[manual]** All 42 capabilities in the rubric were scored — no capability was left blank or defaulted to a placeholder value (Quick Start: Automated)
+- [ ] **[manual]** Each score is evidence-based — a specific artifact, config, or practice in the project supports the score, not an intention or aspiration (Assessment Best Practices: Be objective)
+
+### Dimension Coverage
+
+- [ ] **[manual]** All six dimensions were evaluated: Code, Build & Test, Release, Operations, Security, Architecture (Assessment Dimensions)
+- [ ] **[manual]** No dimension was skipped or scored from assumptions alone — each has at least one piece of cited evidence (Assessment Best Practices: Use examples)
+
+### Scoring Integrity
+
+- [ ] **[manual]** Scores use the 1-4 scale correctly: Level 1 (initial/ad-hoc), Level 2 (defined/documented), Level 3 (established/standardized), Level 4 (optimized/continuous) (Scoring System)
+- [ ] **[manual]** Capabilities with minimum required levels are flagged when they fall below the threshold (Scoring System: minimum required levels)
+- [ ] **[manual]** Large gaps between dimensions (e.g. Level 4 Code but Level 1 Operations) are flagged as red flags in the report (Red Flags)
+
+### Report and Recommendations
+
+- [ ] **[manual]** The report includes the overall score (e.g. `2.3/4.0`) and per-dimension breakdowns (Output Formats)
+- [ ] **[manual]** Recommendations are prioritized — quick wins and critical gaps are called out, not buried in a flat list (Output Formats: Recommendations)
+- [ ] **[manual]** When `--interactive` was used: the guided prompts covered all 42 capabilities and the user's answers map to the assessment JSON (Quick Start: Interactive)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `assess_maturity.py` exits zero but the assessments JSON has fewer than 42 capability keys → capabilities were skipped; the dimension scores are incomplete
+- A capability is scored Level 3 with no cited evidence → the score is aspirational, not objective; it inflates the maturity score
+- The report shows an overall score but no per-dimension breakdown → the team cannot see which dimension lags; prioritization is impossible
+- A capability with a minimum required level scores below the threshold but the report does not flag it → a compliance gap is hidden
+- All dimensions score Level 4 but the project has no CI/CD pipeline → the scoring is not evidence-based; it reflects intentions, not reality
+
 ## Context Declaration
 
 ### File Paths

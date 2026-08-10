@@ -1,5 +1,31 @@
 # Directory Update Log
 
+## 2026-08-05
+
+* **Ingest**: Authored 7 new concept pages sourced from the project-lint
+  audit (Rust CLI linter tooling gaps). All pages grounded against
+  project-lint/Cargo.toml versions on 2026-08-05.
+  - [tree-sitter-ast-queries.md](tree-sitter-ast-queries.md) — query syntax
+    for linting, multi-language query organization, performance, snapshot
+    testing (tree-sitter 0.23)
+  - [clap-cli-patterns.md](clap-cli-patterns.md) — derive vs builder,
+    subcommand organization, argument validators, shell completion (clap 4.4)
+  - [toml-config-validation.md](toml-config-validation.md) — serde + toml
+    schema validation, profile merging, config migration, hot-reload
+    (toml 0.8, serde 1.0)
+  - [structured-logging-tracing.md](structured-logging-tracing.md) — tracing
+    vs log, structured field conventions, subscriber config, RUST_LOG
+    (tracing 0.1, tracing-subscriber 0.3)
+  - [file-watcher-patterns.md](file-watcher-patterns.md) — notify event
+    filtering, cross-platform watch limits, FS race conditions, async
+    integration (notify 6.1)
+  - [cross-platform-path-handling.md](cross-platform-path-handling.md) —
+    std::path vs camino, normalization, symlinks, Windows UNC paths
+  - [anyhow-thiserror-combination.md](anyhow-thiserror-combination.md) —
+    layered error handling: thiserror in libs, anyhow at application layer
+    (anyhow 1.0, thiserror 1.0)
+* **Update**: Updated [index.md](index.md) with 7 new concept entries.
+
 ## 2026-07-29
 * **Update**: Extended [cli-tool-standards.md](cli-tool-standards.md) with
   three new agent-mode requirements from ADR-20260607001 v5.0.0:

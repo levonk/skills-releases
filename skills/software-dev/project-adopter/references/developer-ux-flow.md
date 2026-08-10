@@ -18,6 +18,8 @@ just build  # → auto-detects devbox environment via _devbox helper
 
 ### Devbox Setup (Based on Detection)
 
+> **Note**: devbox.json configuration is delegated to the **dev-env-upsert** skill. The templates below are reference material for what dev-env-upsert produces — do NOT hand-write devbox.json when dev-env-upsert is available.
+
 Configure `devbox.json` based on detected systems:
 
 ```json
@@ -48,6 +50,30 @@ Configure `devbox.json` based on detected systems:
 - **TypeScript/Node**: Add `"nodejs_22"`, `"pnpm"`, `"typescript"`
 - **Python**: Add `"python3"`, `"poetry"`, `"black"`, `"ruff"`
 - **Go**: Add `"go"`, `"gopls"`
+
+### Indexed AST Tool Setup
+
+Indexed AST tool selection is **delegated to the dev-env-upsert skill** via its `setup` operation. The detection logic is file-type-aware:
+
+| Detection signal | Tool | Notes |
+|------------------|------|-------|
+| Source code files (`.ts`, `.tsx`, `.js`, `.py`, `.rs`, `.go`, `.java`, etc.) | **CodeGraph** | Default for code-bearing projects |
+| Multi-repo workspace (pnpm workspaces, Nx monorepo, git submodules) | **GitNexus** | Procure a commercial license for business use before setup |
+| Non-code docs, PDFs, video, slides | **Graphify** | For knowledge-base / documentation-heavy projects |
+
+**Do NOT install all three by default** — the detection logic picks exactly one tool based on the project's file-type profile.
+
+**dev-env-upsert `setup` operation** (one call — batch: add-packages + add-prime-steps + update-envrc):
+
+```bash
+uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py setup \
+    --packages <tool>,direnv,just \
+    --prime-steps "<tool> index .:<tool>" \
+    --envrc-async-prime \
+    --target .
+```
+
+**Critical**: indexing folds into the existing `prime_impl` target — do NOT create new `index` / `index_impl` targets. The staleness check lives INSIDE `prime_impl` so that `just prime` runs the indexer only when the index is stale. See `async-prime-internal.md` for the async prime_impl trigger that `.envrc` appends, and `index-staleness-check.md` for the staleness-check logic.
 
 ### Justfile Configuration (Standard Targets)
 

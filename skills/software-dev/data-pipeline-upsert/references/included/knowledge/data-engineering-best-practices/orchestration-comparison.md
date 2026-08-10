@@ -1,12 +1,12 @@
 ---
 type: Practice
-title: Orchestration Comparison — Airflow vs Argo Workflows vs Tekton vs Kueue
-description: Choose orchestration by workload shape: Airflow for Python-centric DAGs, Argo for Kubernetes-native container workflows, Tekton for CI/CD, and Kueue for Kubernetes job queueing and quota management.
-tags: [data-engineering, orchestration, airflow, argo, tekton, kueue, comparison]
+title: Orchestration Comparison — Airflow vs Argo vs Tekton vs Kueue vs Kestra
+description: Choose orchestration by workload shape: Airflow for Python-centric DAGs, Argo for Kubernetes-native container workflows, Tekton for CI/CD, Kueue for Kubernetes job queueing, and Kestra for YAML-native event-driven data pipelines.
+tags: [data-engineering, orchestration, airflow, argo, tekton, kueue, kestra, comparison]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  knowledge-basis: "2026-08-09"
+  last-used: "2026-08-09"
 
 sources:
   - id: 2ndbrain-airflow-vs-argo-workflows-vs-tekton-pipelines
@@ -15,6 +15,12 @@ sources:
   - id: 2ndbrain-kueue-vs-airflow
     resource: "https://github.com/levonk/2ndbrain/blob/main/Default/Technologies/Computer/Data/Kueue%20vs%20Airflow.md"
     title: "2ndbrain: Kueue vs Airflow"
+  - id: datatalksclub-zoomcamp-workflow-orchestration
+    resource: "https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/02-workflow-orchestration"
+    title: "Data Engineering Zoomcamp — Module 2: Workflow Orchestration with Kestra"
+  - id: kestra-documentation
+    resource: "https://kestra.io/docs"
+    title: "Kestra documentation"
 ---
 
 # Orchestration Comparison
@@ -35,6 +41,7 @@ long-running batch jobs in Tekton).
 | Kubernetes-native container workflows, HPC, ML pipelines | **Argo Workflows** | DAGs of containers, artifacts, parallelism, custom resources |
 | CI/CD, image builds, GitOps | **Tekton Pipelines** | Cloud-native CI/CD, reusable tasks, Kubernetes-native |
 | Batch/ML job queueing, quotas, gang scheduling on Kubernetes | **Kueue** | Resource fairness, queueing, priority, Kubernetes Jobs integration |
+| YAML-native data pipelines, event-driven triggers, no-code + AI copilot | **Kestra** | Flow-as-code YAML, 1000+ plugins, any language, event + schedule triggers |
 
 ### When to Combine
 
@@ -48,8 +55,14 @@ long-running batch jobs in Tekton).
 ### Key Differentiators
 
 - **Kubernetes-native**: Argo, Tekton, and Kueue are all Kubernetes CRDs;
-  Airflow can run on Kubernetes but is not tied to it.
+  Airflow can run on Kubernetes but is not tied to it. Kestra runs on Docker
+  Compose or Kubernetes but is not a Kubernetes CRD.
 - **Task granularity**: Airflow tasks are usually Python functions; Argo tasks
-  are usually containers.
+  are usually containers; Kestra tasks are YAML-declared plugin invocations
+  supporting any language.
 - **Scheduling**: Airflow has mature scheduling/backfill; Argo is event/trigger
-  driven; Kueue focuses on admission control.
+  driven; Kueue focuses on admission control; Kestra supports both schedule
+  and event-driven triggers with built-in concurrency control.
+- **Authoring model**: Airflow DAGs are Python code; Kestra flows are YAML
+  (declarative) with optional no-code UI and AI copilot — lower barrier for
+  non-Python engineers.

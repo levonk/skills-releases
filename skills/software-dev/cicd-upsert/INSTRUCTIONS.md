@@ -2247,6 +2247,59 @@ speed, secret format differences (act base64 vs real CI PEM), and container
 file ownership mismatches.
 
 
+## Definition of Done
+
+Before declaring the cicd-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Pipeline Analysis and Structure
+
+- [ ] **[script]** `scripts/analyze_pipeline.py --path <repo>` exits zero and outputs a structured assessment (Mode A Step 1 / Mode B Step 1)
+- [ ] **[manual]** The detected CI system, build system, test framework, and deployment target match the project's actual stack (Mode A Step 1)
+- [ ] **[manual]** Workflow files use incremental build filters (profile filtering, not workflow-level path triggers) to avoid the required-checks deadlock (Mode A Step 3)
+- [ ] **[manual]** Reusable workflows, composite actions, and job matrices are used — no copy-pasted workflow definitions violating the rule of three (DRY CI Files)
+
+### Content Quality — Security and Guardrails
+
+- [ ] **[manual]** Security scans run in pipeline order: secret-detection → SAST → dependency scan → build → container scan → DAST (Mode A Step 6)
+- [ ] **[manual]** Scans gate on critical/high and report on medium/low (Mode A Step 6)
+- [ ] **[manual]** `concurrency: cancel-in-progress` is set on every workflow (CI Hygiene)
+- [ ] **[manual]** `timeout-minutes` is set on every job (CI Hygiene)
+- [ ] **[manual]** `permissions:` blocks are scoped to least-privilege on every job (CI Hygiene)
+- [ ] **[manual]** `shell: bash -l {0}` is set on steps running inside a container (CI Hygiene)
+
+### Content Quality — Tooling Alignment and Provenance
+
+- [ ] **[manual]** `devbox.json`, Justfile, CI, Dockerfile, and deployment tools all reference the same tool versions from a single source (Tooling Alignment)
+- [ ] **[manual]** Artifacts are signed (cosign/Sigstore) and SBOMs are generated (Syft/CycloneDX) when provenance is required (Mode A Step 9)
+- [ ] **[manual]** Pre-built CI images (if used) rebuild only when `Dockerfile.ci`, `devbox.json`, `Justfile`, or lock files change (Mode A Step 4)
+- [ ] **[manual]** Published CI containers contain no secrets — multi-stage builds, BuildKit secrets, `.dockerignore` as a mandatory gate (Build Container Hygiene)
+
+### Validation
+
+- [ ] **[manual]** The pipeline was tested locally (act for GitHub Actions) before pushing (Mode A Step 12 / Mode B Step 8)
+- [ ] **[manual]** Change detection correctly identifies modified components and `workflow_dispatch` triggers a full build (Mode A Step 12)
+- [ ] **[manual]** Secret format handling works for both act (base64) and real CI (PEM) (Mode A Step 12)
+
+### Upsert Mode (Mode B only)
+
+- [ ] **[manual]** Interactive changes (blocking gates, deployment flow changes, branch protection) were proposed and confirmed by the user before applying (Mode B Step 4-5)
+- [ ] **[manual]** Automatic and interactive changes are in separate commits, each independently reviewable (Mode B Step 6)
+- [ ] **[manual]** No existing functionality was broken by the update (Mode B Step 8)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `analyze_pipeline.py` exits zero but the workflow uses workflow-level path triggers instead of profile filtering → required-checks deadlock will occur (Mode A Step 3)
+- The pipeline builds locally but `shell: bash -l {0}` is missing on container steps → tools silently not on PATH in CI (CI Hygiene)
+- Security scans were added but they only report, never gate → critical/high vulnerabilities reach production (Mode A Step 6)
+- Tool versions in `devbox.json` and CI differ → the "single source of truth" is not actually single (Tooling Alignment)
+- Mode B interactive changes were applied without user confirmation → the project's build process was silently altered (Mode B Step 5)
+- The pipeline was pushed without local `act` testing → first CI run may fail on secret format or container ownership issues (Mode A Step 12)
+
 ## Context Declaration
 
 ### File Paths

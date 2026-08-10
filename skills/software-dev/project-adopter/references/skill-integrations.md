@@ -50,6 +50,22 @@ bash ./<git-repository-management>/scripts/git-repo-init.bash --no-init-structur
 ./<git-repository-management>/scripts/git-collect.sh /path/to/target
 ```
 
+**Local-as-remote testing**: After init, add a local remote to test git
+operations (push, fetch, branch archiving) without a network round-trip:
+
+```bash
+git remote add local "$PWD"
+```
+
+This is useful for validating the adoption changeset's branch topology before
+pushing to the real remote. The `git-vcs-config.bash` library provides an
+`add_local_remote` helper for idempotent setup.
+
+**Branch hygiene**: After the adoption commit, run `git-archive.sh --identify`
+periodically to find stale branches (including squash-merged branches, which
+`git-archive.sh` detects via `git cherry`). See the
+`branch-tag-archiving.md` reference in git-repository-management for details.
+
 #### Adoption Changeset Commit
 
 After all adoption changes are staged, commit them as one logical batch with rollback safety:
@@ -165,6 +181,53 @@ Hand-writing README content via heredocs in `adopt-project.sh` or `configure-*.s
 - The semantic consistency check (README vs code vs AGENTS.md vs docs/) is skipped
 
 readme-upsert's Phase 3 upsert logic preserves accurate sections of an existing README and only updates stale ones, which is critical for adopting existing projects without destroying user-facing documentation.
+
+### Dev-Env-Upsert Skill
+- **Purpose**: Manage `devbox.json` + `.envrc` + `justfile` as a coupled trio per the Standard Developer UX Flow (ADR 20260131001). Owns package management, direnv integration, and `prime_impl` line additions as a single coordinated unit.
+- **Usage**: Delegate devbox.json configuration, .envrc generation/update, and justfile `prime_impl` line additions to this skill — do NOT hand-write `devbox.json`, `.envrc`, or `prime_impl` lines in `adopt-project.sh` or `configure-*.sh`.
+- **Operations**:
+  - `setup` — batch: `add-packages` + `add-prime-steps` + `update-envrc` in one call (primary operation)
+  - `add-packages` — loop over `devbox add` internally
+  - `remove-packages` — loop over `devbox remove` internally
+  - `add-prime-steps` — file-type-aware; folds indexer into `prime_impl`
+  - `update-envrc` — regenerate direnv block + append async `prime_impl` trigger
+  - `reconcile` — detect stack via project-detection, suggest stack-matched packages
+  - `validate` — check devbox.json + .envrc + justfile `prime_impl` integrity
+- **Benefits**: Prevents drift between the three coupled files; file-type-aware indexed AST tool detection (source code → CodeGraph; multi-repo workspace → GitNexus; non-code docs/PDFs/video → Graphify); batch operations in a single call; staleness check lives inside `prime_impl` so no separate `index`/`index_impl` targets are needed.
+- **Integration pattern**: project-adopter delegates Quick Start steps 3 (devbox.json packages), 3a (indexed AST tool setup), and 5 (.envrc direnv integration) to dev-env-upsert. The `setup` operation handles all three in one call when the indexed AST tool is known; `reconcile` handles stack-matched package detection; `update-envrc` handles standalone .envrc refresh.
+- **Reference**: [Dev-Env-Upsert Skill](../dev-env-upsert/SKILL.md)
+
+#### Adoption Workflow
+
+```bash
+# 1. Configure devbox.json with stack-matched packages (step 3)
+uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py reconcile --target .
+
+# 2. Add indexed AST tool + direnv + just + prime_impl lines (step 3a) — ONE call
+#    <tool> is one of: codegraph, gitnexus, graphify (detection picks one)
+uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py setup \
+    --packages <tool>,direnv,just \
+    --prime-steps "<tool> index .:<tool>" \
+    --envrc-async-prime \
+    --target .
+
+# 3. Update .envrc standalone (step 5) — only if setup above was not used
+uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py update-envrc --async-prime --target .
+
+# 4. Validate the trio (optional, post-adoption)
+uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py validate --target .
+```
+
+The `<dev-env-upsert>` path is resolved by the consumer's skill installer; this skill does not hardcode it.
+
+#### Why Hand-Writing devbox.json / .envrc / prime_impl Is Forbidden
+
+Hand-writing any of the three coupled files duplicates dev-env-upsert's coupling logic and diverges over time:
+- Editing `devbox.json` packages without updating `.envrc`'s `watch_file` or `prime_impl`'s tool invocation → the trio falls out of sync
+- Hand-writing `.envrc` without the async `prime_impl` trigger → indexing never runs on shell entry
+- Adding `index` / `index_impl` targets separately from `prime_impl` → duplicates the staleness check and diverges from the Standard Developer UX Flow
+
+dev-env-upsert's `setup` operation applies all three changes atomically; `validate` checks that the trio stays consistent.
 
 ### Repository Health Review Skill
 - **Purpose**: Comprehensive repository health analysis for outdated information, conflicting rules, undocumented standards, lessons from failures, missing tool documentation, and security/access patterns

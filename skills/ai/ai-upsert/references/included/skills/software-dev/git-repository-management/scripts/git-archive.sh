@@ -6,13 +6,19 @@
 #          Defers to repo conventions when the upstream is not owned by the
 #          configured primary account (default: levonk).
 # Usage:
-#   git-archive.sh --identify [--main-branch <branch>] [repo_root]
-#   git-archive.sh --archive [--ref <name>]... [--main-branch <branch>] [repo_root]
+#   git-archive.sh --identify [--main-branch <branch>] [--skip <b1,b2,...>] [--fetch|--no-fetch] [repo_root]
+#   git-archive.sh --archive [--ref <name>]... [--yes] [--main-branch <branch>] [repo_root]
 #   git-archive.sh --prune [--retention-months N] [--confirm] [repo_root]
 #   All modes support --dry-run and --primary-owner <owner>
 # Output: Structured lines for AI analysis (ARCHIVE_CANDIDATE:, ARCHIVED:, PRUNED:, SKIPPED:)
+# Merge detection: Uses both `git merge-base --is-ancestor` (fast-path for
+#   true merges) and `git cherry` (catches squash-merged branches whose commits
+#   are not ancestors of main but whose patch content is already in main).
 
 set -euo pipefail
+
+# Initialize flags that may be referenced before CLI parsing sets them.
+DRY_RUN="${DRY_RUN:-}"
 
 # Tool detection and wrapper helpers are shared via includes.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -380,8 +386,10 @@ get_upstream_owner() {
     # third slash (for HTTPS URLs)
     local cleaned
     cleaned=$(echo "$remote_url" | sed 's/\.git$//')
-    # For SSH URLs (git@host:owner/repo), extract after colon
-    if echo "$cleaned" | grep -q ':'; then
+    # For SSH URLs (git@host:owner/repo), extract after colon.
+    # Check for '@' before ':' to distinguish SSH (git@host:path) from
+    # HTTPS (https://host/path) which also contains ':' after the protocol.
+    if echo "$cleaned" | grep -q '@.*:'; then
         echo "$cleaned" | sed 's/.*://' | cut -d/ -f1 | tr '[:upper:]' '[:lower:]'
     else
         # For HTTPS URLs (https://host/owner/repo), extract after host
@@ -505,6 +513,34 @@ is_merged() {
     git_cmd merge-base --is-ancestor "$ref" "$main_branch" 2>/dev/null
 }
 
+# Check if a ref's commits are squash-merged into the main branch.
+# `git cherry` compares by patch content (not ancestry), so it detects
+# squash-merged branches that `merge-base --is-ancestor` misses.
+# Returns 0 (true) if all commits in $ref have equivalent patches in $main_branch.
+# git cherry output: lines starting with `-` = already in upstream (by patch),
+#   lines starting with `+` = not in upstream. If all lines are `-` (or output
+#   is empty), the branch is fully squash-merged.
+# Pattern borrowed from arc90/git-sweep (inspector.py: git cherry upstream head).
+is_squash_merged() {
+    local ref="$1"
+    local main_branch="$2"
+    local cherry_out
+    cherry_out=$(git_cmd cherry "$main_branch" "$ref" 2>/dev/null || true)
+    # Empty output = no commits to compare (branch is at same point as main)
+    [ -z "$cherry_out" ] && return 0
+    # If any line starts with '+', there are commits not in main by patch equivalence
+    echo "$cherry_out" | grep -q '^+' && return 1
+    return 0
+}
+
+# Combined merge check: true merge (ancestor) OR squash merge (cherry equivalence).
+# This is the function callers should use instead of is_merged alone.
+is_fully_merged() {
+    local ref="$1"
+    local main_branch="$2"
+    is_merged "$ref" "$main_branch" || is_squash_merged "$ref" "$main_branch"
+}
+
 # Build the archive path for a branch.
 build_archive_branch_path() {
     local branch="$1"
@@ -548,6 +584,8 @@ build_archive_tag_path() {
 do_identify() {
     local main_branch="$1"
     local primary_owner="$2"
+    local skip_branches="$3"
+    local do_fetch="$4"
 
     # Check ownership
     local upstream_owner
@@ -559,17 +597,41 @@ do_identify() {
         return 0
     fi
 
+    # Fetch from remote before identifying (mirrors git-sweep's fetch-before-scan).
+    # Ensures remote-tracking refs are current so stale-branch detection is accurate.
+    if [ "$do_fetch" = "1" ]; then
+        echo "FETCHING:origin" >&2
+        git_cmd fetch origin --prune 2>/dev/null || echo "NOTICE: git fetch failed, proceeding with local refs only." >&2
+    fi
+
+    # Build skip set from --skip flag (comma-separated) plus protected branches.
+    local skip_set=" $PROTECTED_BRANCHES "
+    if [ -n "$skip_branches" ]; then
+        local IFS=','
+        for s in $skip_branches; do
+            s=$(echo "$s" | xargs)
+            [ -n "$s" ] && skip_set="${skip_set}${s} "
+        done
+        unset IFS
+    fi
+    is_skipped() {
+        local b="$1"
+        [[ "$skip_set" == *" $b "* ]]
+    }
+
     echo "=== BRANCHES ==="
     local branches
     branches=$(git_cmd branch --format='%(refname:short)' 2>/dev/null | grep -v '^\*' || true)
     for branch in $branches; do
-        if is_protected_branch "$branch"; then
-            echo "KEEP:${branch}:protected"
+        if is_skipped "$branch"; then
+            echo "KEEP:${branch}:skip-list"
             continue
         fi
 
+        # Use is_fully_merged (true merge OR squash merge) instead of is_merged alone.
+        # Squash-merged branches have no ancestry link but their patch content is in main.
         local merged=""
-        if is_merged "$branch" "$main_branch"; then
+        if is_fully_merged "$branch" "$main_branch"; then
             merged="merged"
         else
             merged="unmerged"
@@ -598,6 +660,43 @@ do_identify() {
                 ;;
         esac
     done
+
+    # Remote-tracking branches (git-sweep pattern: scan remote refs too).
+    # These are branches that exist on the remote but may not have local counterparts.
+    # Only scan if origin remote exists.
+    local remote_branches
+    remote_branches=$(git_cmd branch -r --format='%(refname:short)' 2>/dev/null | grep -v 'HEAD ->' || true)
+    if [ -n "$remote_branches" ]; then
+        echo ""
+        echo "=== REMOTE BRANCHES ==="
+        for rbranch in $remote_branches; do
+            # Strip origin/ prefix for skip check and display
+            local short_name="${rbranch#origin/}"
+            [ "$short_name" = "$rbranch" ] && continue  # skip non-origin remotes
+            if is_skipped "$short_name"; then
+                echo "KEEP:${rbranch}:skip-list"
+                continue
+            fi
+            # Skip if a local branch with the same name exists (already handled above)
+            git_cmd show-ref --verify --quiet "refs/heads/$short_name" 2>/dev/null && continue
+
+            local merged=""
+            if is_fully_merged "$rbranch" "$main_branch"; then
+                merged="merged"
+            else
+                merged="unmerged"
+            fi
+
+            local archive_path
+            archive_path=$(build_archive_branch_path "$short_name")
+
+            if [ "$merged" = "merged" ]; then
+                echo "ARCHIVE_CANDIDATE:${rbranch}:${archive_path}:remote-merged:${merged}"
+            else
+                echo "REVIEW:${rbranch}:${archive_path}:remote-unmerged:${merged}"
+            fi
+        done
+    fi
 
     echo ""
     echo "=== TAGS ==="
@@ -640,7 +739,8 @@ do_identify() {
 do_archive() {
     local main_branch="$1"
     local primary_owner="$2"
-    shift 2
+    local auto_yes="$3"
+    shift 3
     local refs=("$@")
 
     if [ ${#refs[@]} -eq 0 ]; then
@@ -658,6 +758,29 @@ do_archive() {
         return 0
     fi
 
+    # Confirmation prompt (git-sweep pattern: ask before destructive ops unless --yes/--force).
+    # In a non-interactive context (no TTY on stdin), abort unless --yes was passed.
+    if [ -z "$DRY_RUN" ] && [ "$auto_yes" != "1" ]; then
+        if [ ! -t 0 ]; then
+            echo "SKIPPED:NON_INTERACTIVE" >&2
+            echo "NOTICE: Refusing to archive without confirmation in non-interactive context. Pass --yes to proceed." >&2
+            echo "SKIPPED:USER_ABORTED"
+            return 0
+        fi
+        echo "The following refs will be archived:" >&2
+        for ref in "${refs[@]}"; do
+            echo "  $ref" >&2
+        done
+        printf "Archive these refs? (y/N) " >&2
+        local answer=""
+        read -r answer 2>/dev/null || answer=""
+        if ! echo "$answer" | grep -qi '^y'; then
+            echo "SKIPPED:USER_ABORTED"
+            return 0
+        fi
+    fi
+
+    local archived_count=0
     for ref in "${refs[@]}"; do
         # Check if it's a branch or tag
         local is_branch=""
@@ -703,7 +826,14 @@ do_archive() {
         fi
 
         echo "ARCHIVED:${ref}→${archive_path}"
+        archived_count=$((archived_count + 1))
     done
+
+    # Post-action guidance (git-sweep pattern: tell users to sync).
+    if [ "$archived_count" -gt 0 ] && [ -z "$DRY_RUN" ]; then
+        echo ""
+        echo "NOTICE: Archived ${archived_count} ref(s). Collaborators should run 'git fetch --prune' to sync."
+    fi
 }
 
 # Phase 3: Prune old archive refs.
@@ -725,6 +855,7 @@ do_prune() {
     archive_refs="${archive_refs}
 $(git_cmd tag 2>/dev/null | grep '^archive/' || true)"
 
+    local pruned_count=0
     for ref in $archive_refs; do
         [ -z "$ref" ] && continue
         # Extract date from path: archive/{branches,tags}/{type}/YYYY/MM/YYYYMMDD-{slug}
@@ -733,7 +864,7 @@ $(git_cmd tag 2>/dev/null | grep '^archive/' || true)"
         [ -z "$ref_date" ] && continue
 
         if [ "$ref_date" -lt "$cutoff_date" ] 2>/dev/null; then
-            if [ -n "$DRY_RUN" ] || [ -z "$confirm" ]; then
+            if [ -n "$DRY_RUN" ] || [ "$confirm" != "1" ]; then
                 echo "PRUNE_CANDIDATE:${ref}:date=${ref_date}:cutoff=${cutoff_date}"
             else
                 # Delete the ref (branch or tag)
@@ -746,9 +877,16 @@ $(git_cmd tag 2>/dev/null | grep '^archive/' || true)"
                     git_cmd push origin --delete "$ref" 2>/dev/null || true
                 }
                 echo "PRUNED:${ref}"
+                pruned_count=$((pruned_count + 1))
             fi
         fi
     done
+
+    # Post-action guidance (git-sweep pattern).
+    if [ "$pruned_count" -gt 0 ] && [ -z "$DRY_RUN" ]; then
+        echo ""
+        echo "NOTICE: Pruned ${pruned_count} archive ref(s). Collaborators should run 'git fetch --prune' to sync."
+    fi
 }
 
 main() {
@@ -757,6 +895,9 @@ main() {
     local primary_owner="levonk"
     local retention_months=6
     local confirm=0
+    local auto_yes=0
+    local skip_branches=""
+    local do_fetch=0
     local target_path="."
     local refs=()
 
@@ -774,10 +915,15 @@ main() {
             --retention-months) retention_months="$2"; shift 2 ;;
             --retention-months=*) retention_months="${1#--retention-months=}"; shift ;;
             --confirm) confirm=1; shift ;;
+            --yes|-y) auto_yes=1; shift ;;
+            --skip) skip_branches="$2"; shift 2 ;;
+            --skip=*) skip_branches="${1#--skip=}"; shift ;;
+            --fetch) do_fetch=1; shift ;;
+            --no-fetch) do_fetch=0; shift ;;
             --dry-run) DRY_RUN=1; shift ;;
             --force) primary_owner=""; shift ;;  # Disable ownership check
             -h|--help)
-                sed -n '2,12p' "$0"
+                sed -n '2,14p' "$0"
                 exit 0
                 ;;
             *) target_path="$1"; shift ;;
@@ -786,8 +932,8 @@ main() {
 
     if [ -z "$mode" ]; then
         echo "ERROR: --identify, --archive, or --prune is required" >&2
-        echo "Usage: git-archive.sh --identify [--main-branch <branch>] [repo_root]" >&2
-        echo "       git-archive.sh --archive --ref <name> [--ref <name>]... [repo_root]" >&2
+        echo "Usage: git-archive.sh --identify [--main-branch <branch>] [--skip <b1,b2>] [--fetch] [repo_root]" >&2
+        echo "       git-archive.sh --archive --ref <name> [--ref <name>]... [--yes] [repo_root]" >&2
         echo "       git-archive.sh --prune [--retention-months N] [--confirm] [repo_root]" >&2
         exit 1
     fi
@@ -812,8 +958,8 @@ main() {
     fi
 
     case "$mode" in
-        identify) do_identify "$main_branch" "$primary_owner" ;;
-        archive)  do_archive "$main_branch" "$primary_owner" "${refs[@]}" ;;
+        identify) do_identify "$main_branch" "$primary_owner" "$skip_branches" "$do_fetch" ;;
+        archive)  do_archive "$main_branch" "$primary_owner" "$auto_yes" "${refs[@]}" ;;
         prune)    do_prune "$retention_months" "$confirm" ;;
     esac
 }

@@ -1477,6 +1477,49 @@ For detailed boilerplate integration and configuration patterns, see [references
 - [GitHub Actions CI/CD ADR](https://github.com/lrepo52/job-aide/blob/main/internal-docs/adr/adr-20251106014-cicd-strategy.md) - GitHub Actions as primary CI/CD platform
 
 
+## Definition of Done
+
+Before declaring the project-configuration run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Project Analysis
+
+- [ ] **[manual]** project-detection was run to analyze existing tooling before adding anything (Quality Checklist)
+- [ ] **[manual]** The selected mode (compatible, enhance, or minimal) matches the user's intent — compatible for existing OSS projects, enhance for adding features, minimal for least disruption (Configuration Options)
+
+### Configuration Application
+
+- [ ] **[script]** `./scripts/configure-project.sh` ran with the selected mode and tool categories (Quick Start)
+- [ ] **[manual]** Only missing or compatible tooling was added — no existing configurations were overwritten (Quality Checklist, What This Skill Does)
+- [ ] **[manual]** surgical-config was used for safe configuration edits — no raw file overwrites (Quality Checklist, Integration)
+- [ ] **[manual]** Existing workflows and scripts were preserved — npm scripts, Makefiles, and established conventions are intact (Quality Checklist, What This Skill Does)
+
+### Output Completeness
+
+- [ ] **[manual]** Every requested tool category was added only if missing — linting, CI, dev-env, docs, tests (Configuration Options)
+- [ ] **[manual]** For `--add-linting`: `.eslintrc.js` (or equivalent) added without overwriting if exists, ESLint deps added to devDependencies, `lint` script added without overwriting existing scripts (Example 1)
+- [ ] **[manual]** For `--add-ci`: `.github/workflows/ci.yml` added based on detected language, CI configured to run existing test scripts (Example 3)
+- [ ] **[manual]** For `--add-dev-env`/`--add-devbox-support`: `devbox.json` added with detected packages, justfile added with standard targets (without replacing Makefile if exists), `.envrc` added for direnv (Example 2)
+- [ ] **[manual]** Boilerplate templates were referenced for standard configuration patterns (Quality Checklist, Boilerplate Integration)
+
+### Validation
+
+- [ ] **[manual]** Existing functionality still works after configuration — tests, builds, and scripts run as before (Quality Checklist)
+- [ ] **[manual]** What was added and why was documented for the user (Quality Checklist)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `configure-project.sh` ran but existing configurations were overwritten → the preserve-existing contract was violated (What This Skill Does)
+- Tooling was added but project-detection was skipped → the new config conflicts with existing tooling (Quality Checklist)
+- Config edits were made by raw file writes instead of surgical-config → existing settings were clobbered (Integration)
+- `--add-linting` added a `lint` script that overwrote an existing one → existing workflows were not preserved (Example 1)
+- A justfile was added that replaced an existing Makefile → the preserve-workflows contract was violated (Example 2)
+- Existing functionality broke after configuration but the run was declared complete → the validation step was skipped (Quality Checklist)
+
 ## Context Declaration
 
 ### File Paths

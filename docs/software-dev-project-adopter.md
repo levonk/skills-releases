@@ -36,6 +36,7 @@ Adopt and establish best practices for projects by overwriting existing preferen
 - **ignorefile-manager** (skill, dependency) — Required for generating .gitignore, .dockerignore, .codeiumignore, .cursorignore, .aiexclude, .npmignore, VS Code excludes, and ripgrep config from modular concern sources
 - **agent-file-upsert** (skill, dependency) — Required for creating or updating AGENTS.md (AI-facing entry point). Handles both greenfield (create from template) and brownfield (preserve accurate sections, update stale ones, delta analysis). Bundled via includeTree for offline availability.
 - **readme-upsert** (skill, dependency) — Required for creating or updating README.md (human-facing entry point). Handles both greenfield (create from template) and brownfield (preserve accurate sections, update stale ones). Runs the README↔AGENTS.md consistency checker after AGENTS.md is in place.
+- **dev-env-upsert** (skill, dependency) — Required for devbox.json package management, .envrc generation/update, and justfile prime_impl line additions. Owns the devbox+direnv+justfile coupled trio per the Standard Developer UX Flow.
 - **base-ai-guidance** (skill, base-framework) — Base AI guidance framework for all AI skills
 - **** (, preference-source) — Provides standardized project templates and preference definitions
 
@@ -43,4 +44,4 @@ Adopt and establish best practices for projects by overwriting existing preferen
 
 - **Full skill**: [`skills/software-dev/project-adopter/SKILL.md`](skills/software-dev/project-adopter/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-05T04:08:35Z
+- **Generated**: 2026-08-10T21:38:16Z

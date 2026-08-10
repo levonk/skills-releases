@@ -1432,3 +1432,53 @@ For full descriptions and remediation guidance, see
 
 For pre-refactor, during-refactor, and post-refactor checklists, see
 [Refactor Checklist](references/refactor-checklist.md).
+
+## Definition of Done
+
+Before declaring the refactor-planning run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Starting State (Phase 1)
+
+- [ ] **[manual]** Typecheck, build, lint, unit tests, and run all pass before any change is made (Phase 1)
+- [ ] **[manual]** `git status` is clean — no untracked, unadded, changed, or staged files (Phase 1)
+- [ ] **[manual]** Working tree is on a feature branch independent of `main`/`master`, `env/dev`, `env/prod` (Phase 1)
+
+### Issue Identification (Phase 2)
+
+- [ ] **[manual]** Every category in the Phase 2 table was scanned: security, compliance, code smells, legacy tech/APIs/deps, standards, pattern opportunities, integration improvements, package extraction (Phase 2)
+- [ ] **[manual]** Findings are annotated in-code using language-specific annotations or doc strings — not just held in the agent's context (Phase 2)
+- [ ] **[manual]** Code smells are cross-referenced against the [Code Smell Catalog](references/code-smell-catalog.md) — each finding maps to a named smell, not a vague "this is messy"
+
+### Plan Completeness (Phase 3)
+
+- [ ] **[manual]** Every identified issue from Phase 2 appears as a task in the plan — no findings were dropped between identification and planning (Phase 3)
+- [ ] **[manual]** Tasks are prioritized in the mandated order: urgent (security/data-loss) → foundational (unblocking) → dependent → low priority (Phase 3)
+- [ ] **[manual]** Foundational tasks are correctly ordered before the dependent tasks that rely on them — no dependent task is scheduled before its prerequisite (Phase 3)
+- [ ] **[manual]** Each task has a clear, single-increment scope — a reader can tell what change the task makes without ambiguity (Phase 3)
+
+### Execution (Phase 4)
+
+- [ ] **[manual]** Each task was executed as the smallest viable increment — no batched multi-task commits (Phase 4)
+- [ ] **[manual]** After each task: typecheck, build, lint, unit tests, and run all pass (Phase 4)
+- [ ] **[manual]** After each task: `git status` shows only the intended change — no stray files (Phase 4)
+- [ ] **[manual]** Each verified change was committed individually (Phase 4)
+- [ ] **[manual]** Any task whose verification failed was reverted and re-planned — no unverified modifications accumulated (Phase 4)
+
+### Final Verification (Phase 5)
+
+- [ ] **[manual]** Typecheck, build, lint, unit tests, and run all pass at the end (Phase 5)
+- [ ] **[manual]** Working tree is clean and all changes are committed (Phase 5)
+- [ ] **[manual]** A summary exists covering: what was refactored, what was deferred, and any new tech debt discovered (Phase 5)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The build passes at the end but a task was committed without running tests between tasks → a silent regression may be hidden in an intermediate commit
+- The plan lists tasks but a Phase 2 finding (e.g. a security issue) has no corresponding task → the plan is incomplete; the issue will be forgotten
+- A dependent task was executed before its foundational prerequisite → the dependent change may break or need rework
+- `git status` is clean but commits contain multiple unrelated changes → rollback is no longer trivial; the evolutionary guarantee is broken
+- The final summary omits deferred items → tech debt is invisible to the next reviewer

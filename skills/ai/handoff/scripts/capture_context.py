@@ -27,8 +27,8 @@ from pathlib import Path
 # Probes: lookups (brew list, mise which, rtk rewrite) — short.
 # Installs: network fetches (not currently used in Python include, but
 # available for callers that need it).
-_PROBE_TIMEOUT = float(os.environ.get("CLTOOL_PROBE_TIMEOUT_SECS", "30"))
-_INSTALL_TIMEOUT = float(os.environ.get("CLTOOL_INSTALL_TIMEOUT_SECS", "120"))
+_PROBE_TIMEOUT = float(os.environ.get("CLTOOL_PROBE_TIMEOUT_SECS", "160"))
+_INSTALL_TIMEOUT = float(os.environ.get("CLTOOL_INSTALL_TIMEOUT_SECS", "160"))
 
 
 def _walk_up_find(*patterns: str) -> Path | None:

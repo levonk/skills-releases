@@ -931,6 +931,29 @@ main() {
                     fi
                 fi
 
+                # Scan staged files for secret patterns using git-secrets.
+                # scan-secrets.sh uses cli-tool-discovery.sh to find git-secrets
+                # (awslabs/git-secrets) through environment wrappers and PATH
+                # locations. If git-secrets is not installed, the scan is
+                # skipped (exit 0) — secret scanning is opt-in, not a hard
+                # dependency. If git-secrets finds prohibited patterns, the
+                # commit is blocked.
+                # Pass --private via SCAN_SECRETS_PRIVATE=1 for private repos
+                # where findings are informational only (exit 0).
+                local secrets_script="${SCRIPT_DIR:-$(dirname "${BASH_SOURCE[0]}")}/scan-secrets.sh"
+                if [[ -x "$secrets_script" ]]; then
+                    local secrets_args=()
+                    [[ "${SCAN_SECRETS_PRIVATE:-0}" == "1" ]] && secrets_args+=(--private)
+                    if ! "$secrets_script" "${secrets_args[@]}"; then
+                        echo "SCAN_SECRETS_FAILED:prohibited patterns detected in staged files" >&2
+                        echo "ERROR: scan-secrets.sh found secret patterns. Remove secrets before committing." >&2
+                        echo "ERROR: If findings are false positives, add allowed patterns: git secrets --add -a '<pattern>'" >&2
+                        echo "ERROR: Set SCAN_SECRETS_PRIVATE=1 for private repos where findings are informational." >&2
+                        echo "COMMIT_FAILED:SCAN_SECRETS"
+                        exit 1
+                    fi
+                fi
+
                 # Commit
                 if commit_with_message "$current_message"; then
                     local commit_hash

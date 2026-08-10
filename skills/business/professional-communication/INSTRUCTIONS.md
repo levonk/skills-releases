@@ -1369,3 +1369,51 @@ In formal situations — disciplinary action, responding to an employee complain
 
 For templates covering these and other common scenarios, see
 [Message Templates](references/message-templates.md).
+
+## Definition of Done
+
+Before declaring the Professional Communication run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Channel Selection
+
+- [ ] **[manual]** The chosen channel matches the message's urgency and complexity per the Channel Selection Matrix (Quick Start Step 1)
+- [ ] **[manual]** Complex or sensitive topics are not routed to instant messaging when a call or meeting is more appropriate (Quick Start Step 1)
+
+### Message Structure
+
+- [ ] **[manual]** The subject line conveys purpose and urgency (not just "Budget") (Message Structure — Subject Line)
+- [ ] **[manual]** The opening uses Bottom Line Up Front — the most important info or primary action is in the first sentence (Message Structure — BLUF)
+- [ ] **[manual]** The body is concise — necessary background only, no premature or excessive explanations (Message Structure — Body)
+- [ ] **[manual]** The call to action states exactly what is needed from the recipient and by when — not "let me know what you think" (Message Structure — Call to Action)
+- [ ] **[manual]** The message is proofread — no spelling or grammatical errors (Message Structure — Proofread)
+
+### Tone and Style
+
+- [ ] **[manual]** Tone is professional, respectful, and approachable throughout (Tone and Style)
+- [ ] **[manual]** Disagreement is expressed respectfully — no disparaging language about colleagues or peers (Tone and Style)
+- [ ] **[manual]** Factual inaccuracies are handled collaboratively — not by stating someone is wrong directly (Tone and Style)
+
+### Best Practices
+
+- [ ] **[manual]** Relevant information is shared proactively with all stakeholders — no key person missing from the chain (Best Practices — Information Sharing)
+- [ ] **[manual]** Credit is specific and generous — no overstatement of own role in a team effort (Best Practices — Attributing Contributions)
+- [ ] **[manual]** Feedback is clear, consistent, and constructive — no backhanded compliments or unexplained tone shifts (Best Practices — Giving Feedback)
+
+### Formal and Sensitive Communications
+
+- [ ] **[manual]** Formal communications (disciplinary, complaints) are exceptionally clear, professional, and well-documented (Formal and Sensitive Communications)
+- [ ] **[manual]** Employee complaints are acknowledged in a neutral tone with no admissions before review (Formal — Responding to a Complaint)
+- [ ] **[manual]** Formal feedback (e.g., PIP) is strictly factual, non-emotional, structured around evidence with dates and metrics (Formal — Delivering Feedback)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The message has a subject line but the BLUF is buried in the third paragraph → opening does not lead with the point (Message Structure — BLUF)
+- The call to action says "let me know what you think" but names no deadline → the recipient cannot prioritize (Message Structure — Call to Action)
+- The tone is professional but a colleague's work is disparaged → Tone and Style violation (Tone and Style)
+- A key stakeholder is missing from the email chain → Information Sharing best practice violated (Best Practices)
+- A PIP is structured but includes emotional language or no measurable outcomes → Formal Feedback requirements not met (Formal — Delivering Feedback)

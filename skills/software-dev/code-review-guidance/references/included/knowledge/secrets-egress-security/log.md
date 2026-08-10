@@ -1,5 +1,21 @@
 # Directory Update Log
 
+## 2026-08-05
+
+* **Ingest**: Authored 4 new security concept pages sourced from the
+  project-lint audit (linter/security tool gaps). All pages grounded against
+  project-lint/Cargo.toml versions on 2026-08-05.
+  - [regex-dos-prevention.md](regex-dos-prevention.md) — catastrophic
+    backtracking, Rust regex crate safety, complexity limits (regex 1.10)
+  - [path-traversal-in-scanners.md](path-traversal-in-scanners.md) — path
+    traversal in file scanning, canonicalization, symlink validation
+  - [toml-config-injection.md](toml-config-injection.md) — TOML injection
+    vectors, safe serde parsing, config permissions (toml 0.8, serde 1.0)
+  - [tree-sitter-grammar-supply-chain.md](tree-sitter-grammar-supply-chain.md)
+    — supply-chain risks in tree-sitter grammars, validation, pinning
+    (tree-sitter 0.23)
+* **Update**: Updated [index.md](index.md) with 4 new concept entries.
+
 ## 2026-07-26
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.

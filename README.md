@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `74e63525aee1f034d70acbc0a1986f8d142466b8` · Branch: `env/dev` · Generated: 2026-08-05T04:08:35Z
+> Commit: `444059176f8858d4d023f02e9ed576351619ac26` · Branch: `env/dev` · Generated: 2026-08-10T21:38:16Z
 
 ## Overview
 
@@ -64,6 +64,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | briefingmemo | Use when making high-stakes business decisions, strategic choices, partnership evaluations, or an... | [Synopsis](execution-briefingmemo.md) |
 | code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](execution-code-quality-validation.md) |
 | code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](execution-code-review-guidance.md) |
+| diagram-upsert | Create and embed diagrams in technical documentation (ADR, design docs, README, knowledge bundles... | [Synopsis](execution-diagram-upsert.md) |
 | execute-upsert | Generic project execution controller that drives feature implementation from request to completio... | [Synopsis](execution-execute-upsert.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](execution-project-detection.md) |
 
@@ -90,6 +91,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | container-image-build | Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre... | [Synopsis](software-dev-container-image-build.md) |
 | container-service-deploy | Deploy multi-container services using docker-compose (local/dev) or Ansible docker_container (pro... | [Synopsis](software-dev-container-service-deploy.md) |
 | data-pipeline-upsert | Create, update, and convert data pipelines across Apache Airflow (DAG authoring), Apache Spark (j... | [Synopsis](software-dev-data-pipeline-upsert.md) |
+| dev-env-upsert | Manage devbox.json + .envrc + justfile as a coupled trio per the Standard Developer UX Flow (`dir... | [Synopsis](software-dev-dev-env-upsert.md) |
 | git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](software-dev-git-repository-management.md) |
 | github-issue | File a well-formed GitHub issue against a third-party or upstream repository. Discovers the proje... | [Synopsis](software-dev-github-issue.md) |
 | github-pr | Open a well-formed pull request against a third-party or upstream repository. Requires an issue n... | [Synopsis](software-dev-github-pr.md) |
@@ -102,9 +104,11 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
 | readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](software-dev-readme-upsert.md) |
 | refactor-planning | Plan and execute systematic evolutionary refactors based on Michael Feathers' 'Working Effectivel... | [Synopsis](software-dev-refactor-planning.md) |
+| regression-test-mining | Mine git history for bug-fix commits and generate the regression tests they are missing. Scans `g... | [Synopsis](software-dev-regression-test-mining.md) |
 | repository-health-review | Comprehensive repository health analysis for outdated information, conflicting rules, undocumente... | [Synopsis](software-dev-repository-health-review.md) |
 | shell-wrapper | Wrap bash tool calls with an environment wrapper (devbox, mise, flox, direnv, or nix) and rtk bef... | [Synopsis](software-dev-shell-wrapper.md) |
 | surgical-config | Deterministic, non-destructive configuration file modifications using a tiered tool hierarchy. Us... | [Synopsis](software-dev-surgical-config.md) |
+| ui-ux-test-upsert | Create or update UI/UX tests for web and mobile applications using a two-tier testing model: dete... | [Synopsis](software-dev-ui-ux-test-upsert.md) |
 | unit-test-writing | Write unit tests in the style of Roy Osherove's 'The Art of Unit Testing' — readable, maintaina... | [Synopsis](software-dev-unit-test-writing.md) |
 
 ### tech-maturity

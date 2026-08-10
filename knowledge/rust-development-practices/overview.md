@@ -139,6 +139,13 @@ project-structure → cargo-config → formatting → testing → error-handling
 | Container | [Container Support](container-support.md) | Bloated images, root containers, missing healthchecks |
 | Security | [Security and Auditing](security-auditing.md) | Vulnerable deps, leaked secrets, unsafe FFI |
 | Quality | [Quality Gates](quality-gates.md) | Unformatted commits, single-version testing, no CI audit |
+| AST | [Tree-Sitter AST Queries](tree-sitter-ast-queries.md) | Brittle pattern matching, no multi-language query reuse, slow large-codebase scans |
+| CLI | [Clap CLI Patterns](clap-cli-patterns.md) | Inconsistent argument parsing, missing shell completion, poor help text |
+| Config | [TOML Config Validation](toml-config-validation.md) | Invalid configs accepted silently, no profile merging, no config migration |
+| Logging | [Structured Logging with tracing](structured-logging-tracing.md) | Unstructured logs, no severity filtering, missing IDE hook event context |
+| Watching | [File Watcher Patterns](file-watcher-patterns.md) | Watch limit exhaustion, FS race conditions, missed events on slow disks |
+| Paths | [Cross-Platform Path Handling](cross-platform-path-handling.md) | Path display corruption, symlink loops, Windows UNC path failures |
+| Errors | [Anyhow + Thiserror Combination](anyhow-thiserror-combination.md) | Library errors leaking into application context, untestable error variants |
 
 ## Scope
 

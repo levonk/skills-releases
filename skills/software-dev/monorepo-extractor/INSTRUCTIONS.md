@@ -1514,6 +1514,56 @@ read -p "Press enter after team confirmation..."
 - **CI/CD updates**: Update automation to point to new repository
 - **Token rotation**: Rotate any tokens that may be embedded in history
 
+## Definition of Done
+
+Before declaring the monorepo-extractor run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Tool Verification and State Validation
+
+- [ ] **[script]** `./scripts/verify-tools.sh` exits zero — all required tools are available with minimum versions (Core Workflow Step 1)
+- [ ] **[script]** `./scripts/validate-monorepo-state.sh` exits zero — no uncommitted changes, no stashed entries, remote is synchronized, branch exists on remote, no unpushed commits, `git fsck` passes (Core Workflow Step 2, Strict Validation)
+
+### System Detection and Workspace Analysis
+
+- [ ] **[script]** `./scripts/detect-build-systems.sh /path/to/monorepo` exits zero — build systems and package managers detected (Core Workflow Step 3)
+- [ ] **[script]** `./scripts/detect-ci-cd-systems.sh /path/to/monorepo` exits zero — CI/CD platforms detected (Core Workflow Step 3)
+- [ ] **[script]** `./scripts/analyze-workspace-configs.sh /path/to/monorepo project-name` exits zero — workspace configurations and shared resources analyzed (Core Workflow Step 4)
+
+### Extraction and History Preservation
+
+- [ ] **[script]** `./scripts/extract-project-strict.sh /path/to/monorepo project-name /path/to/new-repo` exits zero (or `extract-project-flexible.sh` for dev/testing) (Core Workflow Step 5-6)
+- [ ] **[manual]** Git history for the extracted project is preserved — commits touching the project's files are present in the new repo with original authors and dates (Core Workflow Step 6, Strict Validation Philosophy)
+- [ ] **[manual]** Shared resources referenced by the project are preserved in the new repo — not pruned with unrelated projects (Core Workflow Step 6)
+- [ ] **[manual]** Unrelated projects and their history are removed from the new repo (Core Workflow Step 6)
+
+### Workspace Updates and Target Validation
+
+- [ ] **[manual]** Workspace configurations in the new repo are updated to reflect single-project structure (Core Workflow Step 7)
+- [ ] **[script]** `./scripts/validate-project-targets.sh /path/to/new-repo` exits zero — project-specific targets (bootstrap, build, lint, test) work in the new repo (Core Workflow Step 8)
+- [ ] **[script]** `./scripts/validate-extraction.sh /path/to/new-repo` exits zero — repository integrity and history completeness verified (Core Workflow Step 9)
+
+### Team Coordination and Cleanup
+
+- [ ] **[manual]** The team was notified before extraction and confirmed no active work will be disrupted (Best Practices, Example 2)
+- [ ] **[manual]** The monorepo was tagged before extraction as a backup point (Best Practices)
+- [ ] **[manual]** The original monorepo has a reference to the new repository location after cleanup (Core Workflow Step 10, Best Practices)
+- [ ] **[manual]** CI/CD automation was updated to point to the new repository (Security Notes)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `validate-extraction.sh` passes but git history is missing commits that touched the project's files → history was not preserved (Core Workflow Step 6)
+- `validate-project-targets.sh` passes but shared resources were pruned with unrelated projects → the project will break on dependencies it can no longer find (Core Workflow Step 6)
+- The new repo builds but workspace configs still reference the monorepo structure → single-project structure was not applied (Core Workflow Step 7)
+- `extract-project-strict.sh` was skipped for `--force` without understanding the risks → uncommitted or unpushed work may be lost (Strict Validation Philosophy)
+- The team was not notified before extraction → active work was disrupted (Best Practices)
+- The original monorepo has no reference to the new location after cleanup → future developers cannot find the extracted project (Core Workflow Step 10)
+- Secrets in history were not checked before extraction → sensitive data leaked into the new repo (Security Notes)
+
 ## Context Declaration
 
 ### File Paths

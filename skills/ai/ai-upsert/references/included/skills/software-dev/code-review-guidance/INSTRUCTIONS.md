@@ -1662,3 +1662,48 @@ review to the story's changes:
 
 For the expanded checklist with examples and edge cases per category, see
 [Review Checklist](references/review-checklist.md).
+
+## Definition of Done
+
+Before declaring the code-review-guidance run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script
+— if the script exits non-zero, the item is NOT done. Items marked
+**[manual]** require the agent to check something the scripts cannot verify.
+
+### Automated Validation Pass
+
+- [ ] **[script]** The bundled `quality-validator.sh complete` (via `code-quality-validation`) exits zero — no deterministic lint/format/test/security failures (Automated Validation Pass)
+- [ ] **[manual]** Any deterministic failure from the validation pass was recorded as an automatic blocker before the manual checklist (Automated Validation Pass)
+
+### Checklist Coverage
+
+- [ ] **[manual]** Every applicable checklist category was reviewed: Infrastructure/Build/Deployment, Schemas & Data, Integrations, Security, Performance, Accessibility, Cross-Cutting Concerns (Review Checklist)
+- [ ] **[manual]** Categories that were out of scope were explicitly skipped with a stated reason — not silently omitted (Review Checklist)
+- [ ] **[manual]** Each finding has a file/line reference so the author can locate it (Review Process Workflow Step 4)
+
+### Security Depth
+
+- [ ] **[manual]** Auth/permission changes were escalated to the `devsecops-codeguard` patterns (Security category)
+- [ ] **[manual]** Secrets, tokens, and credentials were checked against `devsecops-codeguard/hardcoded-credentials-detection.md` — none in logs, errors, or client responses (Security category)
+- [ ] **[manual]** New dependencies were vetted for known vulnerabilities and licensing terms (Security category)
+
+### Review Synthesis and Communication
+
+- [ ] **[manual]** Findings were grouped into blockers (must fix before merge), suggestions (should fix soon), and nits (optional polish) (Review Process Workflow Step 6)
+- [ ] **[manual]** The review leads with blockers, then suggestions, then nits — each referencing the specific checklist item (Quick Start Step 6)
+- [ ] **[manual]** Schema/integration risks requiring coordination (migrations, API consumers, feature flags) were surfaced explicitly (Quick Start Step 5)
+
+### Automated Mode (when orchestrator-driven)
+
+- [ ] **[manual]** The structured verdict was returned in the Review Output Format with `REVIEW_VERDICT`, counts, and per-finding file/line/description (Review Output Format)
+- [ ] **[manual]** `CATEGORIES_SKIPPED` includes a skip reason for each omitted category (Review Output Format)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `quality-validator.sh complete` exits zero but the manual checklist was skipped → deterministic pass does not catch design, integration, or accessibility issues (Automated Validation Pass)
+- A category was skipped without stating the reason → the author cannot tell whether it was intentionally out of scope or forgotten (Review Checklist)
+- Findings were posted but none have file/line references → the author cannot locate or verify the issues (Review Process Workflow Step 4)
+- Blockers and suggestions are mixed together → the author cannot tell what must be fixed before merge (Review Process Workflow Step 6)
+- The automated verdict says `CLEAN` but the validation pipeline was never run → the verdict is based on manual judgment alone, missing deterministic failures (Automated Validation Pass)

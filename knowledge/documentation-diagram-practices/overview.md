@@ -125,6 +125,8 @@ tool-selection → mermaid (inline, render-portability) → plantuml (precise, s
 | PlantUML | [PlantUML Practices](plantuml.md) | Missing `@startuml`/`@enduml`, server-only rendering, layout sprawl, unreadable sequence diagrams |
 | Excalidraw | [Excalidraw Practices](excalidraw.md) | Binary blob in git, lost sketch history, hand-drawn diagrams where precision is required |
 | Contrast | [Color Contrast Practices](color-contrast.md) | Light text on pastel fills, sub-WCAG contrast ratios, labels that vanish on dim screens and in print |
+| Rust Docs | [Rust Doc Comment Patterns](rust-doc-comment-patterns.md) | Missing Examples/Errors/Panics sections, broken intra-doc links, stale doc tests |
+| Cargo Doc | [Cargo Doc Generation](cargo-doc-generation.md) | No CI doc checks, missing hosted docs, broken cross-crate links, undocumented feature flags |
 
 ## Scope
 

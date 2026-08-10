@@ -1995,6 +1995,56 @@ When applying improvements:
 4. **Check for concerns** - Any breaking changes or side effects
 5. **Document next steps** - What the user should do next
 
+## Definition of Done
+
+Before declaring the ai-guidance-improver run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Analysis Quality
+
+- [ ] **[manual]** All issues were identified and categorized — conflicts, duplications, inadequate frontmatter, poor progressive disclosure, scattered context, and stale text (File-Based Mode Step 1)
+- [ ] **[manual]** Improvements were prioritized as High/Medium/Low with clear rationale for each (File-Based Mode Step 2)
+- [ ] **[manual]** For interactive mode: the prompt was analyzed for clarity, structure, efficiency, and completeness issues (Interactive Mode Step 1)
+
+### Applied Improvements (File-Based Mode)
+
+- [ ] **[manual]** Frontmatter was fixed — required fields present, dates current, tags accurate (File-Based Mode Step 3)
+- [ ] **[manual]** Progressive disclosure was implemented — detail moved to `references/`, metadata stays lightweight (File-Based Mode Step 3)
+- [ ] **[manual]** Go text/template includes were applied where duplication existed — shared content consolidated into includes (File-Based Mode Step 3)
+- [ ] **[manual]** Audiences were separated where a file mixed user and developer content (File-Based Mode Step 3)
+
+### Validation
+
+- [ ] **[manual]** Changes were validated — no new conflicts introduced, references verified, templates tested (File-Based Mode Step 4)
+- [ ] **[manual]** Changes were documented — what changed, benefits, and any breaking changes recorded (File-Based Mode Step 5)
+- [ ] **[manual]** For interactive mode: the improved prompt was delivered with an explanation of key changes (Interactive Mode Step 5)
+
+### Communication
+
+- [ ] **[manual]** Findings were summarized with a high-level overview of issues found (Communicating Step 1)
+- [ ] **[manual]** Before/after examples were provided for key improvements (Communicating Step 3)
+- [ ] **[manual]** Token savings and maintainability improvements were estimated (Communicating Step 4)
+- [ ] **[manual]** User approved changes before they were applied (Communicating Step 5)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, keys, or sensitive paths were introduced in improved files (Security)
+- [ ] **[manual]** No hardcoded absolute paths — use indirect references and the Context Declaration (Security)
+- [ ] **[manual]** Type-specific guidance was followed — Skills, Workflows, Agents, Prompts, and AGENTS.md files each received their type-appropriate improvements (File-Based Mode)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- Issues were identified but none were applied → the analysis is incomplete; the user needs to see proposed changes and approve them (File-Based Mode Step 3)
+- Progressive disclosure was "improved" but the file grew larger → detail was not actually moved to `references/`; it was duplicated (File-Based Mode Step 3)
+- Go text/template includes were added but the file no longer renders → the include paths are wrong or the included content has template syntax errors (File-Based Mode Step 4)
+- Changes were applied without documenting them → the user cannot review what changed or why (File-Based Mode Step 5)
+- Interactive mode delivered a "better" prompt but did not explain the key changes → the user cannot learn from or verify the improvements (Interactive Mode Step 5)
+
+
 ## Context Declaration
 
 ### File Paths

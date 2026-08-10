@@ -21,3 +21,6 @@ bundle.
 * [Digital Certificate Validation](digital-certificate-validation.md) - Expiration, key strength, signature algorithm, and self-signed checks for X.509 certificates
 * [SSH Hardening](ssh-hardening.md) - PermitRootLogin settings, ed25519-only keys, PasswordAuthentication no, fail2ban
 * [Security Audit Playbook](security-audit-playbook.md) - The final-audit.yml pattern: SSH checks, no hardcoded IPs/ports, firewall default-deny, fail2ban, Docker daemon hardening, automatic updates, container image age
+* [Linter Security Patterns](linter-security-patterns.md) - Security of linter output, safe handling of untrusted code, sandboxing AST parsing, plugin security, telemetry minimization
+* [Security-Aware Static Analysis](security-aware-static-analysis.md) - Cross-bundle synthesis: untrusted code handling, info leakage prevention, sandboxing, supply-chain security for analysis tools
+* [Dependency Supply Chain](dependency-supply-chain.md) - Lockfile pinning, cargo-deny/cargo-audit, private registries, SLSA provenance, PR-time dependency review

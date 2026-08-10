@@ -22,17 +22,28 @@ description: >
   cheaper rebrand when differences don't matter, including brand premium
   assessment for luxury and status goods (Rolex vs Grand Seiko, Le Creuset
   vs Lodge) to advise the user when similar quality is available for
-  significantly less. For services, includes vendor tier verification
-  (comparing quotes across CPA vs bookkeeper, licensed electrician vs
-  handyman) before quote gathering.
-version: 1.5.0
+  significantly less, (8) auction-specific constraints and participation —
+  when sourcing through auction channels (Copart, IAAI, GSA Auctions, GovDeals,
+  GovPlanet, US Marshals, Treasury/IRS, county tax deed, state surplus, and
+  40+ other platforms), loads vehicle auction constraints (smog/CARB
+  compliance for California and strict-emissions states, export-only
+  restrictions, salvage/rebuilt title brands, damage level opt-in, dealer
+  license requirements), property auction constraints (buildability checklist:
+  ingress, topography, zoning, lot dimensions, airspace/underground easements,
+  water, electricity, sewage, trash, roads; title risks at auction; risk
+  levels by auction type), universal auction constraints (locale/travel,
+  registration gating, total acquisition cost calculation), and detailed
+  step-by-step participation instructions for each platform. For services,
+  includes vendor tier verification (comparing quotes across CPA vs
+  bookkeeper, licensed electrician vs handyman) before quote gathering.
+version: 1.6.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-03-24"
-  knowledge-basis: "2026-07-13"
-  last-used: "2026-07-13"
-tags: ["ai/skill", "commerce", "pricing", "deal-hunting", "market-timing", "cashback"]
+  knowledge-basis: "2026-08-07"
+  last-used: "2026-08-07"
+tags: ["ai/skill", "commerce", "pricing", "deal-hunting", "market-timing", "cashback", "auctions", "government-surplus"]
 see-also:
   - skill: "shopping-needs-discovery"
     relationship: "dependency"
@@ -76,8 +87,56 @@ dependencies:
     name: GSA Auctions
     url: https://gsaauctions.gov/
   - type: url
+    name: GSA Fleet Vehicle Sales
+    url: https://www.gsafleet.gov/
+  - type: url
+    name: IRS Auctions
+    url: https://www.irsauctions.gov/
+  - type: url
+    name: GovLiquidation (DOD surplus)
+    url: https://www.govliquidation.com/
+  - type: url
+    name: CWS Marketing (Treasury/USMS auctioneer)
+    url: https://cwsmarketing.com/
+  - type: url
+    name: Apple Towing / RBEX (USMS vehicle auctions)
+    url: https://www.appletowing.com/auctions
+  - type: url
     name: PropertyRoom (police auctions)
     url: https://www.propertyroom.com/
+  - type: url
+    name: GovDeals Canada
+    url: https://www.govdeals.ca/
+  - type: url
+    name: Michigan DTMB Surplus
+    url: https://www.michigan.gov/dtmb/services/surplusprogram
+  - type: url
+    name: Utah State Surplus
+    url: https://purchasing.utah.gov/general-services/state-surplus-property/
+  - type: url
+    name: New York State Store (OGS)
+    url: https://ogs.ny.gov/nysstore
+  - type: url
+    name: Sierra Auction (AZ government surplus)
+    url: https://www.sierraauction.com/pages/seller/government-surplus/
+  - type: url
+    name: AutoBidMaster (Copart broker, public)
+    url: https://www.autobidmaster.com/
+  - type: url
+    name: SCA Auction (IAAI broker, public)
+    url: https://sca.auction/
+  - type: url
+    name: ACV Auctions (dealer-only wholesale)
+    url: https://www.acvauctions.com/
+  - type: url
+    name: CarMax Auctions (dealer-only wholesale)
+    url: https://www.carmaxauctions.com/
+  - type: url
+    name: Hertz Car Sales (rental fleet, fixed-price)
+    url: https://www.hertzcarsales.com/
+  - type: url
+    name: Local Liquidators (commercial liquidation)
+    url: https://localliquidators.com/
 
 ---
 

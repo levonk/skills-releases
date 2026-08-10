@@ -2585,6 +2585,65 @@ Ensure no secrets, keys, or sensitive paths are exposed in templates. Before pac
 - **Body**: Scan template body for hardcoded credentials, API keys, or tokens.
 - **Paths**: No hardcoded absolute paths — use indirect references and the Context Declaration.
 
+## Definition of Done
+
+Before declaring the template-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[manual]** `scripts/init_template.py <template-name> --path <output-directory> --category <category>` ran successfully (Mode A Step 1) — the template file was scaffolded with TODO placeholders following the meta-template contract
+- [ ] **[manual]** The template file exists at `config/ai/templates/<category>/<name>.md` (or `.md.tmpl`) at the chosen location (Mode A Step 1 / Mode C)
+- [ ] **[manual]** The template follows the meta-template contract from `templates/meta/template-template.md` — frontmatter and section structure align (Mode A Step 3)
+
+### Frontmatter/Metadata
+
+- [ ] **[manual]** All required frontmatter fields are filled: `template`, `slug`, `description`, `use`, `engine`, `outputs_to`, `variables.schema`, `date` (`created`, `knowledge-basis`, `last-used`), `tags`, `see-also` (Mode A Step 2)
+- [ ] **[manual]** `date.last-used` is set to the current date (YYYY-MM-DD format) (Mode A Step 3)
+- [ ] **[manual]** `date.knowledge-basis` and `date.last-used` are updated when changes are applied in Mode C (Mode C Step 6)
+- [ ] **[manual]** The `description` states what the template structures and when to use it (Mode A Step 2)
+
+### Content Quality
+
+- [ ] **[manual]** The `variables.schema` entries are well-formed — each has `name`, `type`, `required`, `default`, and `description` (Mode A Step 3)
+- [ ] **[manual]** No stale or orphaned variables — every variable in the schema is used in the template body, and every variable referenced in the body is in the schema (Mode C audit)
+- [ ] **[manual]** Rendering rules and partials/includes are documented in the template body (Mode C audit)
+- [ ] **[manual]** The template is focused and composable — partials/includes are used when patterns overlap rather than creating many slightly different templates (Template Design Principles)
+
+### Build/Validation
+
+- [ ] **[manual]** A dry-run render with representative variables produces valid output (Mode A Step 4 / Mode C Step 7)
+- [ ] **[manual]** The template is consistent with calling workflows — especially `config/ai/workflows/ai/ai-prompt-create.md.tmpl` and any other workflows that reference it (Mode A Step 4)
+- [ ] **[manual]** All partials/includes referenced in the template exist and resolve (Mode C Step 7)
+- [ ] **[manual]** Rendered outputs will be lint-clean and runnable where applicable (Mode A Step 4)
+
+### Mode C: Update Discipline
+
+- [ ] **[manual]** Changes were proposed before applying — a prioritized list (Critical / Important / Nice to have) with before/after (Mode C Step 3)
+- [ ] **[manual]** User confirmed before changes were applied (Mode C Step 4)
+- [ ] **[manual]** Approved changes were applied as separate commits (Mode C Step 5)
+- [ ] **[manual]** No breaking changes unless calling workflows were updated in the same pass (Mode A Step 3 / Mode C)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, API keys, or tokens in template frontmatter or body (Security)
+- [ ] **[manual]** No hardcoded absolute paths — use indirect references and the Context Declaration (Security)
+- [ ] **[manual]** `see-also` entries follow the cross-linking format with valid relationship types and no circular dependencies (Cross-Linking)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The template file exists but still has TODO placeholders → the scaffolder created the structure but the AI never filled in the content (Mode A Step 2-3)
+- The template has a `variables.schema` but the body references variables not in the schema → rendering will fail or produce unexpected output (Mode C audit)
+- A dry-run render was not performed → the template may have syntax errors or undefined variables that only surface at render time (Mode A Step 4)
+- The template was created but no calling workflow references it → the template is orphaned and will not be discovered by `ai-prompt-create` (Mode A Step 5)
+- Mode C: breaking changes were applied without updating calling workflows → downstream prompts that use this template will break (Mode A Step 3 / Mode C)
+- `date.last-used` is missing or stale → the template appears unused (Mode A Step 3)
+
+
 ## Context Declaration
 
 ### File Paths

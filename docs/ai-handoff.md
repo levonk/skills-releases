@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **ai** · Status:  · Version: 2.4.0
+> Category: **ai** · Status:  · Version: 2.5.0
 
 Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation.
 
@@ -13,7 +13,7 @@ Capture and restore AI conversation context for seamless work continuation acros
 |-------|-------|
 | Name | `handoff` |
 | Category | `ai` |
-| Version | `2.4.0` |
+| Version | `2.5.0` |
 | Status | `` |
 | Owner |  |
 
@@ -27,4 +27,4 @@ Capture and restore AI conversation context for seamless work continuation acros
 
 - **Full skill**: [`skills/ai/handoff/SKILL.md`](skills/ai/handoff/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-05T04:08:35Z
+- **Generated**: 2026-08-10T21:38:16Z

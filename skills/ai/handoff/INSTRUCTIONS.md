@@ -1539,8 +1539,8 @@ flowchart TD
     C1 --> C2["2. Reference artifacts<br/>(PRDs, ADRs, issues)"]
     C2 --> C3["3. Structure document<br/>(template + git state)"]
     C3 --> C4["4. Redact secrets"]
-    C4 --> C5["5. Save to<br/>.agents/handoffs/YYYY/MM/"]
-    C5 --> C6["6. Commit handoff document<br/>(git-repository-management)"]
+    C4 --> C5["5. Save to<br/>.agents/handoffs/todo/"]
+    C5 --> C6["6. Commit handoff document<br/>(git-repository-management + #tags)"]
     C6 --> DoneCapture([Handoff written + committed])
 
     Restore --> R1["1. Analyze handoff<br/>+ verify [~] tasks"]
@@ -1549,7 +1549,10 @@ flowchart TD
     R2 -->|"No"| R3["2. Begin first<br/>available [ ] task<br/>(parallelize via subagents)"]
     Ask --> R3
     R3 --> R4["3. Update DoD marks<br/>+ handoff after each step"]
-    R4 --> DoneRestore([Work continues])
+    R4 --> R5{"All tasks [x]?"}
+    R5 -->|"No"| DoneRestore([Work continues])
+    R5 -->|"Yes"| R6["4. Archive: git mv<br/>todo/ → archive/YYYY/MM/<br/>+ commit with #tags"]
+    R6 --> DoneArchive([Handoff archived])
 ```
 
 ## Handoff-Specific Guidelines
@@ -1566,15 +1569,38 @@ This section provides handoff-specific guidance that complements the universal c
 
 ### Handoff Storage Location
 
-Handoff documents are stored in `{REPO_ROOT}/.agents/handoffs/YYYY/MM/YYYYMMDDHHmm-handoffslug.md` where:
-- `YYYY` - 4-digit year
-- `MM` - 2-digit month
+Handoff documents use a **two-stage lifecycle**: pending handoffs live in a
+flat `todo/` directory for easy reference (minimal typing when telling an agent
+which handoff to work on), and completed handoffs are archived into a dated
+hierarchy so you can tell at a glance what has been finished.
+
+| Stage | Path | Purpose |
+|-------|------|---------|
+| **Pending** | `{REPO_ROOT}/.agents/handoffs/todo/YYYYMMDDHHmm-handoffslug.md` | Active handoffs awaiting work — the receiving session reads from here |
+| **Archived** | `{REPO_ROOT}/.agents/handoffs/archive/YYYY/MM/YYYYMMDDHHmm-handoffslug.md` | Completed handoffs — moved here via `git mv` after all DoD tasks are `[x]` |
+
+Where:
+- `YYYY` - 4-digit year (from the handoff's creation timestamp)
+- `MM` - 2-digit month (from the handoff's creation timestamp)
 - `DD` - 2-digit day
 - `HH` - 2-digit hour (24-hour format)
 - `mm` - 2-digit minute
 - `handoffslug` - kebab-case descriptive slug for the handoff
 
-**Example**: `~/p/gh/levonk/myproject/.agents/handoffs/2026/06/202606251430-feature-auth-implementation.md`
+**The filename never changes between pending and archived.** The same
+`YYYYMMDDHHmm-handoffslug.md` name is used in both locations — only the
+directory changes. The archive's `YYYY/MM/` is derived from the filename's
+embedded timestamp (the handoff's creation date), not the completion date.
+
+**Example lifecycle:**
+1. Created (pending): `~/p/gh/levonk/myproject/.agents/handoffs/todo/202606251430-feature-auth-implementation.md`
+2. Completed (archived): `~/p/gh/levonk/myproject/.agents/handoffs/archive/2026/06/202606251430-feature-auth-implementation.md`
+
+**Why a flat `todo/` directory:** when you tell an agent "work on the
+`202608082014-fix-execute-upsert-bats-hang` handoff", the agent finds it
+immediately at `.agents/handoffs/todo/202608082014-fix-execute-upsert-bats-hang.md`
+— no date-path guessing. The dated hierarchy is only needed for completed
+work, where you browse by month to review what was finished.
 
 ### When to Use
 
@@ -1785,11 +1811,14 @@ pattern list, pre-commit scan commands, and redaction format. Key points:
 
 #### 6. Save Handoff Document
 
-Generate filename with timestamp:
+Generate filename with timestamp and save to the **pending** directory
+(`.agents/handoffs/todo/`), not the dated archive — the archive is only for
+completed handoffs:
+
 ```bash
 TIMESTAMP=$(date +%Y%m%d%H%M)
 SLUG="descriptive-handoff-slug"
-HANDOFF_PATH="{REPO_ROOT}/.agents/handoffs/$(date +%Y)/$(date +%m)/${TIMESTAMP}-${SLUG}.md"
+HANDOFF_PATH="{REPO_ROOT}/.agents/handoffs/todo/${TIMESTAMP}-${SLUG}.md"
 ```
 
 Create directory if needed and save:
@@ -1797,6 +1826,11 @@ Create directory if needed and save:
 mkdir -p "$(dirname "$HANDOFF_PATH")"
 # Write handoff content to $HANDOFF_PATH
 ```
+
+The filename (`${TIMESTAMP}-${SLUG}.md`) is permanent — it does not change
+when the handoff is later archived. The archive path will be
+`.agents/handoffs/archive/YYYY/MM/${TIMESTAMP}-${SLUG}.md` where `YYYY/MM`
+is derived from the `${TIMESTAMP}` prefix.
 
 #### 7. Commit the Handoff Document (Post-Handoff Commit)
 
@@ -1812,18 +1846,24 @@ handoff document.
    commit):
    ```bash
    cd {REPO_ROOT}
-   git add .agents/handoffs/YYYY/MM/${TIMESTAMP}-${SLUG}.md
+   git add .agents/handoffs/todo/${TIMESTAMP}-${SLUG}.md
    ```
 2. Invoke the `git-repository-management` skill to commit the staged handoff
    document. The skill applies secret scanning (the handoff may reference
    artifacts that contained secrets before redaction) and the project's commit
    conventions.
 3. If the `git-repository-management` skill is not installed, commit directly
-   with a descriptive message:
+   with the **standard handoff commit message** — a descriptive body plus a
+   mandatory `#tag` array (the same convention the `git-repository-management`
+   skill enforces):
    ```bash
    git commit -m "docs(handoff): capture context for ${SLUG}" \
-             -m "Handoff document for session continuation. Records repo state at commit $(git rev-parse HEAD)."
+             -m "Handoff document for session continuation. Records repo state at commit $(git rev-parse HEAD)." \
+             -m "#project-{PROJECT} #module-handoff #type-docs #skill-handoff-capture #skill-grm-created"
    ```
+   Replace `{PROJECT}` with the target project's kebab-case name (e.g.,
+   `skills-src`, `my-web-app`). The `#skill-grm-created` tag is always last —
+   it identifies the commit's provenance without AI attribution.
 4. Record the handoff commit hash and include it in the final confirmation to
    the user so they can reference it directly:
    ```bash
@@ -1909,6 +1949,47 @@ After completing each major step:
    longer relevant, mark it `[x]` with a note
    (`- [x] {task} (obsolete: reason)`).
 
+#### 4. Archive Completed Handoffs
+
+When **all** Definition of Done tasks are `[x]` (or marked `[x]` with an
+"obsolete" note), the handoff's work is complete. Archive it so the pending
+directory only contains handoffs that still need work — this is how you tell
+at a glance what has been finished.
+
+**Protocol:**
+
+1. Verify every DoD checkbox is `[x]` (or `[x]` with an obsolete note). If any
+   `[ ]`, `[~]`, or genuine `[!]` tasks remain, do NOT archive — the handoff
+   is still active.
+2. Derive the archive path from the handoff filename's embedded timestamp:
+   ```bash
+   FILENAME="${TIMESTAMP}-${SLUG}.md"          # e.g. 202606251430-feature-auth.md
+   YEAR="${FILENAME:0:4}"                       # 2026
+   MONTH="${FILENAME:4:2}"                      # 06
+   ARCHIVE_DIR="{REPO_ROOT}/.agents/handoffs/archive/${YEAR}/${MONTH}"
+   mkdir -p "$ARCHIVE_DIR"
+   ```
+3. Move the handoff from `todo/` to `archive/` using `git mv` (preserves git
+   history — never use plain `mv`):
+   ```bash
+   cd {REPO_ROOT}
+   git mv ".agents/handoffs/todo/${FILENAME}" ".agents/handoffs/archive/${YEAR}/${MONTH}/${FILENAME}"
+   ```
+4. Commit the archive move with the **standard handoff archive commit message**
+   and mandatory `#tag` array:
+   ```bash
+   git commit -m "docs(handoff): archive completed handoff ${SLUG}" \
+             -m "All Definition of Done tasks verified [x]. Moved from todo/ to archive/${YEAR}/${MONTH}/." \
+             -m "#project-{PROJECT} #module-handoff #type-docs #skill-handoff-archived #skill-grm-created"
+   ```
+   Replace `{PROJECT}` with the target project's kebab-case name. If the
+   `git-repository-management` skill is installed, invoke it instead of
+   committing directly — it applies the same `#tag` enforcement and secret
+   scanning.
+
+If the target project is not a git repository, use plain `mv` instead of
+`git mv` and skip the commit.
+
 ### Best Practices
 
 #### When Capturing Context
@@ -1935,16 +2016,28 @@ After completing each major step:
 - **Update incrementally** - Keep the handoff document current as you work
 - **Ask only when necessary** - If something is truly missing, ask specifically
 - **Invoke suggested skills** - Use the skills recommended in the handoff
+- **Archive when done** - When all DoD tasks are `[x]`, `git mv` the handoff
+  from `todo/` to `archive/YYYY/MM/` and commit with the standard archive
+  commit message + `#tag` array (step 4 of Context Restoration). This keeps
+  `todo/` clean — only pending work shows up there.
 
 #### File Management
-- **Use consistent naming**: `YYYYMMDDHHmm-handoffslug.md`
-- **Organize by date**: Store in `YYYY/MM/` subdirectories
-- **Keep in repo**: Commit handoff documents to `.agents/handoffs/` via the
-  `git-repository-management` skill (step 7)
+- **Use consistent naming**: `YYYYMMDDHHmm-handoffslug.md` (never changes
+  between pending and archived)
+- **Pending handoffs**: Store in `.agents/handoffs/todo/` (flat — no date
+  subdirectories) for easy reference and minimal typing
+- **Archived handoffs**: Move to `.agents/handoffs/archive/YYYY/MM/` via
+  `git mv` when all DoD tasks are complete
+- **Keep in repo**: Commit handoff documents via the `git-repository-management`
+  skill (step 7 for capture, step 4 of restoration for archive)
 - **Reference in git**: Handoff documents should be tracked in version control
 - **Pin repo state**: Every handoff includes the HEAD commit hash at capture
   time in the `## Git State` section so the receiving session can reconstruct
   the exact repo state
+- **Standard commit tags**: Both capture and archive commits include a
+  mandatory `#tag` array — `#skill-handoff-capture` for new handoffs,
+  `#skill-handoff-archived` for completed ones, with `#skill-grm-created`
+  always last
 
 ### Usage Patterns
 
@@ -1952,7 +2045,7 @@ After completing each major step:
 ```
 User: "That's all for today. Can you capture the context so we can continue tomorrow?"
 AI: "I'll create a handoff document for continuation."
-[Generates handoff at .agents/handoffs/2026/06/202606251430-feature-x.md]
+[Generates handoff at .agents/handoffs/todo/202606251430-feature-x.md]
 "Created handoff document. Tomorrow, reference this file to continue work."
 ```
 
@@ -1981,14 +2074,16 @@ For the full extended example template, see: [`references/handoff-template.md`](
 ### File Paths
 - Main skill: `config/ai/skills/ai/handoff/SKILL.md`
 - Handoff template: `references/handoff-template.md`
-- Handoff storage: `{REPO_ROOT}/.agents/handoffs/YYYY/MM/`
+- Handoff storage (pending): `{REPO_ROOT}/.agents/handoffs/todo/`
+- Handoff storage (archived): `{REPO_ROOT}/.agents/handoffs/archive/YYYY/MM/`
 - git-repository-management skill: `build/current/skills/software-dev/git-repository-management/`
 
 ### Related Skills
 - base-ai-guidance (base-framework) — Shared framework for all AI guidance types
 - base-frontmatter (structure-standard) — Standard frontmatter template
 - git-repository-management (dependency) — Commits pending work before capture
-  (step 0) and commits the handoff document after save (step 7)
+  (step 0), commits the handoff document after save (step 7), and commits the
+  archive move after completion (restoration step 4)
 
 ### External Resources
 - Matt Pocock's handoff skill: https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md

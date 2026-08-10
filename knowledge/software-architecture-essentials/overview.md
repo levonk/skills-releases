@@ -164,6 +164,12 @@ philosophy → project-structure → data-access → configuration → distribut
 | Decentralization | [Decentralized P2P Architecture](decentralized-p2p-architecture.md) | Forcing client-server onto a censorship-resistance requirement, wrong state model for P2P, browser-as-node pitfalls |
 | Cost | [Cost-Aware System Design](cost-aware-system-design.md) | Unbounded metered API bills, no cost attribution, wrong pricing model |
 | Revenue | [Business Models Around Open Protocols](business-models-around-open-protocols.md) | Toll-based models on open protocols, middleman arbitrage, ads inside contracts |
+| Plugins | [Plugin Scanner Registration](plugin-scanner-registration.md) | Hardcoded scanner lists, no plugin discovery, missing lifecycle management |
+| Rules | [Rule Engine Design](rule-engine-design.md) | Unordered rule evaluation, rule conflicts, no incremental evaluation on file changes |
+| Traits | [Trait-Based Extensibility](trait-based-extensibility.md) | Rigid rule hierarchies, no default impls, trait object vs generic confusion |
+| Config Design | [Config-Driven Tool Design](config-driven-tool-design.md) | Cross-bundle: flat config, no profile activation, no schema migration, no hot-reload |
+| Events | [Event-Driven Linter Architecture](event-driven-linter-architecture.md) | Cross-bundle: no IDE hook integration, unbounded event queues, no backpressure |
+| Multi-Lang | [Multi-Language Scanner Coordination](multi-language-scanner-coordination.md) | Cross-bundle: hardcoded language dispatch, no shared scanner interface, no polyglot analysis |
 
 ## Scope
 

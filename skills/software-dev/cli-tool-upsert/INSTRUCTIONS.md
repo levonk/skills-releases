@@ -2361,6 +2361,58 @@ Keep SKILL.md lean; move detail to `references/` and deterministic phases to
 `scripts/`. See `references/axi-principles.md` and
 `references/cli-best-practices.md` for detailed guidance loaded on demand.
 
+## Definition of Done
+
+Before declaring the cli-tool-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[script]** `scripts/audit_cli.py --path <target>` exits zero and reports AXI compliance (Mode A Step 6 / Mode B Step 7)
+- [ ] **[manual]** The tier (embedded script vs full CLI tool) matches the target — a skill `scripts/` dir got an embedded script, a new repo got a full CLI scaffold (Mode A Step 1)
+- [ ] **[manual]** For full CLI tools: the scaffold came from `levonk-base-boilerplate/apps/cli/<lang>/` via the copier wrapper — not hand-rolled (Mode A Step 3)
+- [ ] **[manual]** For embedded scripts: the PEP 723 header (Python) or `set -euo pipefail` (bash) is present (Mode A Step 2)
+
+### Content Quality — AXI Compliance
+
+- [ ] **[manual]** No interactive prompts in default (agent) mode — missing required values fail with clear errors, not prompts (Mode A Step 4)
+- [ ] **[manual]** Exit codes are correct: 0 success (including no-ops), 1 error, 2 usage error (Mode A Step 4)
+- [ ] **[manual]** Output discipline: stdout = data, stderr = diagnostics/logs — agents can parse stdout cleanly (Mode A Step 4)
+- [ ] **[manual]** Idempotent mutations — exit 0 for no-ops, non-zero only for genuine failures (Mode A Step 4)
+- [ ] **[manual]** Definitive empty states ("0 results found") — not blank output or silence (Mode A Step 4)
+- [ ] **[manual]** Structured errors on stdout with actionable suggestions (Mode A Step 4)
+
+### Content Quality — XDG and Tier-Specific Features
+
+- [ ] **[manual]** Transient data in `${XDG_CACHE_HOME:-$HOME/.cache}`, persistent data in `${XDG_DATA_HOME:-$HOME/.local/share}`, config in `${XDG_CONFIG_HOME:-$HOME/.config}` (Mode A Step 5)
+- [ ] **[manual]** For full CLI tools: `--help`/`-h`, `--version`/`-v`, `--json`, and shell completion all work (Mode A Step 6)
+- [ ] **[manual]** For data-heavy output: TOON format and `--fields` flag are present (Mode A Step 4)
+- [ ] **[manual]** For large text fields: content truncation with `--full` escape hatch (Mode A Step 4)
+
+### Validation
+
+- [ ] **[manual]** The CLI was invoked the way an agent would — shell execution with flags, no TTY — and output is parseable (Mode A Step 7)
+- [ ] **[manual]** No secrets appear in output, logs, or error messages (Security)
+
+### Upsert Mode (Mode B only)
+
+- [ ] **[manual]** Interactive changes (default output format, session hooks, config location, subcommand restructuring) were proposed and confirmed before applying (Mode B Step 4-5)
+- [ ] **[manual]** Automatic and interactive changes are in separate commits, each independently reviewable (Mode B Step 6)
+- [ ] **[manual]** No existing human-facing interface was broken by the update (Mode B Step 7)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `audit_cli.py` exits zero but the CLI prompts interactively in default mode → agent execution will hang waiting for input (Mode A Step 4)
+- `--help` works but no-args produces only help (no content) when live state exists → content-first no-args principle violated (Mode A Step 6)
+- Exit code is 0 for a genuine failure → agents will treat failures as success (Mode A Step 4)
+- stdout contains log/progress messages mixed with data → agents cannot parse the result cleanly (Mode A Step 4)
+- Mode B output format changes were applied without user confirmation → existing human usage is silently broken (Mode B Step 5)
+- Data is written to `~/.<tool>/` instead of XDG paths → violates the XDG compliance principle (Mode A Step 5)
+
 ## Context Declaration
 
 ### File Paths

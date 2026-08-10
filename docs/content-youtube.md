@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **content** · Status: ready · Version: 1.2.0
+> Category: **content** · Status: ready · Version: 1.3.0
 
 Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video transcripts (with or without timestamps), analyze video content, extract video information, or process YouTube content for further LLM analysis. Triggers on requests like 'get transcript', 'analyze YouTube video', 'extract video content', or 'fetch video metadata'. Do NOT trigger on general video playback questions, downloading video files, non-YouTube platforms, or video editing tasks.
 
@@ -13,7 +13,7 @@ Extract and analyze YouTube video transcripts and metadata. Use when needing to 
 |-------|-------|
 | Name | `youtube-content-analysis` |
 | Category | `content` |
-| Version | `1.2.0` |
+| Version | `1.3.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -30,4 +30,4 @@ Extract and analyze YouTube video transcripts and metadata. Use when needing to 
 
 - **Full skill**: [`skills/content/youtube/SKILL.md`](skills/content/youtube/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-05T04:08:35Z
+- **Generated**: 2026-08-10T21:38:16Z

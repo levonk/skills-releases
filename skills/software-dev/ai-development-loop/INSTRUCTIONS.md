@@ -1391,6 +1391,49 @@ For critical warnings, workflow principles, ticket status flow, dependency manag
 
 *This skill ensures consistent, high-quality development while maintaining clear ticket state tracking and continuously improving the development process through reflection and opportunity identification.*
 
+## Definition of Done
+
+Before declaring the ai-development-loop run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script
+— if the script exits non-zero, the item is NOT done. Items marked
+**[manual]** require the agent to check something the scripts cannot verify.
+
+### Foundation and Ticket Selection
+
+- [ ] **[script]** `orchestrator.sh --verbose loop` (or `dev-loop-helper.sh --verbose foundation`) exits zero — environment validation and security scanning pass (Step 0)
+- [ ] **[script]** `dev-loop-helper.sh --verbose next` returns an actionable ticket (Step 1)
+- [ ] **[script]** `dev-loop-helper.sh --verbose start <ticket-id>` marks the ticket `in_progress` (Step 2)
+- [ ] **[manual]** No features or test coverage were removed unless explicitly required by the ticket (Quick Start critical warning)
+
+### Implementation and Verification
+
+- [ ] **[manual]** Upstream testing was verified adequate before building on top of it (Step 3)
+- [ ] **[manual]** An implementation strategy was determined before coding started (Step 4)
+- [ ] **[manual]** The actual work was implemented per the strategy (Step 5)
+- [ ] **[manual]** The `code-quality-validation` skill was invoked for testing and quality checks (Step 6)
+
+### Ticket Audit and Completion
+
+- [ ] **[script]** The ticket audit reports coverage of ≥90% against ticket requirements (Step 7)
+- [ ] **[manual]** Every acceptance criterion in the ticket is satisfied by a test or code reference (Step 7)
+- [ ] **[manual]** The `git-repository-management` skill was used for commit organization and repository cleanup (Step 8 / Step 9)
+
+### Reflection and Codification
+
+- [ ] **[manual]** Opportunities for improvement in technology, process, and project were assessed (Step 10)
+- [ ] **[manual]** Improvement tickets were created and prioritized via codification (Step 11)
+- [ ] **[manual]** Final cleanup commit was made via `git-repository-management` (Step 12)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `quality-validator.sh` passes but ticket audit coverage is below 90% → the implementation does not cover the ticket requirements (Step 7)
+- The ticket is marked complete but features or test coverage were silently removed → critical violation, immediate termination risk (Quick Start)
+- Commits were made without `git-repository-management` → commit organization is inconsistent (Step 8 / Step 9)
+- Step 10-11 (assess + codify) were skipped → the continuous improvement loop is broken, no improvement tickets exist
+- `dev-loop-helper.sh foundation` exits non-zero but work proceeded anyway → environment validation failed, build may be broken (Step 0)
+
 ## Context Declaration
 
 ### File Paths

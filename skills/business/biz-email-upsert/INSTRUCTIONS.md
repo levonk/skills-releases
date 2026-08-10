@@ -1390,6 +1390,45 @@ a call or chat instead, then send a short email summary with the decision. If
 the user's request would result in a long thread, recommend a call and offer to
 draft the follow-up summary email instead.
 
+## Definition of Done
+
+Before declaring the Business Email Writer run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Email Architecture (Four Layers)
+
+- [ ] **[manual]** The subject line carries a triage tag (Action / Decision / Update / Risk) plus the topic (Mode A Step 3)
+- [ ] **[manual]** The first sentence states the ask, decision, risk, or update — no warm-up ("I hope this finds you well", "I wanted to reach out") (Mode A Step 3)
+- [ ] **[manual]** The body is two to five lines of facts with names, numbers, and dates — not vague generalities (Mode A Step 3)
+- [ ] **[manual]** The close states a recommendation or next step with an owner and deadline — not "let me know how I can help" (Mode A Step 3)
+
+### Framework Compliance
+
+- [ ] **[manual]** The email does one job — unrelated topics are split into separate emails, not bundled (Mode A Step 2)
+- [ ] **[manual]** Facts, judgment, and recommendation are kept distinct — not blended into one paragraph (Mode A Step 2)
+- [ ] **[manual]** The email stands alone for forwarding — no context only the original recipient would understand (Mode A Step 2)
+- [ ] **[manual]** Bad news is stated first, not buried behind context (Mode A Step 2)
+
+### Mode-Specific Output
+
+- [ ] **[manual]** Mode A: the draft was self-reviewed against `references/review-checklist.md` before presenting to the user (Mode A Step 4)
+- [ ] **[manual]** Mode B: each identified issue has a before/after example and is prioritized (Critical / Important / Nice to have) (Mode B Step 3-4)
+- [ ] **[manual]** Mode B: the full revised email is presented with changes highlighted and explained (Mode B Step 4)
+- [ ] **[manual]** Mode C: names, numbers, dates, and facts were extracted from the source material before drafting (Mode C Step 2)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- Subject line has a tag but the first sentence is warm-up, not the ask → the BLUF layer is missing (Mode A Step 3)
+- The email is concise but mixes two unrelated topics → "one email does one job" violated (Mode A Step 2)
+- Mode B lists issues but presents no full revised email → the user cannot copy-paste the result (Mode B Step 4)
+- The email reads well but contains no names, numbers, or dates → specificity principle not applied (Mode A Step 2)
+- The close says "let me know" but names no owner or deadline → the next step is indefinite (Mode A Step 3)
+
+
 ## Context Declaration
 
 ### File Paths

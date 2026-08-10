@@ -1434,6 +1434,51 @@ For deployment, the critical extensions:
 - **Security defaults are not optional** — non-root, cap_drop ALL,
   no-new-privileges, no Docker socket mounts
 
+## Definition of Done
+
+Before declaring the container-service-deploy run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Branch Selection
+
+- [ ] **[manual]** The deployment context was determined before starting — local/dev → Branch A (docker-compose), production/multi-host → Branch B (Ansible) (Step 1)
+- [ ] **[manual]** A service that needs both environments has BOTH a compose file and an Ansible playbook produced (Step 1)
+
+### Image and Platform Scope
+
+- [ ] **[manual]** The deployed image manifest covers all target architectures before deploying to a mixed-architecture fleet (Step 3)
+- [ ] **[manual]** Platform limitations (Windows/WSL2 network, macOS OrbStack, arch-specific constraints) are documented in the service README (Step 5)
+
+### Security Hardening
+
+- [ ] **[manual]** Containers run as non-root with `cap_drop: ALL` and `no-new-privileges` set (Step 4)
+- [ ] **[manual]** No Docker socket mounts are present in either branch's output (Step 4)
+- [ ] **[manual]** Read-only filesystems are applied where possible (Step 4)
+
+### Branch A — docker-compose (Local/Dev)
+
+- [ ] **[manual]** `docker-compose.yml` uses the `docker/` subdirectory convention with `mounts/templates/`, `healthcheck/`, and `tests/` structure (Branch A)
+- [ ] **[manual]** All ports/IPs/domains are variables following the `{CATEGORY}_{SERVICE}_{SUB}_{HOST|CONTAINER}_{PORT|IP}` naming convention — none hardcoded (Key Principles)
+- [ ] **[manual]** Health checks are defined for every service in the compose file (Branch A)
+
+### Branch B — Ansible docker_container (Production)
+
+- [ ] **[manual]** The playbook uses `community.docker.docker_container` — never docker-compose or systemd in production (Branch B)
+- [ ] **[manual]** Container restart logic and port collision detection are present (Branch B)
+- [ ] **[manual]** Env vars are string-converted (not raw dicts) per the Ansible module requirements (Branch B)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `docker-compose up` succeeds but services have no health checks → failures are invisible until production (Branch A)
+- The Ansible playbook runs but uses docker-compose or systemd in production → wrong tool for multi-host deployment (Branch B)
+- The image deploys but the manifest only covers one architecture for a mixed-arch fleet → runtime failures on excluded hosts (Step 3)
+- Containers start but run as root or mount the Docker socket → security defaults were skipped (Step 4)
+- Ports are hardcoded in tasks or compose files → the naming convention was not followed, breaking multi-environment reuse (Key Principles)
+
 ## References
 
 - `references/docker-compose.md` — Branch A: docker-compose for local/dev

@@ -422,6 +422,11 @@ create_config_files() {
     parse_project_characteristics "$detected_characteristics"
 
     # Create/update .envrc
+    # .envrc configuration delegated to dev-env-upsert skill — see SKILL.md step 5.
+    # dev-env-upsert's `setup` call (below, in the devbox section) already
+    # handles .envrc via --envrc-async-prime (runs `devbox generate direnv
+    # --print-envrc` and appends the async prime_impl trigger). The fallback
+    # heredoc below is kept for when dev-env-upsert is not installed.
     if [[ ! -f "$PROJECT_PATH/.envrc" ]]; then
         log_info "Creating .envrc..."
         cat > "$PROJECT_PATH/.envrc" << 'EOF'
@@ -447,17 +452,136 @@ EOF
     fi
 
     # Create/update devbox.json
-    if [[ ! -f "$PROJECT_PATH/devbox.json" ]]; then
-        log_info "Creating devbox.json with language-specific packages..."
-        # Detect project characteristics for devbox.json generation
-        local detection_script="../../project-detection/scripts/detect-build-systems.sh"
-        local detected_characteristics=""
-        if [[ -f "$detection_script" ]]; then
-            detected_characteristics=$("$detection_script" -t characteristics "$PROJECT_PATH" 2>/dev/null || echo "")
+    # devbox.json configuration delegated to dev-env-upsert skill — see SKILL.md step 3.
+    # The existing generate_devbox_json logic below is a FALLBACK for when
+    # dev-env-upsert is not installed. Do NOT remove it.
+    local dev_env_upsert_dir=""
+    local cli_discovery="$SCRIPT_DIR/cli-tool-discovery.sh"
+
+    # Resolve the dev-env-upsert skill directory via sibling-skill context
+    # detection (same pattern used for project-detection / surgical-config).
+    # cli-tool-discovery.sh is used to resolve the uv runner (NOT bare command -v)
+    # so the dev_env_upsert.py script runs through the correct environment.
+    local context_info
+    context_info=$(determine_context)
+    local context_type="${context_info%%:*}"
+    local base_path="${context_info##*:}"
+    case "$context_type" in
+        chezmoi-templates|deployed-config|ai-tools)
+            if [[ -f "$base_path/dev-env-upsert/scripts/dev_env_upsert.py" ]]; then
+                dev_env_upsert_dir="$base_path/dev-env-upsert"
+            fi
+            ;;
+        *)
+            if [[ -f "$SKILL_ROOT/../dev-env-upsert/scripts/dev_env_upsert.py" ]]; then
+                dev_env_upsert_dir="$SKILL_ROOT/../dev-env-upsert"
+            fi
+            ;;
+    esac
+
+    # Resolve uv via cli-tool-discovery (not bare command -v)
+    local uv_runner="uv"
+    if [[ -x "$cli_discovery" ]]; then
+        local uv_resolve
+        uv_resolve="$("$cli_discovery" uv 2>/dev/null || true)"
+        if [[ "$uv_resolve" == FOUND:* ]]; then
+            uv_runner="uv"
+        elif [[ "$uv_resolve" == WRAPPER:* ]]; then
+            uv_runner="${uv_resolve#WRAPPER: } uv"
         fi
-        generate_devbox_json "$PROJECT_PATH" "$detected_characteristics"
+    fi
+
+    if [[ -n "$dev_env_upsert_dir" ]] && [[ -f "$dev_env_upsert_dir/scripts/dev_env_upsert.py" ]]; then
+        log_info "Delegating devbox.json configuration to dev-env-upsert skill..."
+        if [[ ! -f "$PROJECT_PATH/devbox.json" ]]; then
+            $uv_runner run --script "$dev_env_upsert_dir/scripts/dev_env_upsert.py" reconcile --target "$PROJECT_PATH" || {
+                log_warn "dev-env-upsert reconcile failed, falling back to generate_devbox_json"
+                local detection_script="../../project-detection/scripts/detect-build-systems.sh"
+                local detected_characteristics=""
+                if [[ -f "$detection_script" ]]; then
+                    detected_characteristics=$("$detection_script" -t characteristics "$PROJECT_PATH" 2>/dev/null || echo "")
+                fi
+                generate_devbox_json "$PROJECT_PATH" "$detected_characteristics"
+            }
+        else
+            log_info "devbox.json already exists — running dev-env-upsert reconcile to update packages"
+            $uv_runner run --script "$dev_env_upsert_dir/scripts/dev_env_upsert.py" reconcile --target "$PROJECT_PATH" || {
+                log_warn "dev-env-upsert reconcile failed on existing devbox.json, skipping"
+            }
+        fi
     else
-        log_info "devbox.json already exists, skipping creation"
+        # Fallback: existing logic (dev-env-upsert not installed)
+        if [[ ! -f "$PROJECT_PATH/devbox.json" ]]; then
+            log_info "Creating devbox.json with language-specific packages (fallback — dev-env-upsert not available)..."
+            # Detect project characteristics for devbox.json generation
+            local detection_script="../../project-detection/scripts/detect-build-systems.sh"
+            local detected_characteristics=""
+            if [[ -f "$detection_script" ]]; then
+                detected_characteristics=$("$detection_script" -t characteristics "$PROJECT_PATH" 2>/dev/null || echo "")
+            fi
+            generate_devbox_json "$PROJECT_PATH" "$detected_characteristics"
+        else
+            log_info "devbox.json already exists, skipping creation"
+        fi
+    fi
+
+    # Indexed AST tool detection + setup (delegated to dev-env-upsert — see SKILL.md step 3a).
+    # Detection is file-type-aware:
+    #   - Source code files → CodeGraph
+    #   - Multi-repo workspace (pnpm workspaces, Nx monorepo, git submodules) → GitNexus
+    #     (procure commercial license for business use before setup)
+    #   - Non-code docs/PDFs/video → Graphify
+    # Only ONE tool is installed — do NOT install all three by default.
+    # Indexing folds into the existing prime_impl target via dev-env-upsert's
+    # setup or add-prime-steps command — do NOT create new index/index_impl targets.
+    if [[ -n "$dev_env_upsert_dir" ]] && [[ -f "$dev_env_upsert_dir/scripts/dev_env_upsert.py" ]]; then
+        local indexed_ast_tool=""
+        # Detect source code extensions
+        local code_file_count
+        code_file_count=$(find "$PROJECT_PATH" -maxdepth 3 \
+            \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' \
+               -o -name '*.py' -o -name '*.rs' -o -name '*.go' -o -name '*.java' \
+               -o -name '*.kt' -o -name '*.swift' -o -name '*.c' -o -name '*.cpp' \) \
+            -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/target/*' \
+            2>/dev/null | head -1)
+        # Detect multi-repo workspace
+        local is_workspace=0
+        if [[ -f "$PROJECT_PATH/pnpm-workspace.yaml" ]] \
+           || [[ -f "$PROJECT_PATH/nx.json" ]] \
+           || [[ -f "$PROJECT_PATH/lerna.json" ]] \
+           || [[ -f "$PROJECT_PATH/.gitmodules" ]]; then
+            is_workspace=1
+        fi
+        # Detect non-code docs/PDFs/video
+        local doc_file_count
+        doc_file_count=$(find "$PROJECT_PATH" -maxdepth 3 \
+            \( -name '*.pdf' -o -name '*.docx' -o -name '*.pptx' \
+               -o -name '*.mp4' -o -name '*.mov' -o -name '*.md' \) \
+            -not -path '*/node_modules/*' -not -path '*/.git/*' \
+            2>/dev/null | head -1)
+
+        if [[ -n "$code_file_count" ]]; then
+            indexed_ast_tool="codegraph"
+        elif [[ "$is_workspace" -eq 1 ]]; then
+            indexed_ast_tool="gitnexus"
+            log_warn "GitNexus selected — procure a commercial license for business use before proceeding"
+        elif [[ -n "$doc_file_count" ]]; then
+            indexed_ast_tool="graphify"
+        fi
+
+        if [[ -n "$indexed_ast_tool" ]]; then
+            log_info "Detected indexed AST tool: $indexed_ast_tool — delegating setup to dev-env-upsert..."
+            # setup = batch: add-packages + add-prime-steps + update-envrc in ONE call.
+            # The indexer invocation folds into prime_impl — no new index/index_impl targets.
+            $uv_runner run --script "$dev_env_upsert_dir/scripts/dev_env_upsert.py" setup \
+                --packages "$indexed_ast_tool,direnv,just" \
+                --prime-steps "$indexed_ast_tool index .:$indexed_ast_tool" \
+                --envrc-async-prime \
+                --target "$PROJECT_PATH" \
+                || log_warn "dev-env-upsert setup for $indexed_ast_tool failed — prime_impl lines may need manual addition"
+        else
+            log_info "No indexed AST tool detected (no source code, workspace, or doc-heavy files) — skipping setup"
+        fi
     fi
 
     # Create/update justfile with integrated generation

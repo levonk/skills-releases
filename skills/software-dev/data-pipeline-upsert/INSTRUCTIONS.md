@@ -2244,6 +2244,48 @@ Migrate a pipeline from one tool to another while preserving business logic.
 - `scripts/cli-tool-discovery.sh` — detects available CLI tools (airflow,
   dbt, spark-submit, etc.) across devbox/mise/flox/direnv/nix wrappers
 
+## Definition of Done
+
+Before declaring the data-pipeline-upsert run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Mode Selection
+
+- [ ] **[manual]** The correct mode was selected — no pipeline exists → Mode A (create), pipeline exists → Mode B (update), existing cron/script → Mode C (convert) (Decision: Which Mode)
+- [ ] **[manual]** For Mode A: clarifying questions confirmed the pipeline tool (Airflow, Spark, dbt, or combination), data sources/sinks, schedule, and data quality requirements before generating (Mode A Step 1)
+
+### Artifact Structure
+
+- [ ] **[manual]** The pipeline was scaffolded following the selected reference file — Airflow DAG → `references/airflow-dag-authoring.md`, Spark job → `references/spark-job-development.md`, dbt model → `references/dbt-model-development.md` (Mode A Step 3)
+- [ ] **[manual]** For Mode C conversions: every task, dependency, schedule, data source, data sink, and business logic from the source pipeline is represented in the target (Mode C Step 1-2)
+- [ ] **[manual]** For Mode C: the old build files were removed with `git mv` semantics and the new file committed in the same commit to preserve history (Mode C Step 5)
+
+### Validation and Idempotency
+
+- [ ] **[script]** `./scripts/cli-tool-discovery.sh airflow` (or `dbt`/`spark-submit`) detects the build tool wrapper before assuming it is on PATH (Mode A Step 6)
+- [ ] **[manual]** Every task is safe to re-run — no INSERT without ON CONFLICT/MERGE, no append-mode writes without deduplication, no side effects that don't roll back on failure (Mode A Step 5, Audit Checklist 1)
+- [ ] **[manual]** Every task has `retries` (at least 2-3) and `retry_delay` with exponential backoff and `retry_exponential_backoff: true` (Audit Checklist 2)
+- [ ] **[manual]** Data quality gates are wired in — source validation (schema, row count, null checks) AND post-transformation validation (schema, uniqueness, referential integrity) (Mode A Step 4, Audit Checklist 5)
+- [ ] **[manual]** For Mode C: both pipelines were run on the same input and outputs compared before cutover (Mode C Step 5)
+
+### Observability and Security
+
+- [ ] **[manual]** Failed runs are diagnosable from logs alone — structured logging (JSON, not print statements), task-level metrics, lineage tracking (Audit Checklist 6)
+- [ ] **[manual]** No hardcoded secrets — credentials use Airflow Connections/Variables, env vars, or secret backends; IAM roles are scoped to minimum required (Audit Checklist 7)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The DAG runs but tasks append without deduplication → re-runs duplicate data (Mode A Step 5)
+- The pipeline builds but tasks have no `retries` or `retry_delay` → transient failures crash the pipeline (Audit Checklist 2)
+- `cli-tool-discovery.sh` was skipped and `airflow`/`dbt` was assumed on PATH → the wrapper (devbox/mise/nix) was not detected, builds fail in the real environment (Mode A Step 6)
+- Data quality tests exist but run after transformation only → source data corruption flows through undetected (Mode A Step 4)
+- Mode C conversion compiles but outputs differ from the source pipeline on the same input → business logic was lost in translation (Mode C Step 5)
+- The pipeline emits print statements instead of structured JSON logs → failed runs cannot be diagnosed from logs alone (Audit Checklist 6)
+
 ## Context Declaration
 
 ### File Paths

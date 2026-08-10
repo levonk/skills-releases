@@ -1958,6 +1958,63 @@ The skill produces:
   matrix output format with meta-features, category features, identical-value
   rows, and recommendation section
 
+## Definition of Done
+
+Before declaring the project-comparison run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Metadata Gathering (Step 2)
+
+- [ ] **[script]** `./scripts/gather_github_metadata.py owner1/repo1 owner2/repo2 ...` exits zero and outputs JSON with stars, forks, license, language, topics, dates (Step 2)
+- [ ] **[script]** `./scripts/gather_local_metadata.py /path/to/project-a /path/to/project-b` exits zero and outputs JSON with build systems, package managers, CI/CD, tech stack (Step 2)
+- [ ] **[manual]** Failed lookups (private repos, deleted repos, invalid paths) were reported to the user and excluded or replaced (Step 2)
+
+### Category Classification (Step 3)
+
+- [ ] **[manual]** All projects were confirmed to belong to the same category before building the matrix — mismatches were surfaced to the user (Step 3)
+- [ ] **[manual]** The category was named explicitly (e.g., "static site generators", "AI coding agents") (Step 3)
+- [ ] **[manual]** Sub-categories were noted where projects span different sub-categories within the same space (Step 3)
+
+### Coverage Mapping and Architecture (Steps 4-5)
+
+- [ ] **[manual]** Category dimensions were defined and each project's coverage was mapped with the full 5-level scale (🏆/✅/➖/⚠️/❌) (Step 4)
+- [ ] **[manual]** Gaps (dimensions uncovered by any project) and overlaps (table-stakes dimensions) were identified (Step 4)
+- [ ] **[manual]** Architectural differences were summarized with mermaid diagrams only where non-trivial — no manufactured differences where none exist (Step 5)
+
+### Maintainability Scoring (Step 6)
+
+- [ ] **[manual]** Each project has a maintainability rating (🏆/✅/➖/⚠️/❌) combining activity, health, and maturity signals (Step 6)
+- [ ] **[manual]** `repository-health-review` was run per project where local paths were available (Step 6)
+
+### Feature Matrix Output (Step 7)
+
+- [ ] **[manual]** The feature matrix file (`project-comparison-[category]-[timestamp].md`) was produced with projects across the top, features down the side (Step 7, Output Artifacts)
+- [ ] **[manual]** Meta-features section is present: License, UX/UI, Setup Difficulty, Community, Last Commit, Stars, Forks, Year Introduced, Public Repo Link, Run Modes, Tech Stack, Platform Support (Step 7)
+- [ ] **[manual]** Category-specific features use the dimensions from Step 4 with inline links where available (Step 7)
+- [ ] **[manual]** Identical-value rows (where all projects have the same rating) are at the bottom of the table (Step 7)
+- [ ] **[manual]** A use-case-ordered recommendation is present — progressively ordered (least→most demanding or most→least) with an escalation path (Step 7)
+- [ ] **[manual]** The metadata JSON file (`project-metadata-[timestamp].json`) was saved for reproducibility (Output Artifacts)
+
+### Data Integrity
+
+- [ ] **[manual]** External sources are linked inline in matrix table cells where possible (Important Notes)
+- [ ] **[manual]** Footnotes are added for claims that aren't common knowledge (Important Notes)
+- [ ] **[manual]** Unavailable metrics are marked "N/A" — not fabricated or estimated (Important Notes)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The matrix was built but category membership was not confirmed → comparing projects across categories produces a misleading matrix (Step 3)
+- `gather_github_metadata.py` failed for some repos but the matrix shows estimated values → metrics were fabricated (Important Notes)
+- The matrix has no recommendation section → the reader has no escalation path (Step 7)
+- Identical-value rows are mixed into the category features → the table is harder to scan (Step 7)
+- The metadata JSON was not saved → the comparison cannot be reproduced or re-run (Output Artifacts)
+- Mermaid diagrams were produced for architecturally identical projects → differences were manufactured where none exist (Step 5)
+- Maintainability ratings are missing for one or more projects → the comparison is incomplete (Step 6)
+
 ## Context Declaration
 
 - **Bundled scripts**: `scripts/gather_github_metadata.py` (GitHub API metadata

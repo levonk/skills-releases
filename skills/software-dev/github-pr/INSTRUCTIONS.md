@@ -1898,6 +1898,65 @@ relevant concept pages before opening a PR:
 | `skill-config.sh` fails with "yq required" | yq (mikefarah/yq, Go version) not installed | `devbox add yq` or `brew install yq` |
 
 
+## Definition of Done
+
+Before declaring the github-pr run complete, verify every item below. Items
+marked **[script]** are deterministically verified by a script — if the script
+exits non-zero, the item is NOT done. Items marked **[manual]** require the
+agent to check something the scripts cannot verify.
+
+### Orientation Issue (Phase 1)
+
+- [ ] **[script]** `./scripts/discover-contribution-standards.sh --skill github-pr` was run and cached the target repo's standards (or cache hit within 7-day TTL) (Phase 1)
+- [ ] **[script]** `./scripts/search-existing-work.sh` confirmed no duplicate issue/PR exists (Phase 1)
+- [ ] **[manual]** An orientation issue exists (created inline or user-provided) and its number is recorded for the PR body's `Resolves #N` link (Phase 1)
+- [ ] **[manual]** Trivial-fix exception (if used) has a one-line justification in the PR body: `> No issue — trivial fix (...)` (PR-Requires-Issue Rule)
+
+### Branch and History (Phase 2-3)
+
+- [ ] **[manual]** The feature branch was created from a fresh rebase onto upstream/main — never merged upstream into the branch (Phase 2 Step 2, Phase 3 Step 5)
+- [ ] **[manual]** Iterative commits were squashed into a single clean feature commit using the PR title as the commit message (Phase 3 Step 6)
+- [ ] **[manual]** Format/lint changes (if any) are in a separate "style" commit on top of the feature commit — not mixed in (Phase 3 Step 7)
+- [ ] **[manual]** Pre-existing test failures were documented in the PR body — not fixed in this PR (Phase 2 Step 3)
+
+### Identity and Cleanliness (Phase 3-4)
+
+- [ ] **[script]** `./scripts/scan-artifacts.sh` exits zero — no resolved `$HOME` paths, usernames, or machine names in generated files (Phase 3 Step 8)
+- [ ] **[manual]** Git author is configured with a public GitHub noreply email — no private hostname/username (Phase 2 Step 2)
+- [ ] **[manual]** No merge commits, no unrelated changes — clean linear history from upstream/main to HEAD, at most two commits (Phase 4 Step 10)
+
+### CLA Gate (Phase 4 Step 9)
+
+- [ ] **[manual]** If the standards crawl detected a CLA requirement: the CLA ledger was consulted via `scripts/skill-config.sh get "cla.$ORG.signed_at"` (Phase 4 Step 9)
+- [ ] **[manual]** If the ledger entry was missing/expired: CLA terms and sign link were surfaced to the user and explicit acknowledgment was received before pushing (Phase 4 Step 9)
+- [ ] **[manual]** The ledger entry was recorded via `scripts/skill-config.sh set --layer user` with `signed_at`, `expires_at`, and `source` (Phase 4 Step 9)
+
+### PR Body and Posting (Phase 4 Steps 12-15)
+
+- [ ] **[manual]** The PR body uses the project's own PR template (if found) and includes `Resolves #N` with all placeholders substituted by text replacement — never shell expansion (Phase 4 Step 12)
+- [ ] **[manual]** The complete PR content (title + body) was presented to the user for review before posting — no auto-open (Phase 4 Step 13)
+- [ ] **[manual]** The PR was posted with `gh pr create --body-file` — never `--body` with inline strings (Phase 4 Step 14)
+- [ ] **[script]** `./scripts/validate-pr-issue.sh <owner>/<repo> pr <number>` exits zero — the posted body has no literal `\n`, no stripped backticks, no corruption (Phase 4 Step 15)
+
+### CLA Watch (Phase 4 Step 16, if CLA required)
+
+- [ ] **[manual]** The PR was polled for CLA bot comments and checks within ~60 seconds of posting (Phase 4 Step 16)
+- [ ] **[manual]** If a CLA bot comment was found and the check was failing: the comment and sign link were surfaced to the user immediately (Phase 4 Step 16)
+- [ ] **[manual]** If the CLA check passed: the ledger entry `source` was upgraded to `auto-detected-from-pr-$PR_NUMBER` (Phase 4 Step 16)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The PR was opened but has no `Resolves #N` link → the PR-requires-issue rule was violated (PR-Requires-Issue Rule)
+- `scan-artifacts.sh` exits non-zero but the PR was pushed anyway → identity leak visible to maintainers (Phase 3 Step 8)
+- `validate-pr-issue.sh` exits non-zero but the PR was left open → corrupted body visible to reviewers (Phase 4 Step 15)
+- The PR has merge commits → upstream was merged instead of rebased, history is not linear (Phase 3 Step 5)
+- Format/lint changes are mixed into the feature commit → they are not independently reviewable (Phase 3 Step 7)
+- The PR was auto-posted without user review → the human review gate was bypassed (Phase 4 Step 13)
+- A CLA was required but the ledger was never consulted → the user was not warned, the PR may be blocked (Phase 4 Step 9)
+- The PR body was posted with `--body` inline instead of `--body-file` → literal `\n` or stripped backticks corrupted the body (Phase 4 Step 14)
+
 ## Context Declaration
 
 ### File Paths

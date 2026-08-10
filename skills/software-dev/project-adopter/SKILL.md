@@ -37,6 +37,9 @@ see-also:
   - skill: readme-upsert
     relationship: "dependency"
     description: "Required for creating or updating README.md (human-facing entry point). Handles both greenfield (create from template) and brownfield (preserve accurate sections, update stale ones). Runs the README↔AGENTS.md consistency checker after AGENTS.md is in place."
+  - skill: dev-env-upsert
+    relationship: dependency
+    description: "Required for devbox.json package management, .envrc generation/update, and justfile prime_impl line additions. Owns the devbox+direnv+justfile coupled trio per the Standard Developer UX Flow."
   - skill: base-ai-guidance
     relationship: "base-framework"
     description: "Base AI guidance framework for all AI skills"
@@ -62,6 +65,9 @@ dependencies:
   - type: skill
     name: readme-upsert
     reason: "Required for creating or updating README.md — the human-facing entry point. Handles greenfield (template-based creation) and brownfield (preserve accurate sections, update stale ones). Runs verify_consistency.py to check README↔AGENTS.md agreement."
+  - type: skill
+    name: dev-env-upsert
+    reason: "Required for devbox.json + .envrc + justfile trio management"
   - type: skill
     name: repository-health-review
     reason: "Optional for pre/post-adoption health assessment"

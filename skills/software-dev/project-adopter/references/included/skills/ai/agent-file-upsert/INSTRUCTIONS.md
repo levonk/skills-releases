@@ -2752,6 +2752,69 @@ Done! Updated:
 - internal-docs/anti-patterns/INDEX.md + anti-patterns-YYYYMMDDHHmm-direct-nx-commands.md
 ```
 
+## Definition of Done
+
+Before declaring the agent-file-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[script]** `scripts/init-agents-md.py {REPO_ROOT} --verbose` ran successfully in create mode — root `AGENTS.md`, `.agents/knowledge/developer.md`, `internal-docs/oos/`, `internal-docs/improvements/INDEX.md`, `internal-docs/anti-patterns/INDEX.md`, and sub-folder `AGENTS.md` files were scaffolded (Phase 2)
+- [ ] **[manual]** Root `AGENTS.md` exists and is the primary file — `CLAUDE.md`/`AGENT.md` are referrals or symlinks to it, not independent copies (Phase 0, Phase 2)
+- [ ] **[manual]** Sub-folder `AGENTS.md` files exist for every major directory (`apps/`, `packages/`, `services/`, etc.) identified in Phase 1 (Phase 3)
+- [ ] **[manual]** `.agents/knowledge/developer.md` exists and contains dev-environment setup, build commands, tech stack, workflow, key directories, patterns, boundaries, known gotchas, and Definition of Done (Phase 2)
+
+### Frontmatter/Metadata
+
+- [ ] **[manual]** Root `AGENTS.md` has `date.knowledge-basis` set to the current date (YYYY-MM-DD) — or the last git commit date if the knowledge basis is older (Phase 2)
+- [ ] **[manual]** Every generated `AGENTS.md` file has a `date` field with `knowledge-basis` reflecting when the content was last validated against the codebase (Phase 2-3)
+
+### Content Quality
+
+- [ ] **[manual]** Root `AGENTS.md` is user-facing only — Project Snapshot, Project Overview, optional Install (user-facing, NOT dev setup), JIT Index, Knowledge Bundles, OOS/Improvements/Anti-Patterns references, Universal Contracts (user-binding only), Developer Guide link (Phase 2)
+- [ ] **[manual]** Root `AGENTS.md` does NOT contain build commands, dev-environment setup, tech-stack internals, or workflow — those are in `developer.md` (Phase 2)
+- [ ] **[manual]** `## Install` in root is strictly user-facing (consumer deploy/run); if a command assumes a dev environment is active, it is `## Setup` in `developer.md` instead (Phase 2)
+- [ ] **[manual]** Root `AGENTS.md` is ~100-200 lines (lightweight index, not a developer reference) (Phase 2)
+- [ ] **[manual]** Sub-folder `AGENTS.md` files contain Identity, Setup & Run, Patterns & Conventions (✅ DO / ❌ DON'T), Touch Points, JIT Index Hints, and Gotchas (Phase 3)
+
+### Delta Analysis (Update Mode Only)
+
+- [ ] **[script]** `scripts/analyze_git_delta.py {REPO_ROOT} --agents-file AGENTS.md --verbose` ran and produced a structured JSON report (Phase 1b)
+- [ ] **[manual]** The subagent interpreted the delta report into POSITIVE, NEGATIVE, and IMPROVEMENTS lists, and findings were incorporated into the AGENTS.md hierarchy, improvements, and anti-patterns (Phase 1b)
+
+### Improvements and Anti-Patterns
+
+- [ ] **[manual]** `internal-docs/improvements/INDEX.md` exists with a table of all improvements (one-line summaries, status, links to detailed files) (Phase 5b)
+- [ ] **[manual]** `internal-docs/anti-patterns/INDEX.md` exists with 🛑 prefix on every entry summary and "Do NOT implement any of these approaches" preamble (Phase 5c)
+- [ ] **[manual]** Anti-patterns are triple-marked: (1) AGENTS.md reference says "things NOT to do", (2) INDEX.md preamble says "Do NOT implement", (3) detailed file title starts with `🛑 Anti-Pattern:` and preamble says `DO NOT DO THIS` (Phase 5c)
+- [ ] **[manual]** Detailed files follow the naming convention: `oos-YYYYMMDDHHmm-{slug}.md`, `improvements-YYYYMMDDHHmm-{slug}.md`, `anti-patterns-YYYYMMDDHHmm-{slug}.md` under `YYYY/MM/` subdirectories (Phase 5, 5b, 5c)
+
+### Build/Validation
+
+- [ ] **[script]** `scripts/verify_consistency.py {REPO_ROOT} --verbose` passes — all internal links valid, no broken references, CLAUDE.md/AGENT.md referrals/symlinks valid (Phase 6)
+- [ ] **[manual]** Root `AGENTS.md` JIT Index points to sub-AGENTS.md files and the developer guide — no dead links (Phase 2, Phase 6)
+- [ ] **[manual]** `internal-docs/oos/` directory exists and the root AGENTS.md links to it (Phase 5)
+
+### Hygiene
+
+- [ ] **[manual]** No hardcoded absolute paths, usernames, or hostnames in any generated AGENTS.md file — use indirect references and the Context Declaration (Phase 2-3)
+- [ ] **[manual]** No secrets, API keys, or tokens in any generated file (Phase 2-3)
+- [ ] **[manual]** Convention detection (Phase 0) was honored — if the project uses `CLAUDE.md` as primary, the AGENTS.md was created as primary and CLAUDE.md was converted to a referral/symlink (Phase 0)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `verify_consistency.py` passes but root `AGENTS.md` contains build commands or dev setup → audience separation violated; developer content is in the user-facing file (Phase 2)
+- `init-agents-md.py` ran but sub-folder `AGENTS.md` files are empty TODO stubs → the scaffolder created placeholders but the AI never filled them with real content (Phase 3)
+- Anti-patterns INDEX.md exists but entries lack the 🛑 prefix → a reader could mistake an anti-pattern for a recommendation (Phase 5c)
+- Delta analysis script ran but the subagent's findings were not incorporated → improvements and anti-patterns directories are empty or stale relative to repo changes (Phase 1b)
+- Root `AGENTS.md` links to `developer.md` but the developer guide was never created → the JIT Index has a dead link (Phase 2)
+- `## Install` section contains `devbox shell` or `direnv allow` → dev-environment setup leaked into the user-facing install section (Phase 2)
+
+
 ## Context Declaration
 
 ### File Paths

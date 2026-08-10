@@ -10,6 +10,7 @@
 - [Make Build Scripts Nix-Aware](#make-build-scripts-nix-aware)
 - [Ensure Lockfiles in npm Tarballs](#ensure-lockfiles-in-npm-tarballs)
 - [Inspecting Existing nixpkgs Derivations](#inspecting-existing-nixpkgs-derivations)
+- [nixpkgs Superset Comparison](#nixpkgs-superset-comparison)
 - [Build-Time Network Fetches](#build-time-network-fetches)
 - [Gitignored Lockfiles](#gitignored-lockfiles)
 - [Postinstall Home-Directory Writes](#postinstall-home-directory-writes)
@@ -377,6 +378,99 @@ The `brave` derivation in nixpkgs wraps the binary with `makeWrapper` to set up 
 - If the nixpkgs derivation is simple (few inputs, no patches, no postInstall) — your flake can follow the same pattern with confidence.
 - If the nixpkgs derivation has patches, wrapper scripts, or many runtime deps — either replicate them in your flake, or prefer the `nixpkgs_wrapper` approach (Step 12 — `flake_type=nixpkgs_wrapper`) and let nixpkgs handle the complexity.
 - If the nixpkgs derivation uses `fetchurl` on a prebuilt binary — confirms the Prebuilt Tarball Flake path (Step 12 — `flake_type=prebuilt_tarball`) and shows you the exact `buildInputs` and `installPhase` layout to replicate.
+
+## nixpkgs Superset Comparison
+
+> **Knowledge base**: The canonical concept page for this practice is
+> [`nixpkgs-contribution`](../included/knowledge/nix-build-practices/nixpkgs-contribution.md)
+> in the `nix-build-practices` bundle. This section is the skill-specific
+> operational guidance; the bundle page is the compounding reference.
+
+After inspecting the nixpkgs derivation (Step 11), determine whether the
+nixpkgs packaging is a **superset** of what a from-source in-repo flake would
+provide. A superset means nixpkgs includes all the features our from-source
+build would have, PLUS additional patches, postInstall hooks, wrapper scripts,
+or runtime dependencies that a naive from-source flake would miss.
+
+When nixpkgs is a superset, the in-repo flake should expose a `#nixpkgs` output
+(see `references/flake-templates/nixpkgs-output.md`) so users can access the
+more complete packaging alongside the existing `#prebuilt` / `#source` outputs.
+This gives users the choice: official release binary (`#prebuilt`), from-source
+build (`#source`), or nixpkgs-packaged version with distribution patches
+(`#nixpkgs`).
+
+**How to check**: Run `scripts/check-nixpkgs-superset.sh <project-name>
+<latest-release> <nixpkgs-version> [derivation-json]`. The script provides
+deterministic signals — version currency, presence of patches/hooks/wrappers/
+runtime deps. The agent does the full qualitative comparison by reading the
+nixpkgs derivation source from Step 11.
+
+**Superset checklist — compare the nixpkgs derivation against your planned
+from-source flake:**
+
+1. **Patches** — does nixpkgs apply source patches (Nix-specific fixes,
+   upstream bug fixes, hardcoded path corrections)? If yes, a from-source
+   flake without those patches may produce a broken or suboptimal binary.
+2. **postInstall / preInstall hooks** — does nixpkgs run install-time setup
+   (desktop entries, icons, man pages, completion scripts, schema
+   compilation)? A from-source flake that skips these produces a tool that
+   works but integrates poorly (no shell completion, no desktop entry).
+3. **makeWrapper args** — does nixpkgs wrap the binary with `makeWrapper` to
+   set PATH, GSETTINGS_SCHEMA_DIR, or other runtime environment variables?
+   A from-source flake without the wrapper produces a binary that can't find
+   its helpers at runtime.
+4. **Runtime dependencies** — does nixpkgs declare `runtimeDependencies`
+   (tools the binary shells out to at runtime — `git`, `curl`, `ffmpeg`)?
+   A from-source flake that omits these produces "command not found" errors
+   during real use.
+5. **Extra buildInputs** — does nixpkgs link against libraries that aren't
+   obvious from the project's own build instructions (platform-specific
+   frameworks, optional feature dependencies)? A from-source flake that
+   misses these may fail to build or crash at startup.
+6. **meta.platforms** — does nixpkgs declare a narrower platform set than
+   your flake targets? If nixpkgs only builds for `x86_64-linux`, the
+   `#nixpkgs` output should only be exposed on that platform.
+
+**Decision tree:**
+
+- **nixpkgs is NOT a superset** (no patches, no hooks, no wrappers, no runtime
+  deps): Do NOT add `#nixpkgs` output. A from-source flake provides equivalent
+  functionality. Adding `#nixpkgs` would just duplicate `#source` with a
+  different version pin.
+- **nixpkgs IS a superset AND version is current** (within one minor release
+  of latest upstream): Add `#nixpkgs` output. Users get the best of both
+  worlds — the from-source build for auditability, and the nixpkgs version
+  for the more complete packaging.
+- **nixpkgs IS a superset BUT version is outdated** (multiple minor releases
+  behind): Present the finding to the user. The superset packaging (patches,
+  hooks, runtime deps) may outweigh the version lag for some users. Document
+  the version lag in the PR body. The `#nixpkgs` output is still useful as an
+  option — users who need the latest version use `#prebuilt` or `#source`,
+  users who need the complete packaging use `#nixpkgs`.
+- **nixpkgs IS a superset BUT version is severely outdated** (multiple major
+  versions behind): Do NOT add `#nixpkgs` output unless the user explicitly
+  requests it. The version lag is too large — users would get an ancient
+  version with no way to tell without reading the flake. Document the finding
+  in the PR body as a note for maintainers.
+
+**Version comparison**: The script compares `nixpkgs_version` (from Step 10's
+`check-nixpkgs.sh`) against `latest_release` (from Step 4b's
+`check-releases.sh`). "Current" means within one minor release (e.g.,
+nixpkgs has 1.2.1 and latest is 1.2.3 — same major.minor). "Outdated" means
+one or more minor releases behind. "Severely outdated" means a different
+major version.
+
+**Downstream consumption:**
+
+- `add_nixpkgs_output` (from the script) is consumed at Step 12 to add the
+  `#nixpkgs` output to the flake (see `references/flake-templates/nixpkgs-output.md`).
+- `version_current` and `is_superset` are consumed at Steps 24 and 27 to fill
+  the conditional "nixpkgs output" section in the issue/PR templates.
+- The `extra_build_inputs` array is informational — it lists buildInputs the
+  agent should cross-check against the planned from-source flake to ensure
+  the `#source` output also includes them (if feasible).
+
+---
 
 ## Darwin Framework and Runtime Dependency Detection
 

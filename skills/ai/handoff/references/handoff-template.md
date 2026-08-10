@@ -1,5 +1,39 @@
 # Handoff Document Template
 
+## Storage Lifecycle & Commit Conventions
+
+Handoff documents use a two-stage lifecycle:
+
+| Stage | Path | When |
+|-------|------|------|
+| **Pending** | `.agents/handoffs/todo/YYYYMMDDHHmm-handoffslug.md` | Created — awaiting work |
+| **Archived** | `.agents/handoffs/archive/YYYY/MM/YYYYMMDDHHmm-handoffslug.md` | All DoD tasks `[x]` — moved via `git mv` |
+
+The filename never changes between stages. The archive `YYYY/MM/` is derived
+from the filename's embedded timestamp (creation date, not completion date).
+
+**Commit messages** (both include a mandatory `#tag` array as the last body
+line):
+
+- **Capture** (new handoff):
+  ```
+  docs(handoff): capture context for {slug}
+
+  Handoff document for session continuation. Records repo state at commit {sha}.
+
+  #project-{project} #module-handoff #type-docs #skill-handoff-capture #skill-grm-created
+  ```
+- **Archive** (completed handoff, `git mv` todo/ → archive/):
+  ```
+  docs(handoff): archive completed handoff {slug}
+
+  All Definition of Done tasks verified [x]. Moved from todo/ to archive/{YYYY}/{MM}/.
+
+  #project-{project} #module-handoff #type-docs #skill-handoff-archived #skill-grm-created
+  ```
+
+## Document Template
+
 Use this template for consistency when creating handoff documents:
 
 ```markdown
@@ -78,7 +112,7 @@ any path you touch.
 2. [Following action]
 3. [Future action]
 
-## Definition of Done
+## Task List
 
 A checkbox-tracked task list. The receiving session maintains these marks as it
 works. Each line is one task; do not collapse multiple tasks into one line.
@@ -111,8 +145,8 @@ works. Each line is one task; do not collapse multiple tasks into one line.
    parallelize tasks that touch the same files or depend on each other's
    output — run those sequentially.
 4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the task's
-   success criteria are met and verified (build passes, test passes, file
-   exists, etc.). Never mark `[x]` on intent alone.
+   Definition of Done checks pass (see below). Never mark `[x]` on intent
+   alone.
 5. **Record blockers inline.** When a task cannot proceed, mark it `[!]` and
    append the blocker in parentheses on the same line, e.g.
    `- [!] {task blocked (waiting on upstream API access)}`. Move on to the
@@ -122,9 +156,38 @@ works. Each line is one task; do not collapse multiple tasks into one line.
    task is no longer relevant, mark it `[x]` with a note
    (`- [x] {task} (obsolete: reason)`).
 
-## Success Criteria
-- [Criteria 1]: [How to verify]
-- [Criteria 2]: [How to verify]
+## Definition of Done
+
+Before declaring the handoff's work complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify. Each item
+is a checkbox — do not skip any.
+
+- [ ] **[manual]** Every Task List item is `[x]` or marked `[x]` with an
+  obsolete note — no `[ ]` or `[~]` items remain
+- [ ] **[script]** `git status --porcelain` shows no uncommitted changes
+  (all work is committed)
+- [ ] **[manual]** The handoff document's Git State commit SHA matches
+  `git rev-parse HEAD` (the document is up to date)
+- [ ] **[manual]** Each completed task's deliverable matches what was
+  described in the handoff (not just marked done — the actual output is
+  correct)
+- [ ] **[script]** Project-specific validation passes (e.g. `just test`,
+  `npm test`, `cargo test` — whichever applies)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the work is NOT complete:
+
+- All Task List items marked `[x]` but `git status` shows uncommitted
+  changes → work was done but not committed
+- All items `[x]` but the handoff's Git State SHA doesn't match `HEAD` →
+  the handoff document is stale (was not updated after the last commit)
+- Items marked `[x]` without verification → the agent marked done on
+  intent, not on evidence (re-verify each `[x]` item)
+- `just test` passes but the deliverable doesn't match the handoff's
+  described outcome → the wrong thing was built
 
 ## Open Questions/Blockers
 - [Question 1] - [Impact if unresolved]
@@ -214,7 +277,7 @@ any path you touch.
 - [Solution 1]
 - [Solution 2]
 
-## Definition of Done
+## Task List
 
 A checkbox-tracked task list. The receiving session maintains these marks as it
 works. Each line is one task; do not collapse multiple tasks into one line.
@@ -242,18 +305,42 @@ works. Each line is one task; do not collapse multiple tasks into one line.
    is the expected mode of operation, not an optional optimization. Mark each
    `[~]` before launching. Do not parallelize tasks that share files or
    depend on each other's output.
-4. **Mark done only when verified.** Flip `[~]` → `[x]` only after success
-   criteria are met and verified.
+4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the
+   Definition of Done checks pass (see below).
 5. **Record blockers inline.** Mark blocked tasks `[!]` with the blocker in
    parentheses. Move on to the next `[ ]` task.
 6. **Update the list as work reveals new tasks.** Append new tasks as `[ ]` in
    priority order. Mark obsolete tasks `[x]` with a note rather than deleting.
 
-## Success Criteria
+## Definition of Done
 
-- ✅ [Criteria 1]
-- ✅ [Criteria 2]
-- ✅ [Criteria 3]
+Before declaring the handoff's work complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify. Each item
+is a checkbox — do not skip any.
+
+- [ ] **[manual]** Every Task List item is `[x]` or marked `[x]` with an
+  obsolete note — no `[ ]` or `[~]` items remain
+- [ ] **[script]** `git status --porcelain` shows no uncommitted changes
+- [ ] **[manual]** The handoff document's Git State commit SHA matches
+  `git rev-parse HEAD`
+- [ ] **[manual]** Each completed task's deliverable matches what was
+  described in the handoff
+- [ ] **[script]** Project-specific validation passes (e.g. `just test`,
+  `npm test`, `cargo test` — whichever applies)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the work is NOT complete:
+
+- All Task List items marked `[x]` but `git status` shows uncommitted
+  changes → work was done but not committed
+- All items `[x]` but the handoff's Git State SHA doesn't match `HEAD` →
+  the handoff document is stale
+- Items marked `[x]` without verification → re-verify each `[x]` item
+- `just test` passes but the deliverable doesn't match the handoff's
+  described outcome → the wrong thing was built
 
 ## Files Modified This Session
 

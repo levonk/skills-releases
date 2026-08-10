@@ -163,6 +163,40 @@ bash scripts/git-repo-init.bash --dry-run -v /path/to/target
 Always run a dry-run first when the target directory is non-empty and contains
 files the user cares about.
 
+### Post-init guidance
+
+After successful initialization, `git-repo-init.bash` prints next-steps
+guidance:
+
+1. Start coding on a feature branch
+2. Run `git-archive.sh --identify` to find stale branches
+3. Add a local remote for offline testing (see below)
+4. Install dev environment tooling (`devbox init && just bootstrap`)
+
+### Local-as-Remote Pattern
+
+For testing git operations (push, fetch, branch archiving) without a network
+round-trip, add the repo itself as a "local" remote:
+
+```bash
+git remote add local "$PWD"
+```
+
+This creates a remote pointing at the repo's own `.git` directory. Pushing to
+`local` updates local refs directly — no server needed. Use cases:
+
+- Test `git-archive.sh --prune` workflows before running them against `origin`
+- Simulate multi-user git operations on a single machine
+- Run cleanup scripts that expect a remote to exist
+- CI environments where no real remote is available
+
+The `git-vcs-config.bash` library provides an `add_local_remote` helper that
+handles the setup idempotently (skips if the remote already exists).
+
+The `git-sweep` project inspired this pattern: it clones the local repo to a
+temp directory and uses the clone as a "remote" to detect stale branches
+without touching the real upstream.
+
 ## Entry Point: Repository Initialization
 
 This phase is reachable as a standalone entry point in addition to being the

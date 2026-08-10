@@ -1,5 +1,17 @@
 # Directory Update Log
 
+## 2026-08-05
+
+* **Ingest**: Authored 2 new Rust documentation concept pages sourced from
+  the project-lint audit. All pages grounded against current Rust tool
+  versions on 2026-08-05.
+  - [rust-doc-comment-patterns.md](rust-doc-comment-patterns.md) — `///` vs
+    `//!` conventions, Examples/Errors/Panics sections, intra-doc links, doc
+    test patterns
+  - [cargo-doc-generation.md](cargo-doc-generation.md) — cargo doc commands,
+    public API documentation, hosted docs, cross-crate links, CI doc checks
+* **Update**: Updated [index.md](index.md) with 2 new concept entries.
+
 ## 2026-08-02
 
 * **Ingest**: Added [color-contrast.md](color-contrast.md) — new concept page

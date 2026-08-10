@@ -1648,6 +1648,50 @@ declare -A PROJECT_TYPES=(
 - **Project Configuration Skill** - Add compatible preferences without overwriting
 
 
+## Definition of Done
+
+Before declaring the project-detection run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Build and Package Manager Detection
+
+- [ ] **[script]** `scripts/detect-build-systems.sh <project>` exits zero and emits a non-empty list of detected build systems (Quick Start)
+- [ ] **[manual]** Every build system actually present in the project appears in the script output — no false negatives (e.g. a `Cargo.toml` that yields no `cargo` entry)
+- [ ] **[manual]** No spurious detections — a system is listed only when its indicator file/pattern is genuinely present, not as a default
+
+### CI/CD Detection
+
+- [ ] **[script]** `scripts/detect-ci-cd-systems.sh <project>` exits zero and emits a non-empty list of detected CI/CD systems (Quick Start)
+- [ ] **[manual]** Each detected CI/CD system corresponds to a real workflow/pipeline file (`.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`, etc.) — no phantom detections
+
+### Workspace Configuration Detection
+
+- [ ] **[script]** `scripts/detect-workspace-configs.sh <project>` exits zero (Quick Start)
+- [ ] **[manual]** For monorepos: the detected workspace config (pnpm-workspace.yaml, turbo.json, nx.json, Cargo workspace, etc.) matches the actual root-level workspace manifest
+- [ ] **[manual]** For non-monorepos: the script correctly reports no workspace configuration rather than inventing one
+
+### Build Target Extraction
+
+- [ ] **[manual]** When `scripts/extract-build-targets.sh generate` was run: the generated justfile targets correspond to real scripts/entries in the source config files (package.json scripts, Cargo targets, Makefile targets, pyproject.toml entries)
+- [ ] **[manual]** No source config scripts were silently dropped — every `package.json` `scripts` entry, every Makefile target, every Cargo example/bench appears as a justfile recipe
+
+### Output Integrity
+
+- [ ] **[manual]** JSON output (when requested) is valid JSON and contains the `build_systems`, `ci_cd_systems`, and `workspace_configs` keys with correct values
+- [ ] **[manual]** Human-readable output uses the `✓ <system> (via <indicator>)` format consistently — no raw script noise leaked into the output
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `detect-build-systems.sh` exits zero but lists `npm` for a project that uses `pnpm` (has `pnpm-lock.yaml`) → the lockfile-based disambiguation failed; the project will be configured with the wrong package manager
+- `detect-ci-cd-systems.sh` reports `github-actions` but `.github/workflows/` is empty or contains only disabled workflows → phantom detection; downstream skills will assume CI exists when it does not
+- `detect-workspace-configs.sh` reports a workspace for a single-package repo → downstream monorepo logic will be misapplied
+- `extract-build-targets.sh generate` produced a justfile but the targets do not match `package.json` `scripts` → the justfile is stale or incomplete; `just <target>` will fail
+- JSON output is emitted but `workspace_configs` is missing or `null` for a genuine monorepo → downstream consumers will treat it as a single-package project
+
 ## Context Declaration
 
 ### File Paths

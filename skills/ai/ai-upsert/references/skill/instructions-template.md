@@ -59,6 +59,60 @@ with reasoning. Never silently skip a step.
 and describe it there. If the process is simple enough to inline, describe
 it here and remove the references/process.md pointer.]
 
+## Task List
+
+- [ ] [TODO: task 1 — derived from the Current Process steps]
+- [ ] [TODO: task 2 — derived from the Current Process steps]
+- [ ] [TODO: task 3 — derived from the Current Process steps]
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
+**Maintenance protocol:**
+1. **Verify in-progress marks.** Before doing anything else, re-check
+   every task marked `[~]`. If the work is not actually underway, demote
+   it back to `[ ]`.
+2. **Start the next available task.** Pick the first `[ ]` task in
+   priority order. Mark it `[~]` immediately before starting work on it.
+3. **Prefer subagents for parallel work.** When two or more `[ ]` tasks
+   are independent, launch them as parallel subagents. Mark each `[~]`
+   before launching. Do not parallelize tasks that share files or depend
+   on each other's output.
+4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the
+   task's success criteria are met and verified. Never mark `[x]` on
+   intent alone.
+5. **Record blockers inline.** When a task cannot proceed, mark it `[!]`
+   and append the blocker in parentheses on the same line.
+6. **Update the list as work reveals new tasks.** Append newly
+   discovered tasks as `[ ]` lines in priority order.
+
+## Definition of Done
+
+Before declaring the [TODO: skill-name] run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a
+script — if the script exits non-zero, the item is NOT done. Items marked
+**[manual]** require the agent to check something the scripts cannot
+verify.
+
+### [TODO: Deliverable Category 1]
+
+- [ ] **[script]** [TODO: script-invocation] passes (Step N)
+- [ ] **[manual]** [TODO: thing the agent must verify] (Step N)
+
+### [TODO: Deliverable Category 2]
+
+- [ ] **[manual]** [TODO: thing the agent must verify] (Step N)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- [TODO: <check passes> but <deliverable is wrong> → <the missing or broken thing> (Step N)]
+- [TODO: <check passes> but <deliverable is wrong> → <the missing or broken thing> (Step N)]
+
 ## References
 
 [TODO: Link to any reference files in the references/ directory. See

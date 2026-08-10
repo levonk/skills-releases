@@ -2730,6 +2730,64 @@ Read the existing rule fully, then audit against this checklist:
 guideline. Propose, explain the benefit, and let them decide.
 
 
+## Definition of Done
+
+Before declaring the rule-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[manual]** The rule file exists at the chosen location (`src/current/rules/<category>/<rule-name>.md`, `<project-root>/.agents/rules/`, or `~/.agents/rules/`) (Mode A Step 1 / Mode C)
+- [ ] **[manual]** The rule was scaffolded from `templates/meta/rule-template.md` — not created from scratch — so all required frontmatter fields are present (Mode A Step 2)
+- [ ] **[manual]** The rule body has all required sections: Goal, Role, I/O, Operation, Tools, Instructions, Design By Contract (Mode A Step 4)
+
+### Frontmatter/Metadata
+
+- [ ] **[manual]** All required frontmatter fields are filled — no empty strings or placeholder values: `rule`, `slug`, `description`, `use`, `role`, `severity`, `scope`, `rationale`, `examples`, `fix`, `tools`, `version`, `owner`, `status`, `visibility`, `date`, `tags` (Mode A Step 3 / Mode C audit)
+- [ ] **[manual]** `severity` is appropriate — `error`/`blocking` for must-follow constraints, `warning` for should-follow, `info` for informational (Mode A Step 3 / Mode C audit)
+- [ ] **[manual]** `date.knowledge-basis` is set to the current date (YYYY-MM-DD) and updated when changes are applied in Mode C (Mode A Step 3 / Mode C Step 4)
+- [ ] **[manual]** `status` is `draft` for new rules (promote to `ready` after review) (Mode A Step 3 / Mode C audit)
+- [ ] **[manual]** `tags` starts with `["ai/rule"]` and includes domain-specific tags (Mode A Step 3)
+
+### Content Quality
+
+- [ ] **[manual]** The rule is concise — rules are always-on context, every line adds permanent token cost; state rules as contracts, not suggestions ("Always use X" not "Consider X") (Mode A Step 4)
+- [ ] **[manual]** `good` and `bad` examples are concrete and match the current codebase conventions (Mode A Step 3 / Mode C audit)
+- [ ] **[manual]** The `scope` field correctly reflects what the rule inspects — file globs, paths, or domains (Mode A Step 3 / Mode C audit)
+- [ ] **[manual]** The `rationale` field explains why the rule exists — the problem it prevents (Mode A Step 3)
+
+### Build/Validation
+
+- [ ] **[manual]** If in skills-src: `just validate` passes — no leaked delimiters, no frontmatter issues (Mode A Step 5 / Mode C Step 5)
+- [ ] **[manual]** If the rule should be included in `rules.md`: a Go text/template include directive was added in the appropriate category section, and the include resolves (Mode A Step 5 / Mode C Step 5)
+- [ ] **[manual]** Mode C: grep for violations confirmed the rule is still followed in the codebase — or violations were flagged to the user (Mode C audit checklist item 5)
+
+### Mode C: Update Discipline
+
+- [ ] **[manual]** Changes were proposed before applying — a prioritized list (Critical / Important / Nice to have) with before/after (Mode C Step 1)
+- [ ] **[manual]** User confirmed before changes were applied (Mode C Step 2)
+- [ ] **[manual]** Approved changes were applied as separate commits (Mode C Step 3)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, keys, or sensitive paths in the rule definition (Security)
+- [ ] **[manual]** `see-also` entries follow the cross-linking format with valid relationship types and no circular dependencies (Cross-Linking)
+- [ ] **[manual]** The rule is not redundant with an existing AGENTS.md constraint — if AGENTS.md already covers the same domain, the rule is scoped more narrowly or removed (Mode A Step 0 / Mode C audit)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The rule file exists but was created from scratch instead of from `rule-template.md` → required frontmatter fields may be missing (Mode A Step 2)
+- `just validate` passes but the rule is verbose with suggestion-style language ("Consider X") → the rule adds unnecessary permanent token cost (Mode A Step 4)
+- The `severity` is `error` but the codebase consistently violates the rule without issues → the rule may be wrong or needs downgrading (Mode C audit)
+- The `bad` examples reference patterns that no longer exist in the codebase → the examples are stale and misleading (Mode C audit)
+- The rule is included in `rules.md` but the include directive does not resolve → the rule is silently absent from the compiled rules (Mode A Step 5)
+- Mode C: changes were applied without user confirmation → the author's intentional deviations were silently overwritten (Mode C Step 2)
+
+
 ## Context Declaration
 
 ### File Paths

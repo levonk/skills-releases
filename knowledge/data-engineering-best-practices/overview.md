@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Data Engineering Best Practices Overview
-description: Synthesis of data engineering practices spanning ETL/ELT, Airflow orchestration, layered container images, Spark, dbt, warehouse design, streaming, data quality, orchestration tooling, CQRS, and ORM patterns.
-tags: [data-engineering, airflow, spark, dbt, data-warehouse, streaming, data-quality, orchestration, cqrs, drizzle, overview, synthesis]
+description: Synthesis of data engineering practices spanning infrastructure-as-code, ingestion, ETL/ELT, Airflow orchestration, layered container images, Spark, dbt, warehouse design, BigQuery optimization and ML, streaming with schema management, data quality, orchestration tooling, integrated platforms, CQRS, ORM patterns, and SQLite-family edge databases with partitioned analytics.
+tags: [data-engineering, airflow, spark, dbt, data-warehouse, bigquery, streaming, data-quality, orchestration, terraform, dlt, duckdb, cqrs, drizzle, sqlite, turso, libsql, edge-database, partitioning, overview, synthesis]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  knowledge-basis: "2026-08-09"
+  last-used: "2026-08-09"
 
 sources:
   - id: infrahub-airflow-service-readme
@@ -27,6 +27,15 @@ sources:
   - id: job-aide-drizzle-orm-config
     resource: "https://github.com/lrepo52/job-aide/blob/main/apps/active/politics/left-parody/web/typescript/drizzle.config.ts"
     title: "job-aide Drizzle ORM config"
+  - id: datatalksclub-data-engineering-zoomcamp
+    resource: "https://github.com/DataTalksClub/data-engineering-zoomcamp"
+    title: "DataTalksClub Data Engineering Zoomcamp — free 9-week course on data engineering fundamentals"
+  - id: turso-database-github
+    resource: "https://github.com/tursodatabase/turso"
+    title: "Turso Database — SQLite-compatible database rewritten from scratch in Rust"
+  - id: turso-libsql-docs
+    resource: "https://docs.turso.tech/libsql"
+    title: "Turso libSQL documentation — fork vs rewrite"
 ---
 
 ---
@@ -136,10 +145,13 @@ patterns using Drizzle ORM and CQRS-style read models.
 ## The Data Engineering Lifecycle
 
 ```
-ingest → transform → orchestrate → store → quality → serve
-           ↑            ↑          ↑        ↑        ↑
-       etl-vs-elt   airflow-*   warehouse  data-   cqrs /
-       dbt          spark       design     quality  drizzle
+provision → ingest → transform → orchestrate → store → quality → serve
+    ↑          ↑         ↑            ↑          ↑        ↑        ↑
+ terraform  dlt /     etl-vs-elt   airflow-*   warehouse  data-   cqrs /
+            etl-vs-   dbt          spark       design     quality  drizzle
+            elt                    duckdb      bigquery-*           sqlite-edge-
+                                   integrated  schema-              and-partitioned
+                                   platforms   registry             -analytics
                      ↑
               orchestration-comparison
 ```
@@ -148,24 +160,35 @@ Each phase has practices that prevent specific failure modes:
 
 | Phase | Practice | Prevents |
 |-------|----------|----------|
+| Provision | [Terraform for Data Infrastructure](terraform-data-infrastructure.md) | Unreproducible cloud resources, environment drift, no disaster recovery |
+| Ingest | [dlt Declarative Ingestion](dlt-ingestion-patterns.md) | Hand-coded extraction scripts, silent schema drift, broken incremental loads |
 | Ingest/Transform | [ETL vs ELT](etl-vs-elt.md) | Transforming in the wrong place; warehouse compute waste; brittle pre-load transforms |
 | Orchestration | [Airflow DAG Patterns](airflow-dag-patterns.md) | Non-idempotent reruns, XCom bloat, tangled task boundaries |
 | Orchestration | [Airflow Layered Images](airflow-layered-images.md) | Rebuilding Airflow from scratch on every change; task images bloated with scheduler code |
 | Orchestration | [Airflow on Kubernetes](airflow-on-kubernetes.md) | Privileged containers, shared metadata DB corruption, executor misconfiguration |
 | Processing | [Spark Best Practices](spark-best-practices.md) | Shuffle storms, OOM kills, broadcast-join blowups, wasted caching |
 | Transform | [dbt Transformation Patterns](dbt-transformation-patterns.md) | Untested models, full-refresh explosions, lost history without snapshots |
+| Transform | [DuckDB for Local Analytics](duckdb-local-analytics.md) | Slow/costly cloud-dependent development, no offline or CI testing |
 | Storage | [Data Warehouse Design](data-warehouse-design.md) | Snowflake-schema join complexity, lost dimension history, fact table grain confusion |
+| Storage | [BigQuery Partitioning and Clustering](bigquery-partitioning-clustering.md) | Full-table scans, runaway query costs, unbounded latency on growing tables |
+| Storage | [BigQuery ML](bigquery-ml.md) | Expensive data export for ML, stale training snapshots, separate scoring infrastructure |
 | Streaming | [Streaming Data Patterns](streaming-data-patterns.md) | At-least-once duplicates, late events dropping, windowing misalignment |
+| Streaming | [Schema Registry and Avro](schema-registry-avro.md) | Silent deserialization failures, no schema versioning, 10x payload bloat from JSON |
 | Quality | [Data Quality Testing](data-quality-testing.md) | Silent schema drift, stale data flowing downstream, unmonitored freshness |
-| Tooling | [Orchestration Comparison](orchestration-comparison.md) | Picking Airflow for CI/CD, Tekton for ETL, or ignoring Kueue quota needs |
+| Tooling | [Orchestration Comparison](orchestration-comparison.md) | Picking Airflow for CI/CD, Tekton for ETL, ignoring Kueue quotas, or missing Kestra for YAML-native pipelines |
+| Tooling | [Integrated Data Platforms](integrated-data-platforms.md) | Glue-code burden from best-of-breed stacks, fragmented lineage, slow onboarding |
 | Serving | [CQRS and Caching](cqrs-and-caching.md) | Read/write model coupling, cache staleness, thundering herd on cache miss |
 | Serving | [Drizzle ORM Patterns](drizzle-orm-patterns.md) | Unmanaged migrations, raw SQL drift, missing schema type safety |
+| Serving | [SQLite-Family Edge Databases and Partitioned Analytics](sqlite-edge-and-partitioned-analytics.md) | Network-bound edge reads, offline failure, cross-tenant leaks from missed WHERE filters, cross-partition write-lock contention |
 
 ## Scope
 
-This bundle covers **data pipeline authoring, orchestration, transformation,
-warehouse modeling, streaming, data quality, and application data access**. It
-does **not** cover:
+This bundle covers **infrastructure provisioning, data ingestion, pipeline
+authoring, orchestration, transformation, warehouse modeling and optimization,
+in-warehouse ML, streaming with schema management, data quality, orchestration
+tooling, integrated data platforms, application data access, and SQLite-family
+edge databases with partitioned analytics**. It does
+**not** cover:
 
 - General Kubernetes operations — see the container-best-practices bundle.
 - Container image build mechanics — see [airflow-layered-images](airflow-layered-images.md)
@@ -174,6 +197,9 @@ does **not** cover:
 - Frontend data fetching and UI state management — this bundle's
   [cqrs-and-caching](cqrs-and-caching.md) covers the backend read/write split
   only.
+- General Terraform practices (modules, workspaces, provider patterns) — this
+  bundle covers Terraform only as it applies to data platform resources; for
+  general IaC practices see the cloud-provider-essentials bundle.
 
 ## Relationship to Real Infrastructure
 
@@ -187,11 +213,22 @@ DB.
 
 The orchestration comparison synthesizes 2ndbrain feature-matrix notes that
 compare Airflow, Argo Workflows, Tekton Pipelines, and Kueue across licensing,
-Kubernetes nativeness, scheduling, and workload fit.
+Kubernetes nativeness, scheduling, and workload fit. Kestra was added from the
+DataTalksClub Zoomcamp Module 2, which teaches workflow orchestration with
+Kestra's YAML-native, event-driven flow model.
 
 The Drizzle and CQRS concepts reference the job-aide `left-parody` application's
 Drizzle ORM configuration and the architecture gaps analysis that identifies
 CQRS/read models as a planned capability.
+
+The Terraform, dlt ingestion, BigQuery partitioning/clustering, BigQuery ML,
+DuckDB, integrated data platforms, and Schema Registry/Avro concepts were
+distilled from the DataTalksClub Data Engineering Zoomcamp — a free 9-week
+course that builds an end-to-end data pipeline covering containerization and
+IaC (Module 1), Kestra orchestration (Module 2), BigQuery warehousing
+(Module 3), dbt analytics engineering with DuckDB (Module 4), Bruin integrated
+data platforms (Module 5), Spark batch processing (Module 6), and Kafka
+streaming with Schema Registry and ksqlDB (Module 7).
 
 ## Sources
 
@@ -204,7 +241,29 @@ The initial 12 concepts were extracted from three real sources on 2026-07-17:
 3. **2ndbrain** — Orchestration comparison notes (Airflow vs Argo vs Tekton,
    Kueue vs Airflow, open-source workflow tools comparison).
 
-See each concept's `# Citations` section for the specific file paths and URLs.
+On 2026-08-09, 7 additional concepts were ingested from a fourth source:
+
+4. **DataTalksClub Data Engineering Zoomcamp** — Terraform for data
+   infrastructure (Module 1), dlt declarative ingestion (Workshop 1), BigQuery
+   partitioning/clustering and BigQuery ML (Module 3), DuckDB for local
+   analytics (Module 4), integrated data platforms with Bruin (Module 5), and
+   Schema Registry/Avro schema evolution (Module 7). The Kestra orchestrator
+   was also added to the existing orchestration comparison (Module 2), and
+   Kafka Connect/ksqlDB were added to the existing streaming patterns page
+   (Module 7).
+
+On 2026-08-09, a 20th concept was ingested from a fifth source:
+
+5. **Turso / libSQL documentation and engineering writeups** — the Turso
+   Database Rust rewrite of SQLite (async-first, MVCC, CDC-based sync) and the
+   libSQL open-contribution fork (embedded replicas, page-level sync), plus the
+   partitioned SQLite file pattern for per-partition analytics isolation
+   (tenant, agent, region, session) with `ATTACH` scatter-gather. Sources
+   include the Turso docs, the `tursodatabase/turso` and `tursodatabase/libsql`
+   GitHub repos, Turso's sync-benchmark and rewrite blog posts, and
+   practitioner writeups on SQLite-per-tenant isolation and sharding.
+
+See each concept's `sources` frontmatter for the specific URLs and paths.
 
 ## Compounding
 
@@ -226,6 +285,10 @@ Future concept candidates (not yet in the bundle):
   ACID on object storage
 - `reverse-etl.md` — Hightouch, Census, pushing warehouse data back to
   operational systems
+- `spark-structured-streaming.md` — Spark Structured Streaming vs Flink/Kafka
+  Streams, micro-batch vs continuous, checkpointing
+- `data-observability.md` — Monte Carlo, Databand, anomaly detection on data
+  volume, schema, freshness, and distribution
 
 ## Related Knowledge Bundles
 

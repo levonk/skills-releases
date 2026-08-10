@@ -1634,8 +1634,8 @@ bash ./scripts/git-repo-init.bash --init-only [TARGET-DIR]  # (conditional) Full
 ./scripts/git-push.sh [remote] [branch] [path] [--slug <slug>]  # Push commits + tags
 ./scripts/git-tag.sh --category <cat> --slug <slug> [--message <msg>] [path]  # Tag HEAD (user-requested only)
 ./scripts/git-rollback.sh --to <tag-or-sha> [--slug <slug>] [path]  # Roll back to a tag/SHA (creates backup branch)
-./scripts/git-archive.sh --identify [path]                          # Identify branches/tags to archive
-./scripts/git-archive.sh --archive --ref <name>... [path]           # Archive specific refs (rename to archive/...)
+./scripts/git-archive.sh --identify [--skip <b1,b2>] [--fetch] [path]                          # Identify branches/tags to archive (squash-merge aware)
+./scripts/git-archive.sh --archive --ref <name>... [--yes] [path]           # Archive specific refs (rename to archive/...)
 ./scripts/git-archive.sh --prune [--retention-months N] --confirm [path]  # Prune old archive refs
 ```
 
@@ -1834,11 +1834,61 @@ For quality check results, quality check integration, security considerations, e
 For tagging HEAD, automatic run tagging, tag format, tag creation commands, tagging rules, usage patterns (complete repository management, cleanup, analysis, dry run), environment integration, script command reference, RTK usage, and development loop integration, see [Tagging and Pushing](references/tagging-and-pushing.md).
 
 
+## Definition of Done
+
+Before declaring the git-repository-management run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Data Collection and Analysis
+
+- [ ] **[script]** `./scripts/git-collect.sh` (or `--json`) exits zero and returns structured change data + quality check results (Phase 2)
+- [ ] **[manual]** The AI analyzed the collected data and grouped changes into logical commits with meaningful titles and bodies (Phase 3)
+- [ ] **[manual]** Commit messages follow the vertical grouping rules — semantically related files in the same commit, unrelated changes split into separate commits (Commit Organization)
+
+### Execution
+
+- [ ] **[script]** `./scripts/git-commit-batch.sh --dry-run` validates the commit plan before execution (Phase 4)
+- [ ] **[script]** `./scripts/git-commit-batch.sh` exits zero — all commits applied with mandatory commit bodies, no AI signatures, and pre/post auto-tags created (Phase 4)
+- [ ] **[manual]** Every commit has a body — no single-line commits without a description (Commit Organization)
+
+### Push and Tags
+
+- [ ] **[script]** `./scripts/git-push.sh` exits zero — commits and tags pushed, divergence handled automatically (no manual rebase) (Phase 4/6)
+- [ ] **[manual]** User-requested tags (if any) were created via `./scripts/git-tag.sh --category <cat> --slug <slug>` — not via bare `git tag` (Phase 6)
+
+### Security and Hygiene
+
+- [ ] **[script]** `./scripts/scan-secrets.sh` exits zero — no secrets staged in any commit (Quality Checks and Security)
+- [ ] **[script]** `./scripts/scan-artifacts.sh` exits zero — no resolved `$HOME` paths, usernames, or hostnames in committed artifacts (Quality Checks and Security)
+- [ ] **[manual]** No AI attribution boilerplate ("Generated with", "Co-Authored-By: Devin", etc.) in any commit message (Commit Organization)
+
+### Repository Initialization (conditional)
+
+- [ ] **[manual]** If `git-collect.sh` emitted `NOT_A_GIT_REPO`: `git-repo-init.bash` was run with the correct scope (full CREATE vs `--init-only`) based on directory contents, then `git-collect.sh` was re-run (Repository Initialization)
+
+### Branch & Tag Archiving (if requested)
+
+- [ ] **[script]** `./scripts/git-archive.sh --identify` was run to list archive candidates before archiving (Branch & Tag Archiving)
+- [ ] **[manual]** Archived refs follow the `archive/{branches,tags}/{type}/YYYY/MM/YYYYMMDD-{slug}` format (Branch & Tag Archiving)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `git-commit-batch.sh` exits zero but commits have no body → mandatory commit body validation was bypassed (Phase 4)
+- `git-push.sh` succeeds but divergence was resolved by manual rebase instead of the script → the automatic divergence handler was bypassed, history may be corrupted (Phase 4)
+- Commits are applied but `scan-secrets.sh` was never run → secrets may be staged in the push (Quality Checks)
+- `scan-artifacts.sh` has HARD findings that were dismissed without fixing → identity leak in the commit history (Quality Checks)
+- A commit message contains "Generated with" or "Co-Authored-By: Devin" → AI attribution boilerplate violated the no-signatures rule (Commit Organization)
+- `NOT_A_GIT_REPO` fired but `git-repo-init.bash` was skipped and `git init` was called directly → the AI-decides scope and secret scanning were bypassed (Repository Initialization)
+
 ## Context Declaration
 
 ### File Paths
 - Main skill: `config/ai/skills/software-dev/git-repository-management/SKILL.md`
-- Scripts: `scripts/git-collect.sh`, `scripts/git-commit-batch.sh`, `scripts/git-push.sh`, `scripts/git-tag.sh`, `scripts/git-rollback.sh`, `scripts/git-archive.sh`, `scripts/git-repo-manager.sh`, `scripts/git-status-helper.sh`, `scripts/git-repo-init.bash` (bundled from `levonk/dotfiles`), `scripts/git-vcs-config.bash` (dependency of `git-repo-init.bash`)
+- Scripts: `scripts/git-collect.sh`, `scripts/git-commit-batch.sh`, `scripts/git-push.sh`, `scripts/git-tag.sh`, `scripts/git-rollback.sh`, `scripts/git-archive.sh`, `scripts/git-repo-manager.sh`, `scripts/git-status-helper.sh`, `scripts/git-repo-init.bash` (bundled from `levonk/dotfiles`), `scripts/git-vcs-config.bash` (dependency of `git-repo-init.bash`), `scripts/scan-secrets.sh` (git-secrets integration via cli-tool-discovery)
 - References: `references/workflow-phases.md`, `references/commit-organization.md`, `references/commit-templates.md`, `references/workflow-automation.md`, `references/quality-checks.md`, `references/tagging-and-pushing.md`, `references/branch-tag-archiving.md`, `references/git-status-digest.md`, `references/repository-initialization.md`
 
 ### Related Skills

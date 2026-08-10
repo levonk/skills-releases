@@ -22,13 +22,13 @@ description: >-
   fixes, single-file edits, bug fixes with a known root cause, or questions
   about how something works — this skill is for multi-step project execution,
   not trivial changes.
-version: 1.5.0
+version: 1.6.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
   knowledge-basis: "2026-07-31"
-  last-used: "2026-07-31"
+  last-used: "2026-08-08"
 tags:
   - "ai/skill"
   - "execution"
@@ -73,6 +73,9 @@ see-also:
   - skill: code-review-guidance
     relationship: "dependency"
     description: "Bundled via includeTree for offline availability. Execute-upsert dispatches a review subagent that follows this skill's checklist on each story commit before final commit. Supports automated mode (default, preserves autonomous execution) and human-in-the-loop mode (configurable via skill-config.toml)"
+  - skill: diagram-upsert
+    relationship: "dependency"
+    description: "Bundled via includeTree for offline availability. Execute-upsert uses it in Phase 4 (PRD) to produce Mermaid architecture diagrams and UX-flow diagrams (for graphical apps) that the PRD template requires. The bundled copy provides Mermaid syntax conventions and a validate-diagram.py script so PRD diagrams render correctly before the PRD is saved"
 
 ---
 

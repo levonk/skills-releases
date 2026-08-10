@@ -1444,6 +1444,46 @@ After applying surgical changes:
 - [Implementation Patterns](references/implementation-patterns.md) - Additive configuration, idempotent operations, content preservation, common config file patterns, backup strategy, and configuration management operations
 - [Tool Comparison](references/tool-comparison.md) - Detailed comparison of surgical-edit.sh vs manage-config.mjs, when to use which tool, and integration examples
 
+## Definition of Done
+
+Before declaring the surgical-config run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Environment Readiness
+
+- [ ] **[script]** `scripts/ensure-environment.sh --check` exits zero — all required tools (yq-go, comby, ast-grep, sd, etc.) are available (Environment Setup)
+- [ ] **[manual]** If `--check` reported missing tools, they were installed via `ensure-environment.sh --install` or manually before editing (Environment Setup)
+
+### Surgical Edit Application
+
+- [ ] **[script]** `scripts/surgical-edit.sh <file> '<operation>'` exits zero for every intended edit (Quick Start)
+- [ ] **[manual]** The intended change was applied — the target key/value/section now holds the new content (Verification: Content verification)
+- [ ] **[manual]** Existing user content outside the edit target remains intact — no unrelated keys, comments, or formatting were removed or reordered (Verification: Preservation check)
+- [ ] **[manual]** The edit used the highest-tier tool available for the file type (yq-go for YAML/JSON/TOML, structural rewriters for code) — not a fallback to `sed` when a semantic parser applies (Core Philosophy)
+
+### File Integrity
+
+- [ ] **[manual]** The edited file is syntactically valid — it parses without errors in its native format (Verification: Syntax validation)
+- [ ] **[manual]** The edit is idempotent — running the same `surgical-edit.sh` command a second time does not duplicate the entry or corrupt the file (Implementation Patterns: idempotent operations)
+- [ ] **[manual]** When `--detect-project` was used: the detected project type matches the actual project (Node.js, Rust, Python, etc.) and the edit respects project conventions (Integration with Project Adoption Workflow)
+
+### Functional Validation
+
+- [ ] **[manual]** The configuration works as expected after the edit — the tool/service that reads the file accepts it without errors (Verification: Functionality test)
+- [ ] **[manual]** No backup files (`.bak`, `.orig`) were left behind in the repository — the backup strategy cleaned up after successful application (Implementation Patterns: backup strategy)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `surgical-edit.sh` exits zero but the target key is still the old value → the operation expression was wrong or the tool fell back to a no-op; the edit did not take effect
+- The file parses but pre-existing comments or unrelated keys were stripped → the tool rewrote the whole file instead of editing surgically; user content was lost
+- The edit was applied with `sed` when `yq-go` was available for a YAML file → the tier hierarchy was violated; structural preservation is not guaranteed
+- The edit is not idempotent — running it twice adds the dependency twice → the operation is additive without a merge guard; future runs will corrupt the file
+- `ensure-environment.sh --check` exits non-zero but edits were applied anyway → the underlying tool may be missing; the edit may have silently fallen back to a text-based utility with weaker guarantees
+
 ## Context Declaration
 
 ### File Paths

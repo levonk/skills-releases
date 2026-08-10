@@ -152,6 +152,9 @@ Each phase has practices that prevent specific failure modes:
 | Secrets | [Hardcoded Credentials Detection](hardcoded-credentials-detection.md) | Credential leaks from AWS/Stripe/Google/GitHub/JWT keys committed to source |
 | Runtime | [SSH Hardening](ssh-hardening.md) | Brute-force attacks, root login via password, weak key types |
 | Audit | [Security Audit Playbook](security-audit-playbook.md) | Drift from hardening baseline, stale container images, unenforced firewall |
+| Linter Sec | [Linter Security Patterns](linter-security-patterns.md) | Linter leaking secrets in errors, untrusted code execution, plugin privilege escalation |
+| Analysis Sec | [Security-Aware Static Analysis](security-aware-static-analysis.md) | Cross-bundle: untrusted code handling, info leakage, sandboxing, tool supply chain |
+| Deps | [Dependency Supply Chain](dependency-supply-chain.md) | Unpinned dependencies, missing advisory checks, no SLSA provenance |
 
 ## Scope
 
@@ -207,14 +210,21 @@ codeguard rule added to job-aide. Append to `log.md` when adding.
 Future concept candidates (not yet in the bundle):
 
 - `secrets-management.md` — vault patterns, KMS integration, runtime secret
-  retrieval vs. baked-in credentials
-- `dependency-supply-chain.md` — lockfile pinning, integrity verification,
-  private registries, SLSA provenance
+  retrieval vs. baked-in credentials — deferred: out of scope for current
+  cycle (covered by secrets-egress-security bundle)
 - `ci-cd-pipeline-security.md` — protected branches, signed commits,
-  ephemeral runners, security gates (SAST/SCA/DAST)
-- `virtual-patching.md` — WAF/IPS/ModSecurity for temporary CVE mitigation
+  ephemeral runners, security gates (SAST/SCA/DAST) — deferred: out of scope
+  for current cycle (no CI pipeline security incident yet)
+- `virtual-patching.md` — WAF/IPS/ModSecurity for temporary CVE mitigation —
+  deferred: out of scope for current cycle (no WAF infrastructure)
 - `c-toolchain-hardening.md` — compiler flags (PIE, RELRO, CFI), linker
-  hardening, checksec verification in CI
+  hardening, checksec verification in CI — deferred: out of scope for current
+  cycle (no C/C++ projects in active use)
+
+Promoted from TODO on 2026-08-05:
+
+- `dependency-supply-chain.md` — promoted to a real page; see
+  [Dependency Supply Chain](dependency-supply-chain.md)
 
 ## Related Knowledge Bundles
 

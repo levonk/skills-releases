@@ -133,6 +133,10 @@ hybrid-vault → shared-path-clean → ansible-distribution → egress-firewall 
 | Distribution | [Ansible Vault Distribution](ansible-vault-distribution.md) | Hardcoded secrets, insecure distribution |
 | Egress | [Iron-Proxy Egress Firewall](iron-proxy-egress-firewall.md) | Unauthorized outbound traffic, supply chain attacks |
 | Recovery | [Vault Troubleshooting](vault-troubleshooting.md) | Vault corruption, lost passwords, broken decryption |
+| Regex DoS | [Regex DoS Prevention](regex-dos-prevention.md) | Catastrophic backtracking in user-supplied regex, DFA memory blowup |
+| Traversal | [Path Traversal in Scanners](path-traversal-in-scanners.md) | Path traversal in file scanning, symlink following, cross-platform risks |
+| Config Injection | [TOML Config Injection](toml-config-injection.md) | TOML injection via crafted values, world-writable config files, unsafe env expansion |
+| Grammar Supply | [Tree-Sitter Grammar Supply Chain](tree-sitter-grammar-supply-chain.md) | Unvetted C code in tree-sitter grammars, unpinned grammar versions |
 
 ## Scope
 

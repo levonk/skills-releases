@@ -1761,6 +1761,49 @@ This skill integrates with and references the following committees:
 - **Research Package**: Compiled data and sources
 - **Post-Decision Review**: Cultural, social, environmental assessment
 
+## Definition of Done
+
+Before declaring the Briefing Memo run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if the
+script exits non-zero, the item is NOT done. Items marked **[manual]** require
+the agent to check something the scripts cannot verify.
+
+### Brief Creation (Phase 1)
+
+- [ ] **[script]** `scripts/create_brief.py` produced a brief with all required sections: Situation/Debrief, Stakes, Constraints, Key Questions, Context files (Phase 1)
+- [ ] **[manual]** The brief captures the strategic question or decision point clearly (Phase 1)
+
+### Research Phase (Phase 2)
+
+- [ ] **[script]** `scripts/poll_research_needs.py` was run to collect committee information gaps (Phase 2 Step 5)
+- [ ] **[manual]** Decision significance was assessed across all 6 dimensions: Strategic Impact, Resource Commitment, Stakeholder Breadth, Time Horizon, Reversibility, Uncertainty (Phase 2 Step 1)
+- [ ] **[manual]** The research team was filtered based on significance level (Critical/High/Medium/Low) (Phase 2 Step 2)
+- [ ] **[manual]** Committee members were selected based on decision type (Financial/Customer/Technical/Strategic/Legal/Market/Partnership/Organizational) (Phase 2 Step 3)
+- [ ] **[manual]** Specialized thinking models were applied based on complexity (Second-Order, Systems, First Principles, Inversion, SCAMPER, Devil's Advocate) (Phase 2 Step 4)
+
+### Committee Deliberation (Phase 3)
+
+- [ ] **[manual]** The CSO orchestrated deliberation using the situational-analysis protocol (Phase 3 Step 1)
+- [ ] **[manual]** Conflict resolution method matched disagreement level: Consensus Building (minor), Expert Weighting (major), Majority Voting with veto (deadlocked) (Phase 3 Step 2)
+- [ ] **[manual]** If blind peer-review was run: committee responses were anonymized before review (Phase 3 Step 3)
+- [ ] **[manual]** Dissenting opinions were documented when Majority Voting was used (Phase 3 Step 2)
+
+### Decision Memo (Phase 4)
+
+- [ ] **[manual]** The CSO memo includes: decision framework, top recommendations, committee stances (vote count), resolved and unresolved tensions, next actions, risk assessment (Phase 4 Step 1)
+- [ ] **[manual]** The memo includes "the one thing to do first" — a single concrete next step, not a 10-item action list (Phase 4 Step 1)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- A memo is produced but `poll_research_needs.py` was never run → committee members did not receive the information they requested (Phase 2 Step 5)
+- The memo has recommendations but no vote count → committee stances are not documented (Phase 4 Step 1)
+- The memo lists 10 next actions instead of "the one thing to do first" → the anti-pattern was not corrected (Phase 4 Step 1)
+- Conflict resolution was "consensus" but dissenting opinions were not documented → the deliberation is not auditable (Phase 3 Step 2)
+- The research team was not filtered by significance → a Low-impact decision got a full research team (wasted effort) or a Critical decision got a minimal team (insufficient research) (Phase 2 Step 2)
+
+
 ## Context Declaration
 
 ### File Paths

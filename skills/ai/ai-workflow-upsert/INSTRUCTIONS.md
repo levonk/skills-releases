@@ -4091,6 +4091,69 @@ Ensure no secrets, keys, or sensitive paths are exposed in workflows. Before pac
 
 See `ai-upsert/references/skill/security.md` for the full security review guidelines, including the security checklist (no hardcoded credentials, no malicious code, all inputs validated, file operations restricted to appropriate directories).
 
+## Definition of Done
+
+Before declaring the ai-workflow-upsert run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[manual]** `scripts/init_workflow.py <workflow-name> --path <output-directory>` ran successfully (Mode A Step 1) — the workflow wrapper and content template were scaffolded with TODO placeholders
+- [ ] **[manual]** The workflow wrapper exists at `config/ai/workflows/<category>/<name>.md.tmpl` (or the chosen location) with YAML frontmatter and an `includeTemplate` call (Mode A Step 3)
+- [ ] **[manual]** The content template exists at `config/ai/templates/<category>/<name>-template.md` with no frontmatter — separate from the wrapper (Mode A Step 3)
+- [ ] **[manual]** No extraneous documentation files (`README.md`, `INSTALLATION_GUIDE.md`, `QUICK_REFERENCE.md`, `CHANGELOG.md`) are bundled alongside the workflow (Mode A Step 6)
+- [ ] **[manual]** No `scripts/`, `references/`, `evals/`, or `assets/` subdirectories are present — workflows do not support these (Mode A Step 6)
+
+### Frontmatter/Metadata
+
+- [ ] **[manual]** The wrapper starts with valid YAML frontmatter (delimited by `---`) containing required fields (`name`/`description` or workflow-specific `workflow`/`slug`/`use`/`role`) (Mode A Step 6)
+- [ ] **[manual]** `date.last-used` is set to the current date (YYYY-MM-DD format) in the wrapper frontmatter (Mode A Step 3)
+- [ ] **[manual]** `date.knowledge-basis` and `date.last-used` are updated when changes are applied in Mode C (Mode C Step 6)
+
+### Content Quality
+
+- [ ] **[manual]** The workflow defines clear phases: Initialize, Plan, Apply, Verify, Deliver (Mode A Workflow Design Focus)
+- [ ] **[manual]** Steps specify concurrency and safety controls where applicable (Mode A Workflow Design Focus)
+- [ ] **[manual]** The content template contains the workflow steps and logic with no frontmatter (Mode A Step 3)
+- [ ] **[manual]** `see-also` entries for skills include the canonical install command (`devbox run -- pnpm dlx skills add levonk/skills-releases --skill <name>`) — never `npx skills add` (Skill Install Commands)
+
+### Build/Validation
+
+- [ ] **[manual]** `just validate` (or `just build current`) passes — the `includeTemplate` call resolves correctly (Mode A Step 4)
+- [ ] **[manual]** Step sequencing is valid — no circular dependencies between phases (Mode A Step 4)
+- [ ] **[manual]** Context Declaration references built output paths (`build/current/skills/...`), not source paths (`src/current/skills/...`), with GitHub fallback URLs (Context Declaration in see-also)
+
+### Mode B: Skill-to-Workflow Conversion
+
+- [ ] **[manual]** `git mv` was used to move the skill's `SKILL.md` to the wrapper path — git history is preserved (Mode B Step 3)
+- [ ] **[manual]** The rename was committed as a standalone commit — pure rename, no content changes (Mode B Step 4)
+- [ ] **[manual]** Workflow-based optimizations were applied as separate commits — frontmatter converted, body moved to content template (Mode B Step 5)
+
+### Mode C: Update Discipline
+
+- [ ] **[manual]** Changes were proposed before applying — a prioritized list (Critical / Important / Nice to have) with before/after (Mode C Step 3)
+- [ ] **[manual]** User confirmed before changes were applied (Mode C Step 4)
+- [ ] **[manual]** Approved changes were applied as separate commits (Mode C Step 5)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, API keys, or tokens in workflow frontmatter or steps (Security)
+- [ ] **[manual]** No hardcoded absolute paths — use indirect references and the Context Declaration (Security)
+- [ ] **[manual]** External fetches use HTTPS with certificate validation and timeouts (Security)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `just validate` passes but the content template still has TODO placeholders → the scaffolder created the structure but the AI never filled in the steps (Mode A Step 3)
+- The wrapper has frontmatter but no `includeTemplate` call → the content template is disconnected from the wrapper (Mode A Step 3)
+- The workflow has a `scripts/` directory → it has outgrown the workflow format and should be converted to a skill via `ai-upsert` Mode B (Mode A Step 6)
+- Mode B: the `git mv` and content changes are in the same commit → clean lineage is lost and individual optimizations cannot be reverted (Mode B Step 4-5)
+- `see-also` references use `npx skills add` → the canonical install command was not used (Skill Install Commands)
+
+
 ## Context Declaration
 
 ### File Paths

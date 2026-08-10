@@ -111,6 +111,67 @@ interchangeable**; they serve orthogonal sweet spots.
 - Single-project workflows where the index must stay fresh without manual
   commands (CodeGraph's file watcher).
 
+## Setup via dev-env-upsert
+
+Setup is delegated to the `dev-env-upsert` skill, which manages the
+`devbox.json` + `.envrc` + `justfile` as a **coupled trio** per the Standard
+Developer UX Flow documented in
+[`knowledge/dev-environment-practices/`](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md).
+You do not hand-wire the indexer, the direnv hook, or the justfile recipes —
+one `dev-env-upsert setup` call does all three consistently.
+
+### File-type-aware detection (do NOT install all three)
+
+The detection logic picks **one** indexer based on the dominant file types in
+the target directory — it never blanket-installs all three:
+
+| File type in target | Indexer chosen | License note |
+|---------------------|----------------|--------------|
+| Source code (`.ts`, `.py`, `.go`, `.rs`, …) | **CodeGraph** | MIT |
+| Multi-repo workspace (multiple `.git` roots / service dirs) | **GitNexus** | ⚠️ PolyForm Noncommercial — procure a commercial license for business use |
+| Non-code docs / PDFs / video / images | **Graphify** | MIT |
+
+### The `setup` operation (one call does everything)
+
+```bash
+uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py setup \
+  --packages <indexer>,direnv,just \
+  --prime-steps "<indexer> index .:<indexer>" \
+  --envrc-async-prime \
+  --target .
+```
+
+This single call adds the indexer package to `devbox.json`, appends the index
+step to `prime_impl` in the justfile, and wires `.envrc` to async-trigger
+`prime_impl` on directory entry.
+
+### Indexing folds into `prime_impl` — no new targets
+
+Indexing folds into the existing `prime_impl` target per the Standard
+Developer UX Flow. **Do NOT create new `index` / `index_impl` targets** — the
+indexer invocation is just another prime step, alongside package downloads,
+build, and doc generation. This keeps one warmup entry point and one staleness
+gate.
+
+### Staleness check lives INSIDE `prime_impl`
+
+The staleness check lives INSIDE `prime_impl` in the justfile — it wraps the
+indexer invocation and reindexes when the index DB is missing or older than 1
+hour. `.envrc` does not call the indexer directly; it just async-triggers
+`prime_impl` via `devbox run -- just prime_impl` in the background, gated by
+`direnv allow` and the `DEVBOX_SHELL_ENABLED` check (per
+[`async-prime-internal.md`](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/async-prime-internal.md),
+which owns the async trigger). The staleness check itself is documented in
+[`index-staleness-check.md`](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/index-staleness-check.md),
+which owns only the check (not the trigger).
+
+### Do NOT install all three by default
+
+Reiterating: the detection logic above picks **one** indexer based on file
+types. Installing CodeGraph + Graphify + GitNexus unconditionally adds
+packages, index DBs, and warmup time for capabilities the project does not
+need. Run `dev-env-upsert setup` once per project and let detection choose.
+
 ## When this practice does NOT apply
 
 - **Text search tasks** (find text, find files, fuzzy match) — use the
@@ -129,6 +190,9 @@ interchangeable**; they serve orthogonal sweet spots.
 - [Adding New Tools](adding-tools.md) — procedure for wiring a newly detected indexed AST tool into the CLI surface.
 - [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) — the risk hierarchy that justifies running multiple MIT-licensed indexed AST tools (low risk) vs. adopting GitNexus's PolyForm Noncommercial license (higher risk for business use).
 - [dev-environment-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/overview.md) — devbox/direnv integration for keeping AST indexes fresh on directory entry.
+- [dev-env-upsert](https://github.com/levonk/skills-releases/blob/main/skills/software-dev/dev-env-upsert/SKILL.md) — manages devbox.json + .envrc + justfile trio for indexed AST tool setup (package, prime_impl step, staleness hook).
+- [Async Prime Internal](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/async-prime-internal.md) — the async .envrc trigger that kicks off prime_impl on directory entry.
+- [Index Staleness Check](https://github.com/levonk/skills-releases/blob/main/knowledge/dev-environment-practices/index-staleness-check.md) — the staleness check pattern inside prime_impl that wraps the indexer invocation.
 
 ## Sources
 

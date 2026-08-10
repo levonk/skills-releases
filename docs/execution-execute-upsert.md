@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **execution** · Status:  · Version: 1.5.0
+> Category: **execution** · Status:  · Version: 1.6.0
 
 Generic project execution controller that drives feature implementation from request to completion through a self-update → assess → establish-tech → PRD → tasks → execute pipeline. Self-updates all skills to the latest version before starting, establishes the project's tech stack as a binding constraint for all subagents (so they never use npm when the project uses pnpm, never use npx when the project uses pnpm dlx, etc.), assesses request size, creates a PRD if one doesn't exist (for large requests), breaks the PRD into parallelizable task stories, executes each story via subagents with a per-story code review before commit, updates the PRD and task files when scope changes, and updates project documentation as the final phase. Runs as much as possible: when a story is blocked, marks it [!] Blocked with the reason in the index and proceeds to the next runnable story, then presents a final blocker report with the question, the options, the recommendation, and why it was recommended. Use when users want to implement a feature or change that is large enough to warrant structured planning, when they say "execute", "implement this feature", "build this project", "run the project executor", "drive this to completion", or reference a PRD or task list they want executed. Do NOT trigger on quick fixes, single-file edits, bug fixes with a known root cause, or questions about how something works — this skill is for multi-step project execution, not trivial changes.
 
@@ -13,7 +13,7 @@ Generic project execution controller that drives feature implementation from req
 |-------|-------|
 | Name | `execute-upsert` |
 | Category | `execution` |
-| Version | `1.5.0` |
+| Version | `1.6.0` |
 | Status | `` |
 | Owner |  |
 
@@ -29,9 +29,10 @@ Generic project execution controller that drives feature implementation from req
 - **handoff** (skill, dependency) — Invoked when execution stops with work remaining (blocked stories, context limit, user pause) — captures context so a fresh session can resume from the task index. Shared via disruption-handoff include
 - **project-detection** (skill, dependency) — Bundled via includeTree for offline availability. Execute-upsert runs it in Phase 3 (Establish Technologies) to detect the project's package manager, build system, test runner, and linter. The detected tech stack becomes a binding constraint injected into every subagent dispatch
 - **code-review-guidance** (skill, dependency) — Bundled via includeTree for offline availability. Execute-upsert dispatches a review subagent that follows this skill's checklist on each story commit before final commit. Supports automated mode (default, preserves autonomous execution) and human-in-the-loop mode (configurable via skill-config.toml)
+- **diagram-upsert** (skill, dependency) — Bundled via includeTree for offline availability. Execute-upsert uses it in Phase 4 (PRD) to produce Mermaid architecture diagrams and UX-flow diagrams (for graphical apps) that the PRD template requires. The bundled copy provides Mermaid syntax conventions and a validate-diagram.py script so PRD diagrams render correctly before the PRD is saved
 
 ---
 
 - **Full skill**: [`skills/execution/execute-upsert/SKILL.md`](skills/execution/execute-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-05T04:08:35Z
+- **Generated**: 2026-08-10T21:38:16Z

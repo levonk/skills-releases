@@ -100,6 +100,43 @@ below — no separate sub-domain file is needed.
   register. Diesel vehicles and older vehicles face stricter scrutiny in some
   states.
 
+### Auction-Specific Vehicle Constraints
+
+When buying a vehicle at auction (Copart, IAAI, GSA Auctions, GovDeals,
+GovPlanet, tow yard, police seized, etc.), additional constraints apply
+beyond the standard checks above. See the deal-intelligence skill's
+`references/auction-constraints.md` for the full details. Key flags to
+surface in the Needs Discovery Brief when the user is considering auction
+vehicles:
+
+- **Smog / CARB compliance**: If the user is in California or another
+  strict-emissions state, flag whether the vehicle is CARB-certified
+  (50-state emissions label). 49-state or EPA-only vehicles cannot be
+  registered in California. Budget $200–$1,500+ for smog-related repairs
+  on auction vehicles that may not pass.
+- **Export-only restriction**: Some auction vehicles (especially at Copart
+  and IAAI) are sold export-only — the buyer must export the vehicle
+  outside the US and cannot title or register it domestically. Ask the
+  user whether they are buying for export or domestic use.
+- **Salvage / rebuilt / junk title**: Auction vehicles frequently have
+  branded titles. Ask the user whether they are willing to repair and
+  rebuild a salvage vehicle. If not, exclude salvage/rebuilt title
+  vehicles from recommendations.
+- **Damage level opt-in**: Auction vehicles are sold with varying levels
+  of disclosed damage (run & drive, startable, non-runable, front/rear/
+  side damage, flood, hail, theft recovery, vandalism, biohazard). Ask
+  the user which damage levels they are willing to accept. Flood damage
+  should be strongly discouraged unless the user is an experienced
+  mechanic or buying for parts.
+- **Dealer license requirement**: Some auction sales (especially at
+  Copart and IAAI) require a dealer license. Ask the user if they have
+  one. If not, they can use a dealer agent/broker ($300–$800 per
+  vehicle) or stick to public-access sales.
+- **Locale / travel**: Auction vehicles typically require local pickup.
+  Ask the user whether they are willing to travel to the pickup location
+  or arrange third-party transport. Factor transport cost into the total
+  acquisition cost.
+
 ## Recommendation
 
 For any vehicle purchase, always recommend: a VIN history report, a recall

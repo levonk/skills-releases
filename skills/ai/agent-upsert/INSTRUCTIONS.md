@@ -2460,6 +2460,61 @@ Ensure no secrets, keys, or sensitive paths are exposed in agent definitions.
 Review tool contracts for hardcoded credentials and validate that tool inputs
 do not accept unvalidated external data.
 
+## Definition of Done
+
+Before declaring the agent-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[script]** `scripts/init-agent.py <agent-name> --path <output-directory>` ran successfully (Mode A Step 1) — the agent file was scaffolded from `references/agent-scaffold-template.md` with `<agent-name>`, `<Agent Title>`, and `<YYYY-MM-DD>` placeholders substituted
+- [ ] **[manual]** The agent file exists at `internal-docs/agents/<agent-name>.md` (or the user-specified location) (Mode A Step 6 / Mode C)
+- [ ] **[manual]** The agent file has the required body sections: Goal, i/o, Primary Workflow, Guardrails (Mode A Step 4)
+
+### Frontmatter/Metadata
+
+- [ ] **[script]** `scripts/verify-agent.py <agent-file> --verbose` passes — required frontmatter fields are present and non-empty, personality sub-fields are set, date format is valid, model-level/agent-status/visibility values are valid (Mode A Step 5 / Mode C Step 7)
+- [ ] **[manual]** Frontmatter includes all required fields: `agent`, `description`, `use`, `personality` (name, role, color, icon, voice), `categories`, `capabilities`, `model-level`, `model`, `tools`, `version`, `date`, `tags` (Mode A Step 2)
+- [ ] **[manual]** `date.last-used` is set to the current date (YYYY-MM-DD format) in the agent's frontmatter (Mode A Step 6)
+- [ ] **[manual]** `date.knowledge-basis` is updated when changes are applied in Mode C (Mode C Step 6)
+
+### Content Quality
+
+- [ ] **[manual]** The `description` field states what the agent does and when to use it — it is the primary triggering mechanism (Mode A Step 2)
+- [ ] **[manual]** The agent embodies specific expertise and works autonomously after initial questioning — clear boundaries and capabilities are defined (Mode A Step 3)
+- [ ] **[manual]** The i/o schema is internally consistent — inputs match workflow expectations, outputs match deliverables (Mode C Step 7)
+- [ ] **[manual]** Tool contracts reference valid tools and do not accept unvalidated external data (Mode C Step 7)
+
+### Build/Validation
+
+- [ ] **[script]** `scripts/verify-agent.py <agent-file> --verbose` passes after all changes are applied (Mode A Step 5 / Mode C Step 7)
+- [ ] **[manual]** If the agent file is a `.tmpl`, it renders correctly (Mode C Step 7)
+
+### Update Mode Discipline (Mode C Only)
+
+- [ ] **[manual]** Changes were proposed before applying — a prioritized list (Critical / Important / Nice to have) with before/after was presented (Mode C Step 3)
+- [ ] **[manual]** User confirmed before changes were applied — the author accepted all, a subset, or rejected (Mode C Step 4)
+- [ ] **[manual]** Approved changes were applied as separate commits — one logical change per commit, each independently reviewable and revertable (Mode C Step 5)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, keys, or sensitive paths are exposed in the agent definition (Security section)
+- [ ] **[manual]** No hardcoded absolute paths — use indirect references and the Context Declaration (Security section)
+- [ ] **[manual]** `see-also` entries follow the cross-linking format with valid relationship types (dependency/alternative/complement/sibling) and no circular dependencies (Cross-Linking section)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `verify-agent.py` passes but the `description` is generic ("an AI agent that helps") → the primary trigger mechanism will not fire reliably (Mode A Step 2)
+- The agent file exists but `date.last-used` is missing or stale → the agent appears unused and may be flagged for deprecation (Mode A Step 6)
+- Mode C: changes were applied without user confirmation → the author's intentional deviations were silently overwritten (Mode C Step 4)
+- `verify-agent.py` passes but the i/o schema inputs don't match the workflow steps → the agent will fail at runtime when invoked (Mode C Step 7)
+- The agent declares `capabilities` that no longer exist or tools that have changed contracts → the agent will attempt unavailable operations (Mode C audit checklist)
+
+
 ## Context Declaration
 
 ### File Paths

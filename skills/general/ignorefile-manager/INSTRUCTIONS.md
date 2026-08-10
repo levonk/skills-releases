@@ -1747,6 +1747,51 @@ The `git-repository-management` skill can call this skill to update
 `.gitignore` as part of a commit workflow. When invoked from another skill,
 use `--output .gitignore` to target only the VCS ignore file.
 
+## Definition of Done
+
+Before declaring the ignorefile-manager run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Reconcile (harvest missing patterns)
+
+- [ ] **[script]** `generate_ignores.py reconcile --target <project>` exits zero or reports only already-assigned patterns (Step 1)
+- [ ] **[manual]** Every orphan pattern from the reconcile report is either assigned to an existing concern file or explicitly rejected with a reason (Step 1)
+
+### Audit (missing or stale outputs)
+
+- [ ] **[script]** `generate_ignores.py audit --target <project>` reports no `[MISSING]` or `[STALE]` outputs (Step 2)
+- [ ] **[manual]** Each configured output in `assets/outputs.yaml` that should exist for the target project is present and up to date (Step 2)
+
+### Generate (output files)
+
+- [ ] **[script]** `generate_ignores.py generate --target <project>` exits zero (Step 3)
+- [ ] **[manual]** Each generated output has the `# ===== BEGIN GENERATED CONTENT =====` / `# ===== END GENERATED CONTENT =====` marker pair (Step 3)
+- [ ] **[manual]** Project-specific content above the `BEGIN GENERATED CONTENT` marker is preserved — not overwritten by generation (Step 3)
+- [ ] **[manual]** Patterns are sorted alphabetically within sections and deduplicated across concerns (Step 3)
+- [ ] **[manual]** Non-obvious patterns retain their inline comments explaining why they exist (Step 3)
+
+### Workspace and Ripgrep (optional modes)
+
+- [ ] **[manual]** When `workspace` mode was run: every `*.code-workspace` file under the target has `files.exclude`, `search.exclude`, and `files.watcherExclude` merged with marker keys for idempotent re-runs (Step 5)
+- [ ] **[manual]** When `ripgrep` mode was run: `$XDG_CONFIG_HOME/ripgrep/config` has `--hidden`, `--smart-case`, `--sort=path`, and `--ignore-file=<path>/ripgrepignore` flags; `ripgrepignore` has generated patterns with preserved project-specific entries above the marker (Step 6)
+
+### Commit Hygiene
+
+- [ ] **[manual]** `git diff` reviewed before commit — generated content header has timestamp and source concerns for traceability (Step 4)
+- [ ] **[manual]** No secrets, absolute `$HOME` paths, or machine-specific usernames leaked into any generated output (Step 4)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `generate` exits zero but a deployed ignore file is still `[STALE]` → the output was skipped or the composition config is wrong (Step 2 → Step 3)
+- `generate` exits zero but project-specific patterns above the marker were overwritten → marker is missing or malformed, user content was destroyed (Step 3)
+- `reconcile` reports orphans but they were dismissed without assigning → manual additions will be silently lost on next generation (Step 1)
+- `audit` reports `[MISSING]` for `.dockerignore` but the run was declared done → an output the project needs was never generated (Step 2)
+- `workspace` mode ran but a workspace file has no marker keys → idempotent re-runs will duplicate entries (Step 5)
+
 ## Context Declaration
 
 - **Source concerns**: `assets/concerns/*.ignorefile` (11 files, one per category)

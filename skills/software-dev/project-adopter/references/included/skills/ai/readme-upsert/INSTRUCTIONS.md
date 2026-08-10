@@ -2338,6 +2338,60 @@ The script above catches structural conflicts (broken links, duplicated text, wr
 - No content duplicated from AGENTS.md or developer guide
 - `scripts/verify_consistency.py` passes (no broken links, no AGENTS.md conflicts)
 
+## Definition of Done
+
+Before declaring the readme-upsert run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Artifact Structure
+
+- [ ] **[manual]** `README.md` exists at the project root (Phase 2-3)
+- [ ] **[manual]** Required sections are present: Project name (H1), Quick Start, Project Structure, AI Agent Documentation (Phase 2)
+- [ ] **[manual]** Optional sections (Development Workflow, Testing, Package Management, Troubleshooting, Contributing, License) are included only when relevant to the project (Phase 2)
+- [ ] **[manual]** For greenfield projects: only directories that actually exist on disk are listed in Project Structure — template-mentioned directories that do not exist are omitted (Phase 2)
+
+### Content Quality
+
+- [ ] **[manual]** The README is written for a human browsing GitHub — marketing tone is acceptable for the overview, full sentences are fine (Instructions)
+- [ ] **[manual]** Every command block is copy-paste ready and runnable as-is (Instructions)
+- [ ] **[manual]** Real file paths from the project are used — no template placeholders (Instructions)
+- [ ] **[manual]** The README is 100-250 lines — concise, a landing page not a manual (Instructions / Phase 5)
+- [ ] **[manual]** No content is duplicated from AGENTS.md or the developer guide — the README links to them instead (Instructions / Phase 4)
+
+### Cross-Reference Check
+
+- [ ] **[manual]** The README links to `AGENTS.md` for AI agent guidance — if and only if `AGENTS.md` exists (Phase 4)
+- [ ] **[manual]** The README links to `internal-docs/oos/` if out-of-scope docs exist (Phase 4)
+- [ ] **[manual]** The README links to `internal-docs/adr/` if ADRs exist (Phase 4)
+- [ ] **[manual]** For greenfield projects: missing `internal-docs/oos/` and `internal-docs/adr/` links do not fail the check — those directories typically do not exist yet (Phase 4 Greenfield guard)
+
+### Build/Validation
+
+- [ ] **[script]** `scripts/verify_consistency.py {REPO_ROOT} --verbose` passes (or `--greenfield` for greenfield projects) — no broken links, no AGENTS.md conflicts, required sections present (Phase 5)
+- [ ] **[manual]** Semantic consistency check completed — every fact that appears in more than one source (code, AGENTS.md tree, README.md, docs/) agrees; the code is the source of truth (Phase 5)
+- [ ] **[manual]** No AGENTS.md-style sections in the README (JIT Index, Universal Contracts, Definition of Done, Boundaries, Known Gotchas) (Phase 5)
+- [ ] **[manual]** No README-style sections in AGENTS.md (Troubleshooting, Contributing, License) (Phase 5)
+
+### Hygiene
+
+- [ ] **[manual]** No secrets, API keys, or tokens in the README (Instructions)
+- [ ] **[manual]** No AI agent workflows or context-loading instructions in the README — those go in AGENTS.md (Phase 2 What NOT to put)
+- [ ] **[manual]** No detailed code patterns or ✅ DO / ❌ DON'T lists — those go in the developer guide (Phase 2 What NOT to put)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `verify_consistency.py` passes but the README duplicates content from AGENTS.md → the README should link, not copy (Instructions / Phase 4)
+- The README exists but commands reference `npm` when the project uses `pnpm` → the tech stack was not detected correctly (Phase 1 / Phase 5 semantic check)
+- The README lists directories that do not exist on disk → template placeholders were not adapted to the actual project structure (Phase 2)
+- `verify_consistency.py` passes but the project name (first H1) differs between README.md and root AGENTS.md → semantic inconsistency between the two entry points (Phase 5)
+- The README contains AGENTS.md-style sections (JIT Index, Boundaries) → audience separation violated; those sections belong in AGENTS.md (Phase 5)
+- For greenfield: the README includes optional sections the scaffold does not imply (e.g., "Testing" with no test runner configured) → template sections were not filtered to what the project actually has (Phase 2)
+
+
 ## Context Declaration
 
 ### File Paths

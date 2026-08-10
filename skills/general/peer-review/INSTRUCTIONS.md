@@ -1487,6 +1487,46 @@ The skill produces two artifacts:
 - [document-review-pattern.md](references/document-review-pattern.md) — blind
   multi-reviewer pattern for policy/doc drafts
 
+## Definition of Done
+
+Before declaring the peer-review run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Anonymization
+
+- [ ] **[script]** `scripts/anonymize.py` exits zero and emits both the anonymized bundle and the mapping key (Step 2)
+- [ ] **[manual]** The A–N mapping is randomized — no reviewer can infer which named author produced which response from positional ordering (Step 2)
+- [ ] **[manual]** Self-referential author names inside responses were stripped before anonymization (Step 1)
+- [ ] **[manual]** The mapping key was NOT shared with any reviewer — only the synthesizer sees it (Step 4)
+
+### Reviewer Coverage
+
+- [ ] **[manual]** One reviewer was spawned per original response (N responses → N reviewers) (Step 3)
+- [ ] **[manual]** Each reviewer answered all three fixed questions: strongest response, biggest blind spot, what all responses missed (Step 3)
+- [ ] **[manual]** Each review is under 200 words and direct — no hedging or "consider both sides" equivocation (Step 3)
+- [ ] **[manual]** Reviews were collected from the anonymized bundle only — no reviewer saw de-anonymized authorship (Step 3 → Step 4)
+
+### Artifacts
+
+- [ ] **[manual]** The anonymized bundle file (`peer-review-anonymized-[timestamp].md`) was saved so the review round is reproducible (Output)
+- [ ] **[manual]** The review transcript file (`peer-review-transcript-[timestamp].md`) contains the original question, the anonymized bundle, all N reviews, and the de-anonymized mapping (Output)
+
+### Domain Pattern (optional)
+
+- [ ] **[manual]** When running a code, design, or document review: the matching pattern in `references/` was followed (Step 5)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- `anonymize.py` exits zero but the mapping is positional (A always = first response) → randomization failed, positional bias reintroduced (Step 2)
+- N reviews collected but fewer than N responses were reviewed → a response was skipped, coverage is incomplete (Step 3)
+- Reviews exist but the transcript file is missing the de-anonymized mapping → the synthesizer cannot weigh verdicts by author (Output)
+- A reviewer saw the mapping key → authority bias contaminates the verdict (Step 4)
+- Reviews were collected but no reviewer answered all three questions → the synthesizer cannot compare across the same axes (Step 3)
+
 ## Context Declaration
 
 - **Bundled scripts**: `scripts/anonymize.py` (deterministic shuffle + mapping

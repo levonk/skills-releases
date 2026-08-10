@@ -175,17 +175,26 @@ Notable state-run programs:
 | Virginia | [VA DGS Surplus](https://dgs.virginia.gov/office-of-surplus-property-management/public/public-auctions2) | Via [GovDeals](https://dgs.virginia.gov/office-of-surplus-property-management/public/govdeals-from-state-agencies) |
 | Connecticut | [CT DAS Surplus](https://portal.ct.gov/das/services/for-agencies-and-municipalities/surplus-and-auctions) | State + municipal police seized property |
 | DC | [DC Surplus Property](https://ocp.dc.gov/page/dc-surplus-property-auction) | Via [dcgovt.govdeals.com](https://dcgovt.govdeals.com/) |
+| Arizona | [AZ State Surplus](https://doa.az.gov/about/services/public-auctions) | Via [Sierra Auction](https://www.sierraauction.com/pages/seller/government-surplus/) or GovDeals; vehicles, equipment, office supplies |
+| Michigan | [MI DTMB Surplus](https://www.michigan.gov/dtmb/services/surplusprogram) | MiBid online + quarterly in-person in Lansing; 3% buyer's fee; includes MSP/DNR/TSA confiscated property |
+| Utah | [UT State Surplus](https://purchasing.utah.gov/general-services/state-surplus-property/) | Online auctions + sealed bids; real estate requires 10% escrow deposit; no buyer's premium |
+| Wisconsin | [WI Surplus Online Auction](https://datcp.wi.gov/Pages/Publications/GovernmentSalesSurplus176.aspx) | Surplus land from DNR/DOT + general state/university surplus; buyer's fee varies |
+| New York | [NYS Store (OGS)](https://ogs.ny.gov/nysstore) | Via GovDeals (8% buyer's premium); vehicles, equipment, furniture, technology, real estate |
+| Iowa | [IA DOT Auctions](https://iowadot.gov/general-procurement-auctions/iowa-dot-auctions) | Via GovDeals + in-person at Ames, IA; vehicles, road maintenance equipment, trailers, real estate |
 
 **How to find your state's surplus**: Search `"<your state> state surplus property auction"`
 or check the GSA state agency contacts page linked above. Most redirect to
-GovDeals or Public Surplus with a state-specific storefront.
+GovDeals or Public Surplus with a state-specific storefront. When a state
+site redirects to a contractor platform, **keep both as sources** — the
+state site is the index/portal, the contractor platform is where you
+actually bid.
 
-### Local / Municipal / Police Auctions
+### Local / Municipal / County Auctions
 
 City and county governments, police departments, school districts, and
 transit authorities all auction surplus and seized property. Most use the
 contractor platforms above (GovDeals, Public Surplus, PropertyRoom), but some
-run their own.
+run their own or use local auctioneers.
 
 | Type | How to find | Examples |
 |------|------------|---------|
@@ -195,12 +204,47 @@ run their own.
 | School district surplus | GovDeals / Public Surplus — search by school district name | IT equipment, buses, furniture, kitchen equipment |
 | Transit authority | Search `"<transit agency> surplus auction"` | Buses, vans, parts, equipment |
 | Airport lost & found | Some airports auction via GovDeals; Texas state surplus store sells unclaimed airport property | Check individual airport websites |
+| County/municipal fleet | Search `"<city> fleet auction"` or check GovDeals/Public Surplus | [Seattle Fleet](https://www.seattle.gov/fleet-management/vehicle-auction) (via James G. Murphy Co., 10% premium), [Cook County IL](https://www.cookcountyil.gov/service/public-surplus-auction) (via Public Surplus, ~10% premium), [Bexar County TX](https://www.bexar.org/591/Surplus-Items-for-Sale), [Norfolk VA](https://www.norfolk.gov/2732/Auctions) (vehicles via BidWrangler, real estate via GovDeals) |
+| County probate/estate | Search `"<county> public administrator auction"` | [LA County OPGLA](http://www.opgla.com/Auctions) — in-person real estate auctions ($10,000 cashier's check to bid); personal property via sealed bid |
+| State DOT fleet | Search `"<state> DOT auction"` — most redirect to GovDeals | [Iowa DOT](https://iowadot.gov/general-procurement-auctions/iowa-dot-auctions) (via GovDeals + in-person at Ames, IA) |
 
 **In-person auctions**: Many county tax deed sales and some police auctions
 still happen in person at courthouses or police parking lots. Search
 `"<county> tax deed sale"` or `"<city> police auction in person"`. These
 typically have less competition than online auctions but require showing up
 in person with a cashier's check.
+
+### Government Auctioneer Contractors
+
+Many government agencies don't run their own auctions — they contract with
+private auctioneers. When a government site redirects to an auctioneer
+platform, **keep both as sources** — the government site is the index, the
+auctioneer is where you actually bid. Key auctioneer contractors:
+
+| Contractor | Government clients | What they sell | Site |
+|-----------|-------------------|---------------|------|
+| [CWS Marketing](https://cwsmarketing.com/) | U.S. Treasury (real & general property), Customs, USMS | Real estate, vehicles, vessels, aircraft, luxury goods, firearms, industrial | cwsmarketing.com |
+| [Apple Towing / RBEX](https://www.appletowing.com/auctions) | US Marshals, Treasury, USPS, CBP | Federally seized vehicles (largest liquidator); weekly auctions via HiBid | appletowing.com/auctions |
+| [Apple Auctioneering Co.](https://www.appleauctioneeringco.com/usmarshals) | US Marshals (84 districts) | Seized vehicles & vessels; live + online | appleauctioneeringco.com/usmarshals |
+| [Sierra Auction](https://www.sierraauction.com/pages/seller/government-surplus/) | 150+ AZ agencies (AG, DPS, Phoenix, Mesa) | Vehicles, heavy equipment, electronics, restaurant equipment; live webcast | sierraauction.com |
+| [GovLiquidation](https://www.govliquidation.com/) | DOD surplus | Military surplus, vehicles, aircraft parts; EUC required for demil-coded items | govliquidation.com |
+| [James G. Murphy Co.](https://www.murphyauction.com/) | Seattle fleet, other PNW municipalities | Fleet vehicles, equipment | murphyauction.com |
+
+### Aggregators (Do Not Actively Search)
+
+Some sites aggregate listings from the official auction platforms. They are
+useful for discovery but should not be actively searched — use the
+underlying platforms directly instead. Aggregators are kept in
+`sourcing-sources.toml` with `aggregator = true` so they are tracked but
+not searched.
+
+| Aggregator | What it does | Why not to search directly |
+|-----------|-------------|--------------------------|
+| [GovAuctions.app](https://govauctions.app/) | Aggregates 36,000+ listings from GSA, GovDeals, Public Surplus, HUD | Free; good for discovery; but you bid on the underlying platform |
+| [BidProwl](https://bidprowl.com/) | Searches 25+ government auction sites simultaneously | Free; good for price comparison; but you bid on the underlying platform |
+| [GovernmentAuctions.org](https://www.governmentauctions.org/) | Paid membership directory ($19.95/month) | Paid; duplicates free aggregators; use GovAuctions.app or BidProwl instead |
+| [Gov-Auctions.org](https://www.gov-auctions.org/) | Informational aggregator with educational content | Informational only; redirects to actual platforms |
+| [USA.gov Auctions Portal](https://www.usa.gov/auctions-and-sales) | Cross-agency index of federal auctions | Portal to GSA, USMS, Treasury, HUD — go to those directly |
 
 ---
 
@@ -508,5 +552,91 @@ furniture, labeled boxes, or climate-controlled facility indicators.
 | GovAuctions (aggregator) | [govauctions.app](https://govauctions.app/) | All levels | None (search) | Online | Yes — shows sold prices across platforms |
 | BidProwl (aggregator) | [bidprowl.com](https://bidprowl.com/) | All levels | None (search) | Online | Yes — searches sold listings across platforms |
 | USA.gov auctions | [usa.gov/auctions](https://www.usa.gov/auctions-and-sales) | All (portal) | N/A | Portal | N/A |
+| GSA Fleet | [gsafleet.gov](https://www.gsafleet.gov/) | Federal (fleet) | None | Online + live + fixed-price | No |
+| IRS Auctions | [irsauctions.gov](https://www.irsauctions.gov/) | Federal (seized) | None | Online + in-person | No |
+| GovLiquidation | [govliquidation.com](https://www.govliquidation.com/) | Federal (DOD) | 10% | Online; local pickup | Yes |
+| CWS Marketing | [cwsmarketing.com](https://cwsmarketing.com/) | Federal (Treasury/USMS) | Varies | Online + in-person | No |
+| Apple Towing / RBEX | [appletowing.com/auctions](https://www.appletowing.com/auctions) | Federal (USMS/Treasury) | None | Online (HiBid) | No |
+| GovDeals Canada | [govdeals.ca](https://www.govdeals.ca/) | Canadian municipal | 7.5–12.5% | Online; local pickup | Yes |
+| AutoBidMaster | [autobidmaster.com](https://www.autobidmaster.com/) | Copart broker (public) | Varies (multiple fees) | Online; ships | No |
+| SCA Auction | [sca.auction](https://sca.auction/) | IAAI broker (public) | 3–9% + fees | Online; transporter required | No |
+| ACV Auctions | [acvauctions.com](https://www.acvauctions.com/) | Dealer-only wholesale | 2–10% | Online | No |
+| CarMax Auctions | [carmaxauctions.com](https://www.carmaxauctions.com/) | Dealer-only wholesale | Tiered ($225–$625+) | Online + in-person | No |
+| Hertz Car Sales | [hertzcarsales.com](https://www.hertzcarsales.com/) | Rental fleet (fixed-price) | None | Online + in-person; ships | No |
+| Local Liquidators | [localliquidators.com](https://localliquidators.com/) | Commercial liquidation | 10–13% | Online; local pickup | No |
+
+### Public-Access Brokers for Copart/IAAI (No Dealer License Needed)
+
+Copart and IAAI require a dealer license for many sales. Two broker
+platforms give the public access to the same inventory without a dealer
+license, for an additional fee:
+
+| Broker | Underlying platform | Membership | Transaction fee | Pickup |
+|--------|-------------------|-----------|-----------------|--------|
+| [AutoBidMaster](https://www.autobidmaster.com/) | Copart | Basic $35, Advanced $189/yr, Premium $349/yr | AutoBidMaster fee + Copart fee + processing | Approved transporter only; shipping available |
+| [SCA Auction](https://sca.auction/) | IAAI | Basic free, Premier $199/yr, Expert $549/yr | $299 or 9% (Basic) down to $200 or 3% (Expert) + IAA fees + broker/service/env/mailing | Licensed transporter only; buyer cannot pick up |
+
+**When to recommend a broker**: If the user doesn't have a dealer license
+and wants to buy from Copart or IAAI, recommend AutoBidMaster or SCA
+Auction. Compare the total cost (bid + all fees) against using a dealer
+agent/broker ($300–$800 per vehicle) — the broker platform may be
+cheaper for lower-value vehicles, while the dealer agent may be cheaper
+for higher-value vehicles.
+
+### Dealer-Only Wholesale Auctions
+
+These platforms require a dealer license — public buyers cannot
+register. If the user has a dealer license, these are additional
+sourcing channels. If not, use a dealer agent/broker or the
+public-access brokers above.
+
+| Platform | What they sell | Buyer's fee | Site |
+|----------|---------------|-------------|------|
+| [ACV Auctions](https://www.acvauctions.com/) | Wholesale used vehicles (off-lease, off-rental, repo, fleet); 20-min live online auctions | 2–10% capped at $350 | acvauctions.com |
+| [CarMax Auctions](https://www.carmaxauctions.com/) | CarMax-owned vehicles (trade-ins, repo, fleet); simulcast + in-person | Tiered $225–$625+ | carmaxauctions.com |
+
+### Rental Fleet Sales (Fixed-Price, Public)
+
+Rental car companies sell their former fleet vehicles at fixed prices —
+not auctions. These are well-maintained vehicles with known history:
+
+| Seller | What they sell | Site |
+|--------|---------------|------|
+| [Hertz Car Sales](https://www.hertzcarsales.com/) | Hertz Certified former rental fleet; 70+ point inspection; home delivery | hertzcarsales.com |
+| Enterprise Car Sales | Enterprise former rental fleet; 7-day return | enterprisecarsales.com |
+| Avis Car Sales | Avis former rental fleet | avisautosalessandiego.com (varies by location) |
+
+---
+
+## Auction-Specific Constraints & Participation
+
+When sourcing through auctions, additional constraints apply that are not
+covered in the general sourcing flow above. Two companion references
+provide the detailed guidance:
+
+- **`auction-constraints.md`** — Vehicle-specific risks (smog compliance
+  for California/strict-emissions states, export-only restrictions,
+  salvage/rebuilt title brands, damage level opt-in, dealer license
+  requirements) and property-specific risks (buildability checklist:
+  ingress, topography, zoning, lot dimensions, airspace/underground
+  easements, water, electricity, sewage, trash, roads; title risks at
+  auction; risk levels by auction type). Also covers universal auction
+  constraints: locale/travel requirements, registration gating
+  (public/dealer-only/reseller-only/export-only/salvage-only), and
+  total acquisition cost calculation.
+
+- **`auction-participation.md`** — Detailed step-by-step instructions for
+  registering, bidding, paying, and picking up at each major auction
+  platform (GSA Auctions, GSA Fleet, GovDeals, Copart, IAAI, Public
+  Surplus, Municibid, GovPlanet, PropertyRoom, Bid4Assets, US Marshals
+  contractors, Treasury/IRS, county tax deed sales, state surplus, and
+  B-Stock reseller liquidation). Includes the dealer agent/broker process
+  for dealer-only sales.
+
+**When to load these references**: Load `auction-constraints.md` whenever
+any candidate source is an auction (type = "auction" in
+`sourcing-sources.toml`). Load `auction-participation.md` when the Deal
+Intelligence Report recommends a specific auction and the user needs
+instructions on how to participate.
 
 <!-- vim: set ft=markdown -->

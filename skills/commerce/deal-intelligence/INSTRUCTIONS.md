@@ -1307,6 +1307,43 @@ upgrade and state the assumption so the user can convert it to a `ceiling:`
 if the overshoot is unwanted (e.g., "Best value is a 220-mi EV at $X — say
 'only ~90 mi' if you want a hard cap").
 
+### 2.2. Auction-Specific Constraints & Participation
+
+When any candidate source is an auction (type = "auction" in
+`sourcing-sources.toml`), load the auction-specific references before
+finalizing recommendations:
+
+- **`references/auction-constraints.md`** — Vehicle-specific risks (smog
+  compliance for California/strict-emissions states, export-only
+  restrictions, salvage/rebuilt title brands, damage level opt-in,
+  dealer license requirements) and property-specific risks (buildability
+  checklist: ingress, topography, zoning, lot dimensions, airspace/
+  underground easements, water, electricity, sewage, trash, roads; title
+  risks at auction; risk levels by auction type). Also covers universal
+  auction constraints: locale/travel requirements, registration gating
+  (public/dealer-only/reseller-only/export-only/salvage-only), and total
+  acquisition cost calculation.
+
+- **`references/auction-participation.md`** — Detailed step-by-step
+  instructions for registering, bidding, paying, and picking up at each
+  major auction platform. **Load this when the Deal Intelligence Report
+  recommends a specific auction** — present the user with the
+  participation instructions for that platform so they know exactly how
+  to proceed.
+
+**Aggregator handling**: Sources in `sourcing-sources.toml` with
+`aggregator = true` (GovAuctions.app, BidProwl, GovernmentAuctions.org,
+Gov-Auctions.org) are tracked but **not actively searched** — they
+aggregate listings from the underlying platforms. Use them for discovery
+and price comparison only; bid on the underlying platform directly.
+
+**Redirect handling**: Sources with `redirects_to` in
+`sourcing-sources.toml` are government sites that index to auctioneer
+contractors (e.g., Seattle Fleet → James G. Murphy Co., Iowa DOT →
+GovDeals, NY State Store → GovDeals). **Keep both as sources** — the
+government site is the index/portal, the contractor platform is where
+you actually bid.
+
 ### 2.5. Cross-Brand Identical Products & Brand Premium Assessment
 
 Many products are not manufactured by the brand on the label — the brand buys
@@ -1555,12 +1592,66 @@ Deliver a **Deal Intelligence Report**:
 - `references/part-number-research.md` — Part-number sourcing workflow, cross-brand equivalent identification, condition assessment, supplier reputation checks, part-number comparison output format
 - `references/warranty-comparison.md` — Warranty types, terms-to-compare matrix, warranty comparison table format, risk-adjusted cost calculation, when warranty overrides price
 - `references/cross-brand-identical.md` — OEM/rebrand identification (model prefix decoding, reference design matching, FCC ID matching, ODM databases), cross-brand comparison table format, when cross-brand differences justify the brand tax, brand premium assessment for luxury/status goods (quality comparison, premium calculation, when premium is justified vs paying for the logo)
+- `references/auction-constraints.md` — Vehicle auction constraints (smog/CARB compliance, export-only, salvage/rebuilt titles, damage levels, dealer license gating) and property auction constraints (buildability checklist: ingress, topography, zoning, lot dimensions, easements, utilities, roads; title risks; risk levels by auction type); universal auction constraints (locale/travel, registration gating, total acquisition cost)
+- `references/auction-participation.md` — Step-by-step participation instructions for each major auction platform (GSA Auctions, GSA Fleet, GovDeals, Copart, IAAI, Public Surplus, Municibid, GovPlanet, PropertyRoom, Bid4Assets, US Marshals contractors, Treasury/IRS, county tax deed, state surplus, B-Stock); includes dealer agent/broker process
+
+## Definition of Done
+
+Before declaring the Shopping Deal Intelligence run complete, verify every item
+below. Items marked **[script]** are deterministically verified by a script —
+if the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Effort Tier Compliance
+
+- [ ] **[manual]** The research depth matches the effort tier — Quick (2–3 sources, obvious coupon/cashback), Standard (all 4 sections, moderate depth), Major/High-value (full depth on all sections) (Effort Tier Awareness)
+
+### Deal Intelligence Report — Products
+
+- [ ] **[manual]** The report includes the Effort Tier label (Output Format)
+- [ ] **[manual]** Price Analysis section has a price summary table from historical price research (Section 1 / Output Format)
+- [ ] **[manual]** Best Sources table ranks sources by price advantage with condition and warranty columns (Section 2 / Output Format)
+- [ ] **[manual]** Candidate filtering applied specs as floors (min:) not targets — candidates exceeding a min spec at equal or better value were included, not excluded (Section 2.1)
+- [ ] **[manual]** Timing section includes a purchase window recommendation based on seasonality, lifecycle, and inventory signals (Section 3 / Output Format)
+- [ ] **[manual]** Optimization Stack table layers gift cards, cashback, card bonuses, and coupons with a net cost line (Section 4 / Output Format)
+- [ ] **[manual]** Total Effective Cost is stated with percentage below retail/first-quote (Output Format)
+- [ ] **[manual]** The Next Step hands off to the shopping-acquisition skill (Output Format)
+
+### Deal Intelligence Report — Services
+
+- [ ] **[manual]** Quote Comparison table has 3+ providers with Licensed, Insured, Rating, and Red Flags columns (S1 / Output Format)
+- [ ] **[manual]** Provider vetting checked license, insurance, bonding, reviews, complaints, and tenure (S2)
+- [ ] **[manual]** Outlier quotes (≥30% below or ≥50% above average) were flagged (S3)
+
+### Cross-Brand and Part-Number (When Applicable)
+
+- [ ] **[manual]** Cross-brand identical products were checked before finalizing sourcing — same OEM product under different labels (Section 2.5)
+- [ ] **[manual]** For luxury/status goods: brand premium assessment was run to determine if the price difference is justified (Section 2.5)
+- [ ] **[manual]** When a Replacement Part section exists in the brief: part-number sourcing was run instead of model-name sourcing (Section 1.5)
+- [ ] **[manual]** Warranty terms were compared across candidate suppliers — cheaper option is not always cheaper once warranty is factored (Section 5)
+
+### Auction Constraints (When Applicable)
+
+- [ ] **[manual]** When any candidate source is an auction: `references/auction-constraints.md` was loaded for vehicle/property-specific risks (Section 2.2)
+- [ ] **[manual]** When a specific auction is recommended: `references/auction-participation.md` participation instructions were presented (Section 2.2)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- The report has prices but no Total Effective Cost line → the user cannot see the actual savings (Output Format)
+- Candidates were filtered to only those matching the stated spec number → specs were treated as targets, not floors (Section 2.1)
+- The report recommends a source but no timing recommendation → the user does not know when to buy (Section 3)
+- The optimization stack lists cashback but no card selection rationale from `payment_methods` → card choice is unjustified (Section 4)
+- An auction source is recommended but auction constraints were not loaded → vehicle/property-specific risks are unaddressed (Section 2.2)
+- The Next Step does not hand off to shopping-acquisition → the pipeline is broken (Output Format)
+
 
 ## Context Declaration
 
 ### File Paths
 - Main skill: `config/ai/skills/commerce/deal-intelligence/SKILL.md`
-- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/cross-brand-identical.md`
+- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/cross-brand-identical.md`, `references/auction-constraints.md`, `references/auction-participation.md`
 
 ### Related Skills
 - `shopping-needs-discovery` (dependency) — discovers and refines purchasing requirements

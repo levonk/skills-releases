@@ -144,6 +144,42 @@ These apply to any real estate transaction — purchase, lease, or investment.
   Rural properties, unique custom homes, and properties with significant
   constraints (landlocked, off-grid, flood zone) can take years to sell.
 
+### Auction-Specific Property Constraints
+
+When buying property at auction (GSA Real Estate, Treasury/IRS, US Marshals,
+HUD, Fannie Mae, Freddie Mac, county tax deed, foreclosure/trustee sales),
+additional constraints apply beyond the standard checks above. See the
+deal-intelligence skill's `references/auction-constraints.md` for the full
+buildability checklist and title risk details. Key flags to surface in the
+Needs Discovery Brief when the user is considering auction property:
+
+- **Buildability (raw land)**: Before bidding on raw land at auction,
+  verify: ingress (legal, physical access — landlocked parcels are nearly
+  worthless), topography (slopes over 25% may be unbuildable), zoning
+  (parcel zoned for intended use), lot dimensions (wide enough for legal
+  building per setback requirements), airspace easements (height
+  restrictions), underground easements (utility/pipeline/drainage that
+  prevent building), water (municipal or well + water rights), electricity
+  (grid power or off-grid budget), sewage (municipal or septic + perc
+  test), trash pickup, and road access (paved/dirt/seasonal).
+- **Title risks at auction**: Many auction sales (especially tax deed and
+  foreclosure) do not provide title insurance. Surviving liens (IRS tax
+  liens have a 120-day redemption period), occupants (eviction may be
+  required), redemption rights (former owner can reclaim in some states),
+  and unrecorded interests (leases, options) are all risks. Recommend a
+  title search before bidding ($75–$200).
+- **As-is sale**: No inspection contingencies, no financing contingencies,
+  no repair credits. Inspect before bidding if possible. Budget for all
+  repairs. Have cash or hard money lined up.
+- **Risk level by auction type**: GSA/Treasury/USMS/HUD/Fannie/Freddie are
+  moderate risk (insurable title generally available). County tax deed
+  sales are high risk (no title insurance initially, possible surviving
+  liens, occupants, redemption rights). Courthouse steps/trustee sales are
+  very high risk (cash only, no inspection, no financing, no warranty).
+- **Locale / travel**: In-person auctions (courthouse steps, some tax deed
+  sales) require attending in person with a cashier's check. Ask the user
+  whether they are willing to travel.
+
 ## Recommendation
 
 For any real estate transaction, always recommend a professional inspection,

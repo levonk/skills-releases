@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Nix Build Practices Overview
-description: Synthesis of Nix build practices — flake structure, devbox as Nix abstraction, package verification via search.nixos.org, reproducible builds with lock files, inherent platform scope detection, and partial platform coverage with hybrid fallback flakes.
-tags: [nix, flakes, devbox, reproducible, builds, overview, synthesis, platform-scope, partial-coverage]
+description: Synthesis of Nix build practices — flake structure, devbox as Nix abstraction, package verification via search.nixos.org, reproducible builds with lock files, inherent platform scope detection, partial platform coverage with hybrid fallback flakes, and nixpkgs upstream contribution via pkgs/by-name.
+tags: [nix, flakes, devbox, reproducible, builds, overview, synthesis, platform-scope, partial-coverage, nixpkgs-contribution]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-31"
-  last-used: "2026-07-31"
+  knowledge-basis: "2026-08-09"
+  last-used: "2026-08-09"
 sources:
   - id: adr-20251219001-nix-direnv-dev-environment
     resource: internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md
@@ -20,6 +20,12 @@ sources:
   - id: nubjs-nub-169
     resource: https://github.com/nubjs/nub/issues/169
     title: nubjs/nub#169 — prebuilt chosen over from-source (vendored runtime tree)
+  - id: nixpkgs-quick-start
+    resource: "https://nixos.org/manual/nixpkgs/stable/#chap-quick-start"
+    title: "nixpkgs Reference Manual — Quick Start to Adding a Package"
+  - id: nixify-skill-v2.19.0
+    resource: ../../skills/software-dev/nixify/SKILL.md.tmpl
+    title: "nixify skill v2.19.0 — nixpkgs superset check and upstream contribution"
 ---
 
 ---
@@ -148,6 +154,7 @@ Platform strategy (orthogonal, consulted at structure + verification):
 | Pipeline | Reproducibility | [Reproducible Builds](reproducible-builds.md) | Different builds across machines, unpinned dependencies |
 | Strategy | Scope | [Inherent Platform Scope](inherent-platform-scope.md) | Broken builds on unsupported platforms, unnecessary cross-compilation |
 | Strategy | Coverage | [Partial Platform Coverage](partial-platform-coverage.md) | "Package not available" on platforms the project could build from source |
+| Pipeline | Distribution | [nixpkgs Contribution](nixpkgs-contribution.md) | Project invisible to Nix users who search nixpkgs first |
 
 ### How the Layers Interact
 

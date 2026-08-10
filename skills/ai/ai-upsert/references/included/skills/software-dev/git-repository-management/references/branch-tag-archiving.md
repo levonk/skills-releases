@@ -92,9 +92,30 @@ The archiving workflow has three phases, each a single AI→script handoff:
 
 #### Phase 1: Identify (git-archive.sh --identify)
 
-The script scans all local branches and tags, classifies each as
-archive-eligible or keep, and prints a structured list. The AI agent reviews
-the list and decides what to archive.
+The script scans all local branches, remote-tracking branches, and tags,
+classifies each as archive-eligible or keep, and prints a structured list.
+The AI agent reviews the list and decides what to archive.
+
+**Squash-merge detection**: The script uses both `git merge-base --is-ancestor`
+(fast-path for true merges) and `git cherry` (catches squash-merged branches
+whose commits are not ancestors of main but whose patch content is already in
+main). This is critical for workflows that use squash merges (common in GitHub
+PR workflows) — without `git cherry`, squash-merged branches would be
+misclassified as "unmerged" and kept forever.
+
+**Flags**:
+- `--skip <b1,b2,...>` — Exclude specific branches from consideration
+  (comma-separated). Combined with the protected-branch list.
+- `--fetch` — Fetch from origin (with `--prune`) before identifying, so
+  remote-tracking refs are current. Default is no fetch (use `--no-fetch`
+  to be explicit).
+- `--main-branch <branch>` — Override the auto-detected main branch.
+- `--force` — Skip the upstream-ownership check (see The Levonk Ownership
+  Exception below).
+
+**Remote branches**: The script also scans `git branch -r` for
+remote-tracking branches that have no local counterpart. These are labeled
+with `remote-merged` or `remote-unmerged` status.
 
 Classification rules:
 
@@ -119,6 +140,15 @@ For each ref the AI selects:
 
 The script accepts a list of refs on stdin (one per line) or via `--ref`
 repeated flags. It never archives anything not explicitly listed.
+
+**Confirmation**: The script prompts for confirmation before archiving unless
+`--yes` (or `-y`) is passed. In a non-interactive context (no TTY on stdin),
+it aborts with `SKIPPED:USER_ABORTED` unless `--yes` is passed. This prevents
+accidental bulk archival when the script is called by an AI agent without
+explicit user approval.
+
+**Post-action guidance**: After archiving, the script prints a notice
+reminding collaborators to run `git fetch --prune` to sync their local refs.
 
 #### Phase 3: Prune (git-archive.sh --prune, optional)
 

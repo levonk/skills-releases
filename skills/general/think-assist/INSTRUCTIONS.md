@@ -1479,6 +1479,53 @@ council-transcript-[timestamp].md    # full transcript for reference
   synthesizing insights from multiple thinking methods
 - Individual method references: see the Method Library table above
 
+## Definition of Done
+
+Before declaring the think-assist run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Single-Method Mode
+
+- [ ] **[manual]** The selected method matches the problem type per the Method Library table or `choose-thinking-models.md` (Step 1)
+- [ ] **[manual]** The method reference was read and its operation steps followed (Step 2)
+- [ ] **[manual]** The output matches the method's output template (Step 3)
+- [ ] **[manual]** When 2+ methods were applied: `consolidate-model-outcomes.md` was used to synthesize common themes, contradictions, and prioritized actions (Step 4)
+
+### Council Mode — Framing and Advisors
+
+- [ ] **[manual]** Context enrichment scanned the workspace (CLAUDE.md, memory/, referenced files, past transcripts) and the question was reframed into a neutral prompt with stakes + context (Council Step 1)
+- [ ] **[manual]** All 5 advisors were spawned in parallel — not sequentially (Council Step 2)
+- [ ] **[manual]** Each advisor leaned fully into its assigned perspective — no hedging, no "consider both sides," 150-300 words, no preamble (Council Step 2)
+
+### Council Mode — Blind Peer Review
+
+- [ ] **[manual]** The `peer-review` skill's `anonymize.py` was used to anonymize the 5 responses before review (Council Step 3)
+- [ ] **[manual]** 5 reviewers were spawned (one per response) answering the three fixed questions (Council Step 3)
+- [ ] **[manual]** Reviewers did not see which advisor produced which response (Council Step 3)
+
+### Council Mode — Chairman Synthesis
+
+- [ ] **[manual]** The chairman received the framed question, all 5 de-anonymized advisor responses, and all 5 peer reviews (Council Step 4)
+- [ ] **[manual]** The verdict uses the 5-part template: agreement, clashes, blind spots, recommendation, and the one thing to do first (Council Step 4)
+- [ ] **[manual]** "The one thing to do first" is a single concrete next step — NOT a list (Council Step 4)
+
+### Council Mode — Artifacts
+
+- [ ] **[script]** `scripts/generate_report.py` exits zero and produces a self-contained HTML report with the verdict prominent and collapsible advisor sections (Council Step 5)
+- [ ] **[manual]** The transcript file (`council-transcript-[timestamp].md`) contains the original question, framed question, all 5 advisor responses, all 5 peer reviews with mapping revealed, and the chairman's full synthesis (Council Step 6)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- 5 advisors responded but they were spawned sequentially → earlier responses bled into later ones, independence lost (Council Step 2)
+- Peer review ran but reviewers saw advisor identities → deference to thinking styles instead of merit (Council Step 3)
+- Chairman verdict has a 10-item "one thing to do first" → the anti-pattern-corrective was not applied (Council Step 4)
+- HTML report generated but the transcript markdown is missing → provenance artifact for re-runs is lost (Council Step 6)
+- Single-method run produced output but the method reference was never opened → the operation steps were guessed, not followed (Step 2)
+
 ## Context Declaration
 
 - **Bundled scripts**: `scripts/generate_report.py` (HTML report from

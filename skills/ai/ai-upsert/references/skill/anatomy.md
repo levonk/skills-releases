@@ -1356,9 +1356,195 @@ If this skill is triggered but the question is a poor fit for it — for example
 ## Calibration
 ## Available Resources
 ## Current Process     ← pointer to references/process.md (hybrid skills)
+## Task List           ← checkbox-tracked work items (see below)
+## Definition of Done  ← verification gate (see below)
 ## References
 ## Improving This Skill
 ```
+
+### Task List + Definition of Done Sections (Required)
+
+Every skill's `INSTRUCTIONS.md` must include two checkbox-tracked
+sections that work together: a **Task List** (what work remains) and a
+**Definition of Done** (verification that the work was done right). Both
+use checkboxes so the agent knows every item is an expectation that must
+not be skipped. The pattern is standardized from the `nixify` skill's
+DoD section and the `handoff` skill's task list, which caught hard-won
+lessons (the 9router devShell-only failure, the OmniRoute package-manager
+mismatch, the OmniRoute NixOS service module gap).
+
+---
+description: Shared Task List + Definition of Done pattern — two checkbox-tracked layers every skill-generated artifact must have. The Task List tracks work remaining; the Definition of Done verifies the work was done right. Both use checkboxes so the agent knows nothing can be skipped. Included by skill anatomy reference, skill-structure docs, and the handoff template to standardize both sections across all skills and handoff documents.
+---
+
+### Task List + Definition of Done Pattern
+
+Every skill-generated artifact (skill `INSTRUCTIONS.md`, handoff document,
+etc.) must have two checkbox-tracked sections that work together:
+
+1. **Task List** — what work remains. Checkbox-tracked work items with
+   status marks. The agent works through these and marks each as done.
+2. **Definition of Done** — verification that the work was done right.
+   Checkbox-tracked checks that confirm the task list was completed
+   correctly, not just marked complete.
+
+Both sections use checkboxes so the agent knows every item is an
+expectation that must not be skipped. A bare `[ ]` signals "do not
+proceed past me without checking me off."
+
+#### Layer 1: Task List
+
+The Task List tracks work items. Each item is a checkbox the agent marks
+as it progresses.
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
+**Maintenance protocol (receiving session):**
+1. **Verify in-progress marks.** Before doing anything else, re-check
+   every task marked `[~]`. If the work is not actually underway, demote
+   it back to `[ ]`. A stale `[~]` hides available work from the next
+   agent.
+2. **Start the next available task.** Pick the first `[ ]` task in
+   priority order. Mark it `[~]` immediately before starting work on it.
+3. **Prefer subagents for parallel work.** When two or more `[ ]` tasks
+   are independent (no shared file writes, no ordering dependency),
+   launch them as parallel `run_subagent` calls rather than working them
+   sequentially. Mark each `[~]` before launching. Do not parallelize
+   tasks that share files or depend on each other's output.
+4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the
+   task's success criteria are met and verified. Never mark `[x]` on
+   intent alone.
+5. **Record blockers inline.** When a task cannot proceed, mark it `[!]`
+   and append the blocker in parentheses on the same line. Move on to
+   the next `[ ]` task.
+6. **Update the list as work reveals new tasks.** Append newly
+   discovered tasks as `[ ]` lines in priority order. Do not silently
+   delete tasks; if a task is no longer relevant, mark it `[x]` with a
+   note.
+
+**Task List template:**
+
+````markdown
+## Task List
+
+- [ ] {task pending}
+- [ ] {task pending}
+- [~] {task in progress}
+- [!] {task blocked (waiting on X)}
+- [x] {task done}
+````
+
+#### Layer 2: Definition of Done
+
+The Definition of Done is a verification gate — checks that confirm the
+task list was completed correctly, not just marked complete. Each item
+is a checkbox the agent marks `[x]` as it verifies. The pattern has
+three parts:
+
+1. **`[script]` / `[manual]` item tagging** — each checklist item is
+   tagged to distinguish deterministic checks from judgment calls:
+   - **`[script]`**: a script exits non-zero if the item is not done.
+     The agent runs the script; the exit code is the verdict. No
+     judgment required.
+   - **`[manual]`**: the agent must verify something a script cannot
+     (semantic correctness, contextual fit, presence of a section that
+     reads well). The agent reads, inspects, or runs a command and
+     judges the result.
+
+2. **Subsections by deliverable category** — group items by the kind of
+   deliverable they verify (e.g. Build and Install, Documentation,
+   Hygiene). This makes it easy to see which deliverable categories are
+   covered and which are not. A category with zero items is a gap.
+
+3. **"Not Done (common false-completion signals)" anti-checklist** — a
+   final subsection listing failure modes where a check technically
+   passes but the deliverable is still wrong. Each entry has the form:
+   `<check passes> but <deliverable is wrong> → <the missing or broken
+   thing>`. This catches the difference between "the build passes" and
+   "the deliverable is complete".
+
+**Definition of Done template:**
+
+````markdown
+## Definition of Done
+
+Before declaring the <skill-name> run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### <Deliverable Category 1>
+
+- [ ] **[script]** <script-invocation> passes (Step N)
+- [ ] **[manual]** <thing the agent must verify> (Step N)
+
+### <Deliverable Category 2>
+
+- [ ] **[manual]** <thing the agent must verify> (Step N)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- <check passes> but <deliverable is wrong> → <the missing or broken thing> (Step N)
+- <check passes> but <deliverable is wrong> → <the missing or broken thing> (Step N)
+````
+
+#### How the Two Layers Work Together
+
+The Task List answers "what work remains?" The Definition of Done
+answers "was the work done right?" They are separate because:
+
+- A task can be marked `[x]` in the Task List but fail a DoD check
+  (false-completion). The DoD catches this.
+- A DoD check can pass but a task may not be marked done (the agent
+  verified the deliverable but forgot to update the task list). The
+  Task List catches this.
+- The Task List uses status marks (`[ ]`/`[~]`/`[x]`/`[!]`) for
+  cross-session progress tracking. The DoD uses verification marks
+  (`[ ]`→`[x]`) with `[script]`/`[manual]` tags for completion
+  verification.
+
+Both must be present. Both must use checkboxes. Neither can be skipped.
+
+#### Canonical Example
+
+The `nixify` skill
+(`skills/software-dev/nixify/INSTRUCTIONS.md.tmpl`) is the canonical
+example for the Definition of Done layer. Its DoD section has all three
+parts: `[script]`/`[manual]` tagging, subsections by deliverable
+category (Build and Install, Template Selection, Platform Scope,
+Devbox, CI and Hash Automation, NixOS Service Module, Documentation,
+Hygiene), and a "Not Done" anti-checklist that catches
+false-completion signals like "`nix build` passes but
+`nix run .#<project-name> -- --help` fails → the `.#<project-name>`
+output is missing or broken".
+
+The `handoff` skill's handoff documents
+(`skills/ai/handoff/references/handoff-template.md`) are the canonical
+example for the Task List layer — checkbox-tracked work items with the
+mark legend and maintenance protocol for cross-session progress
+tracking.
+
+#### Why This Matters
+
+Without both layers, skills and handoff documents rely on the agent's
+judgment to decide when the work is done. This leads to
+false-completion (declaring done before all deliverables are verified)
+or incomplete verification (checking the build but not the install, the
+install but not the docs). The Task List makes work items explicit and
+trackable; the DoD makes verification explicit and checkable. The
+`[script]` tag makes deterministic checks automatic; the `[manual]` tag
+makes judgment checks explicit; the anti-checklist catches the failure
+mode where a check passes but the deliverable is still wrong.
+
+
+See `references/skill/instructions-template.md` for the Task List and
+DoD scaffolds included in every newly-created skill.
 
 ### Refresh Script (scripts/refresh.sh)
 
@@ -2946,8 +3132,10 @@ instead.
 5. Calibration — short reasoning for gray areas
 6. Available Resources — bundled scripts, references, assets
 7. Current Process — pointer to `references/process.md` (hybrid skills)
-8. References — links to `references/*.md` files
-9. Improving This Skill — propose improvements, never auto-apply
+8. Task List — checkbox-tracked work items with status marks (`[ ]`/`[~]`/`[x]`/`[!]`), mark legend, and maintenance protocol (see the Task List + Definition of Done Sections above)
+9. Definition of Done — verification gate with `[script]`/`[manual]` tagged items, subsections by deliverable category, and a "Not Done" anti-checklist (see the Task List + Definition of Done Sections above)
+10. References — links to `references/*.md` files
+11. Improving This Skill — propose improvements, never auto-apply
 
 **Section order** (SKILL.md wrapper body, after includes):
 1. Title (`# Skill Name`) — one line

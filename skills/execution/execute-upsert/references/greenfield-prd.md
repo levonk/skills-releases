@@ -7,7 +7,7 @@ role: "Product Manager"
 date:
   created: "2026-07-11"
   knowledge-basis: "2026-07-30"
-  last-used: "2026-07-30"
+  last-used: "2026-08-08"
 tags:
   - "ai/workflow/software-dev/greenfield/prd"
   - "prd"
@@ -515,6 +515,28 @@ Three properties make the PRD executable by a weaker model:
    - Use explicit, concrete language. Avoid jargon where possible.
    - Assume the primary reader is a **junior developer**.
    - **CRITICAL**: Inline all gathered context in the "Current State" section — never say "as discussed" or "see audit"
+   - **Diagrams**: The PRD template includes "Architecture Diagram" and
+     "User Experience Flow (Graphical Apps Only)" sections. Fill both with
+     Mermaid diagrams appropriate to the feature:
+     - **Architecture Diagram** — always required for any substantive
+       program. Show system components, data flow, and external dependencies
+       as a Mermaid `flowchart`. For brownfield projects, include both a
+       "Current Architecture" subsection (the system as it exists today)
+       and a "Target Architecture" subsection (the system after this feature
+       is built, with changes highlighted). For greenfield projects, the
+       Target Architecture is the only diagram needed.
+     - **User Experience Flow** — required for graphical apps (web, TUI,
+       mobile, desktop with user-facing screens). Skip for non-graphical
+       work (CLI tools, libraries, batch jobs, API-only services). Use
+       `flowchart` or `stateDiagram-v2` as appropriate. For brownfield
+       graphical apps, include both a "Current UX Flow" subsection and a
+       "Target UX Flow" subsection, same as the architecture diagrams.
+     - Follow Mermaid syntax conventions: quote decision-node labels
+       containing `<br/>` or special characters to avoid parse errors.
+     - If the `diagram-upsert` skill is available (bundled or installed),
+       read its `documentation-diagram-practices` knowledge bundle's
+       `mermaidjs.md` page before authoring, and validate diagrams with
+       its `scripts/validate-diagram.py` before saving the PRD.
 
 5. **Save the PRD**
    - File format: Markdown (`.md`).
@@ -534,7 +556,7 @@ Three properties make the PRD executable by a weaker model:
 
 Use the following template structure for the output file:
 
-```markdown
+````markdown
 ---
 # Product Requirements Document (PRD)
 
@@ -570,6 +592,87 @@ Use the following template structure for the output file:
 
 ## Technical Considerations (Optional)
 - TODO: Note relevant modules, constraints, data models, or integration points.
+
+## Architecture Diagram
+Every substantive program needs a visual representation of its system
+architecture — components, data flow, and external dependencies. This is
+not optional.
+
+### Current Architecture (Brownfield Only)
+> **Skip this subsection** for greenfield projects with no existing
+> architecture to document.
+
+For brownfield projects, document the architecture **as it exists today**
+before this feature is built. This establishes the baseline against which
+the target architecture is compared.
+
+```mermaid
+flowchart TD
+    Client["Client / UI"] --> API["API Layer"]
+    API --> Service["Service Layer"]
+    Service --> DB[("Database")]
+```
+
+### Target Architecture
+Show the architecture **after** this feature is built. For brownfield
+projects, highlight what changes (new components, modified data flow, new
+dependencies) relative to the Current Architecture above. For greenfield
+projects, this is the complete architecture.
+
+```mermaid
+flowchart TD
+    Client["Client / UI"] --> API["API Layer"]
+    API --> Service["Service Layer"]
+    Service --> DB[("Database")]
+    Service --> Ext["New External Service"]
+    Service --> Cache[("New Cache")]
+```
+
+Follow the Mermaid syntax conventions from the `diagram-upsert` skill's
+`documentation-diagram-practices` knowledge bundle (quote decision-node labels
+containing `<br/>` or special characters).
+
+## User Experience Flow (Graphical Apps Only)
+> **Skip this section** for non-graphical work (CLI tools, libraries, batch
+> jobs, API-only services, infrastructure scripts). It applies to web, TUI,
+> mobile, and desktop applications with user-facing screens.
+
+For graphical applications, include Mermaid diagrams showing the user
+experience flow — the screens/states the user navigates through and the
+transitions between them. Use a `flowchart` or `stateDiagram-v2` depending
+on whether the focus is on screen navigation or state transitions.
+
+### Current UX Flow (Brownfield Only)
+> **Skip this subsection** for greenfield projects with no existing UX to
+> document.
+
+For brownfield graphical apps, document the user experience flow **as it
+exists today** before this feature is built.
+
+```mermaid
+flowchart TD
+    Landing["Landing Page"] --> Auth{"Authenticated?"}
+    Auth -- "yes" --> Dashboard["Dashboard"]
+    Auth -- "no" --> Login["Login"]
+    Login --> Dashboard
+```
+
+### Target UX Flow
+Show the UX flow **after** this feature is built. For brownfield apps,
+highlight new screens, changed transitions, or removed steps relative to
+the Current UX Flow above. For greenfield apps, this is the complete flow.
+
+```mermaid
+flowchart TD
+    Landing["Landing Page"] --> Auth{"Authenticated?"}
+    Auth -- "yes" --> Dashboard["Dashboard"]
+    Auth -- "no" --> Login["Login"]
+    Login --> Dashboard
+    Dashboard --> Settings["Settings"]
+    Dashboard --> Feature["New Feature Screen"]
+```
+
+Follow the same Mermaid syntax conventions as the Architecture Diagram.
 
 ## Verification Approach
 | Purpose   | Command                  | Expected Result |
@@ -625,7 +728,7 @@ Stop and report back (do not improvise) if:
 ---
 *Generated from PRD template*
 
-```
+````
 
 ## Guardrails
 

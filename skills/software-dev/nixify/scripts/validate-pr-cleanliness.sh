@@ -61,7 +61,7 @@ first=1
 issues=""
 
 # Expected nixify artifact patterns
-NIXIFY_FILES="flake\.nix|flake\.lock|devbox\.json|devbox\.lock|\.gitignore|\.github/workflows/nix\.yml|\.github/workflows/.*hash.*\.yml|nix/|README.*\.md|CHANGELOG\.md|docs/.*install.*|default\.nix|shell\.nix"
+NIXIFY_FILES="flake\.nix|flake\.lock|devbox\.json|devbox\.lock|\.gitignore|\.github/workflows/nix\.yml|\.github/workflows/.*hash.*\.yml|garnix\.yaml|nix/|README.*\.md|CHANGELOG\.md|docs/.*install.*|default\.nix|shell\.nix"
 
 while IFS= read -r line; do
   sha=$(echo "$line" | cut -d'|' -f1)

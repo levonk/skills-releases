@@ -20,9 +20,16 @@
 #   ships             = true if shipping is available
 #   sold_price_history= true if past sold prices are viewable
 #   notes             = short note
+#   requires_dealer_license = true if a dealer license is required for some/all sales
+#   requires_reseller = true if reseller registration (EIN/tax ID) is required
+#   export_only_sales = true if some sales are export-only (cannot be titled in US)
+#   salvage_sales     = true if some sales are salvage-title only
+#   redirects_to      = name of platform this site redirects to (if it's an index/portal)
+#   aggregator        = true if this site only aggregates listings from other platforms (do not actively search — use the underlying platforms instead)
 #
 # Used by: shopping-deal-intelligence skill, sourcing phase
 # Companion to: sourcing-guide.md (human-readable strategy and context)
+# Companion to: auction-constraints.md (vehicle smog/export/salvage, property buildability, locale/travel, dealer-only gating)
 
 # ── Federal Government ──────────────────────────────────────────────────────
 
@@ -188,6 +195,96 @@ ships = false
 sold_price_history = true
 notes = "Undeliverable mail lots; sold via GovDeals; search 'Atlanta Surplus Center'; pickup in Atlanta GA"
 
+[[source]]
+name = "GSA Fleet Vehicle Sales"
+url = "https://www.gsafleet.gov/"
+type = "auction"
+auction_type = "live+online"
+buy_it_now = true
+api = false
+government_level = "federal"
+categories = ["vehicles"]
+condition = ["used", "as-is"]
+buyer_premium = "0%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Federal fleet vehicles (cars, trucks); no auction fees, no registration fees; online via GSAFleet.gov + live auctions + fixed-price sales; separate from GSA Auctions (which sells all surplus)"
+
+[[source]]
+name = "IRS Auctions (irsauctions.gov)"
+url = "https://www.irsauctions.gov/"
+type = "auction"
+auction_type = "sealed-bid"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["real-estate", "vehicles", "general", "antiques"]
+condition = ["used", "as-is"]
+buyer_premium = "0%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "IRS seized property from tax delinquency; public auction and sealed bid; some mail-in bids accepted; no buyer's premium; separate from Treasury TEOAF"
+
+[[source]]
+name = "Treasury Real Property Seized Sales"
+url = "https://www.treasury.gov/auctions/treasury/rp/"
+type = "auction"
+auction_type = "sealed-bid"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["real-estate"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = false
+ships = false
+sold_price_history = false
+notes = "Tax-forfeiture real property; sealed bid; separate URL from general property (treasury/gp/); often conducted via CWS Marketing"
+
+[[source]]
+name = "Treasury Auctions Portal"
+url = "https://home.treasury.gov/services/treasury-auctions"
+type = "directory"
+auction_type = "none"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["general"]
+condition = ["mixed"]
+buyer_premium = "n/a"
+online = true
+in_person = false
+local_pickup = false
+ships = false
+sold_price_history = false
+notes = "Index to all Treasury auction types: Treasury bills/notes (financial), seized real property (rp/), seized general property (gp/); portal to the specific auction pages"
+
+[[source]]
+name = "USA.gov Buy From Government"
+url = "https://www.usa.gov/buy-from-government"
+type = "directory"
+auction_type = "none"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["general"]
+condition = ["mixed"]
+buyer_premium = "n/a"
+online = true
+in_person = false
+local_pickup = false
+ships = false
+sold_price_history = false
+notes = "Portal to GSA Advantage, GSA eBuy, GSA Global Supply, and other federal procurement/surplus platforms; informational — redirects to actual platforms"
+
 # ── US Marshals Contracted Auctioneers ──────────────────────────────────────
 
 [[source]]
@@ -279,6 +376,80 @@ local_pickup = false
 ships = false
 sold_price_history = false
 notes = "US Marshals Real Property National Contractor (RPNC); also on Realtor.com/Zillow/Redfin"
+
+# ── Federal Auctioneer Contractors (Treasury, USMS, CBP) ─────────────────────
+
+[[source]]
+name = "CWS Marketing Group"
+url = "https://cwsmarketing.com/"
+type = "auction"
+auction_type = "live+online"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["real-estate", "vehicles", "vessels", "aircraft", "luxury", "firearms", "general", "industrial"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Government contractor for U.S. Treasury (real property, general property, Customs), USMS, and other agencies; no buyer's premium for Treasury sales; varies (up to 15%) for other sales"
+
+[[source]]
+name = "Apple Towing / RBEX Auctions"
+url = "https://www.appletowing.com/auctions"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["vehicles", "vessels", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "0%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Largest liquidator of federally seized vehicles; weekly auctions for US Marshals, Treasury, USPS, CBP; online via HiBid; no buyer's premium; pickup at multiple nationwide storage facilities by appointment; keep both this and Apple Auctioneering Co. as sources"
+
+[[source]]
+name = "GovLiquidation"
+url = "https://www.govliquidation.com/"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["vehicles", "military-gear", "aircraft-parts", "equipment", "scrap", "uniforms", "general"]
+condition = ["used", "as-is", "salvage"]
+buyer_premium = "10%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = true
+notes = "DOD surplus contractor (Liquidity Services subsidiary); military surplus, vehicles, aircraft parts; EUC required for demilitarization-coded items (Q/F); 10% buyer's premium; pickup at liquidation centers nationwide"
+
+[[source]]
+name = "PPMS (GSA Auctions Fleet)"
+url = "https://ppms.gov/auctions/auctions-list?target=fleet"
+type = "auction"
+auction_type = "varies"
+buy_it_now = false
+api = false
+government_level = "federal"
+categories = ["vehicles", "equipment"]
+condition = ["used", "as-is"]
+buyer_premium = "0%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "GSA Personal Property Management System; federal fleet vehicles and equipment; online, live, sealed bid, and spot bid; no buyer's premium; requires Tax ID (SSN or EIN) and identity verification; same inventory as GSA Fleet and GSA Auctions"
 
 # ── Government Auction Contractor Platforms ──────────────────────────────────
 
@@ -518,6 +689,44 @@ ships = false
 sold_price_history = false
 notes = "Cross-agency index of federal auctions; portal to GSA, USMS, Treasury, HUD"
 
+[[source]]
+name = "GovernmentAuctions.org"
+url = "https://www.governmentauctions.org/"
+type = "aggregator"
+auction_type = "none"
+buy_it_now = false
+api = false
+government_level = "none"
+categories = ["general"]
+condition = ["mixed"]
+buyer_premium = "n/a"
+online = true
+in_person = false
+local_pickup = false
+ships = false
+sold_price_history = false
+aggregator = true
+notes = "Paid membership directory ($19.95/month after free trial); aggregates government auction listings from across the web; do not actively search — use the underlying platforms (GSA, GovDeals, etc.) directly"
+
+[[source]]
+name = "Gov-Auctions.org"
+url = "https://www.gov-auctions.org/"
+type = "aggregator"
+auction_type = "none"
+buy_it_now = false
+api = false
+government_level = "none"
+categories = ["general"]
+condition = ["mixed"]
+buyer_premium = "n/a"
+online = true
+in_person = false
+local_pickup = false
+ships = false
+sold_price_history = false
+aggregator = true
+notes = "Informational aggregator; provides educational content and links to government auction platforms; do not actively search — use the underlying platforms directly"
+
 # ── State Surplus Programs ──────────────────────────────────────────────────
 
 [[source]]
@@ -555,6 +764,285 @@ local_pickup = false
 ships = false
 sold_price_history = false
 notes = "Lists surplus property agency for every state; use to find your state's program"
+
+[[source]]
+name = "Arizona State Surplus"
+url = "https://doa.az.gov/about/services/public-auctions"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "equipment", "general", "office-supplies"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "AZ Dept. of Administration surplus; vehicles, equipment, office supplies; online auctions via third-party platforms; may redirect to GovDeals or Sierra Auction"
+
+[[source]]
+name = "Michigan DTMB Surplus"
+url = "https://www.michigan.gov/dtmb/services/surplusprogram"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "equipment", "furniture", "tools", "jewelry", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "3%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "MI Dept. of Technology, Management & Budget; MiBid online platform + quarterly in-person sales in Lansing; 3% buyer's fee; includes confiscated property from MSP, DNR, TSA; free MiLogin registration"
+
+[[source]]
+name = "Utah State Surplus"
+url = "https://purchasing.utah.gov/general-services/state-surplus-property/"
+type = "auction"
+auction_type = "sealed-bid"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "equipment", "real-estate", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "0%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "UT Division of Purchasing; online auctions and sealed bids; real estate requires 10% escrow deposit; open to public"
+
+[[source]]
+name = "Wisconsin State Surplus"
+url = "https://datcp.wi.gov/Pages/Publications/GovernmentSalesSurplus176.aspx"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["real-estate", "vehicles", "equipment", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "WI Surplus Online Auction; surplus land from DNR/DOT + general state agency and university surplus; buyer's fee varies by bid amount; pickup by appointment"
+
+[[source]]
+name = "New York State Store (OGS)"
+url = "https://ogs.ny.gov/nysstore"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "equipment", "furniture", "technology", "tools", "real-estate"]
+condition = ["used", "as-is"]
+buyer_premium = "8%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+redirects_to = "GovDeals"
+notes = "NY Office of General Services; vehicles/equipment via GovDeals (8% buyer's premium, reduced from 13% in-person); real estate via separate process; free registration; inspections by appointment"
+
+[[source]]
+name = "North Carolina State Surplus"
+url = "https://www.doa.nc.gov/divisions/state-surplus-property"
+type = "auction"
+auction_type = "timed"
+buy_it_now = true
+api = false
+government_level = "state"
+categories = ["vehicles", "equipment", "supplies", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "NC State Surplus Property Agency; retail store + auction; vehicles, equipment, supplies; open to public"
+
+[[source]]
+name = "Virginia DGS Surplus"
+url = "https://dgs.virginia.gov/office-of-surplus-property-management/public/public-auctions2"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "equipment", "furniture", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+redirects_to = "GovDeals"
+notes = "VA Dept. of General Services Office of Surplus Property; auctions via GovDeals; open to public"
+
+# ── Local / Municipal / County Auctions ─────────────────────────────────────
+
+[[source]]
+name = "Bexar County TX Surplus"
+url = "https://www.bexar.org/591/Surplus-Items-for-Sale"
+type = "directory"
+auction_type = "none"
+buy_it_now = false
+api = false
+government_level = "local"
+categories = ["vehicles", "equipment", "firearms"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Bexar County (San Antonio) surplus declaration page per TX Local Gov Code §263.152; redirects to actual auction platforms; firearms sold to retired officers only; keep both this and the auction platform it redirects to as sources"
+
+[[source]]
+name = "Seattle Fleet Vehicle Auction"
+url = "https://www.seattle.gov/fleet-management/vehicle-auction"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "local"
+categories = ["vehicles", "heavy-equipment"]
+condition = ["used", "as-is"]
+buyer_premium = "10%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+redirects_to = "James G. Murphy Co."
+notes = "City of Seattle fleet vehicles; online via James G. Murphy Co. auctioneer; 10% buyer's premium + 3% credit card fee; pickup in Marysville, WA; keep both this and Murphy as sources"
+
+[[source]]
+name = "Cook County IL Public Surplus"
+url = "https://www.cookcountyil.gov/service/public-surplus-auction"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "local"
+categories = ["vehicles", "heavy-equipment", "materials", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "10%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+redirects_to = "Public Surplus"
+notes = "Cook County (Chicago) surplus; online via Public Surplus platform; ~9.5-10% buyer's premium; 5-10 business days to remove; scrap vehicle auctions require specific licenses"
+
+[[source]]
+name = "Iowa DOT Auctions"
+url = "https://iowadot.gov/general-procurement-auctions/iowa-dot-auctions"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "road-maintenance-equipment", "trailers", "tractors", "real-estate"]
+condition = ["used", "as-is"]
+buyer_premium = "7.5-12.5%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+redirects_to = "GovDeals"
+notes = "Iowa DOT vehicles and equipment; online via GovDeals + in-person at Ames, IA auction building; inspection before sale; keep both this and GovDeals as sources"
+
+[[source]]
+name = "Norfolk VA Auctions"
+url = "https://www.norfolk.gov/2732/Auctions"
+type = "directory"
+auction_type = "none"
+buy_it_now = false
+api = false
+government_level = "local"
+categories = ["real-estate", "vehicles"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "City of Norfolk, VA; real estate via GovDeals (Shared Vision Auction, $1,500 bidder deposit); vehicles via BidWrangler (Towing & Recovery monthly auctions); keep both this and the platforms it redirects to as sources"
+
+[[source]]
+name = "Orange County CA Public Administrator/Guardian (OPGLA)"
+url = "http://www.opgla.com/Auctions"
+type = "auction"
+auction_type = "live"
+buy_it_now = false
+api = false
+government_level = "local"
+categories = ["real-estate", "furniture", "jewelry", "tools", "art"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = false
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "LA County Public Administrator/Guardian; probate/conservatorship estate auctions; real estate requires in-person attendance ($10,000 cashier's check to bid); personal property via sealed bid at county warehouse or independent auction companies"
+
+[[source]]
+name = "Sierra Auction (Government Surplus)"
+url = "https://www.sierraauction.com/pages/seller/government-surplus/"
+type = "auction"
+auction_type = "live+online"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "heavy-equipment", "commercial-trucks", "construction", "electronics", "restaurant-equipment", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "12%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Liquidity Services subsidiary; sole auction outlet for 150+ AZ government agencies (AG, DPS, Phoenix, Mesa); tiered buyer's premium ($99-$699 flat by price tier, then 12% above $6000) + 2% online bidding fee; some government assets flat 10-12%; live webcast available"
+
+# ── Canadian Government Auctions ─────────────────────────────────────────────
+
+[[source]]
+name = "GovDeals Canada"
+url = "https://www.govdeals.ca/"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "state"
+categories = ["vehicles", "heavy-equipment", "furniture", "computers", "electronics", "appliances", "parks-recreation", "general"]
+condition = ["used", "as-is"]
+buyer_premium = "7.5-12.5%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = true
+notes = "Canadian municipal surplus auction platform (e.g., City of Hamilton, Norfolk County); same platform as US GovDeals but for Canadian government clients; buyer's premium set by individual seller, capped at 12.5%"
 
 # ── Repossession & Tow Yards ────────────────────────────────────────────────
 
@@ -610,7 +1098,10 @@ in_person = true
 local_pickup = true
 ships = false
 sold_price_history = true
-notes = "Salvage/repo/impound vehicles; dealer license may be required for some sales; title issues"
+requires_dealer_license = true
+export_only_sales = true
+salvage_sales = true
+notes = "Salvage/repo/impound vehicles; dealer license required for some sales (Public/Basic/Advanced memberships for public buyers); some sales are export-only (cannot be titled in US); title brands vary; see auction-constraints.md for smog/export/salvage/dealer gating"
 
 [[source]]
 name = "IAAI"
@@ -628,7 +1119,148 @@ in_person = true
 local_pickup = true
 ships = false
 sold_price_history = true
-notes = "Insurance and repo auction; similar to Copart; title issues"
+requires_dealer_license = true
+export_only_sales = true
+salvage_sales = true
+notes = "Insurance and repo auction; similar to Copart; dealer license required for some sales; some sales are export-only; title issues; see auction-constraints.md for smog/export/salvage/dealer gating"
+
+# ── Public-Access Brokers for Copart/IAAI (no dealer license needed) ─────────
+
+[[source]]
+name = "AutoBidMaster"
+url = "https://www.autobidmaster.com/"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "none"
+categories = ["vehicles", "salvage", "motorcycles", "boats", "rvs", "equipment"]
+condition = ["salvage", "used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = false
+local_pickup = true
+ships = true
+sold_price_history = false
+redirects_to = "Copart"
+notes = "Registered broker and market maker for Copart; public can bid without dealer license; membership tiers (Basic $35, Advanced $189/yr, Premium $349/yr) affect fees; multiple fees: AutoBidMaster transaction fee + Copart auction fee + processing fees; shipping available; see auction-constraints.md for salvage/export/dealer gating"
+
+[[source]]
+name = "SCA Auction"
+url = "https://sca.auction/"
+type = "auction"
+auction_type = "timed"
+buy_it_now = true
+api = false
+government_level = "none"
+categories = ["vehicles", "salvage"]
+condition = ["salvage", "used", "as-is"]
+buyer_premium = "3-9%"
+online = true
+in_person = false
+local_pickup = true
+ships = true
+sold_price_history = false
+redirects_to = "IAAI"
+notes = "Broker/marketplace for IAA inventory; 300,000+ vehicles; public can bid without dealer license; transaction fees by membership (Basic free: $299 or 9%, Premier $199/yr: $250 or 5%, Expert $549/yr: $200 or 3%) + IAA buyer fees + broker/service/env/mailing fees; buyer cannot pick up vehicle themselves — must use licensed transporter; LA branch at sca.auction/locations/branch-ca-los-angeles-134; see auction-constraints.md for salvage/export/dealer gating"
+
+# ── Dealer-Only Wholesale Auctions ───────────────────────────────────────────
+
+[[source]]
+name = "ACV Auctions"
+url = "https://www.acvauctions.com/"
+type = "auction"
+auction_type = "live"
+buy_it_now = false
+api = true
+government_level = "none"
+categories = ["vehicles"]
+condition = ["used", "as-is"]
+buyer_premium = "2-10%"
+online = true
+in_person = false
+local_pickup = true
+ships = false
+sold_price_history = false
+requires_dealer_license = true
+notes = "B2B wholesale dealer auction; 20-minute live online auctions via mobile/desktop app; off-lease, off-rental, repo, fleet vehicles; buyer fee 2-10% capped at $350; requires state dealer license, resale certificate, federal tax ID, and POA; ACV Transportation services available; 7-day pickup window; see auction-constraints.md for dealer license gating"
+
+[[source]]
+name = "CarMax Auctions"
+url = "https://www.carmaxauctions.com/"
+type = "auction"
+auction_type = "live+online"
+buy_it_now = false
+api = false
+government_level = "none"
+categories = ["vehicles"]
+condition = ["used", "as-is"]
+buyer_premium = "varies"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+requires_dealer_license = true
+notes = "Dealer-only wholesale auction; CarMax-owned vehicles (trade-ins, repo, fleet) — no consignment; simulcast online bidding + in-person; tiered buyer's fee ($225–$625+ by sale price) + $50-100 internet fee; dealer must be registered and approved by CarMax; CarMax Auction Vehicle Moves transport available; see auction-constraints.md for dealer license gating"
+
+# ── Rental Fleet Sales (Fixed-Price, Public) ────────────────────────────────
+
+[[source]]
+name = "Hertz Car Sales"
+url = "https://www.hertzcarsales.com/"
+type = "direct-seller"
+auction_type = "none"
+buy_it_now = true
+api = false
+government_level = "none"
+categories = ["vehicles"]
+condition = ["used"]
+buyer_premium = "0%"
+online = true
+in_person = true
+local_pickup = true
+ships = true
+sold_price_history = false
+notes = "Hertz rental fleet vehicles (Hertz Certified); fixed-price retail sales — no auction; open to public; home delivery nationwide; online purchasing with financing; also has Hertz Dealer Direct for B2B; good source for well-maintained former rental cars with known history"
+
+[[source]]
+name = "Auto Liquidators Plus"
+url = "https://www.autoliquidatorsplus.com/"
+type = "direct-seller"
+auction_type = "none"
+buy_it_now = true
+api = false
+government_level = "none"
+categories = ["vehicles"]
+condition = ["used"]
+buyer_premium = "0%"
+online = false
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Buy Here Pay Here dealership (Dallas, Tyler, Waco TX); fixed-price retail — no auction; open to public; in-house financing; $225 doc fee; in-person purchase only"
+
+# ── Commercial Liquidation Auctions (Public) ────────────────────────────────
+
+[[source]]
+name = "Local Liquidators"
+url = "https://localliquidators.com/"
+type = "auction"
+auction_type = "timed"
+buy_it_now = false
+api = false
+government_level = "none"
+categories = ["vehicles", "automotive-equipment", "body-shop", "dealership-liquidation", "estate", "business-equipment"]
+condition = ["used", "as-is"]
+buyer_premium = "10-13%"
+online = true
+in_person = true
+local_pickup = true
+ships = false
+sold_price_history = false
+notes = "Commercial liquidation auctions; vehicles, auto repair shop equipment, body shop assets, dealership liquidations, estate items; online bidding via LocalAuctions.com platform; open to public; live preview/open house events; buyer's premium ~10% (13% for invoices under $500)"
 
 [[source]]
 name = "Autura Marketplace"
@@ -1290,7 +1922,8 @@ in_person = false
 local_pickup = true
 ships = true
 sold_price_history = false
-notes = "Largest B2B liquidation marketplace; $15B+ transactions; per-retailer storefronts (Amazon, Walmart, Target); must register as reseller"
+requires_reseller = true
+notes = "Largest B2B liquidation marketplace; $15B+ transactions; per-retailer storefronts (Amazon, Walmart, Target); must register as reseller with EIN/tax ID; see auction-constraints.md for reseller registration gating"
 
 [[source]]
 name = "Liquidation.com"

@@ -69,7 +69,7 @@
 #     managers, but never attempts to install a missing tool. Use this when
 #     you only need to find a tool that already exists, not bootstrap one.
 #     Also set by wrapper-helpers.sh's probe_devbox() when devbox is broken.
-#   DEVBOX_PROBE_TIMEOUT_SECS   (default 15)  — devbox run -- probes specifically.
+#   DEVBOX_PROBE_TIMEOUT_SECS   (default 30)  — devbox run -- probes specifically.
 #   Exec mode (-- <tool> [args]) is never timed — it's the user's command.
 set -euo pipefail
 
@@ -166,9 +166,9 @@ run_timed() {
 # Run `devbox run -- <cmd>` with a timeout. If devbox hangs (broken wrapper
 # recursion, nix store issues), kill it and return 124 (timeout). This prevents
 # the resolver from hanging forever when devbox is broken.
-# Override timeout via DEVBOX_PROBE_TIMEOUT_SECS (default 15).
+# Override timeout via DEVBOX_PROBE_TIMEOUT_SECS (default 30).
 devbox_run_timed() {
-    run_timed "${DEVBOX_PROBE_TIMEOUT_SECS:-15}" devbox run -- "$@"
+    run_timed "${DEVBOX_PROBE_TIMEOUT_SECS:-30}" devbox run -- "$@"
 }
 
 # --- Ensure a package is listed in devbox.json, walking up from cwd ---
