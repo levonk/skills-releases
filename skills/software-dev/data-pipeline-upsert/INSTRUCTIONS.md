@@ -2244,6 +2244,27 @@ Migrate a pipeline from one tool to another while preserving business logic.
 - `scripts/cli-tool-discovery.sh` — detects available CLI tools (airflow,
   dbt, spark-submit, etc.) across devbox/mise/flox/direnv/nix wrappers
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Determine the mode — no pipeline exists → Mode A (create), pipeline exists → Mode B (update), existing cron/script → Mode C (convert) (Decision: Which Mode)
+- [ ] Mode A: Research existing patterns and ask clarifying questions to confirm the pipeline tool, data sources/sinks, schedule, and data quality requirements (Mode A Steps 0-1)
+- [ ] Mode A: Determine the pipeline tool (Airflow, Spark, dbt, or combination) via the decision tree and scaffold the pipeline following the selected reference file (Mode A Steps 2-3)
+- [ ] Mode A: Add data quality testing — source validation and post-transformation validation (Mode A Step 4)
+- [ ] Mode A: Verify idempotency — every task is safe to re-run, no append-without-dedup, no missing partition overwrites (Mode A Step 5)
+- [ ] Mode A: Run the CLI tool discovery script to detect available tools before assuming they are on PATH (Mode A Step 6)
+- [ ] Mode B: Audit the existing pipeline against the 7-point checklist (idempotency, retries, SLAs, partitioning, data quality, observability, security) and apply fixes interactively (Mode B, Audit Checklist)
+- [ ] Mode C: Inventory the source pipeline, map each component to the target tool, preserve idempotency, add retries and data quality, test the conversion, then cutover (Mode C, Conversion Steps)
+- [ ] Deliver — save the pipeline files and point the user to the relevant reference files for ongoing maintenance (Mode A Step 7)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the data-pipeline-upsert run complete, verify every item

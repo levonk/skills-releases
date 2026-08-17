@@ -1452,6 +1452,25 @@ The essentials:
 - [Test Patterns](references/test-patterns.md) — parametrized tests, mocks vs stubs, fakes, fixtures
 - [Test Anti-Patterns](references/test-anti-patterns.md) — catalog of anti-patterns to avoid
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Pick a unit — one behavior of one logical unit (function or class method)
+- [ ] Name the test using `MethodUnderTest_Scenario_ExpectedOutcome`
+- [ ] Arrange — set up minimal state and inputs
+- [ ] Act — call the unit under test exactly once
+- [ ] Assert — verify the single observable outcome
+- [ ] Run — confirm the test fails for the right reason (TDD) or passes for the right reason
+- [ ] Review against the three pillars — readable, maintainable, trustworthy
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the unit-test-writing run complete, verify every item below.

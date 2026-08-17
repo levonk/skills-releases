@@ -1601,6 +1601,24 @@ Consider integrating maturity assessments into:
 - Architecture review processes
 - Compliance audits
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Generate the analysis guide via `python scripts/assess_maturity.py <project> --generate-guide`
+- [ ] Examine project artifacts (structure, CI/CD configs, documentation, code) for evidence
+- [ ] Score all 42 capabilities on the 1-4 scale based on cited evidence
+- [ ] Create the assessments JSON file with all capability scores
+- [ ] Generate the report via `python scripts/assess_maturity.py <project> --automated assessments.json`
+- [ ] Present findings — overall score, per-dimension breakdowns, flagged gaps, and prioritized recommendations
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the tech-maturity run complete, verify every item below.

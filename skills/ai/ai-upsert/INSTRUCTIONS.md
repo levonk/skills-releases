@@ -2416,29 +2416,102 @@ and corrupt the artifact.
 | 4. Review & Verify | Structured code review + script-standards validation before commit | code-review-guidance, devsecops-codeguard, secrets-egress-security, dev-environment-practices, python-services-practices, rust-development-practices |
 | 5. Commit | Commit via git-repository-management conventions | git-repository-management |
 
+## Run Log (Crash-Safe Progress Record)
+
+Each ai-upsert run appends to a durable run log in `.agents/log/` so that a
+crash or interruption leaves a partial but readable record — not nothing. The
+run log is **not** a handoff; it is a chronological record of what happened
+during this run. It lives outside the handoff tree to avoid littering the
+handoff queue with non-handoff documents.
+
+**Initialize the run log at the start of Phase 0** (before any work):
+
+```bash
+TIMESTAMP=$(date +%Y%m%d%H%M)
+SLUG="descriptive-upsert-slug"
+LOG_PATH="{REPO_ROOT}/.agents/log/${TIMESTAMP}-ai-upsert-${SLUG}.md"
+mkdir -p "$(dirname "$LOG_PATH")"
+```
+
+Write the log header:
+```markdown
+# Run Log: ai-upsert — {SLUG}
+
+**Started**: {YYYY-MM-DD HH:mm}
+**Target**: {artifact being upserted}
+**Mode**: {A/B/C — filled in after Phase 3}
+
+## Phase Log
+```
+
+**Append after each phase completes** (Phase 0 through Phase 5). Each entry is
+a short section with the phase name, status, and any notable findings:
+
+```markdown
+### Phase {N}: {name} — {CLEAN|WARN|FAIL|BLOCKED}
+{one-line summary}
+{notable findings, warnings, or blocker details if any}
+```
+
+**On crash or interruption:** the log file on disk contains every phase that
+completed before the crash. The user can read it to see exactly how far the
+run got and what happened — no need to reconstruct from memory or terminal
+scrollback.
+
+**On clean completion:** the run log contains the full phase-by-phase record.
+It is **not archived** — run logs are chronological records, not
+work-tracking documents with a DoD gate. They accumulate in `.agents/log/`
+and can be periodically cleaned (e.g., `git rm .agents/log/2026/07/*.md` for
+old months). The log file **is committed** so the record is durable across
+clones.
+
+**Run log filename:** `YYYYMMDDHHmm-ai-upsert-{slug}.md` — same date-embedded
+naming convention as handoffs, prefixed with `ai-upsert-` to distinguish from
+other skills' run logs. No `archive/` subdirectory — logs are flat in
+`.agents/log/`.
+
 ## Phase 0: Pre-flight (Clean Repository Check)
 
 Before any upsert work, check the target repository's git state. A dirty
 working tree risks sweeping unrelated changes into the upsert commit and
 makes it impossible to attribute changes to this upsert cleanly.
 
-1. **Run the clean-repo check** using the bundled `git-repository-management`
+1. **Initialize the run log** (see "Run Log" section above). Create
+   `.agents/log/YYYYMMDDHHmm-ai-upsert-{slug}.md` with the header and an empty
+   phase log. This is the crash-safe record — every subsequent phase appends
+   to it.
+2. **Reconcile human handoffs** — scan `.agents/handoffs/human/todo/` for
+   files with `github_issue` frontmatter. For each, check if the issue is
+   closed:
+   ```bash
+   gh issue view {number} --json state --jq '.state'
+   ```
+   If the issue is `CLOSED`, archive the human handoff file from
+   `human/todo/` to `human/archive/YYYY/MM/` via `git mv` (per the
+   `work-lifecycle` include's archive protocol). The blocker was resolved.
+   If the issue is still `OPEN`, leave the file in `todo/` — the human has
+   not yet acted. Log the reconciliation result in the run log:
+   `Phase 0: reconciled {N} human handoff(s) — {M} archived, {K} still open`.
+   If there are no human handoffs in `todo/`, skip this step silently.
+3. **Run the clean-repo check** using the bundled `git-repository-management`
    skill (materialized at
    `references/included/skills/software-dev/git-repository-management/`).
    Read its `SKILL.md` and follow the "Full Repository Cleanup" entry point's
    collect phase to get the current change set.
-2. **If the working tree is clean** (no uncommitted changes): proceed to
-   Phase 1.
-3. **If the working tree is dirty**: do NOT abort. The
+4. **If the working tree is clean** (no uncommitted changes): append
+   `Phase 0: CLEAN` to the run log, proceed to Phase 1.
+5. **If the working tree is dirty**: do NOT abort. The
    `skill-src-upsert.md` workflow stages only the files touched by this
    upsert, so unrelated dirty files are not swept in. Instead:
    - Note the pre-existing dirty files for the user.
+   - Append `Phase 0: WARN — dirty tree, {N} pre-existing files noted` to the
+     run log.
    - Proceed, but in Phase 5 (Commit) stage **only** the files this upsert
      touched — never `git add -A` or `git add .`.
-4. **If the target is not a git repo** (e.g., creating a skill in a fresh
+6. **If the target is not a git repo** (e.g., creating a skill in a fresh
    `~/.agents/skills/` directory): skip Phase 0 and Phase 5. Note that the
    artifact will not be under version control; offer to `git init` if the user
-   wants history.
+   wants history. Append `Phase 0: SKIP — not a git repo` to the run log.
 
 ## Phase 1: Self-Update
 
@@ -2471,6 +2544,7 @@ skills tooling still uses `pnpm dlx`.
 **After self-update:** if any skill versions changed, re-invoke this skill
 (ai-upsert) to pick up the new logic — do not continue with the old skill
 instance loaded in context. If no versions changed, proceed to Phase 2.
+Append `Phase 1: CLEAN|SKIP|UPDATED` to the run log.
 
 ## Phase 2: Establish Technologies
 
@@ -2537,7 +2611,8 @@ install tools on the host via `npm`, `brew`, `apt`, `pip install --user`,
 + Mode). Every tool reference written into the generated/updated artifact
 must agree with it. If the tech stack changes during the upsert (e.g., the
 new skill introduces a dependency), update the tech context block and
-re-check the artifact's references.
+re-check the artifact's references. Append `Phase 2: CLEAN — {tech stack
+summary}` to the run log.
 
 ## Decision: Skill vs Knowledge Bundle vs Agent
 
@@ -2601,7 +2676,8 @@ When making a recommendation, use this format:
 > 2. Proceed with your original request — create a **[requested type]**
 
 Then implement whichever the user chooses using progressive disclosure to load
-only the relevant workflow.
+only the relevant workflow. Append `Phase 3: {type} — Mode {A|B|C|D}` to the
+run log. Update the run log header's `**Mode**` field.
 
 ## Workflow Diagram
 
@@ -3238,7 +3314,8 @@ are the verification checks that confirm each task was done right.
 Do not proceed to Phase 5 until 4.1, 4.2, 4.3, and 4.5 pass. 4.4 is a warning
 gate (reported, but does not block unless the user opts in). If any check
 fails, fix the root cause (per the root-cause-first policy — no band-aids)
-and re-run the failing check until it passes.
+and re-run the failing check until it passes. Append `Phase 4: CLEAN|WARN|FAIL`
+to the run log with a one-line summary of each sub-check's status.
 
 ## Phase 5: Commit
 
@@ -3266,7 +3343,9 @@ history.
 
 **After commit:** update `date.last-used` in this skill's frontmatter (the
 date-management include is wired in above) to reflect that ai-upsert was used
-today.
+today. Append `Phase 5: CLEAN — commit {sha}` to the run log. Commit the run
+log file itself (`.agents/log/YYYYMMDDHHmm-ai-upsert-{slug}.md`) so the
+record is durable.
 
 
 ## Cross-Cutting Concerns
@@ -3314,6 +3393,102 @@ When packaging a skill for distribution:
 
 When skills serve multiple audiences (e.g., end users vs developers), apply progressive disclosure with clearly labeled audience sections separated by horizontal rules. See `references/skill/progressive-disclosure.md` — Pattern 5b (Audience separation) for the pattern and implementation guidance.
 
+### Blocked Items — Format Contract and Human Handoff Routing
+
+When a task cannot proceed, mark it `[!]` and follow the **blocked-item format
+contract**. A vague "note the blocker inline" is not sufficient — the blocker
+must be structured so the next reader (agent or human) can act on it
+immediately.
+
+**Blocked-item format** (append after the `[!]` mark on the same task line,
+using a sub-list):
+
+```markdown
+- [!] {task description}
+    - BLOCKED ON: {what is needed — concrete, one line}
+    - NEEDED FROM: {HUMAN: action description | AGENT: action description}
+    - WHY CAN'T PROCEED: {reason — what was attempted and why it failed}
+    - TRIED: {approaches attempted before blocking}
+    - ROUTES TO: {path to human handoff file if HUMAN | "stays inline" if AGENT}
+```
+
+**Routing decision — HUMAN vs AGENT:**
+
+- **HUMAN:** the blocker requires human-only action (API keys, credentials,
+  access grants, decisions between researched options, approvals for
+  destructive operations, information only the user has). Create a human
+  handoff document in `.agents/handoffs/human/todo/` following the
+  `work-lifecycle` include's Audience Variants section. The human handoff is
+  action-oriented (what is needed, why, what was tried, how to unblock). The
+  agent handoff's `[!]` mark references the human handoff file path in
+  `ROUTES TO:`.
+- **AGENT:** the blocker can be resolved by a future agent session (waiting
+  on an upstream dependency, needing more research, requiring a different
+  skill). The `[!]` mark stays inline with `ROUTES TO: stays inline`. No
+  human handoff is created.
+
+**When to create the human handoff:** immediately when the blocker is
+identified and classified as HUMAN — not at end-of-run. This is the crash-
+safety guarantee: if the run crashes after the human handoff is written, the
+human action request is already durable on disk.
+
+**Human handoff content:** self-contained — include Project Context (project
+name and description), Feature Context (what was being attempted and why),
+and Current State (what's done, what's in progress, where the blocker sits)
+so the human can understand the full picture without reading the agent
+handoff. See the `work-lifecycle` include's "Audience Variants" section for
+the full required sections.
+
+**GitHub issue creation:** after writing the human handoff file, if `gh` is
+available and the repo has a GitHub remote, create a GitHub issue from the
+file content via `gh issue create --body-file --label "human-handoff"`. The
+issue is the visibility layer — it shows up in the issue list and stays open
+until the human resolves the blocker. The file is always created first (crash
+safety); the issue is conditional. See the `work-lifecycle` include's
+"Audience Variants" section for the full protocol, including the
+`gh-posting-guard` requirement to use `--body-file` (never `--body`).
+
+**Human handoff filename:** `YYYYMMDDHHmm-{slug}.md` in
+`.agents/handoffs/human/todo/`, where the slug describes the action needed
+(e.g., `provide-openai-api-key`, not `blocked-on-eval-runner`). Same naming
+convention as agent handoffs.
+
+**Human handoff archive:** when the human resolves the blocker and the
+blocking task is marked `[x]`, archive the human handoff from
+`human/todo/` to `human/archive/YYYY/MM/` via `git mv` per the
+`work-lifecycle` include's archive protocol. If a GitHub issue was created,
+verify it is closed before archiving.
+
+### Run Log (Crash-Safe Progress Record)
+
+The run log (documented in the "Run Log" section above) is initialized in
+Phase 0 and appended to after each phase. It is committed at the end of
+Phase 5 so the record is durable. If the run crashes, the log on disk
+contains every phase that completed before the crash.
+
+
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked (follow the blocked-item
+format contract above).
+
+- [ ] Read the repository's AGENTS.md / CLAUDE.md / AGENT.md / `.cursor/rules/` for project context
+- [ ] Initialize run log in `.agents/log/` (Phase 0 step 1)
+- [ ] Reconcile human handoffs — archive any whose GitHub issues are closed (Phase 0 step 2)
+- [ ] Phase 0: Pre-flight — run the clean-repo check; if dirty, note pre-existing files and stage only upsert-touched files later
+- [ ] Phase 1: Self-Update — run `pnpm dlx skills add levonk/skills-releases --all`; re-invoke if versions changed
+- [ ] Phase 2: Establish Technologies — run `detect-all-systems.sh . --json` and produce the tech context block (binding constraint)
+- [ ] Phase 3: Decision + Mode — determine artifact type (Skill / Knowledge Bundle / Agent); recommend best fit if the user asked for the wrong type; then select Mode A / B / C
+- [ ] Mode A/B/C work: Execute the type-specific workflow (scaffold, customize, extract scripts/references, add evals, package & verify — or convert — or audit and update)
+- [ ] Phase 4: Review & Verify — structured code review + script-standards validation before commit
+- [ ] Phase 5: Commit — stage only upsert-touched files and commit via git-repository-management conventions; commit the run log
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; follow the blocked-item format contract in Cross-Cutting Concerns → Blocked Items)
 
 ## Definition of Done
 
@@ -3325,9 +3500,24 @@ require the agent to check something the scripts cannot verify.
 ### Phased Pipeline
 
 - [ ] **[manual]** Phase 0 (Pre-flight) completed — clean-repo check ran; if dirty, only upsert-touched files will be staged in Phase 5 (Phase 0)
+- [ ] **[manual]** Human handoff reconciliation ran — any human handoffs in `human/todo/` whose GitHub issues are closed were archived via `git mv` (Phase 0)
 - [ ] **[manual]** Phase 1 (Self-Update) completed — `pnpm dlx skills add levonk/skills-releases --all` ran; if versions changed, the skill was re-invoked (Phase 1)
 - [ ] **[script]** Phase 2 (Establish Technologies) — `detect-all-systems.sh . --json` ran and produced a tech context block that constrains all tool references in the generated artifact (Phase 2)
 - [ ] **[manual]** Phase 3 (Decision + Mode) — the correct artifact type (Skill / Knowledge Bundle / Agent) was determined; if the user asked for the wrong type, a recommendation was made and the user chose (Phase 3)
+
+### Run Log (Crash-Safe Progress)
+
+- [ ] **[manual]** Run log initialized in `.agents/log/YYYYMMDDHHmm-ai-upsert-{slug}.md` at the start of Phase 0 (Run Log)
+- [ ] **[manual]** Each completed phase has an entry in the run log with status and summary (Run Log)
+- [ ] **[manual]** Run log committed alongside the upsert changes in Phase 5 (Run Log)
+
+### Blocked Items and Human Handoff Routing
+
+- [ ] **[manual]** Every `[!]` task follows the blocked-item format contract (BLOCKED ON, NEEDED FROM, WHY CAN'T PROCEED, TRIED, ROUTES TO) (Blocked Items)
+- [ ] **[manual]** Every `[!]` task with a HUMAN blocker has a corresponding human handoff in `.agents/handoffs/human/todo/` (Blocked Items)
+- [ ] **[manual]** Human handoffs were created immediately when the blocker was identified, not batched at end-of-run (Blocked Items)
+- [ ] **[manual]** Human handoffs include Project Context, Feature Context, and Current State sections so the human can understand the full picture without reading the agent handoff (Blocked Items)
+- [ ] **[manual]** If `gh` is available and the repo has a GitHub remote, a GitHub issue was created from the human handoff file via `gh issue create --body-file --label "human-handoff"` (Blocked Items)
 
 ### Artifact Structure (Skills)
 
@@ -3362,9 +3552,23 @@ description: Self-update requirement template for AI guidance files to track usa
 ### Self-Update Requirement
 
 **CRITICAL**: When this guidance file is called, you MUST update the `last-used`
-field in this file's front-matter to the current date (YYYY-MM-DD format) before
-proceeding with any other work. This tracks usage for maintenance and cleanup
-purposes.
+field in this file's front-matter to the current date (YYYY-MM-DD format).
+
+**Ordering — wrapper-pattern skills**: If this skill uses the wrapper pattern
+(has a `## Refresh` section that runs `scripts/refresh.sh`), you MUST run
+`refresh.sh` FIRST, then update `last-used`. `refresh.sh` runs
+`pnpm dlx skills update <skill-name>`, which overwrites the entire skill
+directory — including `SKILL.md` and its frontmatter. If you update `last-used`
+before running `refresh.sh`, the update overwrites your change and `last-used`
+reverts to the published value. `refresh.sh` also sets `last-used` to today
+deterministically after the update completes, so the field stays current even
+when the AI forgets. The manual update here is a fallback for when
+`refresh.sh` is skipped (`SKIP_SKILL_REFRESH=1`, inside `skills-src`, or
+daily-cache hit).
+
+**Ordering — non-wrapper artifacts** (workflows, rules, knowledge bundles, and
+skills without `refresh.sh`): update `last-used` before proceeding with any
+other work. There is no refresh step to overwrite the field.
 
 After updating `last-used`, the `freshness-check` include (which follows this
 one in `base-ai-guidance`) checks whether the artifact's 3rd-party technology
@@ -3833,7 +4037,8 @@ description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and
 Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
 detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
-accounts for the project's tech stack — all in one pass. **Never give up on
+finally checks repo-root fallback dirs (`$REPO_ROOT/bin`, `scripts/`,
+`.local/bin`) as a last resort — all in one pass. **Never give up on
 the first `command -v` failure.**
 
 For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
@@ -3878,6 +4083,112 @@ cli-tool-discovery.sh --runner <python|node|rust|go>
 In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
+
+#### Devbox-aware resolution flow
+
+The devbox shell environment variable (`DEVBOX_SHELL` or `IN_DEVBOX_SHELL`)
+is checked **first**, before any other resolution. This simplifies all
+downstream logic: if we're already inside a `devbox shell`, devbox-managed
+binaries are on `PATH` and no wrapper detection is needed (mise/flox/direnv/nix
+are skipped entirely).
+
+- **Inside a `devbox shell`** (env var set): `command -v` → path-exhaustion →
+  `devbox add <tool>` → retry. If found, returns `FOUND`; otherwise skips
+  other wrappers and goes directly to the nix/uv fallback.
+- **Not inside a `devbox shell`**, but devbox is available and a `devbox.json`
+  exists up the tree: verifies the tool exists inside the devbox environment
+  (`devbox run -- command -v <tool>`). If not found, tries `devbox add` +
+  recheck. If confirmed available, returns `WRAPPER:devbox run --`. If still
+  not found inside devbox, falls through to normal flow and nix/uv fallback.
+- **devbox unavailable or no `devbox.json`**: normal flow — `command -v`,
+  other wrappers (mise, flox, direnv, nix), path-exhaustion.
+
+#### nix/uv fallback
+
+When the tool is not found by any of the above methods, the script tries to
+install it via available package managers — searching the repo first before
+attempting install:
+
+- **uv → pip** (special case for `tool == uv`): ensures uv is recorded in
+  devbox.json and falls back to pip/pip3/python3 -m pip for Python package
+  operations.
+- **nix**: if nix is available, searches nixpkgs for `<tool>` (via
+  `nix eval nixpkgs#<tool>.meta.mainProgram`). If a package exists, installs
+  it via `nix profile install` and rechecks PATH.
+- **uv**: if uv is available, tries `uv tool install <tool>` from PyPI
+  (the install attempt itself serves as the search — it fails fast if the
+  package doesn't exist). If successful, rechecks PATH.
+
+#### Repo-root fallback (last resort)
+
+After all system PATH locations and package manager lookups are exhausted,
+the script checks `$REPO_ROOT/bin`, `$REPO_ROOT/scripts`, and
+`$REPO_ROOT/.local/bin` as a **last resort**. This covers project-local tool
+shim layouts like [Hermit](https://cashapp.github.io/hermit/), where
+`bin/<tool>` symlinks auto-bootstrap the tool on first run.
+
+**Why last?** Repo-root `bin/` directories are the least secure search
+location — a cloned repository could contain malicious executables in `bin/`.
+System paths, home directories, and package managers are all more trustworthy
+because they require explicit installation or system-level access. By
+searching repo-root `bin/` only after everything else fails, the script
+minimizes the risk of a rogue project binary shadowing a legitimate system
+tool.
+
+Tech-stack-specific repo dirs (`node_modules/.bin`, `target/release`,
+`.venv/bin`, `vendor/bin`, etc.) are **not** deferred — they are
+build-system-managed and stay in the normal search order. Only the
+unconditional `$REPO_ROOT/bin` / `scripts/` / `.local/bin` fallback is
+deferred to last.
+
+```mermaid
+flowchart TD
+    Start["cli-tool-discovery.sh<br/>resolve_tool()"] --> InShell{"1. In devbox shell?<br/>(DEVBOX_SHELL /<br/>IN_DEVBOX_SHELL)"}
+    InShell -- "yes" --> ShellPathCheck{"1a. On PATH?<br/>(command -v)"}
+    ShellPathCheck -- "yes" --> FoundShellPath["FOUND: path"]
+    ShellPathCheck -- "no" --> ShellExhaust["1b. Path-exhaustion<br/>(standard locations +<br/>package managers)"]
+    ShellExhaust --> ShellExhaustFound{"found?"}
+    ShellExhaustFound -- "yes" --> FoundShellExhaust["FOUND: path"]
+    ShellExhaustFound -- "no" --> DevboxAdd["1c. devbox add tool<br/>(install into project)"]
+    DevboxAdd --> RetryCheck{"1d. Retry: on PATH or<br/>path-exhaustion found?"}
+    RetryCheck -- "yes" --> FoundRetry["FOUND: path"]
+    RetryCheck -- "no" --> FallbackStart["4. nix/uv fallback"]
+    InShell -- "no" --> DevboxAvail{"2. devbox available?<br/>(command -v devbox)"}
+    DevboxAvail -- "no" --> NormalFlow["3. Normal flow"]
+    DevboxAvail -- "yes" --> DevboxJson{"devbox.json exists<br/>up the tree?"}
+    DevboxJson -- "no" --> NormalFlow
+    DevboxJson -- "yes" --> DevboxVerify["2a. On PATH inside devbox?<br/>(devbox run -- command -v)"]
+    DevboxVerify --> DevboxVerifyFound{"found?"}
+    DevboxVerifyFound -- "yes" --> WrapperDevbox["WRAPPER: devbox run --"]
+    DevboxVerifyFound -- "no" --> DevboxAdd2["2b. devbox add + recheck<br/>inside devbox"]
+    DevboxAdd2 --> DevboxAddFound{"found?"}
+    DevboxAddFound -- "yes" --> WrapperDevbox
+    DevboxAddFound -- "no" --> NormalFlow
+    WrapperDevbox -- "caller execs<br/>devbox run -- tool" --> ShellPathCheck
+    NormalFlow --> NormalPathCheck{"3a. On PATH?<br/>(command -v)"}
+    NormalPathCheck -- "yes" --> FoundNormalPath["FOUND: path"]
+    NormalPathCheck -- "no" --> OtherWrappers["3b. Other wrappers<br/>(mise, flox, direnv, nix)"]
+    OtherWrappers --> NormalExhaust["3c. Global path-exhaustion<br/>(standard locations +<br/>package managers)"]
+    NormalExhaust --> NormalExhaustFound{"found?"}
+    NormalExhaustFound -- "yes" --> FoundNormalExhaust["FOUND: path"]
+    NormalExhaustFound -- "no" --> RepoRootFallback["3d. Repo-root fallback<br/>($REPO_ROOT/bin, scripts/,<br/>.local/bin — LAST, least secure)"]
+    RepoRootFallback --> RepoRootFound{"found?"}
+    RepoRootFound -- "yes" --> FoundRepoRoot["FOUND: path"]
+    RepoRootFound -- "no" --> FallbackStart
+    FallbackStart --> UvSpecial{"4a. tool == uv?"}
+    UvSpecial -- "yes" --> PipFallback["FALLBACK: pip<br/>(ensure_devbox_package + pip)"]
+    UvSpecial -- "no" --> NixFallback{"4b. nix available?<br/>search nixpkgs for tool"}
+    NixFallback -- "found + installed" --> NixRecheck["recheck PATH"]
+    NixRecheck --> NixFound{"found?"}
+    NixFound -- "yes" --> FoundNix["FOUND: path"]
+    NixFound -- "no" --> UvFallback{"4c. uv available?<br/>uv tool install tool"}
+    NixFallback -- "not found" --> UvFallback
+    UvFallback -- "installed" --> UvRecheck["recheck PATH"]
+    UvRecheck --> UvFound{"found?"}
+    UvFound -- "yes" --> FoundUv["FOUND: path"]
+    UvFound -- "no" --> NotFound["5. NOT_FOUND"]
+    UvFallback -- "not found" --> NotFound
+```
 
 #### Output (runner mode)
 
@@ -3947,6 +4258,35 @@ discover the runner programmatically.
   `--runner <ecosystem>` instead so the binary and invocation stay paired
   and the policy lives in one place (the tech-stack table, mirrored by the
   runner mode)
+
+#### Timeout configuration
+
+All internal probe and install operations are hang-safe — they run with a
+timeout so a broken devbox, slow brew cache, or stalled nix substituter
+cannot block the resolver indefinitely. Exec mode (`-- <tool> [args]`) is
+never timed; it's the user's command.
+
+| Env var | Default | Scope |
+|---------|---------|-------|
+| `CLTOOL_PROBE_TIMEOUT_SECS` | `30` | Lookups: `brew list`, `brew --prefix`, `mise which`, `asdf which`, `nix eval`, `rtk rewrite` |
+| `CLTOOL_INSTALL_TIMEOUT_SECS` | `120` | Network installs: `devbox add`, `nix profile install`, `uv tool install` |
+| `DEVBOX_PROBE_TIMEOUT_SECS` | `15` | `devbox run -- command -v` probes specifically |
+
+On timeout, the probe or install is treated as a failure and the resolver
+falls through to the next strategy (ultimately `NOT_FOUND`). Override the
+defaults for slow networks or cold caches:
+
+```bash
+CLTOOL_PROBE_TIMEOUT_SECS=60 CLTOOL_INSTALL_TIMEOUT_SECS=300 bash cli-tool-discovery.sh <tool>
+```
+
+The Python include (`cli-tool-discovery.py.tmpl`) reads the same env vars
+(`CLTOOL_PROBE_TIMEOUT_SECS`, `CLTOOL_INSTALL_TIMEOUT_SECS`) and applies
+them to `subprocess.run(..., timeout=...)` calls in `resolve_tool` and
+`_rtk_supports`. `subprocess.TimeoutExpired` is caught and treated as
+not-found. `run_tool` / `run_tool_exec` / `devbox_run` / `rtk_wrap` pass
+`**kwargs` through to `subprocess.run`, so callers can opt into a timeout
+by passing `timeout=<secs>` if needed.
 
 
 ---
@@ -4897,6 +5237,11 @@ If any of these are true, the run is NOT complete:
 - The artifact type was chosen without checking the decision tree → the user may get a skill when they needed a knowledge bundle (or vice versa) (Phase 3)
 - Phase 5 committed with `git add -A` → unrelated dirty files from Phase 0 were swept into the upsert commit (Phase 5)
 - The generated skill does not include `base-ai-guidance` → the local project override layer is not honored (CRITICAL: Honor Local Project Overrides)
+- A `[!]` task has a vague blocker like "waiting on API" without the full format contract (BLOCKED ON, NEEDED FROM, WHY, TRIED, ROUTES TO) → the next reader cannot act on it (Blocked Items)
+- A `[!]` task with a HUMAN blocker has no corresponding file in `.agents/handoffs/human/todo/` → the human action request is not durable and will be lost on crash (Blocked Items)
+- A human handoff lacks Project Context, Feature Context, or Current State → the human can't understand the request without reading the agent handoff (Blocked Items)
+- A human handoff was created but no GitHub issue was created (when `gh` and a remote are available) → the human won't see the action request in their issue list (Blocked Items)
+- The run log was not initialized in Phase 0 → a crash loses all progress records (Run Log)
 
 
 ## Context Declaration
@@ -4920,6 +5265,8 @@ If any of these are true, the run is NOT complete:
 - Bundled rust-development-practices knowledge (Phase 4): `references/included/knowledge/rust-development-practices/` — materialized at build time via `references/included/knowledge/rust-development-practices/`. Provides `rustfmt-clippy-config.md`, `quality-gates.md`, `testing-strategy.md`, `error-handling.md` for Rust code validation. Also bundled by code-review-guidance for standalone use
 - Bundled secrets-egress-security knowledge (Phase 4): `references/included/knowledge/secrets-egress-security/` — materialized at build time via `references/included/knowledge/secrets-egress-security/`. Provides vault storage and egress firewall patterns for security review. Also bundled by code-review-guidance for standalone use
 - Bundled devsecops-codeguard knowledge (Phase 4): `references/included/knowledge/devsecops-codeguard/` — materialized at build time via `references/included/knowledge/devsecops-codeguard/`. Provides security patterns (banned C functions, credential detection, crypto governance, cert validation, SSH hardening) for security review. Also bundled by code-review-guidance for standalone use
+- Run log directory: `{REPO_ROOT}/.agents/log/` — crash-safe progress records, one file per ai-upsert run (`YYYYMMDDHHmm-ai-upsert-{slug}.md`)
+- Human handoff directories: `{REPO_ROOT}/.agents/handoffs/human/todo/` (pending) and `{REPO_ROOT}/.agents/handoffs/human/archive/YYYY/MM/` (archived) — for blocked items requiring human action
 
 ### External Resources
 - Matt Pocock's writing-great-skills guide: https://github.com/matt-pocock/writing-great-skills

@@ -68,17 +68,69 @@ DIFF_STATS:
 ```
 
 ### Batch Commit Format
-The `git-commit-batch.sh` script accepts commit specifications via STDIN:
+The `git-commit-batch.sh` script accepts commit specifications via STDIN in
+two equivalent formats. **Format A (heredoc) is the primary format** — use it
+for any batch with a body, a `#tag` array, or multiple commits. Format B
+(`printf` with `\n` literals) is only suitable for single-commit checkpoints
+where the one-liner stays readable.
 
+#### Format A — Heredoc (PRIMARY, recommended for all batches)
+
+Feed the batch spec via a quoted heredoc (`<<'BATCH'`). No `\n` escaping
+needed — subject, body, tag array, and `FILES:` lines each go on their own
+physical line:
+
+```bash
+cat <<'BATCH' | ./scripts/git-commit-batch.sh --slug my-batch
+COMMIT:Add user authentication with JWT tokens
+
+- Implement login endpoint with JWT generation
+- Add session validation middleware
+- Cover with auth tests
+
+#project-auth #module-jwt #type-feat #skill-grm-created
+FILES:src/auth/login.py
+FILES:src/auth/session.py
+FILES:tests/auth/test_login.py
+COMMIT:Document JWT auth in API docs
+
+- Document the new /auth/login endpoint
+- Add JWT token format section to README
+
+#project-auth #module-docs #type-docs #skill-grm-created
+FILES:docs/api/authentication.md
+FILES:README.md
+BATCH
 ```
-COMMIT:<subject>\n\n<body line 1>\n<body line 2>
-FILES:<file1>
-FILES:<file2>
-FILES:<file3>
-COMMIT:<another subject>\n\n<another body>
-FILES:<file1>
-FILES:<file2>
+
+**Line-by-line anatomy of one commit block:**
 ```
+COMMIT:<subject>                          ← subject only, no body on this line
+                                          ← blank line (required — separates subject from body)
+- Body bullet 1                           ← body prose (the why, not the file listing)
+- Body bullet 2
+                                          ← blank line (separates body from tag array)
+#project-x #module-y #type-feat #skill-grm-created  ← mandatory tag array, last line of body
+FILES:src/path/to/file1                   ← one file per line, after the tag line
+FILES:src/path/to/file2
+```
+
+#### Format B — printf with \n literals (compact, single-commit only)
+
+For a minimal single-commit checkpoint, the `printf` one-liner format works.
+`\n` literals inside the `COMMIT:` line are expanded to real newlines by the
+script. Use `\\n` for `\n` literals in the message, real `\n` (via the shell)
+between `FILES:` lines:
+
+```bash
+printf 'COMMIT:Add user auth with JWT\\n\\n- Implement login endpoint\\n\\n#project-auth #module-jwt #type-feat #skill-grm-created\nFILES:src/auth/login.py\n' \
+  | ./scripts/git-commit-batch.sh --slug auth-checkpoint
+```
+
+**Do not use Format B for multi-commit batches or commits with multi-line
+bodies** — the `\n`/`\\n` escaping becomes error-prone and produces
+`COMMIT_FAILED:NO_FILES` when `FILES:` lines get absorbed into the `COMMIT:`
+message. Use Format A (heredoc) instead.
 
 One file per `FILES:` line — the entire line after `FILES:` is treated as a
 single path, so paths containing spaces are preserved. Multiple `FILES:` lines
@@ -93,37 +145,35 @@ commits beneath it intact.
 ### Dry-Run Mode (Validation Without Committing)
 
 `git-commit-batch.sh --dry-run` parses the batch, validates each commit
-message (including the mandatory body check and the body-quality heuristic),
-and prints what WOULD be staged per commit — without creating any commits
-or pre/post tags. Use it to catch mistakes before any commits land.
+message (including the mandatory body check, the tag-array check, and the
+body-quality heuristic), and prints what WOULD be staged per commit — without
+creating any commits or pre/post tags. Use it to catch mistakes before any
+commits land.
 
-```
-printf 'COMMIT:Add files\\n\\n- Add file1\nFILES:file1.txt\n' \
-  | ./scripts/git-commit-batch.sh --dry-run --slug my-batch
+```bash
+cat <<'BATCH' | ./scripts/git-commit-batch.sh --dry-run --slug my-batch
+COMMIT:Add files
+
+- Add file1 to support new feature X
+
+#project-test #type-feat #skill-grm-created
+FILES:file1.txt
+BATCH
 ```
 
 Output per commit: `PROCESSING_COMMIT:N`, `MESSAGE:...`, `FILES:...`, and
 `WOULD_STAGE:<file>` for each file. Exits 0 if all blocks validate, non-zero
-on any validation error (bodyless commit, missing file, amend-with-multiple-
-commits). No `AUTO_TAG_PRE`/`AUTO_TAG_POST` markers are emitted in dry-run
-mode. Pair with `--dry-run` after drafting a large batch to catch
-rename-absorption or body-quality issues before they hit git history.
+on any validation error (bodyless commit, missing tag array, missing file,
+amend-with-multiple-commits). No `AUTO_TAG_PRE`/`AUTO_TAG_POST` markers are
+emitted in dry-run mode. Pair with `--dry-run` after drafting a large batch
+to catch rename-absorption or body-quality issues before they hit git history.
 
 **Commit messages MUST include a body** (see Mandatory Commit Bodies above).
-Use `\n` literals to separate the subject from the body and to separate body
-lines. The script expands `\n` to real newlines before passing to `git commit`.
-Commits without a body are rejected with `COMMIT_FAILED:NO_BODY`.
-
-Example:
-```
-COMMIT:Add user authentication with JWT tokens\n\n- Implement login endpoint with JWT generation\n- Add session validation middleware\n- Cover with auth tests
-FILES:src/auth/login.py
-FILES:src/auth/session.py
-FILES:tests/auth/test_login.py
-COMMIT:Update API documentation\n\n- Document the new /auth/login endpoint\n- Add JWT token format section to README
-FILES:docs/api/authentication.md
-FILES:README.md
-```
+In Format A (heredoc), the blank line between subject and body is a physical
+blank line. In Format B (`printf`), use `\n\n` literals to separate the subject
+from the body and `\n` to separate body lines. The script expands `\n` literals
+to real newlines before passing to `git commit`. Commits without a body are
+rejected with `COMMIT_FAILED:NO_BODY`.
 
 ### Renames (CRITICAL)
 
@@ -182,10 +232,20 @@ This applies to ALL commits made through this skill, in ALL repositories, withou
 
 **EVERY** commit MUST include a body explaining the why. A subject line alone is never sufficient. The `git-commit-batch.sh` script **enforces this hard** — commits without a body are rejected with `COMMIT_FAILED:NO_BODY`.
 
-- **Format**: Use `\n` literals in the `COMMIT:` line to separate subject from body:
+- **Format**: In a heredoc (Format A), the blank line between subject and
+  body is a physical blank line. In a `printf` one-liner (Format B), use
+  `\n\n` literals. See [Batch Commit Format](#batch-commit-format) above for
+  the full heredoc example with the mandatory `#tag` array:
   ```
-  COMMIT:Add user authentication with JWT tokens\n\n- Implement login endpoint with JWT generation\n- Add session validation middleware\n- Update API documentation
-  FILES:src/auth.py tests/test_auth.py
+  COMMIT:Add user authentication with JWT tokens
+
+  - Implement login endpoint with JWT generation
+  - Add session validation middleware
+  - Update API documentation
+
+  #project-auth #module-jwt #type-feat #skill-grm-created
+  FILES:src/auth.py
+  FILES:tests/test_auth.py
   ```
 - **Subject**: One line, imperative mood, capitalized, no trailing period
 - **Blank line**: Required between subject and body (represented as `\n\n`)

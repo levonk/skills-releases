@@ -19,7 +19,7 @@ git config user.email "self-check@test"
 git config user.name "self-check"
 
 # Create and commit a file so it's tracked
-echo "hello" > tracked.txt
+echo "hello" >tracked.txt
 git add tracked.txt
 git commit -qm "init"
 
@@ -28,20 +28,20 @@ rm tracked.txt
 
 # Feed a commit spec for the deleted file
 out=$(printf 'COMMIT:Delete tracked file\\n\\n- Remove tracked.txt from repo\nFILES:tracked.txt\n' | "$BATCH" "$TMP" 2>&1) || {
-    echo "FAIL: script exited non-zero on deleted-but-tracked file"
-    echo "$out"
-    exit 1
+	echo "FAIL: script exited non-zero on deleted-but-tracked file"
+	echo "$out"
+	exit 1
 }
 
 if echo "$out" | grep -q "COMMIT_FAILED:FILE_NOT_FOUND"; then
-    echo "FAIL: script rejected deleted-but-tracked file with FILE_NOT_FOUND"
-    echo "$out"
-    exit 1
+	echo "FAIL: script rejected deleted-but-tracked file with FILE_NOT_FOUND"
+	echo "$out"
+	exit 1
 fi
 
 if echo "$out" | grep -q "COMMIT_SUCCESS"; then
-    echo "PASS: deleted-but-tracked file committed"
-    exit 0
+	echo "PASS: deleted-but-tracked file committed"
+	exit 0
 fi
 
 echo "FAIL: no COMMIT_SUCCESS in output"

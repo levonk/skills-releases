@@ -1390,6 +1390,28 @@ a call or chat instead, then send a short email summary with the decision. If
 the user's request would result in a long thread, recommend a call and offer to
 draft the follow-up summary email instead.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Determine mode — Create (Mode A), Review (Mode B), or Convert (Mode C)
+- [ ] Mode A: gather context (purpose, audience, action needed, deadline)
+- [ ] Mode A: identify email type and apply the framework principles while drafting
+- [ ] Mode A: draft subject line, first sentence, body, and close using the type template
+- [ ] Mode A: self-review the draft against the review checklist before presenting
+- [ ] Mode B: read the email fully and audit against the framework
+- [ ] Mode B: identify issues with before/after examples, prioritized by impact
+- [ ] Mode B: propose the full revised email with changes highlighted and offer alternatives
+- [ ] Mode C: extract the core message (ask, decision, update, risk) and facts from the source
+- [ ] Mode C: apply Mode A using the extracted message as input
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Business Email Writer run complete, verify every item below.

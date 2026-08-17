@@ -1344,6 +1344,40 @@ GovDeals, NY State Store → GovDeals). **Keep both as sources** — the
 government site is the index/portal, the contractor platform is where
 you actually bid.
 
+### 2.3. Salvage Yard Sourcing (Pick Your Part)
+
+When sourcing vehicle parts from self-service salvage yards, use the
+`search_pyp_inventory.py` script to search Pick Your Part (pyp.com)
+inventory across all California yards. Pick Your Part has no public API —
+the script fetches and parses HTML.
+
+```bash
+# Search all California yards for a specific make/model
+uv run --script scripts/search_pyp_inventory.py --zip 91204 --make Toyota --model Mirai
+
+# Search for any vehicle from a make
+uv run --script scripts/search_pyp_inventory.py --zip 91204 --make Hyundai
+
+# Limit to yards within 50 miles
+uv run --script scripts/search_pyp_inventory.py --zip 91204 --make Toyota --model Mirai --max-distance 50
+
+# JSON output for piping into a monitor
+uv run --script scripts/search_pyp_inventory.py --zip 91204 --make Toyota --model Mirai --json
+```
+
+For the full California yard list with addresses, location IDs, and
+distances, see `references/pyp-california-locations.md`.
+
+For the salvage yard visit protocol (tools to bring, part removal
+safety, condition assessment), see `references/salvage-sourcing-methodology.md`.
+
+**Fuel cell vehicles**: When sourcing fuel cell vehicle components
+(Toyota Mirai, Hyundai Nexo, Honda Clarity Fuel Cell, Hyundai Tucson
+FCEV), see `references/fcev-vehicle-catalog.md` for vehicle specs and
+`references/fcev-part-numbers.md` for OEM part numbers. Use the part
+numbers with `search_part_suppliers.py` (Section 1.5) to search
+suppliers by part number.
+
 ### 2.5. Cross-Brand Identical Products & Brand Premium Assessment
 
 Many products are not manufactured by the brand on the label — the brand buys
@@ -1595,6 +1629,32 @@ Deliver a **Deal Intelligence Report**:
 - `references/auction-constraints.md` — Vehicle auction constraints (smog/CARB compliance, export-only, salvage/rebuilt titles, damage levels, dealer license gating) and property auction constraints (buildability checklist: ingress, topography, zoning, lot dimensions, easements, utilities, roads; title risks; risk levels by auction type); universal auction constraints (locale/travel, registration gating, total acquisition cost)
 - `references/auction-participation.md` — Step-by-step participation instructions for each major auction platform (GSA Auctions, GSA Fleet, GovDeals, Copart, IAAI, Public Surplus, Municibid, GovPlanet, PropertyRoom, Bid4Assets, US Marshals contractors, Treasury/IRS, county tax deed, state surplus, B-Stock); includes dealer agent/broker process
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Confirm the effort tier and scope research depth accordingly
+- [ ] Products: build a price history profile from historical price research sources (Section 1)
+- [ ] Products: run part-number sourcing if the brief includes a replacement part (Section 1.5)
+- [ ] Products: search sourcing channels and filter candidates using specs as floors (Sections 2–2.1)
+- [ ] Products: load auction-specific constraints and participation instructions if any candidate is an auction (Section 2.2)
+- [ ] Products: check cross-brand identical products and brand premium assessment (Section 2.5)
+- [ ] Products: determine the optimal purchase window via market timing analysis (Section 3)
+- [ ] Products: build the purchase optimization stack — gift cards, cashback, card bonuses, coupons (Section 4)
+- [ ] Products: compare warranty terms across candidate suppliers (Section 5)
+- [ ] Services: verify the vendor tier from needs-discovery (S0)
+- [ ] Services: gather 3+ provider quotes and vet each (license, insurance, bonding, reviews, complaints, tenure) (S1–S2)
+- [ ] Services: research pricing benchmarks and flag outlier quotes (S3)
+- [ ] Services: determine service timing and select the best payment card (S4–S5)
+- [ ] Assemble and deliver the Deal Intelligence Report with all applicable sections
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Shopping Deal Intelligence run complete, verify every item
@@ -1651,7 +1711,8 @@ If any of these are true, the run is NOT complete:
 
 ### File Paths
 - Main skill: `config/ai/skills/commerce/deal-intelligence/SKILL.md`
-- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/cross-brand-identical.md`, `references/auction-constraints.md`, `references/auction-participation.md`
+- Scripts: `scripts/search_pyp_inventory.py` (salvage yard inventory search), `scripts/search_part_suppliers.py` (OEM part-number supplier search)
+- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/cross-brand-identical.md`, `references/auction-constraints.md`, `references/auction-participation.md`, `references/pyp-california-locations.md`, `references/salvage-sourcing-methodology.md`, `references/fcev-vehicle-catalog.md`, `references/fcev-part-numbers.md`, `references/part-supplier-catalog.md`
 
 ### Related Skills
 - `shopping-needs-discovery` (dependency) — discovers and refines purchasing requirements

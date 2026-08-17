@@ -1350,6 +1350,25 @@ Record the triage decision with clear rationale:
 - **Cost limits high tiers** — Very expensive work requires high priority or escalation
 - **Client relationships matter** — Critical client requests get +2 tier boost
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Identify the base tier by matching the request type to the 26-tier framework (Step 1)
+- [ ] Apply cross-cutting adjustments — legal, reputational, financial, security (Step 2)
+- [ ] Apply the requestor adjustment based on who is making the request (Step 3)
+- [ ] Calculate the effective tier (Base + Cross-Cutting + Requestor, clamped 1–26) (Step 4)
+- [ ] Estimate the cost level — Low / Medium / High / Very High (Step 5)
+- [ ] Apply the decision matrix crossing Effective Tier with Cost Level (Step 6)
+- [ ] Document the triage decision with base tier, adjustments, cost, final decision, and next steps (Step 7)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Task Triage run complete, verify every item below.

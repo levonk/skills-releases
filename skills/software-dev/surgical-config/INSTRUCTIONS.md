@@ -1444,6 +1444,24 @@ After applying surgical changes:
 - [Implementation Patterns](references/implementation-patterns.md) - Additive configuration, idempotent operations, content preservation, common config file patterns, backup strategy, and configuration management operations
 - [Tool Comparison](references/tool-comparison.md) - Detailed comparison of surgical-edit.sh vs manage-config.mjs, when to use which tool, and integration examples
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Environment readiness — run `scripts/ensure-environment.sh --check` and install any missing tools
+- [ ] Detect project type (when `--detect-project` is used) via `project-detection`
+- [ ] Apply surgical edits via `scripts/surgical-edit.sh` using the highest-tier tool available for each file type
+- [ ] Verify syntax validity, content application, and preservation of existing user content
+- [ ] Confirm idempotency — re-running the same edit does not duplicate or corrupt
+- [ ] Validate the configuration works with the tool/service that reads it
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the surgical-config run complete, verify every item below.

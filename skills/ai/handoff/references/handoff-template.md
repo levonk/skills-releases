@@ -2,15 +2,34 @@
 
 ## Storage Lifecycle & Commit Conventions
 
-Handoff documents use a two-stage lifecycle:
+Handoff documents use a two-stage lifecycle (todo → archive) per the shared
+`work-lifecycle` include. The include supports **audience variants** (agent
+vs human) — see its "Audience Variants" section for routing criteria.
+
+### Agent Handoffs (default)
 
 | Stage | Path | When |
 |-------|------|------|
 | **Pending** | `.agents/handoffs/todo/YYYYMMDDHHmm-handoffslug.md` | Created — awaiting work |
 | **Archived** | `.agents/handoffs/archive/YYYY/MM/YYYYMMDDHHmm-handoffslug.md` | All DoD tasks `[x]` — moved via `git mv` |
 
+### Human Handoffs
+
+| Stage | Path | When |
+|-------|------|------|
+| **Pending** | `.agents/handoffs/human/todo/YYYYMMDDHHmm-slug.md` | Blocked on human action — awaiting response |
+| **Archived** | `.agents/handoffs/human/archive/YYYY/MM/YYYYMMDDHHmm-slug.md` | Blocker resolved — moved via `git mv` |
+
 The filename never changes between stages. The archive `YYYY/MM/` is derived
 from the filename's embedded timestamp (creation date, not completion date).
+
+**Frontmatter dates** (per the `work-lifecycle` include):
+```yaml
+date:
+  created: "2026-07-11"        # set on creation, never changed
+  completed: "2026-07-15"      # set only when archiving
+  last-activity: "2026-07-14"  # updated on every work session
+```
 
 **Commit messages** (both include a mandatory `#tag` array as the last body
 line):
@@ -27,7 +46,7 @@ line):
   ```
   docs(handoff): archive completed handoff {slug}
 
-  All Definition of Done tasks verified [x]. Moved from todo/ to archive/{YYYY}/{MM}/.
+  All Task List items verified [x] and Definition of Done checks pass. Moved from todo/ to archive/{YYYY}/{MM}/.
 
   #project-{project} #module-handoff #type-docs #skill-handoff-archived #skill-grm-created
   ```
@@ -37,6 +56,13 @@ line):
 Use this template for consistency when creating handoff documents:
 
 ```markdown
+---
+date:
+  created: "YYYY-MM-DD"
+  completed: ""               # set only when archiving
+  last-activity: "YYYY-MM-DD" # update on every work session
+---
+
 # [Descriptive Handoff Title]
 
 **Date**: YYYY-MM-DD
@@ -204,11 +230,110 @@ If any of these are true, the work is NOT complete:
 [Any other information crucial for continuation]
 ```
 
+## Human Handoff Template
+
+Use this template when a task is blocked on human-only action (API keys,
+access, decisions, approvals). The document is **self-contained** — a human
+should be able to read just this file (or the GitHub issue created from it)
+and understand the full picture without reading the agent handoff. See the
+`work-lifecycle` include's "Audience Variants" section for routing criteria.
+
+```markdown
+---
+date:
+  created: "YYYY-MM-DD"
+  completed: ""
+  last-activity: "YYYY-MM-DD"
+github_issue: 42
+---
+
+# {Action needed — one line, e.g., "Provide OpenAI API key for eval runner"}
+
+**Project Context:**
+- Project: {project name}
+- What it is: {1-2 sentence description of the project}
+
+**Feature Context:**
+- Feature: {what feature or work was being attempted}
+- Why it matters: {the goal — why this work is being done}
+
+**Current State:**
+- Done: {completed items, or "none yet"}
+- In progress: {in-progress items}
+- Blocked: {where this blocker sits in the overall work}
+
+**What I need from you:**
+1. {specific action step}
+2. {specific action step}
+
+**Why I can't proceed:** {blocker explained for a non-agent reader —
+what is missing and why the agent cannot generate or obtain it}
+
+**What I tried:**
+- {approach 1 and why it didn't work}
+- {approach 2 and why it didn't work}
+
+**Context:**
+- Agent handoff: `.agents/handoffs/todo/{filename}.md`
+- Run log: `.agents/log/{filename}.md` (if applicable)
+- Relevant files: {paths}
+
+**How to unblock me:** {what to do after the action is taken — e.g.,
+"re-run the ai-upsert skill" or "tell me the API key is in `.env`"}
+```
+
+**GitHub issue creation:** after writing the file, if `gh` is available and
+the repo has a GitHub remote, create a GitHub issue from the file content.
+The issue is the visibility layer — it shows up in the issue list and stays
+open until the human resolves the blocker. The file is always created first
+(crash safety); the issue is conditional.
+
+```bash
+# Create the label if it doesn't exist
+gh label create "human-handoff" \
+  --description "Action item requiring human input (API keys, access, decisions, approvals)" \
+  --color "BFD4F2" 2>/dev/null || true
+
+# Create the issue from the file content (use --body-file, never --body)
+gh issue create \
+  --title "{action needed — one line}" \
+  --body-file ".agents/handoffs/human/todo/{TIMESTAMP}-{SLUG}.md" \
+  --label "human-handoff"
+```
+
+Record the issue number in the file's frontmatter (`github_issue: 42`). If
+`gh` is unavailable or no remote exists, skip issue creation — the file
+alone is durable. See the `gh-posting-guard` include for why `--body-file`
+is mandatory.
+
+**Human handoff DoD** (two items):
+- [ ] The blocker was resolved and the requesting task in the agent handoff
+  is marked `[x]`
+- [ ] The GitHub issue (if created) is closed
+
+**Human handoff archive:** when the DoD is met, `git mv` from
+`human/todo/` to `human/archive/YYYY/MM/` per the `work-lifecycle` include.
+If a GitHub issue was created, verify it is closed before archiving.
+
+**Archive trigger — reconciliation:** the AI does not poll for issue closure.
+The next ai-upsert run reconciles human handoffs in Phase 0: it scans
+`human/todo/` for files with `github_issue` frontmatter, checks each issue's
+state via `gh issue view {number} --json state`, and archives any whose
+issues are `CLOSED`. This piggybacks on the existing run lifecycle — no
+separate process needed.
+
 ## Extended Example: Complex Project Handoff
 
 Based on the infrahub example, a more detailed handoff for complex projects:
 
 ```markdown
+---
+date:
+  created: "YYYY-MM-DD"
+  completed: ""
+  last-activity: "YYYY-MM-DD"
+---
+
 # [Descriptive Title]
 
 **Date**: YYYY-MM-DD

@@ -5,7 +5,7 @@
 
 > Category: **software-dev** · Status: ready · Version: 1.0.0
 
-File a well-formed GitHub issue against a third-party or upstream repository. Discovers the project's own contribution standards and issue templates (caching them with a 7-day TTL), searches for duplicate issues, drafts a body that matches project conventions, presents it for human review, posts via gh --body-file, and validates the posted body for corruption. Use when the user wants to file a feature request, bug report, or proposal against a repository they don't own. Do NOT trigger on internal project issues, PR creation, or code changes — use github-pr for pull requests.
+File a well-formed GitHub issue against a third-party or upstream repository. Discovers the project's own contribution standards and issue templates (caching them with a 7-day TTL), searches for duplicate issues, drafts a body that matches project conventions, presents it for human review, posts via gh --body-file, validates the posted body for corruption, and optionally cross-references related issues and posts a differentiation comment to pre-empt duplicate closure. Use when the user wants to file a feature request, bug report, or proposal against a repository they don't own, or when cross-referencing a newly-filed issue from related/umbrella issues. Do NOT trigger on internal project issues, PR creation, or code changes — use github-pr for pull requests.
 
 ## Metadata
 
@@ -38,4 +38,4 @@ File a well-formed GitHub issue against a third-party or upstream repository. Di
 
 - **Full skill**: [`skills/software-dev/github-issue/SKILL.md`](skills/software-dev/github-issue/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-10T21:38:16Z
+- **Generated**: 2026-08-17T03:55:48Z

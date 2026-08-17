@@ -1433,6 +1433,23 @@ For full descriptions and remediation guidance, see
 For pre-refactor, during-refactor, and post-refactor checklists, see
 [Refactor Checklist](references/refactor-checklist.md).
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Phase 1 — Assure clean starting state (typecheck, build, lint, tests pass; git tree clean; on a feature branch)
+- [ ] Phase 2 — Identify issues across all categories (security, compliance, code smells, legacy tech, standards, pattern opportunities, integration, package extraction) and annotate in-code
+- [ ] Phase 3 — Create prioritized task plan (urgent → foundational → dependent → low priority)
+- [ ] Phase 4 — Execute tasks in priority order, verifying (typecheck/build/lint/test) and committing after each increment
+- [ ] Phase 5 — Final verification (all gates pass, clean tree, summary of refactored/deferred/new debt)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the refactor-planning run complete, verify every item below.

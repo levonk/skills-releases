@@ -34,8 +34,8 @@ MODE="${5:-}"
 
 # Validate project name — nixpkgs attribute names are lowercase, hyphenated
 if echo "$PROJECT" | grep -qE '[^a-z0-9-]'; then
-  echo "ERROR: project name must be lowercase with hyphens only (nixpkgs attribute convention)" >&2
-  exit 1
+	echo "ERROR: project name must be lowercase with hyphens only (nixpkgs attribute convention)" >&2
+	exit 1
 fi
 
 # Compute the pkgs/by-name path — first 2 chars of the package name, lowercased
@@ -49,14 +49,14 @@ DESCRIPTION=""
 
 # Try to get version from the project's Cargo.toml, package.json, etc.
 if [ -f "$PROJECT_DIR/Cargo.toml" ]; then
-  VERSION=$(grep -m1 '^version' "$PROJECT_DIR/Cargo.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
-  DESCRIPTION=$(grep -m1 '^description' "$PROJECT_DIR/Cargo.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
+	VERSION=$(grep -m1 '^version' "$PROJECT_DIR/Cargo.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
+	DESCRIPTION=$(grep -m1 '^description' "$PROJECT_DIR/Cargo.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
 elif [ -f "$PROJECT_DIR/package.json" ]; then
-  VERSION=$(jq -r '.version // empty' "$PROJECT_DIR/package.json" || echo "")
-  DESCRIPTION=$(jq -r '.description // empty' "$PROJECT_DIR/package.json" || echo "")
+	VERSION=$(jq -r '.version // empty' "$PROJECT_DIR/package.json" || echo "")
+	DESCRIPTION=$(jq -r '.description // empty' "$PROJECT_DIR/package.json" || echo "")
 elif [ -f "$PROJECT_DIR/pyproject.toml" ]; then
-  VERSION=$(grep -m1 '^version' "$PROJECT_DIR/pyproject.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
-  DESCRIPTION=$(grep -m1 '^description' "$PROJECT_DIR/pyproject.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
+	VERSION=$(grep -m1 '^version' "$PROJECT_DIR/pyproject.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
+	DESCRIPTION=$(grep -m1 '^description' "$PROJECT_DIR/pyproject.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
 fi
 
 # --- Generate package.nix ---------------------------------------------------
@@ -68,7 +68,7 @@ fi
 PACKAGE_NIX_DIR=$(mktemp -d)
 PACKAGE_NIX_PATH="${PACKAGE_NIX_DIR}/package.nix"
 
-cat > "$PACKAGE_NIX_PATH" << 'PACKAGE_NIX_EOF'
+cat >"$PACKAGE_NIX_PATH" <<'PACKAGE_NIX_EOF'
 # TODO: Fill in the language-specific build framework.
 # See https://nixos.org/manual/nixpkgs/stable/#chap-language-support
 # for the correct builder for this project's language.
@@ -146,7 +146,7 @@ MAINTAINER_ENTRY="{ name = \"${CURRENT_USER}\"; email = \"YOUR_EMAIL\"; github =
 # --- Generate PR body -------------------------------------------------------
 PR_BODY_PATH="${PACKAGE_NIX_DIR}/pr-body.md"
 
-cat > "$PR_BODY_PATH" << PR_BODY_EOF
+cat >"$PR_BODY_PATH" <<PR_BODY_EOF
 ## Description
 
 Add \`${PROJECT}\` to nixpkgs.
@@ -189,60 +189,60 @@ NIXPKGS_FORK=""
 NIXPKGS_BRANCH="add-${PROJECT}"
 
 if [ "$MODE" = "--dry-run" ]; then
-  echo "DRY RUN — would perform:" >&2
-  echo "  1. Fork NixOS/nixpkgs to ${CURRENT_USER}/nixpkgs" >&2
-  echo "  2. Clone fork, create branch '${NIXPKGS_BRANCH}'" >&2
-  echo "  3. Create ${BY_NAME_PATH}/package.nix" >&2
-  echo "  4. Open PR to NixOS/nixpkgs with title: '${PROJECT}: init at ${VERSION}'" >&2
-  echo "" >&2
-  echo "Generated files:" >&2
-  echo "  package.nix: ${PACKAGE_NIX_PATH}" >&2
-  echo "  PR body:     ${PR_BODY_PATH}" >&2
-  echo "  Maintainer entry: ${MAINTAINER_ENTRY}" >&2
+	echo "DRY RUN — would perform:" >&2
+	echo "  1. Fork NixOS/nixpkgs to ${CURRENT_USER}/nixpkgs" >&2
+	echo "  2. Clone fork, create branch '${NIXPKGS_BRANCH}'" >&2
+	echo "  3. Create ${BY_NAME_PATH}/package.nix" >&2
+	echo "  4. Open PR to NixOS/nixpkgs with title: '${PROJECT}: init at ${VERSION}'" >&2
+	echo "" >&2
+	echo "Generated files:" >&2
+	echo "  package.nix: ${PACKAGE_NIX_PATH}" >&2
+	echo "  PR body:     ${PR_BODY_PATH}" >&2
+	echo "  Maintainer entry: ${MAINTAINER_ENTRY}" >&2
 else
-  # Fork nixpkgs
-  gh repo fork NixOS/nixpkgs --clone=false 2>/dev/null || true
-  NIXPKGS_FORK="https://github.com/${CURRENT_USER}/nixpkgs"
+	# Fork nixpkgs
+	gh repo fork NixOS/nixpkgs --clone=false 2>/dev/null || true
+	NIXPKGS_FORK="https://github.com/${CURRENT_USER}/nixpkgs"
 
-  # Clone the fork to a temp directory
-  NIXPKGS_CLONE_DIR=$(mktemp -d)
-  git clone --depth=1 "$NIXPKGS_FORK" "$NIXPKGS_CLONE_DIR/nixpkgs" 2>/dev/null || {
-    # If clone fails (fork may not exist yet), try cloning upstream and adding fork remote
-    git clone --depth=1 "https://github.com/NixOS/nixpkgs" "$NIXPKGS_CLONE_DIR/nixpkgs"
-  }
-  cd "$NIXPKGS_CLONE_DIR/nixpkgs"
+	# Clone the fork to a temp directory
+	NIXPKGS_CLONE_DIR=$(mktemp -d)
+	git clone --depth=1 "$NIXPKGS_FORK" "$NIXPKGS_CLONE_DIR/nixpkgs" 2>/dev/null || {
+		# If clone fails (fork may not exist yet), try cloning upstream and adding fork remote
+		git clone --depth=1 "https://github.com/NixOS/nixpkgs" "$NIXPKGS_CLONE_DIR/nixpkgs"
+	}
+	cd "$NIXPKGS_CLONE_DIR/nixpkgs"
 
-  # Create branch
-  git checkout -b "$NIXPKGS_BRANCH"
+	# Create branch
+	git checkout -b "$NIXPKGS_BRANCH"
 
-  # Create the package directory and copy package.nix
-  mkdir -p "$BY_NAME_PATH"
-  cp "$PACKAGE_NIX_PATH" "$BY_NAME_PATH/package.nix"
-  git add "$BY_NAME_PATH/package.nix"
+	# Create the package directory and copy package.nix
+	mkdir -p "$BY_NAME_PATH"
+	cp "$PACKAGE_NIX_PATH" "$BY_NAME_PATH/package.nix"
+	git add "$BY_NAME_PATH/package.nix"
 
-  echo "nixpkgs cloned at: $(pwd)" >&2
-  echo "Branch: ${NIXPKGS_BRANCH}" >&2
-  echo "Package path: ${BY_NAME_PATH}/package.nix" >&2
-  echo "" >&2
-  echo "Next steps:" >&2
-  echo "  1. Edit ${BY_NAME_PATH}/package.nix — fill in the correct builder, deps, and hash" >&2
-  echo "  2. Add yourself to maintainers/maintainer-list.nix in a separate commit" >&2
-  echo "  3. Build: nix-build -A ${PROJECT}" >&2
-  echo "  4. Test: result/bin/${PROJECT} --version" >&2
-  echo "  5. Commit and push: git push origin ${NIXPKGS_BRANCH}" >&2
-  echo "  6. Open PR: gh pr create --repo NixOS/nixpkgs --body-file ${PR_BODY_PATH}" >&2
+	echo "nixpkgs cloned at: $(pwd)" >&2
+	echo "Branch: ${NIXPKGS_BRANCH}" >&2
+	echo "Package path: ${BY_NAME_PATH}/package.nix" >&2
+	echo "" >&2
+	echo "Next steps:" >&2
+	echo "  1. Edit ${BY_NAME_PATH}/package.nix — fill in the correct builder, deps, and hash" >&2
+	echo "  2. Add yourself to maintainers/maintainer-list.nix in a separate commit" >&2
+	echo "  3. Build: nix-build -A ${PROJECT}" >&2
+	echo "  4. Test: result/bin/${PROJECT} --version" >&2
+	echo "  5. Commit and push: git push origin ${NIXPKGS_BRANCH}" >&2
+	echo "  6. Open PR: gh pr create --repo NixOS/nixpkgs --body-file ${PR_BODY_PATH}" >&2
 fi
 
 # --- Output -----------------------------------------------------------------
 jq -n \
-  --arg package_nix_path "$PACKAGE_NIX_PATH" \
-  --arg nixpkgs_fork "${NIXPKGS_FORK:-https://github.com/${CURRENT_USER}/nixpkgs}" \
-  --arg nixpkgs_branch "$NIXPKGS_BRANCH" \
-  --arg pr_body_path "$PR_BODY_PATH" \
-  --arg maintainer_entry "$MAINTAINER_ENTRY" \
-  --arg by_name_path "$BY_NAME_PATH" \
-  --arg version "$VERSION" \
-  '{package_nix_path: $package_nix_path,
+	--arg package_nix_path "$PACKAGE_NIX_PATH" \
+	--arg nixpkgs_fork "${NIXPKGS_FORK:-https://github.com/${CURRENT_USER}/nixpkgs}" \
+	--arg nixpkgs_branch "$NIXPKGS_BRANCH" \
+	--arg pr_body_path "$PR_BODY_PATH" \
+	--arg maintainer_entry "$MAINTAINER_ENTRY" \
+	--arg by_name_path "$BY_NAME_PATH" \
+	--arg version "$VERSION" \
+	'{package_nix_path: $package_nix_path,
     nixpkgs_fork: $nixpkgs_fork,
     nixpkgs_branch: $nixpkgs_branch,
     pr_body_path: $pr_body_path,

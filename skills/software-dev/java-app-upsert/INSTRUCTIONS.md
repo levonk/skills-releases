@@ -2178,6 +2178,26 @@ is warranted.
 - `scripts/cli-tool-discovery.sh` — detects devbox/mise/flox/nix wrappers for
   `mvn`, `gradle`, `java`, and other CLI tools before assuming they are on PATH
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Determine the mode — no build file → Mode A (create), build file exists + keep system → Mode B (update), build file exists + switch systems → Mode C (convert) (Decision: Create vs Update vs Convert)
+- [ ] Mode A: Research existing projects, determine build system (Maven or Gradle), and run CLI tool discovery to detect the build tool wrapper (Mode A Steps 0-2)
+- [ ] Mode A: Scaffold the project following the selected reference — Maven → `references/maven-project-setup.md`, Gradle → `references/gradle-project-setup.md` (Mode A Step 3)
+- [ ] Mode A: Set up testing (JUnit 5, Mockito, AssertJ, Testcontainers) with surefire/failsafe split (Mode A Step 4)
+- [ ] Mode A: Configure containerization (multi-stage Dockerfile, JRE-only runtime, JVM container flags, Spring Boot layered jars) and tune the JVM (Mode A Steps 5-6)
+- [ ] Mode A: Scan generated files for identity leaks with `scan-artifacts.sh` before committing (Mode A Step 7)
+- [ ] Mode B: Audit the existing build, run CLI tool discovery, apply improvements following the relevant references, verify the build still passes, scan modified files (Mode B Steps 1-5)
+- [ ] Mode C: Inventory the source build, generate the target build file, verify dependency parity, run build and tests, remove old build files with `git mv` semantics, scan for identity leaks (Mode C Steps 1-6)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the java-app-upsert run complete, verify every item below.

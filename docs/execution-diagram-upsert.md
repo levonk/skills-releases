@@ -27,4 +27,4 @@ Create and embed diagrams in technical documentation (ADR, design docs, README, 
 
 - **Full skill**: [`skills/execution/diagram-upsert/SKILL.md`](skills/execution/diagram-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-10T21:38:16Z
+- **Generated**: 2026-08-17T03:55:48Z

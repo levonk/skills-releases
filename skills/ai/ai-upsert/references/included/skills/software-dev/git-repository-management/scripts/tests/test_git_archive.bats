@@ -94,7 +94,7 @@ make_unmerged_branch() {
 # tests don't hang on the 15s devbox probe in temp dirs without devbox.json.
 run_archive() {
     local dir="$1"; shift
-    ( cd "$dir" && WRAPPER_DEVBOX_DISABLED=1 RTK_SKIP=1 bash "$ARCHIVE" "$@" "$dir" 2>&1 ) || true
+    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null WRAPPER_DEVBOX_DISABLED=1 RTK_SKIP=1 bash "$ARCHIVE" "$@" "$dir" 2>&1 ) || true
 }
 
 # --- Identify: basic ---

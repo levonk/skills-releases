@@ -17,3 +17,11 @@
 > applications/CLIs (Rust speed, Rollup plugins, powers Vite 8+). Never use
 > `tsc` for bundling; never use a bundler for type-checking. `configure-nodejs.sh`
 > wires tsup automatically for `library` app_type.
+>
+> **Nx 23 + TypeScript 7 executor incompatibilities**: `@nx/js:build` was
+> removed in `@nx/js` 23.x, `@nx/js:tsc` crashes on TS 7.0 (`ts.sys` is
+> `undefined`), and `@nx/vite:test` fails with "Cannot find native binding"
+> under pnpm. All `build`/`test` targets should use `nx:run-commands` with
+> direct tool invocations (`tsc -p tsconfig.json`, `tsup`, `pnpm exec vitest
+> run`) instead of Nx executor wrappers. `sharedGlobals` must be defined in
+> `nx.json` `namedInputs` if referenced by `default`.

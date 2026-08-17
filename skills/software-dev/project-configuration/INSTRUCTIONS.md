@@ -1477,6 +1477,30 @@ For detailed boilerplate integration and configuration patterns, see [references
 - [GitHub Actions CI/CD ADR](https://github.com/lrepo52/job-aide/blob/main/internal-docs/adr/adr-20251106014-cicd-strategy.md) - GitHub Actions as primary CI/CD platform
 
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Run project-detection to analyze existing tooling before adding anything (Quality Checklist)
+- [ ] Select the mode (compatible, enhance, or minimal) matching the user's intent (Configuration Options)
+- [ ] Run `configure-project.sh` with the selected mode and tool categories (Quick Start)
+- [ ] Add only missing or compatible tooling — no existing configurations overwritten (Quality Checklist)
+- [ ] Use surgical-config for safe configuration edits — no raw file overwrites (Integration)
+- [ ] Preserve existing workflows and scripts — npm scripts, Makefiles, and established conventions intact (Quality Checklist)
+- [ ] For `--add-linting`: add `.eslintrc.js` without overwriting, add ESLint deps to devDependencies, add `lint` script without overwriting existing (Example 1)
+- [ ] For `--add-ci`: add `.github/workflows/ci.yml` based on detected language, configure CI to run existing test scripts (Example 3)
+- [ ] For `--add-dev-env`/`--add-devbox-support`: add `devbox.json` with detected packages, justfile with standard targets (without replacing Makefile), `.envrc` for direnv (Example 2)
+- [ ] Reference boilerplate templates for standard configuration patterns (Boilerplate Integration)
+- [ ] Validate existing functionality still works after configuration — tests, builds, and scripts run as before (Quality Checklist)
+- [ ] Document what was added and why for the user (Quality Checklist)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the project-configuration run complete, verify every item

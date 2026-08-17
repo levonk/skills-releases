@@ -1548,6 +1548,24 @@ Done! Tutorial available at output/flask/index.md
 - Generated tutorials may expose code patterns; review before publishing
 
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Fetch files — run `scripts/crawl_codebase.py` to collect codebase files with appropriate include/exclude filters (Step 1)
+- [ ] Identify abstractions — find 5-10 core concepts from the collected files (Step 2)
+- [ ] Analyze relationships — map how the core abstractions interact and generate a project summary (Step 3)
+- [ ] Order chapters — determine the teaching sequence from foundational to advanced concepts (Step 4)
+- [ ] Write chapters — generate tutorial content for each chapter with motivation, examples, and simplified code walkthroughs (Step 5)
+- [ ] Combine tutorial — run `scripts/combine_tutorial.py` to assemble the final output with `index.md` and chapter files (Step 6)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the codebase-tutorial run complete, verify every item below.

@@ -9,148 +9,148 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../common/config-functions.sh
 if [[ -f "$SCRIPT_DIR/../common/config-functions.sh" ]]; then
-    source "$SCRIPT_DIR/../common/config-functions.sh"
+	source "$SCRIPT_DIR/../common/config-functions.sh"
 fi
 
 # Configure Go project
 configure_go_project() {
-    local project_path="$1"
-    local mode="${2:-adopt}"     # adopt | standardize
-    local app_type="${3:-unknown}" # web | cli | api | library
-    local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library
+	local project_path="$1"
+	local mode="${2:-adopt}"           # adopt | standardize
+	local app_type="${3:-unknown}"     # web | cli | api | library
+	local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library
 
-    log_info "Configuring Go project (mode: $mode, app_type: $app_type)"
+	log_info "Configuring Go project (mode: $mode, app_type: $app_type)"
 
-    # Handle go.mod
-    if [[ -f "$project_path/go.mod" ]]; then
-        configure_go_mod "$project_path" "$mode" "$app_type" "$project_type"
-    elif [[ "$mode" == "standardize" ]]; then
-        create_go_mod "$project_path" "$mode" "$app_type" "$project_type"
-    fi
+	# Handle go.mod
+	if [[ -f "$project_path/go.mod" ]]; then
+		configure_go_mod "$project_path" "$mode" "$app_type" "$project_type"
+	elif [[ "$mode" == "standardize" ]]; then
+		create_go_mod "$project_path" "$mode" "$app_type" "$project_type"
+	fi
 
-    # Handle Go linting configuration
-    configure_golangci_config "$project_path" "$mode"
+	# Handle Go linting configuration
+	configure_golangci_config "$project_path" "$mode"
 
-    # Handle Go testing configuration
-    configure_go_testing_config "$project_path" "$mode"
+	# Handle Go testing configuration
+	configure_go_testing_config "$project_path" "$mode"
 
-    # Handle framework-specific configs
-    configure_go_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
+	# Handle framework-specific configs
+	configure_go_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
 }
 
 # Configure go.mod
 configure_go_mod() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    log_info "Configuring go.mod for Go project"
+	log_info "Configuring go.mod for Go project"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Standardize mode - comprehensive additions
-        add_standardize_go_dependencies "$project_path" "$app_type" "$project_type"
-    else
-        # Adopt mode - minimal essential additions
-        add_adopt_go_dependencies "$project_path" "$app_type" "$project_type"
-    fi
+	if [[ "$mode" == "standardize" ]]; then
+		# Standardize mode - comprehensive additions
+		add_standardize_go_dependencies "$project_path" "$app_type" "$project_type"
+	else
+		# Adopt mode - minimal essential additions
+		add_adopt_go_dependencies "$project_path" "$app_type" "$project_type"
+	fi
 }
 
 # Add standardize mode dependencies to go.mod
 add_standardize_go_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local deps_to_add=""
+	local deps_to_add=""
 
-    # App-type specific dependencies
-    case "$app_type" in
-        "web")
-            deps_to_add="$deps_to_add github.com/gin-gonic/gin"
-            if [[ "$project_type" == *"frontend-web"* ]]; then
-                deps_to_add="$deps_to_add github.com/gorilla/websocket"
-            fi
-            ;;
-        "cli")
-            deps_to_add="$deps_to_add github.com/spf13/cobra github.com/spf13/viper"
-            ;;
-        "api")
-            deps_to_add="$deps_to_add github.com/gin-gonic/gin github.com/gorilla/mux"
-            ;;
-    esac
+	# App-type specific dependencies
+	case "$app_type" in
+	"web")
+		deps_to_add="$deps_to_add github.com/gin-gonic/gin"
+		if [[ "$project_type" == *"frontend-web"* ]]; then
+			deps_to_add="$deps_to_add github.com/gorilla/websocket"
+		fi
+		;;
+	"cli")
+		deps_to_add="$deps_to_add github.com/spf13/cobra github.com/spf13/viper"
+		;;
+	"api")
+		deps_to_add="$deps_to_add github.com/gin-gonic/gin github.com/gorilla/mux"
+		;;
+	esac
 
-    # Framework-specific dependencies
-    case "$project_type" in
-        "api-service")
-            deps_to_add="$deps_to_add github.com/golang-jwt/jwt/v5 github.com/google/uuid"
-            ;;
-        "frontend-web")
-            if [[ -f "$project_path/main.go" ]] && grep -q "websocket\|ws" "$project_path/main.go" 2>/dev/null; then
-                deps_to_add="$deps_to_add github.com/gorilla/websocket"
-            fi
-            ;;
-    esac
+	# Framework-specific dependencies
+	case "$project_type" in
+	"api-service")
+		deps_to_add="$deps_to_add github.com/golang-jwt/jwt/v5 github.com/google/uuid"
+		;;
+	"frontend-web")
+		if [[ -f "$project_path/main.go" ]] && grep -q "websocket\|ws" "$project_path/main.go" 2>/dev/null; then
+			deps_to_add="$deps_to_add github.com/gorilla/websocket"
+		fi
+		;;
+	esac
 
-    # Apply dependencies using go get
-    if [[ -n "$deps_to_add" ]]; then
-        cd "$project_path"
-        for dep in $deps_to_add; do
-            if [[ "$mode" == "standardize" ]]; then
-                echo "Adding Go dependency: $dep"
-                # go get "$dep"  # Commented out to avoid actual network calls
-            fi
-        done
-        log_info "✓ Added Go dependencies"
-    fi
+	# Apply dependencies using go get
+	if [[ -n "$deps_to_add" ]]; then
+		cd "$project_path"
+		for dep in $deps_to_add; do
+			if [[ "$mode" == "standardize" ]]; then
+				echo "Adding Go dependency: $dep"
+				# go get "$dep"  # Commented out to avoid actual network calls
+			fi
+		done
+		log_info "✓ Added Go dependencies"
+	fi
 }
 
 # Add adopt mode dependencies to go.mod
 add_adopt_go_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    # Adopt mode - minimal essential dependencies only
-    local essential_deps=""
+	# Adopt mode - minimal essential dependencies only
+	local essential_deps=""
 
-    case "$app_type" in
-        "web")
-            essential_deps="github.com/gin-gonic/gin"
-            ;;
-        "cli")
-            essential_deps="github.com/spf13/cobra"
-            ;;
-        "api")
-            essential_deps="github.com/gin-gonic/gin"
-            ;;
-    esac
+	case "$app_type" in
+	"web")
+		essential_deps="github.com/gin-gonic/gin"
+		;;
+	"cli")
+		essential_deps="github.com/spf13/cobra"
+		;;
+	"api")
+		essential_deps="github.com/gin-gonic/gin"
+		;;
+	esac
 
-    # Apply dependencies using go get
-    if [[ -n "$essential_deps" ]]; then
-        cd "$project_path"
-        for dep in $essential_deps; do
-            if [[ "$mode" == "standardize" ]]; then
-                echo "Adding essential Go dependency: $dep"
-                # go get "$dep"  # Commented out to avoid actual network calls
-            fi
-        done
-        log_info "✓ Added essential Go dependencies"
-    fi
+	# Apply dependencies using go get
+	if [[ -n "$essential_deps" ]]; then
+		cd "$project_path"
+		for dep in $essential_deps; do
+			if [[ "$mode" == "standardize" ]]; then
+				echo "Adding essential Go dependency: $dep"
+				# go get "$dep"  # Commented out to avoid actual network calls
+			fi
+		done
+		log_info "✓ Added essential Go dependencies"
+	fi
 }
 
 # Create go.mod
 create_go_mod() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/go.mod" ]]; then
-        local module_name
-        module_name=$(basename "$project_path")
-        
-        cat > "$project_path/go.mod" << EOF
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/go.mod" ]]; then
+		local module_name
+		module_name=$(basename "$project_path")
+
+		cat >"$project_path/go.mod" <<EOF
 module $module_name
 
 go 1.21
@@ -158,42 +158,42 @@ go 1.21
 require (
 EOF
 
-        # Add app-type specific dependencies
-        case "$app_type" in
-            "web")
-                cat >> "$project_path/go.mod" << 'EOF'
+		# Add app-type specific dependencies
+		case "$app_type" in
+		"web")
+			cat >>"$project_path/go.mod" <<'EOF'
 	github.com/gin-gonic/gin v1.9.1
 EOF
-                ;;
-            "cli")
-                cat >> "$project_path/go.mod" << 'EOF'
+			;;
+		"cli")
+			cat >>"$project_path/go.mod" <<'EOF'
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.17.0
 EOF
-                ;;
-            "api")
-                cat >> "$project_path/go.mod" << 'EOF'
+			;;
+		"api")
+			cat >>"$project_path/go.mod" <<'EOF'
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gorilla/mux v1.8.0
 EOF
-                ;;
-        esac
+			;;
+		esac
 
-        cat >> "$project_path/go.mod" << 'EOF'
+		cat >>"$project_path/go.mod" <<'EOF'
 )
 EOF
 
-        log_info "✓ Created go.mod"
-    fi
+		log_info "✓ Created go.mod"
+	fi
 }
 
 # Configure golangci-lint
 configure_golangci_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/.golangci.yml" ]]; then
-        cat > "$project_path/.golangci.yml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/.golangci.yml" ]]; then
+		cat >"$project_path/.golangci.yml" <<'EOF'
 run:
   timeout: 5m
   issues-exit-code: 1
@@ -298,20 +298,20 @@ issues:
         - lll
       source: "^//go:generate "
 EOF
-        log_info "✓ Created .golangci.yml"
-    fi
+		log_info "✓ Created .golangci.yml"
+	fi
 }
 
 # Configure Go testing
 configure_go_testing_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create test configuration
-        if [[ ! -f "$project_path/tests/tests.go" ]]; then
-            mkdir -p "$project_path/tests"
-            cat > "$project_path/tests/tests.go" << 'EOF'
+	if [[ "$mode" == "standardize" ]]; then
+		# Create test configuration
+		if [[ ! -f "$project_path/tests/tests.go" ]]; then
+			mkdir -p "$project_path/tests"
+			cat >"$project_path/tests/tests.go" <<'EOF'
 package tests
 
 import (
@@ -324,12 +324,12 @@ func TestExample(t *testing.T) {
     // Replace with actual tests
 }
 EOF
-            log_info "✓ Created tests/tests.go"
-        fi
+			log_info "✓ Created tests/tests.go"
+		fi
 
-        # Create Makefile for testing if it doesn't exist
-        if [[ ! -f "$project_path/Makefile" ]]; then
-            cat > "$project_path/Makefile" << 'EOF'
+		# Create Makefile for testing if it doesn't exist
+		if [[ ! -f "$project_path/Makefile" ]]; then
+			cat >"$project_path/Makefile" <<'EOF'
 .PHONY: test test-coverage lint build run clean
 
 # Run tests
@@ -359,48 +359,48 @@ clean:
 	rm -f coverage.out coverage.html
 	go clean -testcache
 EOF
-            log_info "✓ Created Makefile"
-        fi
-    fi
+			log_info "✓ Created Makefile"
+		fi
+	fi
 }
 
 # Configure Go framework-specific configurations
 configure_go_framework_configs() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    # Gin configuration
-    if [[ "$app_type" == "web" ]] || [[ "$app_type" == "api" ]] || [[ "$project_type" == *"api-service"* ]]; then
-        configure_gin_config "$project_path" "$mode"
-    fi
+	# Gin configuration
+	if [[ "$app_type" == "web" ]] || [[ "$app_type" == "api" ]] || [[ "$project_type" == *"api-service"* ]]; then
+		configure_gin_config "$project_path" "$mode"
+	fi
 
-    # Cobra configuration
-    if [[ "$app_type" == "cli" ]] || [[ "$project_type" == *"cli-tool"* ]]; then
-        configure_cobra_config "$project_path" "$mode"
-    fi
+	# Cobra configuration
+	if [[ "$app_type" == "cli" ]] || [[ "$project_type" == *"cli-tool"* ]]; then
+		configure_cobra_config "$project_path" "$mode"
+	fi
 
-    # WebSocket configuration
-    if [[ "$app_type" == "web" ]] && [[ "$project_type" == *"frontend-web"* ]]; then
-        configure_websocket_config "$project_path" "$mode"
-    fi
+	# WebSocket configuration
+	if [[ "$app_type" == "web" ]] && [[ "$project_type" == *"frontend-web"* ]]; then
+		configure_websocket_config "$project_path" "$mode"
+	fi
 }
 
 # Configure Gin
 configure_gin_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create basic Gin project structure
-        mkdir -p "$project_path/cmd"
-        mkdir -p "$project_path/internal/handlers"
-        mkdir -p "$project_path/internal/middleware"
-        mkdir -p "$project_path/pkg/api"
+	if [[ "$mode" == "standardize" ]]; then
+		# Create basic Gin project structure
+		mkdir -p "$project_path/cmd"
+		mkdir -p "$project_path/internal/handlers"
+		mkdir -p "$project_path/internal/middleware"
+		mkdir -p "$project_path/pkg/api"
 
-        if [[ ! -f "$project_path/cmd/main.go" ]]; then
-            cat > "$project_path/cmd/main.go" << 'EOF'
+		if [[ ! -f "$project_path/cmd/main.go" ]]; then
+			cat >"$project_path/cmd/main.go" <<'EOF'
 package main
 
 import (
@@ -436,11 +436,11 @@ func main() {
     }
 }
 EOF
-            log_info "✓ Created cmd/main.go"
-        fi
+			log_info "✓ Created cmd/main.go"
+		fi
 
-        if [[ ! -f "$project_path/internal/handlers/health.go" ]]; then
-            cat > "$project_path/internal/handlers/health.go" << 'EOF'
+		if [[ ! -f "$project_path/internal/handlers/health.go" ]]; then
+			cat >"$project_path/internal/handlers/health.go" <<'EOF'
 package handlers
 
 import (
@@ -456,23 +456,23 @@ func HealthCheck(c *gin.Context) {
     })
 }
 EOF
-            log_info "✓ Created internal/handlers/health.go"
-        fi
-    fi
+			log_info "✓ Created internal/handlers/health.go"
+		fi
+	fi
 }
 
 # Configure Cobra
 configure_cobra_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create basic Cobra project structure
-        mkdir -p "$project_path/cmd"
-        mkdir -p "$project_path/internal/cli"
+	if [[ "$mode" == "standardize" ]]; then
+		# Create basic Cobra project structure
+		mkdir -p "$project_path/cmd"
+		mkdir -p "$project_path/internal/cli"
 
-        if [[ ! -f "$project_path/cmd/root.go" ]]; then
-            cat > "$project_path/cmd/root.go" << 'EOF'
+		if [[ ! -f "$project_path/cmd/root.go" ]]; then
+			cat >"$project_path/cmd/root.go" <<'EOF'
 package cmd
 
 import (
@@ -508,11 +508,11 @@ func init() {
     rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 EOF
-            log_info "✓ Created cmd/root.go"
-        fi
+			log_info "✓ Created cmd/root.go"
+		fi
 
-        if [[ ! -f "$project_path/main.go" ]]; then
-            cat > "$project_path/main.go" << 'EOF'
+		if [[ ! -f "$project_path/main.go" ]]; then
+			cat >"$project_path/main.go" <<'EOF'
 package main
 
 import "your-module-path/cmd"
@@ -521,22 +521,22 @@ func main() {
     cmd.Execute()
 }
 EOF
-            log_info "✓ Created main.go"
-        fi
-    fi
+			log_info "✓ Created main.go"
+		fi
+	fi
 }
 
 # Configure WebSocket
 configure_websocket_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create WebSocket handler
-        mkdir -p "$project_path/internal/websocket"
+	if [[ "$mode" == "standardize" ]]; then
+		# Create WebSocket handler
+		mkdir -p "$project_path/internal/websocket"
 
-        if [[ ! -f "$project_path/internal/websocket/hub.go" ]]; then
-            cat > "$project_path/internal/websocket/hub.go" << 'EOF'
+		if [[ ! -f "$project_path/internal/websocket/hub.go" ]]; then
+			cat >"$project_path/internal/websocket/hub.go" <<'EOF'
 package websocket
 
 import (
@@ -675,9 +675,9 @@ func (c *Client) writePump() {
     }
 }
 EOF
-            log_info "✓ Created internal/websocket/hub.go"
-        fi
-    fi
+			log_info "✓ Created internal/websocket/hub.go"
+		fi
+	fi
 }
 
 # Export functions for use by adopt-project.sh

@@ -1761,6 +1761,27 @@ This skill integrates with and references the following committees:
 - **Research Package**: Compiled data and sources
 - **Post-Decision Review**: Cultural, social, environmental assessment
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Phase 1: create the brief with all required sections via `scripts/create_brief.py`
+- [ ] Phase 2: determine decision significance and filter the research team accordingly
+- [ ] Phase 2: select committee members based on decision type and apply specialized thinking models
+- [ ] Phase 2: poll committee research needs and gather the requested information
+- [ ] Phase 2: compile the research package for committee review
+- [ ] Phase 3: CSO orchestrates deliberation and applies conflict resolution methods
+- [ ] Phase 3: run the optional blind peer-review round for high-stakes decisions
+- [ ] Phase 4: CSO creates the final decision memo with the one thing to do first
+- [ ] Phase 5: run the post-decision review (cultural, philanthropic, environmental)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Briefing Memo run complete, verify every item below.

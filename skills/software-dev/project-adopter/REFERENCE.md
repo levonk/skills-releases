@@ -47,7 +47,7 @@ This skill is designed to work seamlessly with other skills in the ecosystem:
 {
   "packages": [
     "just",
-    "nodejs_22",
+    "nodejs_24",
     "pnpm",
     "typescript"
   ],
@@ -332,9 +332,9 @@ clean_impl:
 # Add standard dev dependencies
 yq eval '.devDependencies["@job-aide/tools-lint-eslint-config"] = "^1.0.0"' package.json -i
 yq eval '.devDependencies["@job-aide/tools-vitest-config"] = "^1.0.0"' package.json -i
-yq eval '.devDependencies["typescript"] = "^5.6.0"' package.json -i
+yq eval '.devDependencies["typescript"] = "^7.0.2"' package.json -i
 yq eval '.devDependencies["vitest"] = "^2.0.0"' package.json -i
-yq eval '.devDependencies["@types/node"] = "^22.0.0"' package.json -i
+yq eval '.devDependencies["@types/node"] = "^24.0.0"' package.json -i
 
 # Add standard scripts
 yq eval '.scripts.build = "tsc"' package.json -i
@@ -344,7 +344,7 @@ yq eval '.scripts.typecheck = "tsc --noEmit"' package.json -i
 yq eval '.scripts.dev = "tsx watch src/index.ts"' package.json -i
 
 # Set package manager
-yq eval '.packageManager = "pnpm@9.15.0"' package.json -i
+yq eval '.packageManager = "pnpm@11.21.0"' package.json -i
 ```
 
 #### Rust
@@ -540,10 +540,10 @@ just quality  # if defined
 # Before: Using Node.js setup
 - uses: actions/setup-node@v4
   with:
-    node-version: '22'
+    node-version: '24'
 
 # After: Using Devbox
-- uses: jetify-com/devbox-action@v0.10.0
+- uses: jetify-com/devbox-install-action@v0.15.0
 - run: just test
 ```
 
@@ -555,7 +555,7 @@ WORKDIR /app
 COPY devbox.json ./
 RUN just build
 
-FROM node:22-alpine as runtime
+FROM node:24-alpine as runtime
 COPY --from=builder /app/dist ./dist
 ```
 

@@ -26,7 +26,7 @@ Configure `devbox.json` based on detected systems:
 {
   "packages": [
     "just",
-    "nodejs_22",
+    "nodejs_24",
     "pnpm"
   ],
   "shell": {
@@ -47,7 +47,7 @@ Configure `devbox.json` based on detected systems:
 
 **Language-specific packages:**
 - **Rust**: Add `"rustc"`, `"cargo"`, `"clippy"`
-- **TypeScript/Node**: Add `"nodejs_22"`, `"pnpm"`, `"typescript"`
+- **TypeScript/Node**: Add `"nodejs_24"`, `"pnpm"`, `"typescript"`
 - **Python**: Add `"python3"`, `"poetry"`, `"black"`, `"ruff"`
 - **Go**: Add `"go"`, `"gopls"`
 
@@ -311,12 +311,12 @@ Create `docker/Dockerfile`:
 
 ```dockerfile
 # Multi-stage build for production
-FROM node:22-alpine as builder
+FROM node:24-alpine as builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-FROM node:22-alpine as runtime
+FROM node:24-alpine as runtime
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
@@ -342,7 +342,7 @@ strictly prohibited.
 
 Create `AGENTS.md` that integrates with **ai-development-loop** skill:
 
-```markdown
+````markdown
 # Agent Documentation: Project Name
 
 ## Overview
@@ -367,7 +367,7 @@ just build_impl    # Build project (inside devbox)
 just test_impl     # Run tests (inside devbox)
 just lint_impl     # Run linting (inside devbox)
 just typecheck_impl # Run type checking (inside devbox)
-```
+````
 
 ### Project Structure
 
@@ -465,7 +465,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: jetify-com/devbox-action@v0.10.0
+      - uses: jetify-com/devbox-install-action@v0.15.0
       - run: just test
       - run: just lint
       - run: just typecheck

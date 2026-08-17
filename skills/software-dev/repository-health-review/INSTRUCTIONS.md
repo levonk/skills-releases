@@ -1615,6 +1615,24 @@ patterns or warnings, and `✓` (plain checkmark) marks successful completion.
 - [Analysis Functions](references/analysis-functions.md) - Bash code implementations for outdated info, conflicting rules, security patterns, and custom analysis
 - [Reporting and Metrics](references/reporting-metrics.md) - Health score calculation, report structure, CI/CD integration, and performance optimization
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Repository discovery — scan structure and identify key files
+- [ ] Pattern analysis — apply all six health category analysis functions (outdated, conflicts, undocumented standards, lessons from failures, missing tool docs, security/access)
+- [ ] Issue classification — categorize findings by severity (critical/warning/info/healthy) with file and line references
+- [ ] Recommendation generation — produce actionable improvement suggestions for each finding
+- [ ] Report generation — create the health review report (human-readable and/or JSON via `--report`)
+- [ ] Trend analysis — track health metrics over time (when repeat runs are available)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the repository-health-review run complete, verify every item

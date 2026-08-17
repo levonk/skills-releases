@@ -1854,6 +1854,28 @@ resume, that constraint overrides the bundle's general 475–600 word guidance
 (which has an explicit executive exception — see
 [conciseness-and-length.md](references/included/knowledge/career-advancement-practices/conciseness-and-length.md)).
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Resume: run all 10 audit checks (Phase 1 — AUDIT)
+- [ ] Resume: rank audit findings by impact and present to user (Phase 2 — PRIORITIZE)
+- [ ] Resume: apply each change and verify against the bundle's "common mistakes" (Phase 3 — APPLY)
+- [ ] Resume: re-run the audit and confirm no new issues introduced (Phase 4 — VERIFY)
+- [ ] Interview: research the team, role, and company culture (Phase 1 — RESEARCH)
+- [ ] Interview: prepare 3–5 questions for recruiter, hiring manager, and peers (Phase 2 — PREPARE)
+- [ ] Interview: rehearse key answers using ownership-verb and metrics patterns (Phase 3 — PRACTICE)
+- [ ] Salary: research the company's compensation philosophy and typical offers (Phase 1 — RESEARCH)
+- [ ] Salary: prepare deflection scripts to get the recruiter's range first (Phase 2 — DEFLECT)
+- [ ] Salary: identify the right negotiation lever (sign-on, base, equity) (Phase 3 — NEGOTIATE)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Career Advancement run complete, verify every item below.

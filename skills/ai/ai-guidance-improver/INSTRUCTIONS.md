@@ -1995,6 +1995,30 @@ When applying improvements:
 4. **Check for concerns** - Any breaking changes or side effects
 5. **Document next steps** - What the user should do next
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Determine operating mode: File-Based (existing files) vs Interactive (real-time prompt improvement)
+- [ ] Run the guidance-specific search (skills, workflows, agents, prompts, AGENTS.md / rules) to find alternatives
+- [ ] File-Based Step 1: Identify issues — conflicts, duplication, inadequate frontmatter, poor progressive disclosure, scattered context, stale text
+- [ ] File-Based Step 2: Prioritize improvements as High / Medium / Low with rationale
+- [ ] File-Based Step 3: Apply improvements — fix frontmatter, implement progressive disclosure, consolidate context via Go text/template includes, separate audiences
+- [ ] File-Based Step 4: Validate changes — no new conflicts, references verified, templates tested
+- [ ] File-Based Step 5: Document changes — what changed, benefits, breaking changes
+- [ ] Interactive Step 1: Analyze the prompt for clarity, structure, efficiency, and completeness
+- [ ] Interactive Step 2: Provide immediate suggestions per issue type
+- [ ] Interactive Step 3: Offer improvements with before/after, prioritized Critical / Important / Nice-to-have
+- [ ] Interactive Step 4: Iterate with the user (accept, alternatives, additional context)
+- [ ] Interactive Step 5: Finalize — deliver the improved prompt with explanation of key changes
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the ai-guidance-improver run complete, verify every item

@@ -17,25 +17,38 @@ devbox-only walk with support for five environment wrappers.
 
 ## The Probe Algorithm
 
-The wrapper script calls `cli-tool-discovery.sh` with a nonexistent tool name
-(`__wrapper_probe__`) to probe for wrapper detection:
+The wrapper script calls `cli-tool-discovery.sh` with `--detect-wrapper` mode
+to detect the environment wrapper for the current directory:
 
 ```bash
-bash "$CLI_TOOL_DISCOVERY" __wrapper_probe__
+bash "$CLI_TOOL_DISCOVERY" --detect-wrapper
 ```
 
-The discovery script's `resolve_tool` function checks in order:
-1. **PATH** (`command -v`) — skipped because `__wrapper_probe__` doesn't exist
-2. **Environment wrappers** — walks up from cwd looking for each wrapper's
-   config file. If found, returns `WRAPPER:<cmd> __wrapper_probe__`
-3. **30+ standard PATH locations** — skipped (tool doesn't exist there either)
-4. **Package managers** — skipped
-5. **NOT_FOUND** — if no wrapper and no path match
+This mode checks config file existence + wrapper functionality **without**
+requiring a specific tool to exist inside the wrapper. This is needed for
+devbox: the normal resolve mode checks tool existence inside devbox
+(`devbox run -- command -v <tool>`), which fails for probe/nonexistent tool
+names. `--detect-wrapper` probes devbox with `devbox run -- true` (a
+hang-safe, always-available shell builtin) instead.
 
-The wrapper script extracts the wrapper command from the `WRAPPER:` response
-by stripping the `__wrapper_probe__` suffix. For example:
-- `WRAPPER: devbox run -- __wrapper_probe__` → `devbox run --`
-- `WRAPPER: mise exec -- __wrapper_probe__` → `mise exec --`
+The detection order:
+1. **Already inside a wrapper shell** — if `DEVBOX_SHELL`, `MISE_SHELL`,
+   `FLOX_ACTIVE`, `DIRENV_DIR`, or `IN_NIX_SHELL` is set, returns `NONE`
+   (tools are already on PATH, no prefix needed)
+2. **devbox** — if `devbox.json` exists up the tree and `devbox run -- true`
+   succeeds (hang-safe probe), returns `WRAPPER: devbox run --`
+3. **mise** — if `.mise.toml` / `mise.toml` exists up the tree, returns
+   `WRAPPER: mise exec --`
+4. **flox** — if `flox.nix` exists up the tree, returns `WRAPPER: flox activate --`
+5. **nix** — if `flake.nix` / `shell.nix` exists up the tree, returns
+   `WRAPPER: nix develop --command` or `WRAPPER: nix-shell --run`
+6. **direnv** — if `.envrc` exists up the tree, returns `WRAPPER: direnv export &&`
+7. **NONE** — if no wrapper is detected
+
+The wrapper script extracts the wrapper command from the `WRAPPER:` response.
+For example:
+- `WRAPPER: devbox run --` → prefix `devbox run --`
+- `WRAPPER: mise exec --` → prefix `mise exec --`
 
 ## Already-Inside-Shell Detection
 

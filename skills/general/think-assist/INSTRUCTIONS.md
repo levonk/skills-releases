@@ -1479,6 +1479,28 @@ council-transcript-[timestamp].md    # full transcript for reference
   synthesizing insights from multiple thinking methods
 - Individual method references: see the Method Library table above
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Identify problem type and select method — match the problem to a thinking method from the library or chooser reference (Single-Method Step 1)
+- [ ] Read the method reference — open the matching `references/*.md` file and follow its operation steps (Single-Method Step 2)
+- [ ] Apply the method — produce the output specified by the method's output template (Single-Method Step 3)
+- [ ] Consolidate multiple methods (if applicable) — synthesize common themes, contradictions, and prioritized actions (Single-Method Step 4)
+- [ ] Enrich context and frame the question — scan the workspace and reframe the raw question into a neutral prompt with stakes (Council Step 1)
+- [ ] Spawn 5 advisors in parallel — dispatch all 5 simultaneously, each leaning fully into its assigned perspective (Council Step 2)
+- [ ] Blind peer review — use the `peer-review` skill to anonymize responses, spawn reviewers, and collect reviews (Council Step 3)
+- [ ] Chairman synthesis — produce the 5-part verdict including the single concrete "one thing to do first" (Council Step 4)
+- [ ] Generate the HTML report — run `scripts/generate_report.py` to produce the self-contained report (Council Step 5)
+- [ ] Save the transcript — write `council-transcript-[timestamp].md` with full provenance (Council Step 6)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the think-assist run complete, verify every item below.

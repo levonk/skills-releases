@@ -72,10 +72,10 @@ fi
 if echo "$detected_systems" | grep -q "pnpm\|npm\|yarn\|bun"; then
     if [[ "$ADOPTION_MODE" == "standardize" ]]; then
         # Comprehensive tooling: playwright, tailwindcss, vite, webpack, etc.
-        language_packages='"nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest", "playwright", "tailwindcss", "postcss", "vite", "webpack", "rollup", "esbuild"'
+        language_packages='"nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest", "playwright", "tailwindcss", "postcss", "vite", "webpack", "rollup", "esbuild"'
     else
         # Minimal essential tooling
-        language_packages='"nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest"'
+        language_packages='"nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest"'
     fi
 fi
 ```

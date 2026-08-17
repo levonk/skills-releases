@@ -1349,6 +1349,11 @@ include mechanism so consumers are self-contained.
 - `$UPSTREAM_OWNER` / `$UPSTREAM_REPO` — the target repository
 - Issue title and body content (from the user or a template)
 - Search terms for duplicate detection (project-specific)
+- `$RELATED_ISSUES` (optional) — comma-separated issue/PR numbers to
+  cross-reference from (posts a comment on each linking to the new issue)
+- `$UMBRELLA_ISSUE` (optional) — issue number of a broad umbrella issue that
+  this new issue is a focused sub-issue of (triggers a differentiation comment
+  on the new issue itself, explaining why it is not a duplicate)
 
 #### Steps
 
@@ -1513,6 +1518,10 @@ rather than using free-form markdown. The `labels` field pre-labels the issue
      changed, reference it in a new issue; if not, don't re-open
    - Closed issue, resolved → the feature exists; don't duplicate
 
+   **Rate limit awareness**: When running multiple searches in sequence,
+   space them by 0.5s (reads) to avoid GitHub's secondary rate limit. See
+   `api-rate-limit-awareness.md` for the full protocol.
+
    Present search results to the user before proceeding.
 
 4. **Draft the issue body**: Using the project's own issue template (if found
@@ -1573,10 +1582,68 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
    posting method, and `gh issue edit --body-file` until the validator
    passes. Do not declare the issue filing complete with a failing validator.
 
+8. **Post-creation cross-referencing** (optional): If the user provided
+   `$RELATED_ISSUES` (or identified related issues during the duplicate search
+   in step 3), post cross-reference comments linking them to the new issue.
+   If the user provided `$UMBRELLA_ISSUE`, also post a differentiation comment
+   on the new issue itself.
+
+   For each related issue number in `$RELATED_ISSUES`:
+   a. Check if the issue/PR is locked before commenting:
+      ```bash
+      LOCKED=$(gh api "repos/$UPSTREAM_OWNER/$UPSTREAM_REPO/issues/$NUM" \
+        --jq '.locked' 2>/dev/null)
+      ```
+   b. If `LOCKED` is `true`: skip with a note ("#$NUM is locked — cross-reference
+      skipped"). Do NOT retry — locking blocks comments, and retrying wastes an
+      API call (learned from microsoft/vscode#311317).
+   c. If not locked: write the cross-reference comment to a file and post with
+      `--body-file` (same guard as step 6):
+      ```bash
+      gh issue comment $NUM --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" \
+        --body-file /tmp/cross-ref-$NUM.md
+      ```
+
+   Cross-reference comment template (write to `/tmp/cross-ref-$NUM.md`):
+   ```markdown
+   Related: opened #$NEW_ISSUE_NUMBER for <one-line summary>.
+
+   <2-3 sentence explanation of how this relates to the current issue and why
+   a focused sub-issue was filed.>
+   ```
+
+   If `$UMBRELLA_ISSUE` was provided, post a differentiation comment on the
+   new issue itself (write to `/tmp/differentiation.md`, post with
+   `gh issue comment $NEW_ISSUE_NUMBER --body-file /tmp/differentiation.md`):
+   ```markdown
+   ### How this differs from #$UMBRELLA_ISSUE
+
+   This is a focused sub-issue, not a duplicate:
+
+   - **#$UMBRELLA_ISSUE** (opened <year>) covers <broad scope>. It predates
+     <specific feature> by <N> years.
+   - **This issue** (#$NEW_ISSUE_NUMBER) covers <specific path/code/feature>
+     introduced in <PR/commit>.
+
+   <Why the focused issue is more actionable — one getter change vs broad
+   restructure, etc.>
+   ```
+
+   Present the differentiation comment to the user for review before posting
+   — it is a public comment on someone else's repo.
+
+   **Rate limit awareness**: When cross-referencing multiple related issues,
+   space comments by 2s (mutations) to avoid GitHub's secondary rate limit.
+   See `api-rate-limit-awareness.md` for the full protocol.
+
 #### Output
 
 - Issue number (for use in PR `Resolves #N` links)
 - Issue URL (presented to the user)
+- Cross-reference comments posted on related issues (if `$RELATED_ISSUES`
+  was provided)
+- Differentiation comment posted on the new issue (if `$UMBRELLA_ISSUE`
+  was provided)
 
 
 ## Cache
@@ -1612,7 +1679,29 @@ relevant concept pages before filing:
 | `blank_issues_enabled: false` in config.yml | Project requires configured templates | Use one of the configured issue templates or contact links |
 | Cache file stale after upstream change | 7-day TTL hasn't expired | Run `discover-contribution-standards.sh --force` to re-crawl |
 | No CONTRIBUTING.md found | Project has no contribution guidelines | Use the skill's default issue structure; present to user for review |
+| Cross-reference `gh issue comment` fails with 403 "issue is locked" | Target issue/PR is locked | Skip that issue — locking blocks comments. Do NOT retry (wastes an API call). Note it in the report. |
+| Cross-reference `gh issue comment` fails with 404 | Wrong issue number or issue deleted | Verify the issue number; skip if gone. Do NOT retry. |
 
+
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Verify prerequisites — `gh` CLI authenticated, target repo accepts external issues (CONTRIBUTING.md checked) (Prerequisites)
+- [ ] Run `discover-contribution-standards.sh` to crawl and cache the target repo's contribution standards (or use cache hit within 7-day TTL) (Steps)
+- [ ] Run `search-existing-work.sh` to confirm no duplicate issue exists (Steps)
+- [ ] Draft the issue title and body matching the target project's conventions (templates, labels, structure from cached standards), referencing the upstream repo not your fork (Steps)
+- [ ] Write the issue body to a file and present the complete content (title + body) to the user for review before posting — no auto-posting (Steps, Human Review Gate)
+- [ ] Post the issue with `gh issue create --body-file` — never `--body` with inline strings (Steps, gh --body-file)
+- [ ] Validate the posted body with `validate-pr-issue.sh <owner>/<repo> issue <number>` — no literal `\n`, no stripped backticks, no corruption (Steps)
+- [ ] (Optional) If `$RELATED_ISSUES` or `$UMBRELLA_ISSUE` provided: post cross-reference comments on related issues (checking lock status first) and/or a differentiation comment on the new issue, with 2s delay between comments (Steps — Post-creation cross-referencing)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
 
 ## Definition of Done
 
@@ -1637,6 +1726,12 @@ agent to check something the scripts cannot verify.
 
 - [ ] **[manual]** The complete issue content (title + body) was presented to the user for review before posting — no auto-posting (Knowledge Base — Human Review Gate)
 - [ ] **[script]** `./scripts/validate-pr-issue.sh <owner>/<repo> issue <number>` exits zero — the posted body has no literal `\n`, no stripped backticks, no corruption (Steps)
+
+### Post-Creation Cross-Referencing (only if `$RELATED_ISSUES` or `$UMBRELLA_ISSUE` provided)
+
+- [ ] **[manual]** Each related issue was checked for lock status before commenting — locked issues were skipped, not retried (Steps — Post-creation cross-referencing)
+- [ ] **[manual]** Cross-reference comments were posted with `gh issue comment --body-file` (never `--body` inline), with 2s delay between comments (Steps — Post-creation cross-referencing)
+- [ ] **[manual]** If `$UMBRELLA_ISSUE` was provided, the differentiation comment was presented to the user for review before posting (Steps — Post-creation cross-referencing)
 
 ### Not Done (common false-completion signals)
 
@@ -1664,3 +1759,5 @@ If any of these are true, the run is NOT complete:
 - `$ISSUE_TITLE` — issue title
 - `$ISSUE_BODY_FILE` — path to the file containing the issue body (e.g. `/tmp/issue-body.md`)
 - `$ISSUE_NUMBER` — returned by `gh issue create`, used in PR `Resolves #N` links
+- `$RELATED_ISSUES` (optional) — comma-separated issue/PR numbers to cross-reference from
+- `$UMBRELLA_ISSUE` (optional) — umbrella issue number that triggers a differentiation comment

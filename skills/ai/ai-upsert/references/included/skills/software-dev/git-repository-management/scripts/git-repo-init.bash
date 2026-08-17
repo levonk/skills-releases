@@ -897,6 +897,13 @@ show_final_status() {
     fi
     echo
     vcs_log_info "Ready for development!"
+    echo
+    vcs_log_info "Next steps:"
+    echo "  1. Start coding on your user branch: git checkout -b feat/your-feature"
+    echo "  2. When ready to archive stale branches, run: git-archive.sh --identify"
+    echo "  3. To test git operations without a network, add a local remote:"
+    echo "     git remote add local \$PWD"
+    echo "  4. Install dev environment tooling: devbox init && just bootstrap"
 }
 
 # Apply account-specific git config (user.name, user.email, init.defaultBranch)
@@ -1043,11 +1050,13 @@ run_create_mode() {
 # CLI
 # =====================================================================
 
+# Print short usage line (for --usage flag).
 show_usage() {
     echo "Usage: git-repo-init [OPTIONS] [REMOTE-URL] [TARGET-DIRECTORY]"
     echo "Try 'git-repo-init --help' for more information."
 }
 
+# Print the full help text (for --help flag).
 show_help() {
     cat <<EOF
 Git Repository Setup Script (Configuration-Driven, Unified)
@@ -1143,7 +1152,9 @@ CONFIGURATION KEYS:
 EOF
 }
 
-# Parse command line arguments.
+# Parse command-line arguments into global variables and validate
+# argument combinations (e.g. --clone-only and --init-only are mutually
+# exclusive; --clone-only requires a remote URL).
 parse_arguments() {
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -1253,6 +1264,8 @@ parse_arguments() {
 # MAIN
 # =====================================================================
 
+# Main entry point: parse arguments, detect mode (create vs config),
+# apply CLI overrides, and dispatch to the appropriate workflow.
 main() {
     parse_arguments "$@"
 

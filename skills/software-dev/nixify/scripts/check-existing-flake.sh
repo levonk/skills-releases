@@ -11,16 +11,16 @@ REPO="${2:?Usage: check-existing-flake.sh <owner> <repo>}"
 VERBOSE="${3:-}"
 
 if [ "$VERBOSE" = "--verbose" ]; then
-  echo "Checking https://api.github.com/repos/$OWNER/$REPO/contents/flake.nix"
-  RESPONSE=$(curl -sL "https://api.github.com/repos/$OWNER/$REPO/contents/flake.nix")
-  echo "API response: $RESPONSE"
-  NAME=$(echo "$RESPONSE" | jq -r '.name' 2>/dev/null || echo "")
+	echo "Checking https://api.github.com/repos/$OWNER/$REPO/contents/flake.nix"
+	RESPONSE=$(curl -sL "https://api.github.com/repos/$OWNER/$REPO/contents/flake.nix")
+	echo "API response: $RESPONSE"
+	NAME=$(echo "$RESPONSE" | jq -r '.name' 2>/dev/null || echo "")
 else
-  NAME=$(curl -sL "https://api.github.com/repos/$OWNER/$REPO/contents/flake.nix" | jq -r '.name' 2>/dev/null || echo "")
+	NAME=$(curl -sL "https://api.github.com/repos/$OWNER/$REPO/contents/flake.nix" | jq -r '.name' 2>/dev/null || echo "")
 fi
 
 if [ "$NAME" = "flake.nix" ]; then
-  echo "flake exists"
+	echo "flake exists"
 else
-  echo "no flake found"
+	echo "no flake found"
 fi

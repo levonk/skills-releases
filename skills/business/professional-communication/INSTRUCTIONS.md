@@ -1370,6 +1370,24 @@ In formal situations — disciplinary action, responding to an employee complain
 For templates covering these and other common scenarios, see
 [Message Templates](references/message-templates.md).
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Choose the channel matching urgency and complexity (Quick Start Step 1)
+- [ ] Structure the message — subject line, BLUF opening, concise body, clear call to action (Quick Start Step 2)
+- [ ] Set the tone — professional, respectful, approachable (Quick Start Step 3)
+- [ ] Apply best practices — share proactively, credit specifically, give constructive feedback (Quick Start Step 4)
+- [ ] Start from a message template for the scenario (Quick Start Step 5)
+- [ ] Proofread for spelling and grammatical errors before sending (Message Structure — Proofread)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Professional Communication run complete, verify every item

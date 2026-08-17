@@ -28,7 +28,7 @@ For reference files longer than 100 lines, include a table of contents at the to
 
 Use this when you have a simple overview with optional advanced topics.
 
-```markdown
+````markdown
 # PDF Processing
 
 ## Quick start
@@ -37,7 +37,7 @@ Extract text with pdfplumber:
 import pdfplumber
 with pdfplumber.open("document.pdf") as pdf:
     text = pdf.pages[0].extract_text()
-```
+````
 
 ## Advanced features
 - **Form filling**: See [FORMS.md](FORMS.md) for complete guide

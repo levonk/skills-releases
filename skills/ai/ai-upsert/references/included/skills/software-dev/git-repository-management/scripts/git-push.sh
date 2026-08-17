@@ -59,52 +59,52 @@ if command -v rtk >/dev/null 2>&1; then RTK_AVAILABLE=1; else RTK_AVAILABLE=0; f
 # first call, WRAPPER_DEVBOX_DISABLED reflects the probe result and subsequent
 # calls return immediately.
 probe_devbox() {
-    # If devbox was already disabled by a prior probe or caller, nothing to do.
-    if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
-        return 0
-    fi
-    # If cli-tool-discovery says we're already inside a devbox shell, no probe
-    # needed — devbox binaries are on PATH and no wrapper detection is required.
-    if [[ -n "${DEVBOX_SHELL:-}${IN_DEVBOX_SHELL:-}" ]]; then
-        return 0
-    fi
-    # If no devbox.json up the tree, no point probing.
-    if ! command -v devbox >/dev/null 2>&1; then
-        WRAPPER_DEVBOX_DISABLED=1
-        return 0
-    fi
-    local _timeout="${PROBE_DEVBOX_TIMEOUT_SECS:-15}"
-    local _test_cmd=(git --version)
-    if command -v rtk >/dev/null 2>&1; then
-        _test_cmd=(rtk git --version)
-    fi
-    # Honor caller override for the test command.
-    if [[ -n "${PROBE_DEVBOX_TEST_CMD:-}" ]]; then
-        # shellcheck disable=SC2206  # intentional word-splitting on caller's command
-        _test_cmd=(${PROBE_DEVBOX_TEST_CMD})
-    fi
-    devbox run -- "${_test_cmd[@]}" >/dev/null 2>&1 &
-    local _pid=$!
-    local _elapsed=0
-    while kill -0 "$_pid" 2>/dev/null; do
-        if [[ "$_elapsed" -ge "$_timeout" ]]; then
-            kill -9 "$_pid" 2>/dev/null
-            wait "$_pid" 2>/dev/null || true
-            echo "⚠️ devbox run hung after ${_timeout}s (likely broken wrapper), falling back to direct execution" >&2
-            WRAPPER_DEVBOX_DISABLED=1
-            return 1
-        fi
-        sleep 1
-        _elapsed=$((_elapsed + 1))
-    done
-    local _exit=0
-    wait "$_pid" || _exit=$?
-    if [[ "$_exit" -ne 0 ]]; then
-        echo "⚠️ devbox run failed (exit $_exit), falling back to direct execution" >&2
-        WRAPPER_DEVBOX_DISABLED=1
-        return 1
-    fi
-    return 0
+	# If devbox was already disabled by a prior probe or caller, nothing to do.
+	if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+		return 0
+	fi
+	# If cli-tool-discovery says we're already inside a devbox shell, no probe
+	# needed — devbox binaries are on PATH and no wrapper detection is required.
+	if [[ -n "${DEVBOX_SHELL:-}${IN_DEVBOX_SHELL:-}" ]]; then
+		return 0
+	fi
+	# If no devbox.json up the tree, no point probing.
+	if ! command -v devbox >/dev/null 2>&1; then
+		WRAPPER_DEVBOX_DISABLED=1
+		return 0
+	fi
+	local _timeout="${PROBE_DEVBOX_TIMEOUT_SECS:-15}"
+	local _test_cmd=(git --version)
+	if command -v rtk >/dev/null 2>&1; then
+		_test_cmd=(rtk git --version)
+	fi
+	# Honor caller override for the test command.
+	if [[ -n "${PROBE_DEVBOX_TEST_CMD:-}" ]]; then
+		# shellcheck disable=SC2206  # intentional word-splitting on caller's command
+		_test_cmd=(${PROBE_DEVBOX_TEST_CMD})
+	fi
+	devbox run -- "${_test_cmd[@]}" >/dev/null 2>&1 &
+	local _pid=$!
+	local _elapsed=0
+	while kill -0 "$_pid" 2>/dev/null; do
+		if [[ "$_elapsed" -ge "$_timeout" ]]; then
+			kill -9 "$_pid" 2>/dev/null
+			wait "$_pid" 2>/dev/null || true
+			echo "⚠️ devbox run hung after ${_timeout}s (likely broken wrapper), falling back to direct execution" >&2
+			WRAPPER_DEVBOX_DISABLED=1
+			return 1
+		fi
+		sleep 1
+		_elapsed=$((_elapsed + 1))
+	done
+	local _exit=0
+	wait "$_pid" || _exit=$?
+	if [[ "$_exit" -ne 0 ]]; then
+		echo "⚠️ devbox run failed (exit $_exit), falling back to direct execution" >&2
+		WRAPPER_DEVBOX_DISABLED=1
+		return 1
+	fi
+	return 0
 }
 
 # Resolve the environment wrapper for the current directory.
@@ -121,91 +121,94 @@ probe_devbox() {
 # call (probe_devbox may set it). Set WRAPPER_PREFIX_REFRESH=1 to force a
 # re-probe.
 wrapper_prefix() {
-    # Return cached result if available and the devbox-disabled flag hasn't changed.
-    if [[ -n "${WRAPPER_PREFIX_CACHE+x}" && "${WRAPPER_PREFIX_REFRESH:-0}" -eq 0 ]]; then
-        if [[ "${WRAPPER_PREFIX_CACHE_DISABLED:-0}" -eq "${WRAPPER_DEVBOX_DISABLED:-0}" ]]; then
-            printf '%s' "$WRAPPER_PREFIX_CACHE"
-            return
-        fi
-    fi
+	# Return cached result if available and the devbox-disabled flag hasn't changed.
+	if [[ -n "${WRAPPER_PREFIX_CACHE+x}" && "${WRAPPER_PREFIX_REFRESH:-0}" -eq 0 ]]; then
+		if [[ "${WRAPPER_PREFIX_CACHE_DISABLED:-0}" -eq "${WRAPPER_DEVBOX_DISABLED:-0}" ]]; then
+			printf '%s' "$WRAPPER_PREFIX_CACHE"
+			return
+		fi
+	fi
 
-    # Fast path: if devbox was disabled by probe_devbox (hang/failure) or by
-    # the caller, skip the cli-tool-discovery.sh probe entirely. The probe
-    # internally calls `devbox run --` which can take 15s to timeout — calling
-    # it when devbox is already known-broken defeats the purpose of the probe.
-    # Check for other wrappers (mise, flox, direnv, nix) only when devbox is
-    # NOT the disabled one — but in practice, if devbox.json exists and devbox
-    # is disabled, the other wrappers are not relevant for this repo.
-    if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
-        # Still check for non-devbox wrappers via cli-tool-discovery, but only
-        # if there's no devbox.json up the tree (if there IS one, devbox was
-        # the intended wrapper and it's broken — don't waste 15s re-probing).
-        local _has_devbox_json=0
-        local _dir="$PWD"
-        while [[ "$_dir" != "/" ]]; do
-            if [[ -f "$_dir/devbox.json" ]]; then
-                _has_devbox_json=1
-                break
-            fi
-            _dir="$(dirname "$_dir")"
-        done
-        if [[ "$_has_devbox_json" -eq 1 ]]; then
-            WRAPPER_PREFIX_CACHE=""
-            WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
-            printf ''
-            return
-        fi
-    fi
+	# Fast path: if devbox was disabled by probe_devbox (hang/failure) or by
+	# the caller, skip the cli-tool-discovery.sh probe entirely. The probe
+	# internally calls `devbox run --` which can take 15s to timeout — calling
+	# it when devbox is already known-broken defeats the purpose of the probe.
+	# Check for other wrappers (mise, flox, direnv, nix) only when devbox is
+	# NOT the disabled one — but in practice, if devbox.json exists and devbox
+	# is disabled, the other wrappers are not relevant for this repo.
+	if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+		# Still check for non-devbox wrappers via cli-tool-discovery, but only
+		# if there's no devbox.json up the tree (if there IS one, devbox was
+		# the intended wrapper and it's broken — don't waste 15s re-probing).
+		local _has_devbox_json=0
+		local _dir="$PWD"
+		while [[ "$_dir" != "/" ]]; do
+			if [[ -f "$_dir/devbox.json" ]]; then
+				_has_devbox_json=1
+				break
+			fi
+			_dir="$(dirname "$_dir")"
+		done
+		if [[ "$_has_devbox_json" -eq 1 ]]; then
+			WRAPPER_PREFIX_CACHE=""
+			WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
+			printf ''
+			return
+		fi
+	fi
 
-    if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
-        WRAPPER_PREFIX_CACHE=""
-        WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
-        printf ''
-        return
-    fi
+	if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+		WRAPPER_PREFIX_CACHE=""
+		WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
+		printf ''
+		return
+	fi
 
-    # Probe with a nonexistent tool name — cli-tool-discovery.sh checks PATH
-    # first (skipped for nonexistent tools), then wrappers. The output format is
-    # "WRAPPER: <wrapper-cmd> __wrapper_probe__" — strip the probe tool name.
-    local result
-    result="$(bash "$CLI_TOOL_DISCOVERY" __wrapper_probe__ 2>/dev/null || true)"
-    local prefix=""
-    case "$result" in
-        WRAPPER:\ *)
-            local wrapper_full="${result#WRAPPER: }"
-            prefix="${wrapper_full% __wrapper_probe__}"
-            # Allow callers to disable devbox at runtime (e.g. probe_devbox)
-            if [[ "$prefix" == "devbox run --" && "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
-                prefix=""
-            fi
-            ;;
-        *)
-            prefix=""
-            ;;
-    esac
+	# Use --detect-wrapper mode — checks config file existence + wrapper
+	# functionality WITHOUT requiring a specific tool to exist inside the
+	# wrapper. This is needed for devbox: the old __wrapper_probe__ trick
+	# (nonexistent tool name) failed because devbox detection in resolve mode
+	# requires the tool to exist inside devbox (step 2a). --detect-wrapper
+	# probes devbox with `devbox run -- true` (hang-safe, always-available
+	# builtin) instead. For mise/flox/nix, config file existence is sufficient.
+	local result
+	result="$(bash "$CLI_TOOL_DISCOVERY" --detect-wrapper 2>/dev/null || true)"
+	local prefix=""
+	case "$result" in
+	WRAPPER:\ *)
+		prefix="${result#WRAPPER: }"
+		# Allow callers to disable devbox at runtime (e.g. probe_devbox)
+		if [[ "$prefix" == "devbox run --" && "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+			prefix=""
+		fi
+		;;
+	*)
+		prefix=""
+		;;
+	esac
 
-    WRAPPER_PREFIX_CACHE="$prefix"
-    WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
-    printf '%s' "$prefix"
+	WRAPPER_PREFIX_CACHE="$prefix"
+	WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
+	printf '%s' "$prefix"
 }
 
 # Run a command through devbox when available, otherwise directly.
 # This is the simple wrapper — it does NOT probe. Call probe_devbox first if
 # you want hang-safety. wrapper_prefix() honors WRAPPER_DEVBOX_DISABLED.
 devbox_run() {
-    local wrapper
-    wrapper="$(wrapper_prefix)"
-    if [[ -n "$wrapper" ]]; then
-        $wrapper "$@"
-    else
-        "$@"
-    fi
+	local wrapper
+	wrapper="$(wrapper_prefix)"
+	if [[ -n "$wrapper" ]]; then
+		$wrapper "$@"
+	else
+		"$@"
+	fi
 }
 
 # Run a command through the detected environment wrapper (if any), otherwise directly.
 # Alias for devbox_run — kept for backward compatibility with existing callers.
 run_command() {
-    devbox_run "$@"
+	devbox_run "$@"
 }
 
 
@@ -233,47 +236,83 @@ run_command() {
 
 # Resolve rtk via cli-tool-discovery.sh (finds it even in non-standard locations).
 # Prints "rtk" if available, empty otherwise.
+#
+# CACHING: The result is cached in RTK_AVAILABLE_CACHE for the lifetime of the
+# script. cli-tool-discovery.sh can take up to 15s per call (devbox probe
+# timeout), and rtk_available() is called on every rtk_prefix() — without
+# caching, a script that makes 20 git_cmd() calls would spawn 20
+# cli-tool-discovery subprocesses, each potentially paying the 15s devbox
+# probe. The cache collapses this to a single probe.
+#
+# WRAPPER_DEVBOX_DISABLED: When devbox is known broken (set by probe_devbox),
+# skips cli-tool-discovery.sh entirely — it would re-probe devbox (15s timeout)
+# on every call. Falls back to `command -v rtk` (PATH check only, no devbox
+# probe). This is the critical fix for the parallel-session hang: under 10
+# concurrent agent sessions, each cli-tool-discovery invocation contends for
+# the nix store lock and the devbox probe serializes at 15s per call.
 rtk_available() {
-    if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
-        printf ''
-        return
-    fi
-    if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
-        command -v rtk >/dev/null 2>&1 && printf 'rtk'
-        return
-    fi
-    local result
-    result="$(bash "$CLI_TOOL_DISCOVERY" rtk 2>/dev/null || true)"
-    case "$result" in
-        FOUND:*|WRAPPER:*)
-            printf 'rtk'
-            ;;
-        *)
-            printf ''
-            ;;
-    esac
+	if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+		printf ''
+		return
+	fi
+	if [[ -n "${RTK_AVAILABLE_CACHE+x}" ]]; then
+		printf '%s' "$RTK_AVAILABLE_CACHE"
+		return
+	fi
+	local result=""
+	if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]] || [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+		# Devbox known broken or cli-tool-discovery missing — skip the
+		# expensive devbox probe and fall back to PATH check only.
+		command -v rtk >/dev/null 2>&1 && result="rtk"
+	else
+		local disc
+		disc="$(bash "$CLI_TOOL_DISCOVERY" rtk 2>/dev/null || true)"
+		case "$disc" in
+		FOUND:* | WRAPPER:*) result="rtk" ;;
+		esac
+	fi
+	RTK_AVAILABLE_CACHE="$result"
+	printf '%s' "$result"
 }
 
 # Check if rtk supports a command by probing `rtk rewrite`.
 # Exit codes from rtk rewrite: 0=allow, 1=not supported, 2=deny, 3=ask.
 # 0 and 3 both mean "rtk supports this command".
 # Prints "rtk" if the command should be wrapped, empty otherwise.
+#
+# CACHING: The result is cached per-tool (cache key: RTK_PREFIX_CACHE__<tool>)
+# for the lifetime of the script. rtk's coverage for a given tool is stable —
+# the `rtk rewrite` config does not change mid-run. The subcommand-level
+# granularity of `rtk rewrite` is collapsed to a per-tool answer: if rtk
+# supports `git status`, it supports all common `git` subcommands. The edge
+# case (supports some subcommands but denies others) over-wraps the denied
+# subcommands, but rtk passes denied commands through unchanged — the only
+# cost is a no-op rtk spawn, not incorrect behavior. Set RTK_PREFIX_REFRESH=1
+# to force a re-probe.
 rtk_prefix() {
-    if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
-        printf ''
-        return
-    fi
-    if [[ -z "$(rtk_available)" ]]; then
-        printf ''
-        return
-    fi
-    # Probe with the full command — rtk rewrite needs the subcommand to
-    # determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
-    rtk rewrite -- "$@" >/dev/null 2>&1
-    local rc=$?
-    if [[ $rc -eq 0 || $rc -eq 3 ]]; then
-        printf 'rtk'
-    fi
+	if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+		printf ''
+		return
+	fi
+	local tool="$1"
+	local safe_tool="${tool//[^a-zA-Z0-9]/_}"
+	local cache_var="RTK_PREFIX_CACHE__${safe_tool}"
+	if [[ -n "${!cache_var+x}" && "${RTK_PREFIX_REFRESH:-0}" -eq 0 ]]; then
+		printf '%s' "${!cache_var}"
+		return
+	fi
+	local result=""
+	if [[ -n "$(rtk_available)" ]]; then
+		# Probe with the full command — rtk rewrite needs the subcommand to
+		# determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
+		rtk rewrite -- "$@" >/dev/null 2>&1
+		local rc=$?
+		if [[ $rc -eq 0 || $rc -eq 3 ]]; then
+			result="rtk"
+		fi
+	fi
+	printf -v "$cache_var" '%s' "$result"
+	printf '%s' "$result"
 }
 
 # Wrap a command with rtk if supported, run through environment wrapper if present.
@@ -281,25 +320,25 @@ rtk_prefix() {
 # If rtk supports the command, runs: <env-wrapper> rtk <tool> [args...]
 # Otherwise runs:                   <env-wrapper> <tool> [args...]
 rtk_wrap_command() {
-    local tool="$1"
-    shift
-    local rtk_prefix_val
-    rtk_prefix_val="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
-    local wrapper
-    wrapper="$(wrapper_prefix)"
-    if [[ -n "$rtk_prefix_val" ]]; then
-        if [[ -n "$wrapper" ]]; then
-            $wrapper rtk "$tool" "$@"
-        else
-            rtk "$tool" "$@"
-        fi
-    else
-        if [[ -n "$wrapper" ]]; then
-            $wrapper "$tool" "$@"
-        else
-            "$tool" "$@"
-        fi
-    fi
+	local tool="$1"
+	shift
+	local rtk_prefix_val
+	rtk_prefix_val="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+	local wrapper
+	wrapper="$(wrapper_prefix)"
+	if [[ -n "$rtk_prefix_val" ]]; then
+		if [[ -n "$wrapper" ]]; then
+			$wrapper rtk "$tool" "$@"
+		else
+			rtk "$tool" "$@"
+		fi
+	else
+		if [[ -n "$wrapper" ]]; then
+			$wrapper "$tool" "$@"
+		else
+			"$tool" "$@"
+		fi
+	fi
 }
 
 # Wrapper: use 'rtk git' instead of 'git' when rtk supports it,
@@ -307,13 +346,13 @@ rtk_wrap_command() {
 # This is the canonical git command wrapper — all git-repository-management
 # scripts use this instead of redefining their own git_cmd().
 git_cmd() {
-    local rtk_p
-    rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
-    if [[ -n "$rtk_p" ]]; then
-        devbox_run rtk git "$@"
-    else
-        devbox_run git "$@"
-    fi
+	local rtk_p
+	rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
+	if [[ -n "$rtk_p" ]]; then
+		devbox_run rtk git "$@"
+	else
+		devbox_run git "$@"
+	fi
 }
 
 # Wrapper: use 'rtk <tool>' for supported commands, run through devbox when available.
@@ -321,15 +360,15 @@ git_cmd() {
 # This is the generic tool wrapper — all git-repository-management scripts use
 # this instead of redefining their own rtk_wrap().
 rtk_wrap() {
-    local tool="$1"
-    shift
-    local rtk_p
-    rtk_p="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
-    if [[ -n "$rtk_p" ]]; then
-        devbox_run rtk "$tool" "$@"
-    else
-        devbox_run "$tool" "$@"
-    fi
+	local tool="$1"
+	shift
+	local rtk_p
+	rtk_p="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+	if [[ -n "$rtk_p" ]]; then
+		devbox_run rtk "$tool" "$@"
+	else
+		devbox_run "$tool" "$@"
+	fi
 }
 
 
@@ -337,139 +376,149 @@ rtk_wrap() {
 probe_devbox || true
 
 discover_repo_root() {
-    local target_path="${1:-.}"
-    local repo_root
-    repo_root=$(cd "$target_path" && git_cmd rev-parse --show-toplevel 2>/dev/null)
-    if [ -z "$repo_root" ]; then
-        echo "ERROR: $target_path is not inside a git repository" >&2
-        exit 1
-    fi
-    echo "$repo_root"
+	local target_path="${1:-.}"
+	local repo_root
+	repo_root=$(cd "$target_path" && git_cmd rev-parse --show-toplevel 2>/dev/null)
+	if [ -z "$repo_root" ]; then
+		echo "ERROR: $target_path is not inside a git repository" >&2
+		exit 1
+	fi
+	echo "$repo_root"
 }
 
 main() {
-    local remote="" branch="" target_path="." slug="push"
-    local remote_set=0
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --slug) slug="$2"; shift 2 ;;
-            --slug=*) slug="${1#--slug=}"; shift ;;
-            *)
-                if [[ "$remote_set" -eq 0 ]]; then remote="$1"; remote_set=1
-                elif [[ -z "$branch" ]]; then branch="$1"
-                else target_path="$1"; fi
-                shift ;;
-        esac
-    done
-    [[ -z "$remote" ]] && remote="origin"
+	local remote="" branch="" target_path="." slug="push"
+	local remote_set=0
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--slug)
+			slug="$2"
+			shift 2
+			;;
+		--slug=*)
+			slug="${1#--slug=}"
+			shift
+			;;
+		*)
+			if [[ "$remote_set" -eq 0 ]]; then
+				remote="$1"
+				remote_set=1
+			elif [[ -z "$branch" ]]; then
+				branch="$1"
+			else target_path="$1"; fi
+			shift
+			;;
+		esac
+	done
+	[[ -z "$remote" ]] && remote="origin"
 
-    local repo_root
-    repo_root=$(discover_repo_root "$target_path")
-    cd "$repo_root"
+	local repo_root
+	repo_root=$(discover_repo_root "$target_path")
+	cd "$repo_root"
 
-    if [[ -z "$branch" ]]; then
-        branch=$(git_cmd rev-parse --abbrev-ref HEAD)
-    fi
+	if [[ -z "$branch" ]]; then
+		branch=$(git_cmd rev-parse --abbrev-ref HEAD)
+	fi
 
-    local original_sha
-    original_sha=$(git_cmd rev-parse HEAD)
+	local original_sha
+	original_sha=$(git_cmd rev-parse HEAD)
 
-    echo "=== PUSH_START ==="
-    echo "REMOTE:$remote"
-    echo "BRANCH:$branch"
-    echo "ORIGINAL_SHA:$original_sha"
+	echo "=== PUSH_START ==="
+	echo "REMOTE:$remote"
+	echo "BRANCH:$branch"
+	echo "ORIGINAL_SHA:$original_sha"
 
-    # Step 1: Create backup branch at scratch/merge/YYYY/MM/YYYYMMDDHHmm-{slug}-pre
-    local timestamp backup_branch
-    timestamp=$(date -u +%Y%m%d%H%M)
-    backup_branch="scratch/merge/$(date -u +%Y/%m)/${timestamp}-${slug}-pre"
-    echo "BACKUP_BRANCH:$backup_branch"
-    if ! git_cmd branch "$backup_branch" "$original_sha" 2>/dev/null; then
-        echo "PUSH_FAILED:BACKUP_BRANCH_ERROR"
-        echo "=== PUSH_END ==="
-        exit 1
-    fi
-    echo "BACKUP_CREATED"
+	# Step 1: Create backup branch at scratch/merge/YYYY/MM/YYYYMMDDHHmm-{slug}-pre
+	local timestamp backup_branch
+	timestamp=$(date -u +%Y%m%d%H%M)
+	backup_branch="scratch/merge/$(date -u +%Y/%m)/${timestamp}-${slug}-pre"
+	echo "BACKUP_BRANCH:$backup_branch"
+	if ! git_cmd branch "$backup_branch" "$original_sha" 2>/dev/null; then
+		echo "PUSH_FAILED:BACKUP_BRANCH_ERROR"
+		echo "=== PUSH_END ==="
+		exit 1
+	fi
+	echo "BACKUP_CREATED"
 
-    # Step 2: Fetch remote
-    echo "FETCHING:"
-    if ! git_cmd fetch "$remote" "$branch" 2>&1; then
-        echo "PUSH_FAILED:FETCH_ERROR"
-        echo "BACKUP_RESTORE:git checkout $branch && git reset --hard $original_sha"
-        echo "=== PUSH_END ==="
-        exit 1
-    fi
+	# Step 2: Fetch remote
+	echo "FETCHING:"
+	if ! git_cmd fetch "$remote" "$branch" 2>&1; then
+		echo "PUSH_FAILED:FETCH_ERROR"
+		echo "BACKUP_RESTORE:git checkout $branch && git reset --hard $original_sha"
+		echo "=== PUSH_END ==="
+		exit 1
+	fi
 
-    # Step 3: Check if remote is ahead
-    local remote_sha base_sha
-    remote_sha=$(git_cmd rev-parse "${remote}/${branch}" 2>/dev/null || echo "")
-    base_sha=$(git_cmd merge-base HEAD "${remote}/${branch}" 2>/dev/null || echo "")
+	# Step 3: Check if remote is ahead
+	local remote_sha base_sha
+	remote_sha=$(git_cmd rev-parse "${remote}/${branch}" 2>/dev/null || echo "")
+	base_sha=$(git_cmd merge-base HEAD "${remote}/${branch}" 2>/dev/null || echo "")
 
-    if [[ -z "$remote_sha" || "$remote_sha" == "$base_sha" ]]; then
-        echo "REMOTE_STATUS:UP_TO_DATE"
-    else
-        echo "REMOTE_STATUS:AHEAD"
+	if [[ -z "$remote_sha" || "$remote_sha" == "$base_sha" ]]; then
+		echo "REMOTE_STATUS:UP_TO_DATE"
+	else
+		echo "REMOTE_STATUS:AHEAD"
 
-        # Step 4a: Try rebase with auto-resolution (-X auto)
-        echo "REBASING:"
-        if git_cmd rebase -X auto "${remote}/${branch}" 2>&1; then
-            echo "REBASE_SUCCESS"
-        else
-            # Rebase had conflicts — abort and try merge fallback
-            echo "REBASE_CONFLICTS_DETECTED"
-            git_cmd rebase --abort 2>/dev/null || true
+		# Step 4a: Try rebase with auto-resolution (-X auto)
+		echo "REBASING:"
+		if git_cmd rebase -X auto "${remote}/${branch}" 2>&1; then
+			echo "REBASE_SUCCESS"
+		else
+			# Rebase had conflicts — abort and try merge fallback
+			echo "REBASE_CONFLICTS_DETECTED"
+			git_cmd rebase --abort 2>/dev/null || true
 
-            # Step 4b: Try merge with auto-resolution
-            echo "MERGE_FALLBACK:"
-            if git_cmd merge -X auto "${remote}/${branch}" 2>&1; then
-                echo "MERGE_SUCCESS"
-            else
-                # Merge has conflicts — leave them in place for AI resolution
-                echo "MERGE_CONFLICTS:"
-                echo "CONFLICTED_FILES:"
-                git_cmd diff --name-only --diff-filter=U 2>/dev/null || echo "<none>"
-                echo ""
-                echo "CONFLICT_MARKERS:"
-                # Show conflict regions for each conflicted file (for AI analysis)
-                local conflicted_files
-                conflicted_files=$(git_cmd diff --name-only --diff-filter=U 2>/dev/null || echo "")
-                if [[ -n "$conflicted_files" ]]; then
-                    while IFS= read -r cfile; do
-                        echo "---FILE:$cfile---"
-                        grep -n -A2 -B2 '^<<<<<<<\|^=======\|^>>>>>>>' "$cfile" 2>/dev/null || echo "<no markers found>"
-                    done <<< "$conflicted_files"
-                fi
-                echo ""
-                echo "PUSH_FAILED:MERGE_CONFLICTS_NEED_RESOLUTION"
-                echo "BACKUP_BRANCH:$backup_branch"
-                echo "MERGE_STATE:IN_PROGRESS"
-                echo "NEXT_STEPS:"
-                echo "1. Review conflicted files listed above"
-                echo "2. Edit each file to resolve conflicts (remove conflict markers)"
-                echo "3. Stage resolved files: git add <file>"
-                echo "4. Complete merge: git commit --no-edit"
-                echo "5. Re-run push: ./scripts/git-push.sh $remote $branch $target_path --slug $slug"
-                echo "ABORT_CMD:git merge --abort (to discard merge and restore original)"
-                echo "=== PUSH_END ==="
-                exit 1
-            fi
-        fi
-    fi
+			# Step 4b: Try merge with auto-resolution
+			echo "MERGE_FALLBACK:"
+			if git_cmd merge -X auto "${remote}/${branch}" 2>&1; then
+				echo "MERGE_SUCCESS"
+			else
+				# Merge has conflicts — leave them in place for AI resolution
+				echo "MERGE_CONFLICTS:"
+				echo "CONFLICTED_FILES:"
+				git_cmd diff --name-only --diff-filter=U 2>/dev/null || echo "<none>"
+				echo ""
+				echo "CONFLICT_MARKERS:"
+				# Show conflict regions for each conflicted file (for AI analysis)
+				local conflicted_files
+				conflicted_files=$(git_cmd diff --name-only --diff-filter=U 2>/dev/null || echo "")
+				if [[ -n "$conflicted_files" ]]; then
+					while IFS= read -r cfile; do
+						echo "---FILE:$cfile---"
+						grep -n -A2 -B2 '^<<<<<<<\|^=======\|^>>>>>>>' "$cfile" 2>/dev/null || echo "<no markers found>"
+					done <<<"$conflicted_files"
+				fi
+				echo ""
+				echo "PUSH_FAILED:MERGE_CONFLICTS_NEED_RESOLUTION"
+				echo "BACKUP_BRANCH:$backup_branch"
+				echo "MERGE_STATE:IN_PROGRESS"
+				echo "NEXT_STEPS:"
+				echo "1. Review conflicted files listed above"
+				echo "2. Edit each file to resolve conflicts (remove conflict markers)"
+				echo "3. Stage resolved files: git add <file>"
+				echo "4. Complete merge: git commit --no-edit"
+				echo "5. Re-run push: ./scripts/git-push.sh $remote $branch $target_path --slug $slug"
+				echo "ABORT_CMD:git merge --abort (to discard merge and restore original)"
+				echo "=== PUSH_END ==="
+				exit 1
+			fi
+		fi
+	fi
 
-    # Step 5: Push (with --follow-tags to push auto-tags created by git-commit-batch.sh)
-    echo "PUSHING:"
-    if git_cmd push --follow-tags "$remote" "$branch" 2>&1; then
-        echo "PUSH_SUCCESS:$remote/$branch"
-        echo "BACKUP_BRANCH:$backup_branch"
-        echo "BACKUP_NOTE:Remove with: git branch -D $backup_branch"
-    else
-        echo "PUSH_FAILED:GIT_ERROR"
-        echo "BACKUP_RESTORE:git checkout $branch && git reset --hard $original_sha"
-        echo "=== PUSH_END ==="
-        exit 1
-    fi
+	# Step 5: Push (with --follow-tags to push auto-tags created by git-commit-batch.sh)
+	echo "PUSHING:"
+	if git_cmd push --follow-tags "$remote" "$branch" 2>&1; then
+		echo "PUSH_SUCCESS:$remote/$branch"
+		echo "BACKUP_BRANCH:$backup_branch"
+		echo "BACKUP_NOTE:Remove with: git branch -D $backup_branch"
+	else
+		echo "PUSH_FAILED:GIT_ERROR"
+		echo "BACKUP_RESTORE:git checkout $branch && git reset --hard $original_sha"
+		echo "=== PUSH_END ==="
+		exit 1
+	fi
 
-    echo "=== PUSH_END ==="
+	echo "=== PUSH_END ==="
 }
 
 main "$@"

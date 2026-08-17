@@ -54,30 +54,30 @@ NIXPKGS_VER="${NIXPKGS_VERSION//\"/}"
 # a recent version without a huge lag.
 version_current=false
 if [ "$NIXPKGS_VER" != "null" ] && [ -n "$NIXPKGS_VER" ]; then
-  LATEST_MAJOR=$(echo "$LATEST_VER" | cut -d. -f1)
-  LATEST_MINOR=$(echo "$LATEST_VER" | cut -d. -f2)
-  NIXPKGS_MAJOR=$(echo "$NIXPKGS_VER" | cut -d. -f1)
-  NIXPKGS_MINOR=$(echo "$NIXPKGS_VER" | cut -d. -f2)
+	LATEST_MAJOR=$(echo "$LATEST_VER" | cut -d. -f1)
+	LATEST_MINOR=$(echo "$LATEST_VER" | cut -d. -f2)
+	NIXPKGS_MAJOR=$(echo "$NIXPKGS_VER" | cut -d. -f1)
+	NIXPKGS_MINOR=$(echo "$NIXPKGS_VER" | cut -d. -f2)
 
-  if [ "$LATEST_MAJOR" = "$NIXPKGS_MAJOR" ]; then
-    # Same major — check minor delta
-    MINOR_DELTA=$(( LATEST_MINOR - NIXPKGS_MINOR ))
-    if [ "$MINOR_DELTA" -le 1 ]; then
-      version_current=true
-    fi
-  fi
+	if [ "$LATEST_MAJOR" = "$NIXPKGS_MAJOR" ]; then
+		# Same major — check minor delta
+		MINOR_DELTA=$((LATEST_MINOR - NIXPKGS_MINOR))
+		if [ "$MINOR_DELTA" -le 1 ]; then
+			version_current=true
+		fi
+	fi
 fi
 
 # --- Derivation analysis ----------------------------------------------------
 # If the caller provided derivation JSON (from Step 11's inspect-nixpkgs-derivation.sh),
 # use it. Otherwise, run inspect-nixpkgs-derivation.sh ourselves.
 if [ -z "$DERIVATION_JSON" ]; then
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [ -f "$SCRIPT_DIR/inspect-nixpkgs-derivation.sh" ]; then
-    DERIVATION_JSON=$(bash "$SCRIPT_DIR/inspect-nixpkgs-derivation.sh" "$PROJECT" 2>/dev/null || echo '{"found": false}')
-  else
-    DERIVATION_JSON='{"found": false}'
-  fi
+	SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	if [ -f "$SCRIPT_DIR/inspect-nixpkgs-derivation.sh" ]; then
+		DERIVATION_JSON=$(bash "$SCRIPT_DIR/inspect-nixpkgs-derivation.sh" "$PROJECT" 2>/dev/null || echo '{"found": false}')
+	else
+		DERIVATION_JSON='{"found": false}'
+	fi
 fi
 
 PROJECT_IN_NIXPKGS=$(echo "$DERIVATION_JSON" | jq -r '.found // false')
@@ -90,31 +90,31 @@ HAS_RUNTIME_DEPS=false
 EXTRA_BUILD_INPUTS="[]"
 
 if [ "$PROJECT_IN_NIXPKGS" = "true" ]; then
-  CONTENT=$(echo "$DERIVATION_JSON" | jq -r '.content // ""')
+	CONTENT=$(echo "$DERIVATION_JSON" | jq -r '.content // ""')
 
-  # Check for patches — look for patches = [ ... ] or fetchPatch patterns
-  if echo "$CONTENT" | grep -qE 'patches\s*='; then
-    HAS_PATCHES=true
-  fi
+	# Check for patches — look for patches = [ ... ] or fetchPatch patterns
+	if echo "$CONTENT" | grep -qE 'patches\s*='; then
+		HAS_PATCHES=true
+	fi
 
-  # Check for postInstall / preInstall hooks
-  if echo "$CONTENT" | grep -qE '(postInstall|preInstall|postPatch)\s*='; then
-    HAS_POSTINSTALL=true
-  fi
+	# Check for postInstall / preInstall hooks
+	if echo "$CONTENT" | grep -qE '(postInstall|preInstall|postPatch)\s*='; then
+		HAS_POSTINSTALL=true
+	fi
 
-  # Check for makeWrapper usage
-  if echo "$CONTENT" | grep -qE 'makeWrapper'; then
-    HAS_MAKE_WRAPPER=true
-  fi
+	# Check for makeWrapper usage
+	if echo "$CONTENT" | grep -qE 'makeWrapper'; then
+		HAS_MAKE_WRAPPER=true
+	fi
 
-  # Check for runtimeDependencies
-  RUNTIME_DEPS=$(echo "$DERIVATION_JSON" | jq -r '.runtime_deps // []')
-  if [ "$RUNTIME_DEPS" != "[]" ] && [ -n "$RUNTIME_DEPS" ]; then
-    HAS_RUNTIME_DEPS=true
-  fi
+	# Check for runtimeDependencies
+	RUNTIME_DEPS=$(echo "$DERIVATION_JSON" | jq -r '.runtime_deps // []')
+	if [ "$RUNTIME_DEPS" != "[]" ] && [ -n "$RUNTIME_DEPS" ]; then
+		HAS_RUNTIME_DEPS=true
+	fi
 
-  # Extract buildInputs that a naive from-source flake might miss
-  EXTRA_BUILD_INPUTS=$(echo "$DERIVATION_JSON" | jq -r '.build_inputs // []')
+	# Extract buildInputs that a naive from-source flake might miss
+	EXTRA_BUILD_INPUTS=$(echo "$DERIVATION_JSON" | jq -r '.build_inputs // []')
 fi
 
 # --- Superset determination -------------------------------------------------
@@ -123,9 +123,9 @@ fi
 # flake would miss. The agent does the full qualitative comparison; this
 # script provides the deterministic signals.
 IS_SUPERSET=false
-if [ "$HAS_PATCHES" = true ] || [ "$HAS_POSTINSTALL" = true ] || \
-   [ "$HAS_MAKE_WRAPPER" = true ] || [ "$HAS_RUNTIME_DEPS" = true ]; then
-  IS_SUPERSET=true
+if [ "$HAS_PATCHES" = true ] || [ "$HAS_POSTINSTALL" = true ] ||
+	[ "$HAS_MAKE_WRAPPER" = true ] || [ "$HAS_RUNTIME_DEPS" = true ]; then
+	IS_SUPERSET=true
 fi
 
 # --- Add #nixpkgs output decision -------------------------------------------
@@ -139,35 +139,35 @@ fi
 # is a signal, not a hard gate. The agent makes the final call.
 ADD_NIXPKGS_OUTPUT=false
 if [ "$PROJECT_IN_NIXPKGS" = "true" ] && [ "$IS_SUPERSET" = "true" ]; then
-  ADD_NIXPKGS_OUTPUT=true
+	ADD_NIXPKGS_OUTPUT=true
 fi
 
 # --- Rationale --------------------------------------------------------------
 RATIONALE=""
 if [ "$PROJECT_IN_NIXPKGS" = "false" ]; then
-  RATIONALE="Project is not in nixpkgs — no #nixpkgs output to add."
+	RATIONALE="Project is not in nixpkgs — no #nixpkgs output to add."
 elif [ "$IS_SUPERSET" = "false" ]; then
-  RATIONALE="nixpkgs packaging is not a superset (no patches, hooks, wrappers, or runtime deps detected) — a from-source flake provides equivalent functionality."
+	RATIONALE="nixpkgs packaging is not a superset (no patches, hooks, wrappers, or runtime deps detected) — a from-source flake provides equivalent functionality."
 elif [ "$version_current" = "false" ]; then
-  RATIONALE="nixpkgs packaging is a superset but version is not current (nixpkgs: ${NIXPKGS_VER}, latest: ${LATEST_VER}). The agent should decide whether the superset packaging outweighs the version lag."
+	RATIONALE="nixpkgs packaging is a superset but version is not current (nixpkgs: ${NIXPKGS_VER}, latest: ${LATEST_VER}). The agent should decide whether the superset packaging outweighs the version lag."
 else
-  RATIONALE="nixpkgs packaging is a superset and version is current (nixpkgs: ${NIXPKGS_VER}, latest: ${LATEST_VER}). Add #nixpkgs output to give users access to the more complete packaging."
+	RATIONALE="nixpkgs packaging is a superset and version is current (nixpkgs: ${NIXPKGS_VER}, latest: ${LATEST_VER}). Add #nixpkgs output to give users access to the more complete packaging."
 fi
 
 # --- Output -----------------------------------------------------------------
 
 jq -n \
-  --argjson project_in_nixpkgs "$PROJECT_IN_NIXPKGS" \
-  --argjson version_current "$version_current" \
-  --argjson has_patches "$HAS_PATCHES" \
-  --argjson has_postinstall "$HAS_POSTINSTALL" \
-  --argjson has_make_wrapper "$HAS_MAKE_WRAPPER" \
-  --argjson has_runtime_deps "$HAS_RUNTIME_DEPS" \
-  --argjson extra_build_inputs "$EXTRA_BUILD_INPUTS" \
-  --argjson is_superset "$IS_SUPERSET" \
-  --argjson add_nixpkgs_output "$ADD_NIXPKGS_OUTPUT" \
-  --arg rationale "$RATIONALE" \
-  '{project_in_nixpkgs: $project_in_nixpkgs,
+	--argjson project_in_nixpkgs "$PROJECT_IN_NIXPKGS" \
+	--argjson version_current "$version_current" \
+	--argjson has_patches "$HAS_PATCHES" \
+	--argjson has_postinstall "$HAS_POSTINSTALL" \
+	--argjson has_make_wrapper "$HAS_MAKE_WRAPPER" \
+	--argjson has_runtime_deps "$HAS_RUNTIME_DEPS" \
+	--argjson extra_build_inputs "$EXTRA_BUILD_INPUTS" \
+	--argjson is_superset "$IS_SUPERSET" \
+	--argjson add_nixpkgs_output "$ADD_NIXPKGS_OUTPUT" \
+	--arg rationale "$RATIONALE" \
+	'{project_in_nixpkgs: $project_in_nixpkgs,
     version_current: $version_current,
     has_patches: $has_patches,
     has_postinstall: $has_postinstall,

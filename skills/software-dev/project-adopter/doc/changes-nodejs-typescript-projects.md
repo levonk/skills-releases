@@ -25,7 +25,7 @@ Projects are detected as Node.js/TypeScript when they contain:
 {
   "packages": [
     "just", "yq-go", "jq", "ripgrep", "fd", "bat",
-    "nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest"
+    "nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest"
   ]
 }
 ```
@@ -35,7 +35,7 @@ Projects are detected as Node.js/TypeScript when they contain:
 {
   "packages": [
     "just", "yq-go", "jq", "ripgrep", "fd", "bat",
-    "nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest",
+    "nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest",
     "playwright", "tailwindcss", "postcss", "vite", "webpack", "rollup", "esbuild"
   ]
 }
@@ -208,9 +208,9 @@ audit:
     "apps/*"
   ],
   "devDependencies": {
-    "@nx/js": "^19.0.0",
-    "@nx/workspace": "^19.0.0",
-    "nx": "^19.0.0"
+    "@nx/js": "^23.1.1",
+    "@nx/workspace": "^23.1.1",
+    "nx": "^23.1.1"
   }
 }
 ```
@@ -220,12 +220,14 @@ audit:
 {
   "$schema": "https://nx.dev/schemas/nx-schema.json",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*"],
+    "sharedGlobals": ["{workspaceRoot}/nx.json", "{workspaceRoot}/pnpm-workspace.yaml", "{workspaceRoot}/pnpm-lock.yaml"],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
-      "{projectRoot}/**/*.ts",
-      "{projectRoot}/**/*.tsx",
-      "{projectRoot}/**/*.js",
-      "{projectRoot}/**/*.jsx"
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/eslint.config.mjs"
     ]
   },
   "targetDefaults": {
@@ -267,9 +269,8 @@ audit:
     "affected": "nx affected"
   },
   "devDependencies": {
-    "@nx/workspace": "^16.0.0",
-    "@nx/vite": "^16.0.0",
-    "@nx/eslint-plugin": "^16.0.0"
+    "@nx/js": "^23.1.1",
+    "@nx/eslint-plugin": "^23.1.1"
   }
 }
 ```
@@ -278,7 +279,14 @@ audit:
 ```json
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "extends": "@nx/workspace/presets/npm.json",
+  "namedInputs": {
+    "sharedGlobals": ["{workspaceRoot}/nx.json", "{workspaceRoot}/pnpm-workspace.yaml", "{workspaceRoot}/pnpm-lock.yaml"],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)"
+    ]
+  },
   "targetDefaults": {
     "build": {
       "cache": true,
@@ -290,13 +298,16 @@ audit:
     "lint": {
       "cache": true
     }
-  },
-  "tasksRunnerOptions": {
-    "runner": "nx/tasks-runners/default",
-    "cacheDirectoryOperations": ["read", "write"]
   }
 }
 ```
+
+> **Nx 23 + TypeScript 7 executor notes:**
+> - `@nx/js:build` was removed in `@nx/js` 23.x — use `nx:run-commands` + `tsc -p tsconfig.json` (or tsup for libraries) instead.
+> - `@nx/js:tsc` crashes on TypeScript 7.0 (`ts.sys` is `undefined`) — use `tsc --noEmit` directly for typecheck, `tsc -p tsconfig.json` for build.
+> - `@nx/vite:test` / `@nx/vitest:test` fail with "Cannot find native binding" under pnpm — use `nx:run-commands` + `pnpm exec vitest run` instead (`pnpm exec`, not `pnpm dlx`, to avoid workspace-dep isolation issues).
+> - `sharedGlobals` must be defined in `namedInputs` if referenced by `default` — Nx 23 errors with `"sharedGlobals" is an invalid fileset` if missing.
+> - `@nx/next:build` requires an `app/` or `pages/` directory — if the app is not a Next.js app, use `nx:run-commands` + `tsc` instead.
 
 ### Framework-Specific Changes
 
@@ -397,8 +408,8 @@ export default defineConfig({
 
 | Dependency | Source of Truth | Version | Purpose |
 |-----------|------------------|--------|---------|
-| **@types/node** | `apply_surgical_configs()` - Node.js deps | ^20.0.0 | Node.js type definitions |
-| **typescript** | `apply_surgical_configs()` - Node.js deps | ^5.0.0 | TypeScript compiler |
+| **@types/node** | `apply_surgical_configs()` - Node.js deps | ^24.0.0 | Node.js type definitions |
+| **typescript** | `apply_surgical_configs()` - Node.js deps | ^7.0.2 | TypeScript compiler |
 | **eslint** | `apply_surgical_configs()` - Node.js deps | ^8.0.0 | Code linting |
 | **prettier** | `apply_surgical_configs()` - Node.js deps | ^3.0.0 | Code formatting |
 | **jest** | `apply_surgical_configs()` - Node.js deps | ^29.0.0 | Testing framework |
@@ -531,11 +542,11 @@ module.exports = {
 ## README.md Sections
 
 ### Node.js-Specific Content
-```markdown
+````markdown
 ## Development Setup
 
 ### Prerequisites
-- Node.js 22+
+- Node.js 24+
 - pnpm
 - Devbox
 - Just
@@ -554,7 +565,7 @@ just bootstrap
 
 # Start development
 just dev
-```
+````
 
 ## Available Commands
 
@@ -698,7 +709,7 @@ just loop
 ```
 
 ### Common Issues
-- **Node version mismatch** - Ensure Node.js 22+ in devbox.json
+- **Node version mismatch** - Ensure Node.js 24+ in devbox.json
 - **pnpm not found** - Check devbox shell environment
 - **TypeScript errors** - Verify tsconfig.json configuration
 - **Test failures** - Check Jest configuration

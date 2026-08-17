@@ -9,6 +9,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BATS_TEST_FILENAME:-${BASH_SOURCE[0]}}")" && pwd)"
 WRAP_CMD="$SCRIPT_DIR/../wrap_command.sh"
+CLI_TOOL_DISCOVERY="$SCRIPT_DIR/../cli-tool-discovery.sh"
 TEST_BASE="/tmp/skill-test/shell-wrapper"
 
 # --- test helpers ---
@@ -37,6 +38,10 @@ assert_not_contains() {
 
 # Create a scenario dir with specific files. Echoes the dir path.
 # Usage: setup_scenario scenario_name file1 file2 ...
+# Config files that require valid content for wrapper detection (devbox.json,
+# flake.nix, shell.nix, etc.) are written with minimal valid content instead
+# of empty `touch`. Build-system files (package.json, Cargo.toml, etc.) are
+# still `touch`ed — detection only checks file existence for those.
 setup_scenario() {
     local scenario="$1"; shift
     local dir="$TEST_BASE/$scenario"
@@ -44,22 +49,64 @@ setup_scenario() {
     mkdir -p "$dir"
     for f in "$@"; do
         mkdir -p "$dir/$(dirname "$f")"
-        touch "$dir/$f"
+        case "$f" in
+        devbox.json)
+            printf '{"packages":[]}\n' > "$dir/$f"
+            ;;
+        flake.nix|shell.nix|flox.nix)
+            printf '{ description = "test"; }\n' > "$dir/$f"
+            ;;
+        .envrc)
+            printf 'export PATH=$PATH:$PWD/bin\n' > "$dir/$f"
+            ;;
+        mise.toml|.mise.toml|.mise/config.toml)
+            printf '[tools]\n' > "$dir/$f"
+            ;;
+        *)
+            touch "$dir/$f"
+            ;;
+        esac
     done
     echo "$dir"
 }
 
 # Run wrap_command.sh in resolve mode from a given dir.
 # Echoes the wrapped command string.
+# Unsets DEVBOX_SHELL_ENABLED and IN_NIX_SHELL so cli-tool-discovery.sh
+# doesn't short-circuit on "already inside devbox/nix" when bats itself
+# runs via `devbox run --`.
 run_resolve() {
     local dir="$1"; shift
-    (cd "$dir" && bash "$WRAP_CMD" "$@") 2>/dev/null || true
+    (cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL bash "$WRAP_CMD" "$@") 2>/dev/null || true
 }
 
 # --- tests ---
 
+# Helper: check if devbox is functional (returns 0=yes, 1=no). No skip —
+# callers decide whether to skip or branch on the result.
+# Reuses cli-tool-discovery.sh's --detect-wrapper mode, which probes devbox
+# with `devbox run -- true` (hang-safe via devbox_run_timed). No duplicated
+# probe logic here — the include's hardened timeout/kill path is the single
+# source of truth for devbox functionality checks.
+devbox_is_functional() {
+    command -v devbox >/dev/null 2>&1 || return 1
+    local probe_dir; probe_dir="$(mktemp -d)"
+    printf '{"packages":[]}\n' > "$probe_dir/devbox.json"
+    local result
+    result="$(cd "$probe_dir" && env -u DEVBOX_SHELL -u IN_DEVBOX_SHELL \
+        DEVBOX_PROBE_TIMEOUT_SECS=5 bash "$CLI_TOOL_DISCOVERY" --detect-wrapper 2>/dev/null)" || true
+    rm -rf "$probe_dir"
+    [[ "$result" == "WRAPPER: devbox run --" ]]
+}
+
+# Helper: skip if devbox is not functional. Wraps devbox_is_functional with
+# a skip call for tests that require devbox to work.
+skip_unless_devbox_functional() {
+    devbox_is_functional || skip "devbox not functional on this platform"
+}
+
 @test "devbox+rtk git status" {
-    command -v devbox >/dev/null 2>&1 || skip "devbox not installed"
+    skip_unless_devbox_functional
     command -v rtk >/dev/null 2>&1 || skip "rtk not installed"
     local dir
     dir="$(setup_scenario devbox-rtk devbox.json)"
@@ -69,7 +116,7 @@ run_resolve() {
 }
 
 @test "devbox only: vim (rtk excluded)" {
-    command -v devbox >/dev/null 2>&1 || skip "devbox not installed"
+    skip_unless_devbox_functional
     local dir
     dir="$(setup_scenario devbox-vim devbox.json)"
     local out
@@ -78,7 +125,7 @@ run_resolve() {
 }
 
 @test "devbox only: just build (rtk unsupported)" {
-    command -v devbox >/dev/null 2>&1 || skip "devbox not installed"
+    skip_unless_devbox_functional
     local dir
     dir="$(setup_scenario devbox-unsupported devbox.json)"
     local out
@@ -87,7 +134,7 @@ run_resolve() {
 }
 
 @test "--raw: git status (no rtk)" {
-    command -v devbox >/dev/null 2>&1 || skip "devbox not installed"
+    skip_unless_devbox_functional
     command -v rtk >/dev/null 2>&1 || skip "rtk not installed"
     local dir
     dir="$(setup_scenario raw-flag devbox.json)"
@@ -97,7 +144,7 @@ run_resolve() {
 }
 
 @test "chained commands" {
-    command -v devbox >/dev/null 2>&1 || skip "devbox not installed"
+    skip_unless_devbox_functional
     command -v rtk >/dev/null 2>&1 || skip "rtk not installed"
     local dir
     dir="$(setup_scenario chained devbox.json)"
@@ -110,7 +157,7 @@ run_resolve() {
 }
 
 @test "--raw chained" {
-    command -v devbox >/dev/null 2>&1 || skip "devbox not installed"
+    skip_unless_devbox_functional
     local dir
     dir="$(setup_scenario raw-chained devbox.json)"
     local out
@@ -178,6 +225,7 @@ run_resolve() {
 
 @test "nix flake detection" {
     command -v nix >/dev/null 2>&1 || skip "nix not installed"
+    nix --version >/dev/null 2>&1 || skip "nix not functional on this platform"
     local dir
     dir="$(setup_scenario nix-flake flake.nix)"
     local out
@@ -187,6 +235,7 @@ run_resolve() {
 
 @test "nix shell.nix detection" {
     command -v nix >/dev/null 2>&1 || skip "nix not installed"
+    nix --version >/dev/null 2>&1 || skip "nix not functional on this platform"
     local dir
     dir="$(setup_scenario nix-shell shell.nix)"
     local out
@@ -199,7 +248,9 @@ run_resolve() {
     local dir
     dir="$(setup_scenario inside-nix flake.nix)"
     local out
-    out="$(IN_NIX_SHELL=1 run_resolve "$dir" git status)"
+    # Call wrap_command.sh directly with IN_NIX_SHELL=1 to simulate
+    # being inside a nix shell (run_resolve unsets IN_NIX_SHELL).
+    out="$(cd "$dir" && IN_NIX_SHELL=1 env -u DEVBOX_SHELL_ENABLED bash "$WRAP_CMD" git status 2>/dev/null)" || true
     assert_equals "rtk git status" "$out"
 }
 
@@ -214,11 +265,15 @@ run_resolve() {
 
 @test "direnv detection" {
     command -v direnv >/dev/null 2>&1 || skip "direnv not installed"
+    direnv version >/dev/null 2>&1 || skip "direnv not functional on this platform"
     local dir
     dir="$(setup_scenario direnv-present .envrc)"
     local out
     out="$(run_resolve "$dir" echo hello)"
-    assert_contains "direnv" "$out"
+    # direnv is NOT a wrapper prefix — it uses eval-based activation.
+    # wrap_command.sh should fall through to direct execution when only
+    # .envrc is present (no devbox.json, flake.nix, etc.).
+    assert_equals "echo hello" "$out"
 }
 
 @test "pipe command" {

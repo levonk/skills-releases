@@ -209,7 +209,11 @@ Using the wrong layer wastes time and produces worse artifacts:
   `build` target — full bundling with code-splitting and asset handling.
 - **`@nx/js:build` (tsc-based) is replaced** by tsup for library packages
   that need bundled output. Packages that only need type-checking keep the
-  `typecheck` target and may skip `build` entirely.
+  `typecheck` target and may skip `build` entirely. Note: `@nx/js:build` was
+  removed in `@nx/js` 23.x entirely (only `tsc`/`swc` executors remain), and
+  `@nx/js:tsc` crashes on TypeScript 7.0 (`ts.sys` is `undefined`), so all
+  `build` targets should use `nx:run-commands` + `tsc -p tsconfig.json` or
+  `nx:run-commands` + `tsup` — never `@nx/js:build` or `@nx/js:tsc`.
 - **esbuild direct usage in templates** (e.g., `@nx/esbuild:esbuild` for
   CLIs) remains valid — Rolldown is the upgrade path when plugin
   compatibility or code-splitting is needed.

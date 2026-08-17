@@ -13,7 +13,7 @@
 #   - Handle SSH/HTTPS protocol selection and host aliases
 #   - Support environment variable expansion and fallbacks
 #
-# Usage: Source this file in git-repo-init.bash
+# Usage: Source this file in git-clone.sh and git-repo-init.sh
 # Security: No sensitive data, safe for all environments
 # =====================================================================
 
@@ -160,6 +160,9 @@ _fallback_parse_toml_value() {
     echo "${value:-$default}"
 }
 
+# Get a config value by key, trying the data (user-specific) TOML first,
+# then the config (system) TOML, with env-var expansion on the result.
+# Usage: get_config_value <key> [default]
 get_config_value() {
     local key="$1"
     local default="${2:-}"
@@ -307,6 +310,10 @@ get_account_config_value() {
 # =============================================================================
 # URL Parsing Functions
 # =============================================================================
+# Parse a git remote URL into its components (protocol, host, namespace, project).
+# Supports protocol URLs (https://), SCP-style SSH (git@host:), and generic paths.
+# Results are stored in the nameref'd associative array.
+# Usage: parse_git_url <url> <result_array_name>
 parse_git_url() {
     local url="$1"
     local -n result_ref=$2
@@ -353,6 +360,9 @@ parse_git_url() {
 # =============================================================================
 # Path Resolution Functions
 # =============================================================================
+# Resolve the local filesystem path where a repo should live, based on the
+# host-to-acronym mapping and the configured path pattern (with env expansion).
+# Usage: resolve_repo_path <url_parts_array_name> [pattern_name]
 resolve_repo_path() {
     local -n url_parts=$1
     local pattern_name="${2:-default}"
@@ -384,6 +394,9 @@ resolve_repo_path() {
 # =============================================================================
 # Git Configuration Functions
 # =============================================================================
+# Configure git identity (user.name, user.email, init.defaultBranch) in a
+# repo using account-specific config values resolved via host/namespace hierarchy.
+# Usage: configure_git_repo <url_parts_array_name> <repo_path> [force_user] [force_email]
 configure_git_repo() {
     local -n url_parts=$1
     local repo_path="$2"
@@ -438,6 +451,10 @@ configure_git_repo() {
 # =============================================================================
 # URL Construction Functions
 # =============================================================================
+# Construct the clone URL for a repo based on the configured protocol
+# (ssh/https/http) and SSH host alias resolution. Falls back to the
+# original URL for unknown protocols.
+# Usage: construct_clone_url <url_parts_array_name> [force_protocol]
 construct_clone_url() {
     local -n url_parts=$1
     local force_protocol="${2:-}"
@@ -506,8 +523,55 @@ construct_clone_url() {
 }
 
 # =============================================================================
+# Local-as-Remote Helper
+# =============================================================================
+# Add the current repo as a "local" remote pointing at itself. This enables
+# branch cleanup workflows (like git-archive.sh --prune) and testing git
+# operations (push, fetch, pull-request simulation) without a network round-trip.
+#
+# The pattern: `git remote add local "$PWD"` creates a remote that points at
+# the local working tree's .git directory. Pushing to `local` updates the
+# local refs directly — no server needed. This is useful for:
+#   - Testing branch archiving workflows before running them against origin
+#   - Simulating multi-user git operations on a single machine
+#   - Running git-sweep-style cleanup scripts that expect a remote to exist
+#   - CI environments where no real remote is available
+#
+# Usage: add_local_remote [repo_path]
+#   repo_path defaults to $PWD
+# Returns 0 if the remote was added or already exists, 1 on error.
+add_local_remote() {
+    local repo_path="${1:-$PWD}"
+    local git_dir
+
+    git_dir=$(cd "$repo_path" && git rev-parse --git-dir 2>/dev/null) || {
+        vcs_log_error "Not a git repository: $repo_path"
+        return 1
+    }
+
+    # Resolve to absolute path
+    git_dir=$(cd "$repo_path" && cd "$git_dir" && pwd)
+
+    # Check if 'local' remote already exists
+    if (cd "$repo_path" && git remote get-url local 2>/dev/null) >/dev/null 2>&1; then
+        vcs_log_debug "Remote 'local' already exists in $repo_path"
+        return 0
+    fi
+
+    # Add the local remote pointing at the repo's own .git directory
+    (cd "$repo_path" && git remote add local "$git_dir") || {
+        vcs_log_error "Failed to add 'local' remote to $repo_path"
+        return 1
+    }
+
+    vcs_log_success "Added 'local' remote → $git_dir"
+    vcs_log_info "Use 'git push local <branch>' to test without a network round-trip"
+}
+
+# =============================================================================
 # Initialization Functions
 # =============================================================================
+# Ensure config/data directories and files exist; warn if missing.
 ensure_config_files() {
     # Create config directories if they don't exist
     mkdir -p "$GIT_VCS_CONFIG_DIR" "$GIT_VCS_DATA_DIR"
@@ -527,6 +591,8 @@ ensure_config_files() {
 # =============================================================================
 # Validation Functions
 # =============================================================================
+# Validate that a git URL is parseable and contains namespace and project.
+# Usage: validate_git_url <url>
 validate_git_url() {
     local url="$1"
     declare -A url_parts

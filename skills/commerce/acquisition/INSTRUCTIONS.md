@@ -1452,6 +1452,27 @@ Select the best card from `payment_methods` for service payments:
 - **Service provider no-show**: Contact provider; if unresolved, move to next vetted provider from deal-intelligence report
 - **Service quality dispute**: Initiate credit card chargeback process; document with photos/correspondence
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Confirm the effort tier from the Deal Intelligence Report and scope the workflow accordingly
+- [ ] Products: determine if the item is negotiable and conduct negotiation with agent disclosure
+- [ ] Products: deliver the negotiation summary with user action required (Approve / Counter / Decline)
+- [ ] Products: set up stock monitoring for out-of-stock, limited, or scarce items
+- [ ] Products: execute auto-buy if pre-authorized, or deliver manual purchase notification with optimization stack
+- [ ] Products: for used lockable devices, reference the in-person handoff verification procedure
+- [ ] Services: negotiate price, scope, timeline, warranty, payment terms, and materials with agent disclosure
+- [ ] Services: get scope in writing, verify credentials, schedule, set up payment, and document
+- [ ] Services: select the best card for dispute/purchase protection — never wire, cash without receipt, or full upfront
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Shopping Acquisition run complete, verify every item

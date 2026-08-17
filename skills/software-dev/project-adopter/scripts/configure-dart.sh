@@ -9,192 +9,192 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../common/config-functions.sh
 if [[ -f "$SCRIPT_DIR/../common/config-functions.sh" ]]; then
-    source "$SCRIPT_DIR/../common/config-functions.sh"
+	source "$SCRIPT_DIR/../common/config-functions.sh"
 fi
 
 # Configure Dart/Flutter project
 configure_dart_project() {
-    local project_path="$1"
-    local mode="${2:-adopt}"     # adopt | standardize
-    local app_type="${3:-unknown}" # web | cli | api | library | mobile
-    local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library | mobile-app
+	local project_path="$1"
+	local mode="${2:-adopt}"           # adopt | standardize
+	local app_type="${3:-unknown}"     # web | cli | api | library | mobile
+	local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library | mobile-app
 
-    log_info "Configuring Dart/Flutter project (mode: $mode, app_type: $app_type)"
+	log_info "Configuring Dart/Flutter project (mode: $mode, app_type: $app_type)"
 
-    # Handle pubspec.yaml
-    if [[ -f "$project_path/pubspec.yaml" ]]; then
-        configure_pubspec_yaml "$project_path" "$mode" "$app_type" "$project_type"
-    elif [[ "$mode" == "standardize" ]]; then
-        create_pubspec_yaml "$project_path" "$mode" "$app_type" "$project_type"
-    fi
+	# Handle pubspec.yaml
+	if [[ -f "$project_path/pubspec.yaml" ]]; then
+		configure_pubspec_yaml "$project_path" "$mode" "$app_type" "$project_type"
+	elif [[ "$mode" == "standardize" ]]; then
+		create_pubspec_yaml "$project_path" "$mode" "$app_type" "$project_type"
+	fi
 
-    # Handle analysis_options.yaml
-    configure_analysis_options "$project_path" "$mode"
+	# Handle analysis_options.yaml
+	configure_analysis_options "$project_path" "$mode"
 
-    # Handle Dart testing configuration
-    configure_dart_testing_config "$project_path" "$mode"
+	# Handle Dart testing configuration
+	configure_dart_testing_config "$project_path" "$mode"
 
-    # Handle framework-specific configs
-    configure_flutter_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
+	# Handle framework-specific configs
+	configure_flutter_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
 }
 
 # Configure pubspec.yaml
 configure_pubspec_yaml() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    log_info "Configuring pubspec.yaml for Dart/Flutter project"
+	log_info "Configuring pubspec.yaml for Dart/Flutter project"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Standardize mode - comprehensive additions
-        add_standardize_pubspec_dependencies "$project_path" "$app_type" "$project_type"
-        add_standardize_pubspec_dev_dependencies "$project_path" "$app_type" "$project_type"
-    else
-        # Adopt mode - minimal essential additions
-        add_adopt_pubspec_dependencies "$project_path" "$app_type" "$project_type"
-    fi
+	if [[ "$mode" == "standardize" ]]; then
+		# Standardize mode - comprehensive additions
+		add_standardize_pubspec_dependencies "$project_path" "$app_type" "$project_type"
+		add_standardize_pubspec_dev_dependencies "$project_path" "$app_type" "$project_type"
+	else
+		# Adopt mode - minimal essential additions
+		add_adopt_pubspec_dependencies "$project_path" "$app_type" "$project_type"
+	fi
 }
 
 # Add standardize mode dependencies to pubspec.yaml
 add_standardize_pubspec_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local deps_to_add=""
+	local deps_to_add=""
 
-    # App-type specific dependencies
-    case "$app_type" in
-        "web")
-            deps_to_add="$deps_to_add http: ^1.1.0"
-            if [[ "$project_type" == *"frontend-web"* ]]; then
-                deps_to_add="$deps_to_add shelf: ^1.4.0"
-            fi
-            ;;
-        "mobile")
-            deps_to_add="$deps_to_add flutter: ^3.16.0 cupertino_icons: ^1.0.6"
-            ;;
-        "cli")
-            deps_to_add="$deps_to_add args: ^2.4.0"
-            ;;
-        "api")
-            deps_to_add="$deps_to_add shelf: ^1.4.0 json_annotation: ^4.8.1"
-            ;;
-    esac
+	# App-type specific dependencies
+	case "$app_type" in
+	"web")
+		deps_to_add="$deps_to_add http: ^1.1.0"
+		if [[ "$project_type" == *"frontend-web"* ]]; then
+			deps_to_add="$deps_to_add shelf: ^1.4.0"
+		fi
+		;;
+	"mobile")
+		deps_to_add="$deps_to_add flutter: ^3.16.0 cupertino_icons: ^1.0.6"
+		;;
+	"cli")
+		deps_to_add="$deps_to_add args: ^2.4.0"
+		;;
+	"api")
+		deps_to_add="$deps_to_add shelf: ^1.4.0 json_annotation: ^4.8.1"
+		;;
+	esac
 
-    # Framework-specific dependencies
-    case "$project_type" in
-        "mobile-app")
-            if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
-                deps_to_add="$deps_to_add provider: ^6.1.1 shared_preferences: ^2.2.2 sqflite: ^2.3.0"
-            fi
-            ;;
-        "frontend-web")
-            deps_to_add="$deps_to_add flutter_web: ^0.2.0"
-            ;;
-        "api-service")
-            deps_to_add="$deps_to_add shelf_router: ^1.4.0 shelf_cors: ^1.4.0"
-            ;;
-    esac
+	# Framework-specific dependencies
+	case "$project_type" in
+	"mobile-app")
+		if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
+			deps_to_add="$deps_to_add provider: ^6.1.1 shared_preferences: ^2.2.2 sqflite: ^2.3.0"
+		fi
+		;;
+	"frontend-web")
+		deps_to_add="$deps_to_add flutter_web: ^0.2.0"
+		;;
+	"api-service")
+		deps_to_add="$deps_to_add shelf_router: ^1.4.0 shelf_cors: ^1.4.0"
+		;;
+	esac
 
-    # Apply surgical changes using yq-go if available
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize dependencies to pubspec.yaml using yq-go"
-        # yq-go eval ".dependencies += {$deps_to_add}" "$project_path/pubspec.yaml" -i
-    else
-        log_warn "yq-go not available, skipping pubspec.yaml dependency updates"
-    fi
+	# Apply surgical changes using yq-go if available
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize dependencies to pubspec.yaml using yq-go"
+		# yq-go eval ".dependencies += {$deps_to_add}" "$project_path/pubspec.yaml" -i
+	else
+		log_warn "yq-go not available, skipping pubspec.yaml dependency updates"
+	fi
 }
 
 # Add adopt mode dependencies to pubspec.yaml
 add_adopt_pubspec_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    # Adopt mode - minimal essential dependencies only
-    local essential_deps=""
+	# Adopt mode - minimal essential dependencies only
+	local essential_deps=""
 
-    case "$app_type" in
-        "mobile")
-            essential_deps="flutter: ^3.16.0"
-            ;;
-        "web")
-            essential_deps="http: ^1.1.0"
-            ;;
-        "api")
-            essential_deps="shelf: ^1.4.0"
-            ;;
-    esac
+	case "$app_type" in
+	"mobile")
+		essential_deps="flutter: ^3.16.0"
+		;;
+	"web")
+		essential_deps="http: ^1.1.0"
+		;;
+	"api")
+		essential_deps="shelf: ^1.4.0"
+		;;
+	esac
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1 && [[ -n "$essential_deps" ]]; then
-        echo "Adding adopt dependencies to pubspec.yaml using yq-go"
-        # yq-go eval ".dependencies += {$essential_deps}" "$project_path/pubspec.yaml" -i
-    else
-        log_warn "yq-go not available or no dependencies to add"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1 && [[ -n "$essential_deps" ]]; then
+		echo "Adding adopt dependencies to pubspec.yaml using yq-go"
+		# yq-go eval ".dependencies += {$essential_deps}" "$project_path/pubspec.yaml" -i
+	else
+		log_warn "yq-go not available or no dependencies to add"
+	fi
 }
 
 # Add standardize mode dev dependencies to pubspec.yaml
 add_standardize_pubspec_dev_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local dev_deps_to_add=""
+	local dev_deps_to_add=""
 
-    # Base dev dependencies for all Dart projects
-    dev_deps_to_add="$dev_deps_to_add test: ^1.24.0 build_runner: ^2.4.7 lints: ^3.0.0"
+	# Base dev dependencies for all Dart projects
+	dev_deps_to_add="$dev_deps_to_add test: ^1.24.0 build_runner: ^2.4.7 lints: ^3.0.0"
 
-    # App-type specific dev dependencies
-    case "$app_type" in
-        "mobile")
-            dev_deps_to_add="$dev_deps_to_add flutter_test: ^0.6.0 integration_test: ^3.3.0"
-            ;;
-        "web")
-            dev_deps_to_add="$dev_deps_to_add build_web_compilers: ^4.0.0"
-            ;;
-        "cli")
-            dev_deps_to_add="$dev_deps_to_add mockito: ^5.4.2"
-            ;;
-        "api")
-            dev_deps_to_add="$dev_deps_to_add mockito: ^5.4.2 http_mock: ^2.6.0"
-            ;;
-    esac
+	# App-type specific dev dependencies
+	case "$app_type" in
+	"mobile")
+		dev_deps_to_add="$dev_deps_to_add flutter_test: ^0.6.0 integration_test: ^3.3.0"
+		;;
+	"web")
+		dev_deps_to_add="$dev_deps_to_add build_web_compilers: ^4.0.0"
+		;;
+	"cli")
+		dev_deps_to_add="$dev_deps_to_add mockito: ^5.4.2"
+		;;
+	"api")
+		dev_deps_to_add="$dev_deps_to_add mockito: ^5.4.2 http_mock: ^2.6.0"
+		;;
+	esac
 
-    # Framework-specific dev dependencies
-    case "$project_type" in
-        "mobile-app")
-            if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
-                dev_deps_to_add="$dev_deps_to_add flutter_driver: ^0.2.0"
-            fi
-            ;;
-    esac
+	# Framework-specific dev dependencies
+	case "$project_type" in
+	"mobile-app")
+		if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
+			dev_deps_to_add="$dev_deps_to_add flutter_driver: ^0.2.0"
+		fi
+		;;
+	esac
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize dev dependencies to pubspec.yaml using yq-go"
-        # yq-go eval ".dev_dependencies += {$dev_deps_to_add}" "$project_path/pubspec.yaml" -i
-    else
-        log_warn "yq-go not available, skipping pubspec.yaml dev dependency updates"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize dev dependencies to pubspec.yaml using yq-go"
+		# yq-go eval ".dev_dependencies += {$dev_deps_to_add}" "$project_path/pubspec.yaml" -i
+	else
+		log_warn "yq-go not available, skipping pubspec.yaml dev dependency updates"
+	fi
 }
 
 # Create pubspec.yaml
 create_pubspec_yaml() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/pubspec.yaml" ]]; then
-        local project_name
-        project_name=$(basename "$project_path")
-        
-        cat > "$project_path/pubspec.yaml" << EOF
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/pubspec.yaml" ]]; then
+		local project_name
+		project_name=$(basename "$project_path")
+
+		cat >"$project_path/pubspec.yaml" <<EOF
 name: $project_name
 description: A Dart project.
 version: 0.1.0
@@ -205,30 +205,30 @@ environment:
 dependencies:
 EOF
 
-        # Add app-type specific dependencies
-        case "$app_type" in
-            "mobile")
-                cat >> "$project_path/pubspec.yaml" << 'EOF'
+		# Add app-type specific dependencies
+		case "$app_type" in
+		"mobile")
+			cat >>"$project_path/pubspec.yaml" <<'EOF'
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
 EOF
-                ;;
-            "web")
-                cat >> "$project_path/pubspec.yaml" << 'EOF'
+			;;
+		"web")
+			cat >>"$project_path/pubspec.yaml" <<'EOF'
   http: ^1.1.0
 EOF
-                ;;
-            "api")
-                cat >> "$project_path/pubspec.yaml" << 'EOF'
+			;;
+		"api")
+			cat >>"$project_path/pubspec.yaml" <<'EOF'
   shelf: ^1.4.0
   json_annotation: ^4.8.1
 EOF
-                ;;
-        esac
+			;;
+		esac
 
-        # Add dev dependencies
-        cat >> "$project_path/pubspec.yaml" << 'EOF'
+		# Add dev dependencies
+		cat >>"$project_path/pubspec.yaml" <<'EOF'
 
 dev_dependencies:
   test: ^1.24.0
@@ -236,32 +236,32 @@ dev_dependencies:
   lints: ^3.0.0
 EOF
 
-        # Add app-type specific dev dependencies
-        case "$app_type" in
-            "mobile")
-                cat >> "$project_path/pubspec.yaml" << 'EOF'
+		# Add app-type specific dev dependencies
+		case "$app_type" in
+		"mobile")
+			cat >>"$project_path/pubspec.yaml" <<'EOF'
   flutter_test: ^0.6.0
   integration_test: ^3.3.0
 EOF
-                ;;
-            "web")
-                cat >> "$project_path/pubspec.yaml" << 'EOF'
+			;;
+		"web")
+			cat >>"$project_path/pubspec.yaml" <<'EOF'
   build_web_compilers: ^4.0.0
 EOF
-                ;;
-        esac
+			;;
+		esac
 
-        log_info "✓ Created pubspec.yaml"
-    fi
+		log_info "✓ Created pubspec.yaml"
+	fi
 }
 
 # Configure analysis_options.yaml
 configure_analysis_options() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/analysis_options.yaml" ]]; then
-        cat > "$project_path/analysis_options.yaml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/analysis_options.yaml" ]]; then
+		cat >"$project_path/analysis_options.yaml" <<'EOF'
 # This file configures the analyzer, which statically analyzes Dart code to
 # check for errors, warnings, and lints.
 #
@@ -495,22 +495,22 @@ analyzer:
   valid_regexps: true
   void_checks: true
 EOF
-        log_info "✓ Created analysis_options.yaml"
-    fi
+		log_info "✓ Created analysis_options.yaml"
+	fi
 }
 
 # Configure Dart testing
 configure_dart_testing_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create test directory structure
-        mkdir -p "$project_path/test"
+	if [[ "$mode" == "standardize" ]]; then
+		# Create test directory structure
+		mkdir -p "$project_path/test"
 
-        # Create basic test file
-        if [[ ! -f "$project_path/test/widget_test.dart" ]]; then
-            cat > "$project_path/test/widget_test.dart" << 'EOF'
+		# Create basic test file
+		if [[ ! -f "$project_path/test/widget_test.dart" ]]; then
+			cat >"$project_path/test/widget_test.dart" <<'EOF'
 import 'package:flutter_test.dart';
 
 void main() {
@@ -523,14 +523,14 @@ void main() {
   });
 }
 EOF
-            log_info "✓ Created test/widget_test.dart"
-        fi
+			log_info "✓ Created test/widget_test.dart"
+		fi
 
-        # Create integration test file for Flutter
-        if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
-            mkdir -p "$project_path/integration_test"
-            if [[ ! -f "$project_path/integration_test/app_test.dart" ]]; then
-                cat > "$project_path/integration_test/app_test.dart" << 'EOF'
+		# Create integration test file for Flutter
+		if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
+			mkdir -p "$project_path/integration_test"
+			if [[ ! -f "$project_path/integration_test/app_test.dart" ]]; then
+				cat >"$project_path/integration_test/app_test.dart" <<'EOF'
 import 'package:flutter_test.dart';
 import 'package:my_app/main.dart' as app;
 
@@ -543,46 +543,46 @@ void main() {
   });
 }
 EOF
-                log_info "✓ Created integration_test/app_test.dart"
-            fi
-        fi
-    fi
+				log_info "✓ Created integration_test/app_test.dart"
+			fi
+		fi
+	fi
 }
 
 # Configure Flutter framework-specific configurations
 configure_flutter_framework_configs() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    # Flutter configuration
-    if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
-        configure_flutter_config "$project_path" "$mode" "$app_type" "$project_type"
-    fi
+	# Flutter configuration
+	if [[ -f "$project_path/pubspec.yaml" ]] && grep -q "flutter:" "$project_path/pubspec.yaml" 2>/dev/null; then
+		configure_flutter_config "$project_path" "$mode" "$app_type" "$project_type"
+	fi
 
-    # Dart web configuration
-    if [[ "$app_type" == "web" ]] || [[ "$project_type" == *"frontend-web"* ]]; then
-        configure_dart_web_config "$project_path" "$mode"
-    fi
+	# Dart web configuration
+	if [[ "$app_type" == "web" ]] || [[ "$project_type" == *"frontend-web"* ]]; then
+		configure_dart_web_config "$project_path" "$mode"
+	fi
 }
 
 # Configure Flutter
 configure_flutter_config() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create basic Flutter project structure
-        mkdir -p "$project_path/lib"
-        mkdir -p "$project_path/lib/widgets"
-        mkdir -p "$project_path/lib/services"
-        mkdir -p "$project_path/lib/models"
+	if [[ "$mode" == "standardize" ]]; then
+		# Create basic Flutter project structure
+		mkdir -p "$project_path/lib"
+		mkdir -p "$project_path/lib/widgets"
+		mkdir -p "$project_path/lib/services"
+		mkdir -p "$project_path/lib/models"
 
-        if [[ ! -f "$project_path/lib/main.dart" ]]; then
-            cat > "$project_path/lib/main.dart" << 'EOF'
+		if [[ ! -f "$project_path/lib/main.dart" ]]; then
+			cat >"$project_path/lib/main.dart" <<'EOF'
 import 'package:flutter/material.dart';
 
 void main() {
@@ -633,18 +633,18 @@ class HomePage extends StatelessWidget {
   }
 }
 EOF
-            log_info "✓ Created lib/main.dart"
-        fi
+			log_info "✓ Created lib/main.dart"
+		fi
 
-        # Create app configuration for mobile apps
-        if [[ "$app_type" == "mobile" ]] || [[ "$project_type" == *"mobile-app"* ]]; then
-            if [[ ! -f "$project_path/android/app/src/main/MainActivity.kt" ]] && [[ ! -f "$project_path/ios/Runner/AppDelegate.swift" ]]; then
-                # Create basic configuration files
-                mkdir -p "$project_path/android/app/src/main"
-                mkdir -p "$project_path/ios/Runner"
-                
-                # Android configuration
-                cat > "$project_path/android/app/src/main/MainActivity.kt" << 'EOF'
+		# Create app configuration for mobile apps
+		if [[ "$app_type" == "mobile" ]] || [[ "$project_type" == *"mobile-app"* ]]; then
+			if [[ ! -f "$project_path/android/app/src/main/MainActivity.kt" ]] && [[ ! -f "$project_path/ios/Runner/AppDelegate.swift" ]]; then
+				# Create basic configuration files
+				mkdir -p "$project_path/android/app/src/main"
+				mkdir -p "$project_path/ios/Runner"
+
+				# Android configuration
+				cat >"$project_path/android/app/src/main/MainActivity.kt" <<'EOF'
 package com.example.app
 
 import io.flutter.embedding.android.FlutterActivity
@@ -658,10 +658,10 @@ class MainActivity: FlutterFlutterEngineActivity() {
     }
 }
 EOF
-                log_info "✓ Created Android MainActivity.kt"
+				log_info "✓ Created Android MainActivity.kt"
 
-                # iOS configuration
-                cat > "$project_path/ios/Runner/AppDelegate.swift" << 'EOF'
+				# iOS configuration
+				cat >"$project_path/ios/Runner/AppDelegate.swift" <<'EOF'
 import UIKit
 import Flutter
 
@@ -676,23 +676,23 @@ import Flutter
   }
 }
 EOF
-                log_info "✓ Created iOS AppDelegate.swift"
-            fi
-        fi
-    fi
+				log_info "✓ Created iOS AppDelegate.swift"
+			fi
+		fi
+	fi
 }
 
 # Configure Dart web
 configure_dart_web_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create web directory structure
-        mkdir -p "$project_path/web"
-        
-        if [[ ! -f "$project_path/web/index.html" ]]; then
-            cat > "$project_path/web/index.html" << 'EOF'
+	if [[ "$mode" == "standardize" ]]; then
+		# Create web directory structure
+		mkdir -p "$project_path/web"
+
+		if [[ ! -f "$project_path/web/index.html" ]]; then
+			cat >"$project_path/web/index.html" <<'EOF'
 <!DOCTYPE html>
 <html>
 <head>
@@ -715,11 +715,11 @@ configure_dart_web_config() {
 </body>
 </html>
 EOF
-            log_info "✓ Created web/index.html"
-        fi
+			log_info "✓ Created web/index.html"
+		fi
 
-        if [[ ! -f "$project_path/web/manifest.json" ]]; then
-            cat > "$project_path/web/manifest.json" << 'EOF'
+		if [[ ! -f "$project_path/web/manifest.json" ]]; then
+			cat >"$project_path/web/manifest.json" <<'EOF'
 {
     "name": "my_app",
     "short_name": "my_app",
@@ -729,9 +729,9 @@ EOF
     "theme_color": "#0175C2"
 }
 EOF
-            log_info "✓ Created web/manifest.json"
-        fi
-    fi
+			log_info "✓ Created web/manifest.json"
+		fi
+	fi
 }
 
 # Export functions for use by adopt-project.sh

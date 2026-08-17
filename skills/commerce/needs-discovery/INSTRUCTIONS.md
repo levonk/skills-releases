@@ -1605,6 +1605,28 @@ Pass the Needs Discovery Brief to the **shopping-deal-intelligence** skill for p
 - `references/domains/consumables.md` — Shelf life, bulk economics, quality/sourcing, storage requirements
 - `references/part-identification.md` — Replacement part vs full product decision, repair cost vs replacement cost analysis, repairability check (soldered/paired/locked components), manufacturer part number identification workflow, part number sources
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Elicit timeline — nice-to-have and essential dates (Section 1)
+- [ ] Classify the request as Product, Service, or Both (Section 2.5)
+- [ ] Run intelligent questioning — numbered format, lettered choices, pre-filled, 3–5 per round (Section 2)
+- [ ] Determine replacement part vs full product and identify the manufacturer part number if applicable (Section 2.6)
+- [ ] Interpret specs as floors (min:) or ceilings (ceiling:) and record each in the brief (Section 2.7)
+- [ ] Map problem to product/service categories if the user described a problem (Section 3)
+- [ ] Research alternatives if the user named a specific product (Section 3.5)
+- [ ] Recommend 2–4 products/services with rationale and comparison matrix (Section 4)
+- [ ] Load the Level 1 attribute index and relevant attribute/domain files to identify constraints (Section 5)
+- [ ] Assemble and deliver the Needs Discovery Brief with all applicable sections
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the Shopping Needs Discovery run complete, verify every item

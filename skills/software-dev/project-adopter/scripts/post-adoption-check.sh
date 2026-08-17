@@ -14,11 +14,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source the post_adoption_check function from adopt-project.sh
 # shellcheck source=adopt-project.sh
 if [[ -f "$SCRIPT_DIR/adopt-project.sh" ]]; then
-    # Extract just the function definition
-    eval "$(sed -n '/^post_adoption_check() {/,/^}/p' "$SCRIPT_DIR/adopt-project.sh")"
+	# Extract just the function definition
+	eval "$(sed -n '/^post_adoption_check() {/,/^}/p' "$SCRIPT_DIR/adopt-project.sh")"
 else
-    echo "ERROR: adopt-project.sh not found at $SCRIPT_DIR/adopt-project.sh" >&2
-    exit 1
+	echo "ERROR: adopt-project.sh not found at $SCRIPT_DIR/adopt-project.sh" >&2
+	exit 1
 fi
 
 project_path="${1:-.}"

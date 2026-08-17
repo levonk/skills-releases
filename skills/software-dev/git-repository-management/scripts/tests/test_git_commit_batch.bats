@@ -102,7 +102,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Update b only\\n\\n- Modify b.txt content\nFILES:b.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug prestaged "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug prestaged "$dir" ) 2>&1)" || true
 
     assert_contains "INDEX_RESET:mixed" "$out"
     assert_contains "COMMIT_SUCCESS" "$out"
@@ -134,7 +134,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Add two files\\n\\n- Add file1 and file2\nFILES:file1.txt\nFILES:file2.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --dry-run --slug dryrun "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --dry-run --slug dryrun "$dir" ) 2>&1)" || true
 
     assert_contains "PROCESSING_COMMIT:1" "$out"
     assert_contains "MESSAGE:Add two files" "$out"
@@ -156,7 +156,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:No body here\nFILES:file1.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --dry-run --slug dryrun-nobody "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --dry-run --slug dryrun-nobody "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_FAILED:NO_BODY" "$out"
     assert_not_contains "COMMIT_SUCCESS" "$out"
@@ -173,7 +173,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Add files\\n\\nfile1.txt\nfile2.txt\nFILES:file1.txt\nFILES:file2.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug bodywarning "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug bodywarning "$dir" ) 2>&1)" || true
 
     assert_contains "WARNING:BODY_LOOKS_LIKE_FILE_LISTING" "$out"
     assert_contains "COMMIT_SUCCESS" "$out"
@@ -186,7 +186,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\n- Needed because the prior approach did not handle edge case Y\nFILES:file1.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug bodyprose "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug bodyprose "$dir" ) 2>&1)" || true
 
     assert_not_contains "WARNING:BODY_LOOKS_LIKE_FILE_LISTING" "$out"
     assert_contains "COMMIT_SUCCESS" "$out"
@@ -207,7 +207,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Initial commit\\n\\n- Add file1 and file2\n- Seed the repository\nFILES:file1.txt\nFILES:file2.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug initial "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug initial "$dir" ) 2>&1)" || true
 
     assert_contains "AUTO_TAG_PRE:SKIPPED_UNBORN_HEAD" "$out"
     assert_not_contains "AUTO_TAG_PRE:tags/auto/grm/" "$out"
@@ -242,7 +242,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Initial commit\\n\\n- Seed the repository\nFILES:file1.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" "$dir" ) 2>&1)" || true
 
     # The post-tag slug should be the branch name (main or master), not "run".
     # We accept either main or master since the default branch name varies.
@@ -265,7 +265,7 @@ setup_repo_with_tagging() {
     local batch
     batch=$(printf 'COMMIT:Add b only\\n\\n- Add b.txt to the repository\nFILES:b.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug unborn-index "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug unborn-index "$dir" ) 2>&1)" || true
 
     assert_contains "INDEX_RESET:mixed" "$out"
     assert_contains "COMMIT_SUCCESS" "$out"
@@ -300,7 +300,7 @@ FILES:file1.txt
 BATCH_EOF
 )
     local out
-    out="$(printf '%s\n' "$batch" | ( cd "$dir" && bash "$BATCH" --dry-run --slug multiline-dryrun "$dir" ) 2>&1)" || true
+    out="$(printf '%s\n' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --dry-run --slug multiline-dryrun "$dir" ) 2>&1)" || true
 
     assert_contains "PROCESSING_COMMIT:1" "$out"
     assert_contains "MESSAGE:Add file1 with multi-line body" "$out"
@@ -323,7 +323,7 @@ FILES:file1.txt
 BATCH_EOF
 )
     local out
-    out="$(printf '%s\n' "$batch" | ( cd "$dir" && bash "$BATCH" --slug multiline-real "$dir" ) 2>&1)" || true
+    out="$(printf '%s\n' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug multiline-real "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_SUCCESS" "$out"
     assert_not_contains "COMMIT_FAILED" "$out"
@@ -362,7 +362,7 @@ FILES:b.txt
 BATCH_EOF
 )
     local out
-    out="$(printf '%s\n' "$batch" | ( cd "$dir" && bash "$BATCH" --slug multiline-multi "$dir" ) 2>&1)" || true
+    out="$(printf '%s\n' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug multiline-multi "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_SUCCESS" "$out"
 
@@ -390,7 +390,7 @@ BATCH_EOF
     local batch
     batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\n- Needed because the prior approach did not handle edge case Y\nFILES:a.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug no-tag-reject "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug no-tag-reject "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_FAILED:NO_TAG_ARRAY" "$out"
     # Verify no commit was created (only the initial commit remains)
@@ -410,7 +410,7 @@ BATCH_EOF
     local batch
     batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\n- Needed because the prior approach did not handle edge case Y\\n\\n#project-test #type-feat #skill-grm-created\nFILES:a.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug tag-accept "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug tag-accept "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_SUCCESS" "$out"
     assert_not_contains "NO_TAG_ARRAY" "$out"
@@ -424,7 +424,7 @@ BATCH_EOF
     local batch
     batch=$(printf 'COMMIT:Fix overflow in sidebar\\n\\n- Add null check before rendering sidebar menu\\n- Fixes crash on narrow viewports\\n\\n#project-ui #type-fix #skill-grm-created\\n\\nFixes #42\nFILES:a.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug tag-footer "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug tag-footer "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_SUCCESS" "$out"
     assert_not_contains "NO_TAG_ARRAY" "$out"
@@ -438,7 +438,7 @@ BATCH_EOF
     local batch
     batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\nFILES:a.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --slug tag-config-disable "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --slug tag-config-disable "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_SUCCESS" "$out"
     assert_not_contains "NO_TAG_ARRAY" "$out"
@@ -451,7 +451,7 @@ BATCH_EOF
     local batch
     batch=$(printf 'COMMIT:Add file1 with rationale\\n\\n- Add file1 to support new feature X\nFILES:a.txt\n')
     local out
-    out="$(printf '%s' "$batch" | ( cd "$dir" && bash "$BATCH" --dry-run --slug dry-run-no-tag "$dir" ) 2>&1)" || true
+    out="$(printf '%s' "$batch" | ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$BATCH" --dry-run --slug dry-run-no-tag "$dir" ) 2>&1)" || true
 
     assert_contains "COMMIT_FAILED:NO_TAG_ARRAY" "$out"
     assert_contains "BATCH_COMMIT_DRY_RUN" "$out"

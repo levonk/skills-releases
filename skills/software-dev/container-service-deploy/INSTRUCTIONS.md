@@ -1434,6 +1434,23 @@ For deployment, the critical extensions:
 - **Security defaults are not optional** — non-root, cap_drop ALL,
   no-new-privileges, no Docker socket mounts
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Determine deployment context — local/dev → Branch A (docker-compose), production/multi-host → Branch B (Ansible) (Step 1)
+- [ ] Execute the selected branch following its reference file — Branch A: `references/docker-compose.md`, Branch B: `references/ansible-deploy.md` (Step 2)
+- [ ] Verify the deployed image manifest covers all target architectures before deploying to a mixed-architecture fleet (Step 3)
+- [ ] Apply security hardening — non-root execution, `cap_drop: ALL`, `no-new-privileges`, read-only filesystems where possible, no Docker socket mounts (Step 4)
+- [ ] Document platform limitations (Windows/WSL2 network, macOS OrbStack, arch-specific constraints) in the service README (Step 5)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the container-service-deploy run complete, verify every item

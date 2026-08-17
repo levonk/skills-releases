@@ -1582,6 +1582,24 @@ wording. See `references/obsidian-notes.md` for the full notes.md template.
 
 The logic is implemented in `index.mts` and executed via a shebang script. It leverages `youtube-transcript` and `mcp-sdk`.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Retrieve the transcript — prefer `yt-dlp`, fall back to the built-in MCP tool (Tool Selection)
+- [ ] Deduplicate the VTT transcript via `scripts/vid-transcripts.py` before further processing (VTT Post-Processing)
+- [ ] Scan the transcript for missing visual content references and attempt good-faith recovery (Missing Visual Content)
+- [ ] Inline description-linked assets (GitHub raw, Gists, Google Docs) and link-only the rest (Description Asset Inlining)
+- [ ] Generate the Obsidian note directory — `transcript.md` (TOON table) and `notes.md` (synthesis) (Obsidian Note Generation)
+- [ ] Produce the chat response summary — video name and ⚠️ warnings only, no speculated content
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the YouTube Content Analysis run complete, verify every item

@@ -20,7 +20,7 @@ set -euo pipefail
 DIR="${1:-.}"
 VERBOSE=""
 if [ "${2:-}" = "--verbose" ]; then
-  VERBOSE="--verbose"
+	VERBOSE="--verbose"
 fi
 
 # ── Build a combined pattern file for efficient single-pass grep ───────────
@@ -28,7 +28,7 @@ fi
 TMPFILE=$(mktemp)
 trap 'rm -f "$TMPFILE"' EXIT
 
-cat >> "$TMPFILE" <<'MAPPING'
+cat >>"$TMPFILE" <<'MAPPING'
 surrealdb|surrealdb|SurrealDB|surrealdb crate requires the SurrealDB server
 surrealdb-sdk|surrealdb|SurrealDB|surrealdb-sdk requires the SurrealDB server
 sqlx|postgresql|PostgreSQL|sqlx with postgres feature needs PostgreSQL
@@ -115,10 +115,10 @@ manifests=()
 
 # Rust: Cargo.toml (root + workspace members)
 if [ -f "$DIR/Cargo.toml" ]; then
-  manifests+=("$DIR/Cargo.toml")
-  for f in "$DIR"/crates/*/Cargo.toml "$DIR"/packages/*/Cargo.toml; do
-    [ -f "$f" ] && manifests+=("$f")
-  done
+	manifests+=("$DIR/Cargo.toml")
+	for f in "$DIR"/crates/*/Cargo.toml "$DIR"/packages/*/Cargo.toml; do
+		[ -f "$f" ] && manifests+=("$f")
+	done
 fi
 
 # Node.js: package.json
@@ -138,7 +138,7 @@ fi
 
 # .NET: .csproj, .fsproj, .vbproj, packages.config
 for f in "$DIR"/*.csproj "$DIR"/*.fsproj "$DIR"/*.vbproj "$DIR"/packages.config; do
-  [ -f "$f" ] && manifests+=("$f")
+	[ -f "$f" ] && manifests+=("$f")
 done
 
 # PHP: composer.json
@@ -148,8 +148,8 @@ done
 [ -f "$DIR/Gemfile" ] && manifests+=("$DIR/Gemfile")
 
 if [ ${#manifests[@]} -eq 0 ]; then
-  echo '{"runtime_deps":[],"devbox_packages":[],"devshell_packages":[],"manifests_scanned":""}'
-  exit 0
+	echo '{"runtime_deps":[],"devbox_packages":[],"devshell_packages":[],"manifests_scanned":""}'
+	exit 0
 fi
 
 # ── Single-pass: grep all manifests at once against all patterns ───────────
@@ -161,9 +161,9 @@ dep_names=$(cut -d'|' -f1 "$TMPFILE" | sort -u)
 matched=$(grep -whoFf <(echo "$dep_names") "${manifests[@]}" 2>/dev/null | sort -u || true)
 
 if [ -z "$matched" ]; then
-  manifests_str=$(echo "${manifests[@]}" | xargs -n1 | xargs)
-  echo "{\"runtime_deps\":[],\"devbox_packages\":[],\"devshell_packages\":[],\"manifests_scanned\":\"$manifests_str\"}"
-  exit 0
+	manifests_str=$(echo "${manifests[@]}" | xargs -n1 | xargs)
+	echo "{\"runtime_deps\":[],\"devbox_packages\":[],\"devshell_packages\":[],\"manifests_scanned\":\"$manifests_str\"}"
+	exit 0
 fi
 
 # ── Build JSON from matched deps ───────────────────────────────────────────
@@ -171,15 +171,15 @@ runtime_deps_json="[]"
 devbox_pkgs_json="[]"
 
 while IFS= read -r dep; do
-  [ -z "$dep" ] && continue
-  # Look up the mapping for this dep
-  line=$(grep "^${dep}|" "$TMPFILE" | head -1)
-  [ -z "$line" ] && continue
-  IFS='|' read -r _ nix_pkg service reason <<< "$line"
-  runtime_deps_json=$(echo "$runtime_deps_json" | jq \
-    --arg dep "$dep" --arg nix "$nix_pkg" --arg svc "$service" --arg rsn "$reason" \
-    '. + [{"crate": $dep, "nix_package": $nix, "service": $svc, "reason": $rsn}]')
-done <<< "$matched"
+	[ -z "$dep" ] && continue
+	# Look up the mapping for this dep
+	line=$(grep "^${dep}|" "$TMPFILE" | head -1)
+	[ -z "$line" ] && continue
+	IFS='|' read -r _ nix_pkg service reason <<<"$line"
+	runtime_deps_json=$(echo "$runtime_deps_json" | jq \
+		--arg dep "$dep" --arg nix "$nix_pkg" --arg svc "$service" --arg rsn "$reason" \
+		'. + [{"crate": $dep, "nix_package": $nix, "service": $svc, "reason": $rsn}]')
+done <<<"$matched"
 
 # Deduplicate and extract nix package names
 devbox_pkgs_json=$(echo "$runtime_deps_json" | jq '[.[].nix_package] | unique')
@@ -187,22 +187,22 @@ devbox_pkgs_json=$(echo "$runtime_deps_json" | jq '[.[].nix_package] | unique')
 manifests_str=$(echo "${manifests[@]}" | xargs -n1 | xargs)
 
 result=$(jq -n \
-  --argjson runtime_deps "$runtime_deps_json" \
-  --argjson devbox_packages "$devbox_pkgs_json" \
-  --argjson devshell_packages "$devbox_pkgs_json" \
-  --arg manifests "$manifests_str" \
-  '{runtime_deps: $runtime_deps, devbox_packages: $devbox_packages, devshell_packages: $devshell_packages, manifests_scanned: $manifests}')
+	--argjson runtime_deps "$runtime_deps_json" \
+	--argjson devbox_packages "$devbox_pkgs_json" \
+	--argjson devshell_packages "$devbox_pkgs_json" \
+	--arg manifests "$manifests_str" \
+	'{runtime_deps: $runtime_deps, devbox_packages: $devbox_packages, devshell_packages: $devshell_packages, manifests_scanned: $manifests}')
 
 if [ -n "$VERBOSE" ]; then
-  echo "$result" | jq .
-  dep_count=$(echo "$result" | jq '.runtime_deps | length')
-  if [ "$dep_count" -gt 0 ]; then
-    echo "[detect-runtime-deps] Found $dep_count runtime service dependency(ies)."
-    echo "[detect-runtime-deps] Add these nix packages to devbox.json and devShells:"
-    echo "$result" | jq -r '.devbox_packages[]?'
-  else
-    echo "[detect-runtime-deps] No runtime service dependencies detected."
-  fi
+	echo "$result" | jq .
+	dep_count=$(echo "$result" | jq '.runtime_deps | length')
+	if [ "$dep_count" -gt 0 ]; then
+		echo "[detect-runtime-deps] Found $dep_count runtime service dependency(ies)."
+		echo "[detect-runtime-deps] Add these nix packages to devbox.json and devShells:"
+		echo "$result" | jq -r '.devbox_packages[]?'
+	else
+		echo "[detect-runtime-deps] No runtime service dependencies detected."
+	fi
 else
-  echo "$result" | jq -c .
+	echo "$result" | jq -c .
 fi

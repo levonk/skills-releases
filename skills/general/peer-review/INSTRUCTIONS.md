@@ -1487,6 +1487,24 @@ The skill produces two artifacts:
 - [document-review-pattern.md](references/document-review-pattern.md) — blind
   multi-reviewer pattern for policy/doc drafts
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Collect responses — gather the N independent outputs to the same question and strip self-referential author names (Step 1)
+- [ ] Anonymize — run `scripts/anonymize.py` to produce the randomized A–N bundle and mapping key; keep the mapping secret from reviewers (Step 2)
+- [ ] Spawn reviewers — dispatch one reviewer per response (N reviewers), each answering the three fixed questions on the anonymized bundle (Step 3)
+- [ ] De-anonymize for synthesis — reveal the A–N mapping to the synthesizer only (Step 4)
+- [ ] Apply domain pattern (optional) — follow the matching code/design/document review pattern in `references/` if applicable (Step 5)
+- [ ] Save artifacts — write the anonymized bundle and review transcript files for reproducibility (Output)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the peer-review run complete, verify every item below.

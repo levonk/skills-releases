@@ -1958,6 +1958,26 @@ The skill produces:
   matrix output format with meta-features, category features, identical-value
   rows, and recommendation section
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Gather the project list from the user (GitHub repos, local paths, git URLs, or mixed) — discover candidates if only a category name is provided (Step 1)
+- [ ] Gather metadata — run `gather_github_metadata.py` for GitHub repos and `gather_local_metadata.py` for local paths; report failed lookups to the user (Step 2)
+- [ ] Classify all projects into the same category — name the category, confirm membership, identify sub-categories, surface mismatches (Step 3)
+- [ ] Map category coverage — define dimensions, map each project's coverage with the 5-level scale (🏆/✅/➖/⚠️/❌), identify gaps and overlaps (Step 4)
+- [ ] Compare architecture — identify patterns, compare approaches, diagram only if non-trivial, summarize implications (Step 5)
+- [ ] Assess maintainability — combine activity, health, and maturity signals into a rating per project using the scoring rubric (Step 6)
+- [ ] Emit the feature matrix — build the table with meta-features, category-specific features, identical-value rows, notes, and a use-case-ordered recommendation (Step 7)
+- [ ] Save the metadata JSON file for reproducibility (Output Artifacts)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the project-comparison run complete, verify every item below.

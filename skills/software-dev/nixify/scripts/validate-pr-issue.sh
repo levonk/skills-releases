@@ -17,8 +17,11 @@ NUM="${3:?Usage: validate-pr-issue.sh <owner>/<repo> (pr|issue) <number>}"
 VERBOSE="${4:-}"
 
 case "$KIND" in
-  pr|issue) ;;
-  *) echo "kind must be 'pr' or 'issue', got '$KIND'" >&2; exit 2 ;;
+pr | issue) ;;
+*)
+	echo "kind must be 'pr' or 'issue', got '$KIND'" >&2
+	exit 2
+	;;
 esac
 
 BODY="$(gh "$KIND" view "$NUM" --repo "$REPO" --json body --jq '.body')"
@@ -29,32 +32,31 @@ FAIL=0
 # JSON-decoded body, so any remaining two-char "\n" sequence is corruption.
 LITERAL_NL_COUNT=$(printf '%s' "$BODY" | grep -c '\\n' || true)
 if [ "$LITERAL_NL_COUNT" -gt 0 ]; then
-  echo "FAIL: body contains $LITERAL_NL_COUNT literal '\\n' sequence(s) — newlines were escaped, not real"
-  FAIL=1
+	echo "FAIL: body contains $LITERAL_NL_COUNT literal '\\n' sequence(s) — newlines were escaped, not real"
+	FAIL=1
 fi
 
 # 2. unsubstituted placeholders — agent skipped the text-replacement step.
 if printf '%s' "$BODY" | grep -qE '\$(UPSTREAM_OWNER|UPSTREAM_REPO|CURRENT_USER)\b'; then
-  echo "FAIL: body contains unsubstituted \$UPSTREAM_* / \$CURRENT_USER placeholder(s)"
-  FAIL=1
+	echo "FAIL: body contains unsubstituted \$UPSTREAM_* / \$CURRENT_USER placeholder(s)"
+	FAIL=1
 fi
 
 # 3. stripped code spans — symptom: a markdown list bullet or sentence ends
 # with " a " or " with " where a `code span` should be. Hard to detect perfectly,
 # so we flag the known template phrases that lose their code span.
 if printf '%s' "$BODY" | grep -qE '(Adds a |Adds ) (so the|for reproducible|wrapping the)'; then
-  echo "FAIL: body has a stripped code span (e.g. 'Adds a  so the' — backtick span was command-substituted to empty)"
-  FAIL=1
+	echo "FAIL: body has a stripped code span (e.g. 'Adds a  so the' — backtick span was command-substituted to empty)"
+	FAIL=1
 fi
 
 if [ "$FAIL" -eq 0 ]; then
-  echo "ok: $KIND #$NUM body is well-formed"
-  exit 0
+	echo "ok: $KIND #$NUM body is well-formed"
+	exit 0
 fi
 
 if [ "$VERBOSE" = "--verbose" ]; then
-  echo "--- body ---"
-  printf '%s\n' "$BODY"
+	echo "--- body ---"
+	printf '%s\n' "$BODY"
 fi
 exit 1
-

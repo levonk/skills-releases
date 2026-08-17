@@ -15,7 +15,6 @@ tags: [{hierarchal slash separated tags list. i.e. ["doc/architecture/adr", "tec
 related-to: [{slugs list}]
 
 
-
 agent: "" # Agent name
 # Fill these fields before first use. Keep them short and specific.
 description: ""  # One-sentence purpose of this agent
@@ -67,7 +66,6 @@ tags: ["ai/agent"]
 # {Title}
 
 ---
-
 
 
 

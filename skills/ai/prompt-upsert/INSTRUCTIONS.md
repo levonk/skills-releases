@@ -2546,6 +2546,32 @@ skill. Signs a prompt needs conversion:
 - Needing evals to test triggering accuracy
 - Reference material growing too large for a single prompt file
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Decide mode: check whether the target prompt file exists (Mode A: Create vs Mode C: Update)
+- [ ] Step 0 (Mode A) / Research (Mode C): Run the research phase — search local `internal-docs/prompts/`, templates, skills.sh / GitHub
+- [ ] Mode A Step 1: Scaffold the prompt via `scripts/init_prompt.py` (correct naming convention + companion README)
+- [ ] Mode A Step 2: Apply the Levonk methodology — DECONSTRUCT → DIAGNOSE → DEVELOP → DELIVER
+- [ ] Mode A Step 3: Follow the construction checklist (context, instructions, steps, file/output, success/verification block)
+- [ ] Mode A Step 4: Use the structured skeleton and task-type patterns with conditional includes
+- [ ] Mode A Step 5: Create the companion README in `internal-docs/prompts/doc/`
+- [ ] Mode A Step 6: Set `date.last-used` in the frontmatter
+- [ ] Mode C Step 1: Read the existing prompt fully (frontmatter, body, companion README)
+- [ ] Mode C Step 2: Audit against the prompt guidelines checklist (frontmatter, naming, content quality, patterns, README, self-containment)
+- [ ] Mode C Step 3: Propose changes (Critical / Important / Nice to have) with before/after — do not apply yet
+- [ ] Mode C Step 4: Ask for user confirmation before applying
+- [ ] Mode C Step 5: Apply approved changes as separate commits
+- [ ] Mode C Step 6: Update `date.knowledge-basis` and `date.last-used`
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the prompt-upsert run complete, verify every item below.

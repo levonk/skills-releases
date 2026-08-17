@@ -9,259 +9,260 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../common/config-functions.sh
 if [[ -f "$SCRIPT_DIR/../common/config-functions.sh" ]]; then
-    source "$SCRIPT_DIR/../common/config-functions.sh"
+	source "$SCRIPT_DIR/../common/config-functions.sh"
 fi
 
 # Configure Java project
 configure_java_project() {
-    local project_path="$1"
-    local mode="${2:-adopt}"     # adopt | standardize
-    local app_type="${3:-unknown}" # web | cli | api | library
-    local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library
+	local project_path="$1"
+	local mode="${2:-adopt}"           # adopt | standardize
+	local app_type="${3:-unknown}"     # web | cli | api | library
+	local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library
 
-    log_info "Configuring Java project (mode: $mode, app_type: $app_type)"
+	log_info "Configuring Java project (mode: $mode, app_type: $app_type)"
 
-    # Handle Maven or Gradle
-    if [[ -f "$project_path/pom.xml" ]]; then
-        configure_pom_xml "$project_path" "$mode" "$app_type" "$project_type"
-    elif [[ -f "$project_path/build.gradle" ]] || [[ -f "$project_path/build.gradle.kts" ]]; then
-        configure_gradle_build "$project_path" "$mode" "$app_type" "$project_type"
-    elif [[ "$mode" == "standardize" ]]; then
-        create_maven_project "$project_path" "$mode" "$app_type" "$project_type"
-    fi
+	# Handle Maven or Gradle
+	if [[ -f "$project_path/pom.xml" ]]; then
+		configure_pom_xml "$project_path" "$mode" "$app_type" "$project_type"
+	elif [[ -f "$project_path/build.gradle" ]] || [[ -f "$project_path/build.gradle.kts" ]]; then
+		configure_gradle_build "$project_path" "$mode" "$app_type" "$project_type"
+	elif [[ "$mode" == "standardize" ]]; then
+		create_maven_project "$project_path" "$mode" "$app_type" "$project_type"
+	fi
 
-    # Handle Java code quality configuration
-    configure_checkstyle_config "$project_path" "$mode"
+	# Handle Java code quality configuration
+	configure_checkstyle_config "$project_path" "$mode"
 
-    # Handle Java testing configuration
-    configure_java_testing_config "$project_path" "$mode"
+	# Handle Java testing configuration
+	configure_java_testing_config "$project_path" "$mode"
 
-    # Handle framework-specific configs
-    configure_java_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
+	# Handle framework-specific configs
+	configure_java_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
 }
 
 # Configure pom.xml (Maven)
 configure_pom_xml() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    log_info "Configuring pom.xml for Java project"
+	log_info "Configuring pom.xml for Java project"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Standardize mode - comprehensive additions
-        add_standardize_maven_dependencies "$project_path" "$app_type" "$project_type"
-        add_standardize_maven_plugins "$project_path" "$app_type" "$project_type"
-    else
-        # Adopt mode - minimal essential additions
-        add_adopt_maven_dependencies "$project_path" "$app_type" "$project_type"
-    fi
+	if [[ "$mode" == "standardize" ]]; then
+		# Standardize mode - comprehensive additions
+		add_standardize_maven_dependencies "$project_path" "$app_type" "$project_type"
+		add_standardize_maven_plugins "$project_path" "$app_type" "$project_type"
+	else
+		# Adopt mode - minimal essential additions
+		add_adopt_maven_dependencies "$project_path" "$app_type" "$project_type"
+	fi
 }
 
 # Add standardize mode dependencies to pom.xml
 add_standardize_maven_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    # Apply surgical changes using yq-go if available
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize dependencies to pom.xml using yq-go"
-        
-        # Base dependencies for all Java projects
-        # yq-go eval '.dependencies += [{"groupId": "org.junit.jupiter", "artifactId": "junit-jupiter", "version": "5.10.0", "scope": "test"}]' "$project_path/pom.xml" -i
-        
-        # App-type specific dependencies
-        case "$app_type" in
-            "web")
-                # yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-                if [[ "$project_type" == *"frontend-web"* ]]; then
-                    # yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-thymeleaf", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-                fi
-                ;;
-            "cli")
-                # yq-go eval '.dependencies += [{"groupId": "info.picocli", "artifactId": "picocli", "version": "4.7.0"}]' "$project_path/pom.xml" -i
-                ;;
-            "api")
-                # yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-                # yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-data-jpa", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-                ;;
-        esac
-    else
-        log_warn "yq-go not available, skipping pom.xml dependency updates"
-    fi
+	# Apply surgical changes using yq-go if available
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize dependencies to pom.xml using yq-go"
+
+		# Base dependencies for all Java projects
+		# yq-go eval '.dependencies += [{"groupId": "org.junit.jupiter", "artifactId": "junit-jupiter", "version": "5.10.0", "scope": "test"}]' "$project_path/pom.xml" -i
+
+		# App-type specific dependencies
+		case "$app_type" in
+		"web")
+			# yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+			if [[ "$project_type" == *"frontend-web"* ]]; then
+				# yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-thymeleaf", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+				true
+			fi
+			;;
+		"cli")
+			# yq-go eval '.dependencies += [{"groupId": "info.picocli", "artifactId": "picocli", "version": "4.7.0"}]' "$project_path/pom.xml" -i
+			;;
+		"api")
+			# yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+			# yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-data-jpa", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+			;;
+		esac
+	else
+		log_warn "yq-go not available, skipping pom.xml dependency updates"
+	fi
 }
 
 # Add adopt mode dependencies to pom.xml
 add_adopt_maven_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding adopt dependencies to pom.xml using yq-go"
-        
-        case "$app_type" in
-            "web")
-                # yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-                ;;
-            "cli")
-                # yq-go eval '.dependencies += [{"groupId": "info.picocli", "artifactId": "picocli", "version": "4.7.0"}]' "$project_path/pom.xml" -i
-                ;;
-            "api")
-                # yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-                ;;
-        esac
-    else
-        log_warn "yq-go not available or no dependencies to add"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding adopt dependencies to pom.xml using yq-go"
+
+		case "$app_type" in
+		"web")
+			# yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+			;;
+		"cli")
+			# yq-go eval '.dependencies += [{"groupId": "info.picocli", "artifactId": "picocli", "version": "4.7.0"}]' "$project_path/pom.xml" -i
+			;;
+		"api")
+			# yq-go eval '.dependencies += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-starter-web", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+			;;
+		esac
+	else
+		log_warn "yq-go not available or no dependencies to add"
+	fi
 }
 
 # Add standardize mode plugins to pom.xml
 add_standardize_maven_plugins() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize plugins to pom.xml using yq-go"
-        
-        # Add standard plugins
-        # yq-go eval '.build.plugins += [{"groupId": "org.apache.maven.plugins", "artifactId": "maven-compiler-plugin", "version": "3.11.0", "configuration": {"source": "17", "target": "17"}}]' "$project_path/pom.xml" -i
-        # yq-go eval '.build.plugins += [{"groupId": "org.apache.maven.plugins", "artifactId": "maven-surefire-plugin", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-        # yq-go eval '.build.plugins += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-maven-plugin", "version": "3.1.0"}]' "$project_path/pom.xml" -i
-    else
-        log_warn "yq-go not available, skipping pom.xml plugin updates"
-    fi
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize plugins to pom.xml using yq-go"
+
+		# Add standard plugins
+		# yq-go eval '.build.plugins += [{"groupId": "org.apache.maven.plugins", "artifactId": "maven-compiler-plugin", "version": "3.11.0", "configuration": {"source": "17", "target": "17"}}]' "$project_path/pom.xml" -i
+		# yq-go eval '.build.plugins += [{"groupId": "org.apache.maven.plugins", "artifactId": "maven-surefire-plugin", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+		# yq-go eval '.build.plugins += [{"groupId": "org.springframework.boot", "artifactId": "spring-boot-maven-plugin", "version": "3.1.0"}]' "$project_path/pom.xml" -i
+	else
+		log_warn "yq-go not available, skipping pom.xml plugin updates"
+	fi
 }
 
 # Configure Gradle build
 configure_gradle_build() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    log_info "Configuring Gradle build for Java project"
+	log_info "Configuring Gradle build for Java project"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Standardize mode - comprehensive additions
-        add_standardize_gradle_dependencies "$project_path" "$app_type" "$project_type"
-        add_standardize_gradle_plugins "$project_path" "$app_type" "$project_type"
-    else
-        # Adopt mode - minimal essential additions
-        add_adopt_gradle_dependencies "$project_path" "$app_type" "$project_type"
-    fi
+	if [[ "$mode" == "standardize" ]]; then
+		# Standardize mode - comprehensive additions
+		add_standardize_gradle_dependencies "$project_path" "$app_type" "$project_type"
+		add_standardize_gradle_plugins "$project_path" "$app_type" "$project_type"
+	else
+		# Adopt mode - minimal essential additions
+		add_adopt_gradle_dependencies "$project_path" "$app_type" "$project_type"
+	fi
 }
 
 # Add standardize mode dependencies to build.gradle
 add_standardize_gradle_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local build_file
-    if [[ -f "$project_path/build.gradle.kts" ]]; then
-        build_file="build.gradle.kts"
-    else
-        build_file="build.gradle"
-    fi
+	local build_file
+	if [[ -f "$project_path/build.gradle.kts" ]]; then
+		build_file="build.gradle.kts"
+	else
+		build_file="build.gradle"
+	fi
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize dependencies to $build_file using yq-go"
-        
-        # Base dependencies
-        # yq-go eval '.dependencies += {testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"}' "$project_path/$build_file" -i
-        
-        # App-type specific dependencies
-        case "$app_type" in
-            "web")
-                # yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
-                ;;
-            "cli")
-                # yq-go eval '.dependencies += {implementation "info.picocli:picocli:4.7.0"}' "$project_path/$build_file" -i
-                ;;
-            "api")
-                # yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
-                ;;
-        esac
-    else
-        log_warn "yq-go not available, skipping Gradle dependency updates"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize dependencies to $build_file using yq-go"
+
+		# Base dependencies
+		# yq-go eval '.dependencies += {testImplementation "org.junit.jupiter:junit-jupiter:5.10.0"}' "$project_path/$build_file" -i
+
+		# App-type specific dependencies
+		case "$app_type" in
+		"web")
+			# yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
+			;;
+		"cli")
+			# yq-go eval '.dependencies += {implementation "info.picocli:picocli:4.7.0"}' "$project_path/$build_file" -i
+			;;
+		"api")
+			# yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
+			;;
+		esac
+	else
+		log_warn "yq-go not available, skipping Gradle dependency updates"
+	fi
 }
 
 # Add adopt mode dependencies to build.gradle
 add_adopt_gradle_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local build_file
-    if [[ -f "$project_path/build.gradle.kts" ]]; then
-        build_file="build.gradle.kts"
-    else
-        build_file="build.gradle"
-    fi
+	local build_file
+	if [[ -f "$project_path/build.gradle.kts" ]]; then
+		build_file="build.gradle.kts"
+	else
+		build_file="build.gradle"
+	fi
 
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding adopt dependencies to $build_file using yq-go"
-        
-        case "$app_type" in
-            "web")
-                # yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
-                ;;
-            "cli")
-                # yq-go eval '.dependencies += {implementation "info.picocli:picocli:4.7.0"}' "$project_path/$build_file" -i
-                ;;
-            "api")
-                # yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
-                ;;
-        esac
-    else
-        log_warn "yq-go not available or no dependencies to add"
-    fi
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding adopt dependencies to $build_file using yq-go"
+
+		case "$app_type" in
+		"web")
+			# yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
+			;;
+		"cli")
+			# yq-go eval '.dependencies += {implementation "info.picocli:picocli:4.7.0"}' "$project_path/$build_file" -i
+			;;
+		"api")
+			# yq-go eval '.dependencies += {implementation "org.springframework.boot:spring-boot-starter-web:3.1.0"}' "$project_path/$build_file" -i
+			;;
+		esac
+	else
+		log_warn "yq-go not available or no dependencies to add"
+	fi
 }
 
 # Add standardize mode plugins to build.gradle
 add_standardize_gradle_plugins() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local build_file
-    if [[ -f "$project_path/build.gradle.kts" ]]; then
-        build_file="build.gradle.kts"
-    else
-        build_file="build.gradle"
-    fi
+	local build_file
+	if [[ -f "$project_path/build.gradle.kts" ]]; then
+		build_file="build.gradle.kts"
+	else
+		build_file="build.gradle"
+	fi
 
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize plugins to $build_file using yq-go"
-        
-        # Add standard plugins
-        # yq-go eval '.plugins += {id "java", version "8.0.0"}' "$project_path/$build_file" -i
-        # yq-go eval '.plugins += {id "org.springframework.boot", version "3.1.0"}' "$project_path/$build_file" -i
-    else
-        log_warn "yq-go not available, skipping Gradle plugin updates"
-    fi
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize plugins to $build_file using yq-go"
+
+		# Add standard plugins
+		# yq-go eval '.plugins += {id "java", version "8.0.0"}' "$project_path/$build_file" -i
+		# yq-go eval '.plugins += {id "org.springframework.boot", version "3.1.0"}' "$project_path/$build_file" -i
+	else
+		log_warn "yq-go not available, skipping Gradle plugin updates"
+	fi
 }
 
 # Create Maven project
 create_maven_project() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/pom.xml" ]]; then
-        local group_id="com.example"
-        local artifact_id
-        artifact_id=$(basename "$project_path")
-        
-        cat > "$project_path/pom.xml" << EOF
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/pom.xml" ]]; then
+		local group_id="com.example"
+		local artifact_id
+		artifact_id=$(basename "$project_path")
+
+		cat >"$project_path/pom.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -289,27 +290,27 @@ create_maven_project() {
     <dependencies>
 EOF
 
-        # Add app-type specific dependencies
-        case "$app_type" in
-            "web")
-                cat >> "$project_path/pom.xml" << 'EOF'
+		# Add app-type specific dependencies
+		case "$app_type" in
+		"web")
+			cat >>"$project_path/pom.xml" <<'EOF'
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 EOF
-                ;;
-            "cli")
-                cat >> "$project_path/pom.xml" << 'EOF'
+			;;
+		"cli")
+			cat >>"$project_path/pom.xml" <<'EOF'
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.7.0</version>
         </dependency>
 EOF
-                ;;
-            "api")
-                cat >> "$project_path/pom.xml" << 'EOF'
+			;;
+		"api")
+			cat >>"$project_path/pom.xml" <<'EOF'
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -319,11 +320,11 @@ EOF
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 EOF
-                ;;
-        esac
+			;;
+		esac
 
-        # Add test dependencies
-        cat >> "$project_path/pom.xml" << 'EOF'
+		# Add test dependencies
+		cat >>"$project_path/pom.xml" <<'EOF'
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -342,17 +343,17 @@ EOF
 </project>
 EOF
 
-        log_info "✓ Created pom.xml"
-    fi
+		log_info "OK: Created pom.xml"
+	fi
 }
 
 # Configure Checkstyle
 configure_checkstyle_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/checkstyle.xml" ]]; then
-        cat > "$project_path/checkstyle.xml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/checkstyle.xml" ]]; then
+		cat >"$project_path/checkstyle.xml" <<'EOF'
 <?xml version="1.0"?>
 <!DOCTYPE module PUBLIC
     "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
@@ -417,21 +418,21 @@ configure_checkstyle_config() {
     </module>
 </module>
 EOF
-        log_info "✓ Created checkstyle.xml"
-    fi
+		log_info "OK: Created checkstyle.xml"
+	fi
 }
 
 # Configure Java testing
 configure_java_testing_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create test configuration
-        mkdir -p "$project_path/src/test/java/$(basename "$project_path | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')"
-        
-        if [[ ! -f "$project_path/src/test/java/ExampleTest.java" ]]; then
-            cat > "$project_path/src/test/java/ExampleTest.java" << 'EOF'
+	if [[ "$mode" == "standardize" ]]; then
+		# Create test configuration
+		mkdir -p "$project_path/src/test/java/$(basename "$project_path" | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')"
+
+		if [[ ! -f "$project_path/src/test/java/ExampleTest.java" ]]; then
+			cat >"$project_path/src/test/java/ExampleTest.java" <<'EOF'
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -444,45 +445,45 @@ class ExampleTest {
     }
 }
 EOF
-            log_info "✓ Created ExampleTest.java"
-        fi
-    fi
+			log_info "OK: Created ExampleTest.java"
+		fi
+	fi
 }
 
 # Configure Java framework-specific configurations
 configure_java_framework_configs() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    # Spring Boot configuration
-    if [[ "$app_type" == "web" ]] || [[ "$app_type" == "api" ]] || [[ "$project_type" == *"api-service"* ]]; then
-        configure_spring_boot_config "$project_path" "$mode" "$app_type" "$project_type"
-    fi
+	# Spring Boot configuration
+	if [[ "$app_type" == "web" ]] || [[ "$app_type" == "api" ]] || [[ "$project_type" == *"api-service"* ]]; then
+		configure_spring_boot_config "$project_path" "$mode" "$app_type" "$project_type"
+	fi
 
-    # Picocli configuration
-    if [[ "$app_type" == "cli" ]] || [[ "$project_type" == *"cli-tool"* ]]; then
-        configure_picocli_config "$project_path" "$mode"
-    fi
+	# Picocli configuration
+	if [[ "$app_type" == "cli" ]] || [[ "$project_type" == *"cli-tool"* ]]; then
+		configure_picocli_config "$project_path" "$mode"
+	fi
 }
 
 # Configure Spring Boot
 configure_spring_boot_config() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create basic Spring Boot project structure
-        mkdir -p "$project_path/src/main/java/$(basename "$project_path | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')"
-        
-        local package_name
-        package_name=$(basename "$project_path | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')
-        
-        if [[ ! -f "$project_path/src/main/java/$package_name/Application.java" ]]; then
-            cat > "$project_path/src/main/java/$package_name/Application.java" << EOF
+	if [[ "$mode" == "standardize" ]]; then
+		# Create basic Spring Boot project structure
+		mkdir -p "$project_path/src/main/java/$(basename "$project_path" | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')"
+
+		local package_name
+		package_name=$(basename "$project_path" | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')
+
+		if [[ ! -f "$project_path/src/main/java/$package_name/Application.java" ]]; then
+			cat >"$project_path/src/main/java/$package_name/Application.java" <<EOF
 package $package_name;
 
 import org.springframework.boot.SpringApplication;
@@ -495,12 +496,12 @@ public class Application {
     }
 }
 EOF
-            log_info "✓ Created Application.java"
-        fi
+			log_info "OK: Created Application.java"
+		fi
 
-        if [[ ! -f "$project_path/src/main/java/$package_name/controller/HealthController.java" ]]; then
-            mkdir -p "$project_path/src/main/java/$package_name/controller"
-            cat > "$project_path/src/main/java/$package_name/controller/HealthController.java" << EOF
+		if [[ ! -f "$project_path/src/main/java/$package_name/controller/HealthController.java" ]]; then
+			mkdir -p "$project_path/src/main/java/$package_name/controller"
+			cat >"$project_path/src/main/java/$package_name/controller/HealthController.java" <<EOF
 package $package_name.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -520,13 +521,13 @@ public class HealthController {
     }
 }
 EOF
-            log_info "✓ Created HealthController.java"
-        fi
+			log_info "OK: Created HealthController.java"
+		fi
 
-        # Create application.properties
-        if [[ ! -f "$project_path/src/main/resources/application.properties" ]]; then
-            mkdir -p "$project_path/src/main/resources"
-            cat > "$project_path/src/main/resources/application.properties" << 'EOF'
+		# Create application.properties
+		if [[ ! -f "$project_path/src/main/resources/application.properties" ]]; then
+			mkdir -p "$project_path/src/main/resources"
+			cat >"$project_path/src/main/resources/application.properties" <<'EOF'
 # Server Configuration
 server.port=8080
 
@@ -537,25 +538,25 @@ spring.application.name=java-application
 logging.level.root=INFO
 logging.level.$package_name=DEBUG
 EOF
-            log_info "✓ Created application.properties"
-        fi
-    fi
+			log_info "OK: Created application.properties"
+		fi
+	fi
 }
 
 # Configure Picocli
 configure_picocli_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create basic Picocli project structure
-        mkdir -p "$project_path/src/main/java/$(basename "$project_path | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')"
-        
-        local package_name
-        package_name=$(basename "$project_path | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')
-        
-        if [[ ! -f "$project_path/src/main/java/$package_name/CliApp.java" ]]; then
-            cat > "$project_path/src/main/java/$package_name/CliApp.java" << EOF
+	if [[ "$mode" == "standardize" ]]; then
+		# Create basic Picocli project structure
+		mkdir -p "$project_path/src/main/java/$(basename "$project_path" | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')"
+
+		local package_name
+		package_name=$(basename "$project_path" | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]' | sed 's/^\(.\)/\U\1/')
+
+		if [[ ! -f "$project_path/src/main/java/$package_name/CliApp.java" ]]; then
+			cat >"$project_path/src/main/java/$package_name/CliApp.java" <<EOF
 package $package_name;
 
 import picocli.CommandLine;
@@ -587,9 +588,9 @@ public class CliApp implements Runnable {
     }
 }
 EOF
-            log_info "✓ Created CliApp.java"
-        fi
-    fi
+			log_info "OK: Created CliApp.java"
+		fi
+	fi
 }
 
 # Export functions for use by adopt-project.sh

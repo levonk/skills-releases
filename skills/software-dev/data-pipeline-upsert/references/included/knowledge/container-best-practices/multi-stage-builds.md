@@ -73,6 +73,76 @@ Result: 272 MB → **2.3 MB** (with `scratch`) or **11 MB** (with a minimal base
 > ground: still tiny, no shell, no package manager, but ships useful runtime
 > basics (CA certs, user setup) that you occasionally need.
 
+### Non-root user in the final stage
+
+The final stage should run as a non-root user. A container escape gives
+the attacker a root-equivalent process on the host syscall surface; with a
+bind-mounted host directory, root-in-container is root on that path. Create
+the user in the final stage (not the builder — the builder is discarded)
+and set `USER` before the entrypoint:
+
+```dockerfile
+# Final stage — only the binary, running as non-root
+FROM distroless
+COPY --from=builder /src/app /app
+USER nonroot:nonroot
+CMD ["/app"]
+```
+
+For images that need a shell (slim/alpine bases), create the user
+explicitly. Use a fixed UID/GID (e.g. 1001) for reproducibility and to
+avoid conflicts with host UIDs:
+
+```dockerfile
+FROM node:22-slim
+RUN groupadd -r app && useradd -r -g app -u 1001 app
+COPY --from=builder --chown=app:app /src/app /app
+USER 1001
+CMD ["/app"]
+```
+
+Use `COPY --chown` to set ownership at copy time rather than a separate
+`RUN chown -R` layer — the latter duplicates every inode into a new image
+layer, doubling the image size. If the user needs writable directories
+(cache, state), create and chown them in the same `RUN` that creates the
+user, before `USER`.
+
+See [container-runtime-hardening](/container-runtime-hardening.md) for the
+full runtime hardening stack (read-only rootfs, cap-drop, no-new-privileges)
+that complements a non-root `USER`.
+
+### OCI labels for registry metadata
+
+Attach OCI image labels to the final stage so container registries (GHCR,
+Docker Hub, Quay) display source, description, and license metadata without
+requiring a separate README or manual annotation:
+
+```dockerfile
+FROM node:22-slim AS production
+LABEL org.opencontainers.image.source="https://github.com/<org>/<repo>"
+LABEL org.opencontainers.image.description="One-line description of the image"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.version="${VERSION}"
+```
+
+Labels belong on the **final** stage, not the builder — the builder is
+discarded and its labels never reach the registry. If the version is
+dynamic, inject it via a build arg (`ARG VERSION`) and reference it in the
+label. For deterministic versioning derived from Git state, see
+[image-versioning](/image-versioning.md).
+
+The full OCI label set is defined in the
+[OpenContainers Image Spec](https://github.com/opencontainers/image-spec/blob/main/annotations.md).
+The high-value labels are:
+
+| Label | Purpose |
+|-------|---------|
+| `org.opencontainers.image.source` | URL to the source repo — registries link back |
+| `org.opencontainers.image.description` | One-line description shown in registry UI |
+| `org.opencontainers.image.licenses` | SPDX license identifier |
+| `org.opencontainers.image.version` | Image version (SemVer or Git-derived) |
+| `org.opencontainers.image.revision` | Full Git SHA for traceability |
+
 ## When NOT to use multi-stage
 
 - Interpreted languages (Python, Node, Ruby) where the runtime **is** the

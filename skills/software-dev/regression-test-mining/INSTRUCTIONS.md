@@ -1508,6 +1508,25 @@ See [Input Modes](references/input-modes.md) for the per-mode workflow.
 - [Input Modes](references/input-modes.md) — full-history, single-commit,
   and commit-list input modes
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Step 1 — Mine bug-fix commits via `scripts/mine-bug-fixes.sh` (conventional `fix:`, trailers, reverts, optional blame)
+- [ ] Step 2 — Classify each mined commit as COVERED, GAP, UNREPRODUCIBLE, or COSMETIC
+- [ ] Step 3 — Inventory the GAP commits (SHA, files/functions, bug description, test framework, proposed test name)
+- [ ] Step 4 — Detect the project's test framework via `project-detection`
+- [ ] Step 5 — Dispatch `unit-test-writing` for each gap to author a SHA-referenced regression test
+- [ ] Step 6 — Verify new tests pass against fixed code and (where reproducible) fail against the buggy parent
+- [ ] Step 7 — Report commits mined, gaps found, tests added, and tests deferred with rationale
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the regression-test-mining run complete, verify every item

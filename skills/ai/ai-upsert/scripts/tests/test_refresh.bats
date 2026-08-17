@@ -67,6 +67,18 @@ print_body() {
     exit 1
 }
 
+# Update last-used in SKILL.md frontmatter to today (deterministic fix for
+# the last-used ordering bug — skills update overwrites SKILL.md, so the
+# AI-side self-update-requirement would be destroyed if it fired before refresh)
+update_last_used() {
+    local skill_md="$SKILL_DIR/SKILL.md"
+    if [ -f "$skill_md" ] && command -v sed >/dev/null 2>&1; then
+        local tmp_file
+        tmp_file="$(mktemp "${skill_md}.XXXXXX")" || return 0
+        sed "s/^\([[:space:]]*last-used:[[:space:]]*\)\"[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\"/\1\"$TODAY\"/" "$skill_md" > "$tmp_file" && mv "$tmp_file" "$skill_md"
+    fi
+}
+
 # Skip: SKIP_SKILL_REFRESH=1
 if [ "${SKIP_SKILL_REFRESH:-0}" = "1" ]; then print_body; fi
 
@@ -88,12 +100,14 @@ fi
 if [ -n "${NONO_SESSION:-}" ]; then
     # Already sandboxed — skip sandbox, run "update" (mocked as true)
     echo "$TODAY" > "$DATE_FILE" 2>/dev/null || true
+    update_last_used
     print_body
 fi
 
 # Normal path: would run pnpm dlx skills update here.
 # In the stub, we just write the cache and print the body.
 echo "$TODAY" > "$DATE_FILE" 2>/dev/null || true
+update_last_used
 print_body
 STUB
     chmod +x "$dir/scripts/refresh.sh"
@@ -101,6 +115,18 @@ STUB
     # Create INSTRUCTIONS.md
     echo "# Test Skill Instructions" > "$dir/INSTRUCTIONS.md"
     echo "This is the skill body." >> "$dir/INSTRUCTIONS.md"
+
+    # Create SKILL.md with last-used in frontmatter (for last-used update tests)
+    cat > "$dir/SKILL.md" << 'SKILLMD'
+---
+name: test-skill
+date:
+  created: "2026-01-01"
+  knowledge-basis: "2026-06-01"
+  last-used: "2026-01-01"
+---
+# Test Skill
+SKILLMD
 
     # Create nono-profile.json (real structure matching the template)
     cat > "$dir/references/nono-profile.json" << 'JSON'
@@ -131,6 +157,11 @@ teardown() {
     rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/cache-miss" 2>/dev/null || true
     rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/nono-session" 2>/dev/null || true
     rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/xdg-cache" 2>/dev/null || true
+    rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/last-used-update" 2>/dev/null || true
+    rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/last-used-skip" 2>/dev/null || true
+    rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/last-used-cache" 2>/dev/null || true
+    rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/last-used-nono" 2>/dev/null || true
+    rm -rf "$HOME/.cache/skills/levonk/skills-releases/skills/last-used-preserve" 2>/dev/null || true
 }
 
 # --- tests: skip conditions ---
@@ -286,4 +317,73 @@ teardown() {
         fs_write="$(jq -r '.fs_write[]' "$profile" 2>/dev/null || echo "")"
         assert_equals "." "$fs_write"
     fi
+}
+
+# --- tests: last-used update (deterministic fix for ordering bug) ---
+
+@test "last-used updated to today on normal path (cache miss)" {
+    local dir
+    dir="$(setup_skill last-used-update)"
+    local cache_dir="$HOME/.cache/skills/levonk/skills-releases/skills/last-used-update"
+    rm -rf "$cache_dir"
+    # Run refresh.sh — should update last-used in SKILL.md
+    (cd "$dir" && ./scripts/refresh.sh >/dev/null 2>&1) || true
+    local today
+    today="$(date +%Y-%m-%d)"
+    local lu
+    lu="$(grep -m1 'last-used' "$dir/SKILL.md" | sed 's/.*: *//;s/"//g;s/ //g')"
+    assert_equals "$today" "$lu"
+}
+
+@test "last-used NOT updated on SKIP_SKILL_REFRESH" {
+    local dir
+    dir="$(setup_skill last-used-skip)"
+    # Run with SKIP_SKILL_REFRESH=1 — should NOT update last-used
+    (cd "$dir" && SKIP_SKILL_REFRESH=1 ./scripts/refresh.sh >/dev/null 2>&1) || true
+    local lu
+    lu="$(grep -m1 'last-used' "$dir/SKILL.md" | sed 's/.*: *//;s/"//g;s/ //g')"
+    assert_equals "2026-01-01" "$lu"
+}
+
+@test "last-used NOT updated on cache hit" {
+    local dir
+    dir="$(setup_skill last-used-cache)"
+    local cache_dir="$HOME/.cache/skills/levonk/skills-releases/skills/last-used-cache"
+    mkdir -p "$cache_dir"
+    date +%Y-%m-%d > "$cache_dir/refresh.date"
+    # Run with cache hit — should NOT update last-used
+    (cd "$dir" && ./scripts/refresh.sh >/dev/null 2>&1) || true
+    local lu
+    lu="$(grep -m1 'last-used' "$dir/SKILL.md" | sed 's/.*: *//;s/"//g;s/ //g')"
+    assert_equals "2026-01-01" "$lu"
+}
+
+@test "last-used updated on NONO_SESSION path" {
+    local dir
+    dir="$(setup_skill last-used-nono)"
+    local cache_dir="$HOME/.cache/skills/levonk/skills-releases/skills/last-used-nono"
+    rm -rf "$cache_dir"
+    # Run with NONO_SESSION set — should update last-used (update runs)
+    (cd "$dir" && NONO_SESSION="test" ./scripts/refresh.sh >/dev/null 2>&1) || true
+    local today
+    today="$(date +%Y-%m-%d)"
+    local lu
+    lu="$(grep -m1 'last-used' "$dir/SKILL.md" | sed 's/.*: *//;s/"//g;s/ //g')"
+    assert_equals "$today" "$lu"
+}
+
+@test "last-used update preserves created and knowledge-basis" {
+    local dir
+    dir="$(setup_skill last-used-preserve)"
+    local cache_dir="$HOME/.cache/skills/levonk/skills-releases/skills/last-used-preserve"
+    rm -rf "$cache_dir"
+    (cd "$dir" && ./scripts/refresh.sh >/dev/null 2>&1) || true
+    # created should be unchanged
+    local created
+    created="$(grep -m1 'created:' "$dir/SKILL.md" | sed 's/.*: *//;s/"//g;s/ //g')"
+    assert_equals "2026-01-01" "$created"
+    # knowledge-basis should be unchanged
+    local kb
+    kb="$(grep -m1 'knowledge-basis' "$dir/SKILL.md" | sed 's/.*: *//;s/"//g;s/ //g')"
+    assert_equals "2026-06-01" "$kb"
 }

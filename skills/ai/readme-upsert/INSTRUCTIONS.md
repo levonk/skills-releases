@@ -2338,6 +2338,23 @@ The script above catches structural conflicts (broken links, duplicated text, wr
 - No content duplicated from AGENTS.md or developer guide
 - `scripts/verify_consistency.py` passes (no broken links, no AGENTS.md conflicts)
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Phase 1: Repository analysis — greenfield short-circuit (detect essentials from scaffold files) or brownfield standard analysis (README, docs, structure, audience)
+- [ ] Phase 2: Generate README.md from `references/README-project-root-template.md.tmpl` — required sections (Project name, Quick Start, Build/Test Commands, Project Structure, AI Agent Documentation) plus optional sections only when relevant
+- [ ] Phase 3: Upsert — create from template (greenfield), update stale sections (brownfield), or update changed-only (accurate brownfield)
+- [ ] Phase 4: Cross-reference check — verify links to AGENTS.md, `internal-docs/oos/`, `internal-docs/adr/` (apply greenfield guards)
+- [ ] Phase 5: Consistency verification — run `scripts/verify_consistency.py` and perform the semantic consistency check across code, AGENTS.md tree, README.md, and docs/
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the readme-upsert run complete, verify every item below.

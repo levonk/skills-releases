@@ -2730,6 +2730,32 @@ Read the existing rule fully, then audit against this checklist:
 guideline. Propose, explain the benefit, and let them decide.
 
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Decide mode: check whether the target rule file exists (Mode A: Create vs Mode C: Update/Audit)
+- [ ] Step 0 (Mode A) / Research (Mode C): Run the research phase — scan existing rules, cross-check with AGENTS.md, check for anti-patterns in git history
+- [ ] Mode A Step 1: Choose location and category (skills-src / current project / user directory; category for skills-src)
+- [ ] Mode A Step 2: Scaffold from `templates/meta/rule-template.md` (never create from scratch)
+- [ ] Mode A Step 3: Customize frontmatter (rule, slug, description, use, severity, scope, rationale, examples, fix, tools, version, status, tags)
+- [ ] Mode A Step 4: Write the rule body (Goal, Role, I/O, Operation, Tools, Instructions, Design By Contract) — concise, contract-style
+- [ ] Mode A Step 5: Verify — frontmatter completeness, severity appropriateness, scope accuracy, example validity, `just validate`, rules.md integration
+- [ ] Mode A Step 6: Deliver to the chosen location
+- [ ] Mode C Step 1: Read the existing rule fully
+- [ ] Mode C Step 2: Audit against the checklist (severity, scope, examples, fix strategy, codebase compliance, frontmatter, conciseness, status, date freshness)
+- [ ] Mode C Step 3: Propose changes (Critical / Important / Nice to have) with before/after — do not apply yet
+- [ ] Mode C Step 4: Ask for user confirmation before applying
+- [ ] Mode C Step 5: Apply approved changes as separate commits
+- [ ] Mode C Step 6: Update `date.knowledge-basis` and run consistency verification
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the rule-upsert run complete, verify every item below.

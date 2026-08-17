@@ -347,7 +347,7 @@ After mapping all items, summarize using these labels:
 
 ## Full Example
 
-```markdown
+````markdown
 # Feature Comparison: Static Site Generators
 
 **Icons**: 🏆 best · ✅ good · ➖ neutral · ⚠️ bad · ❌ worst
@@ -369,7 +369,7 @@ graph TD
     Assets --> Output
     GatsbyOnly[GraphQL Data Layer] -.->|Gatsby only| Core
     Plugins[Plugin System] -.->|Hugo, Gatsby| Core
-```
+````
 
 | Aspect | Hugo | Gatsby | Eleventy |
 |---|---|---|---|

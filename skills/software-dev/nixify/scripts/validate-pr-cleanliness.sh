@@ -25,18 +25,18 @@ set -euo pipefail
 BASE_REF="${1:-origin/master}"
 EXPECTED_COMMITS=""
 if [ "${2:-}" = "--expected-commits" ]; then
-  EXPECTED_COMMITS="${3:-}"
+	EXPECTED_COMMITS="${3:-}"
 fi
 
 # Resolve base ref
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
-  # Try without origin/ prefix
-  if git rev-parse --verify "${BASE_REF#origin/}" >/dev/null 2>&1; then
-    BASE_REF="${BASE_REF#origin/}"
-  else
-    echo "error: cannot resolve base ref '$BASE_REF'" >&2
-    exit 1
-  fi
+	# Try without origin/ prefix
+	if git rev-parse --verify "${BASE_REF#origin/}" >/dev/null 2>&1; then
+		BASE_REF="${BASE_REF#origin/}"
+	else
+		echo "error: cannot resolve base ref '$BASE_REF'" >&2
+		exit 1
+	fi
 fi
 
 BASE_SHA=$(git rev-parse "$BASE_REF")
@@ -46,10 +46,10 @@ HEAD_SHA=$(git rev-parse HEAD)
 merge_commits=""
 merge_count=0
 while IFS= read -r sha; do
-  [ -z "$sha" ] && continue
-  if [ "$merge_count" -gt 0 ]; then merge_commits="$merge_commits,"; fi
-  merge_commits="$merge_commits\"$sha\""
-  merge_count=$((merge_count + 1))
+	[ -z "$sha" ] && continue
+	if [ "$merge_count" -gt 0 ]; then merge_commits="$merge_commits,"; fi
+	merge_commits="$merge_commits\"$sha\""
+	merge_count=$((merge_count + 1))
 done < <(git log "$BASE_SHA..$HEAD_SHA" --merges --format='%H' 2>/dev/null || true)
 
 # ── 2. Count commits ─────────────────────────────────────────────────────────
@@ -64,57 +64,57 @@ issues=""
 NIXIFY_FILES="flake\.nix|flake\.lock|devbox\.json|devbox\.lock|\.gitignore|\.github/workflows/nix\.yml|\.github/workflows/.*hash.*\.yml|garnix\.yaml|nix/|README.*\.md|CHANGELOG\.md|docs/.*install.*|default\.nix|shell\.nix"
 
 while IFS= read -r line; do
-  sha=$(echo "$line" | cut -d'|' -f1)
-  subject=$(echo "$line" | cut -d'|' -f2)
-  # Get files changed in this commit
-  files=$(git diff-tree --no-commit-id --name-only -r "$sha" 2>/dev/null | head -20 || true)
-  files_json="["
-  ffirst=1
-  unrelated_found=0
-  for f in $files; do
-    if [ "$ffirst" -eq 0 ]; then files_json="$files_json,"; fi
-    ffirst=0
-    files_json="$files_json\"$f\""
-    # Check if file matches nixify patterns
-    if ! echo "$f" | grep -qE "$NIXIFY_FILES"; then
-      unrelated_found=1
-    fi
-  done
-  files_json="$files_json]"
+	sha=$(echo "$line" | cut -d'|' -f1)
+	subject=$(echo "$line" | cut -d'|' -f2)
+	# Get files changed in this commit
+	files=$(git diff-tree --no-commit-id --name-only -r "$sha" 2>/dev/null | head -20 || true)
+	files_json="["
+	ffirst=1
+	unrelated_found=0
+	for f in $files; do
+		if [ "$ffirst" -eq 0 ]; then files_json="$files_json,"; fi
+		ffirst=0
+		files_json="$files_json\"$f\""
+		# Check if file matches nixify patterns
+		if ! echo "$f" | grep -qE "$NIXIFY_FILES"; then
+			unrelated_found=1
+		fi
+	done
+	files_json="$files_json]"
 
-  if [ "$first" -eq 0 ]; then commits_json="$commits_json,"; fi
-  first=0
-  subject_esc="${subject//\"/\\\"}"
-  commits_json="$commits_json{\"sha\":\"$sha\",\"subject\":\"$subject_esc\",\"files_changed\":$files_json}"
+	if [ "$first" -eq 0 ]; then commits_json="$commits_json,"; fi
+	first=0
+	subject_esc="${subject//\"/\\\"}"
+	commits_json="$commits_json{\"sha\":\"$sha\",\"subject\":\"$subject_esc\",\"files_changed\":$files_json}"
 
-  if [ "$unrelated_found" -eq 1 ]; then
-    if [ -n "$issues" ]; then issues="$issues,"; fi
-    issues="$issues\"commit $sha has files outside nixify artifact patterns\""
-  fi
+	if [ "$unrelated_found" -eq 1 ]; then
+		if [ -n "$issues" ]; then issues="$issues,"; fi
+		issues="$issues\"commit $sha has files outside nixify artifact patterns\""
+	fi
 done < <(git log "$BASE_SHA..$HEAD_SHA" --format='%H|%s' 2>/dev/null || true)
 commits_json="$commits_json]"
 
 # ── 4. Check commit count ────────────────────────────────────────────────────
 if [ -n "$EXPECTED_COMMITS" ] && [ "$commit_count" -gt "$EXPECTED_COMMITS" ]; then
-  if [ -n "$issues" ]; then issues="$issues,"; fi
-  issues="$issues\"expected at most $EXPECTED_COMMITS commits, found $commit_count\""
+	if [ -n "$issues" ]; then issues="$issues,"; fi
+	issues="$issues\"expected at most $EXPECTED_COMMITS commits, found $commit_count\""
 fi
 
 if [ "$merge_count" -gt 0 ]; then
-  if [ -n "$issues" ]; then issues="$issues,"; fi
-  issues="$issues\"found $merge_count merge commit(s) — use rebase, never merge\""
+	if [ -n "$issues" ]; then issues="$issues,"; fi
+	issues="$issues\"found $merge_count merge commit(s) — use rebase, never merge\""
 fi
 
 # ── Output ───────────────────────────────────────────────────────────────────
 is_clean="true"
 if [ -n "$issues" ]; then
-  is_clean="false"
+	is_clean="false"
 fi
 
 if [ "$is_clean" = "true" ]; then
-  rationale="Branch is clean: $commit_count commit(s), no merges, all files are nixify artifacts."
+	rationale="Branch is clean: $commit_count commit(s), no merges, all files are nixify artifacts."
 else
-  rationale="Branch has issues: $issues"
+	rationale="Branch has issues: $issues"
 fi
 
 cat <<EOF

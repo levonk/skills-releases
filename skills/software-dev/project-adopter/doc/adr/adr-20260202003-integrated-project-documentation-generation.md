@@ -92,7 +92,7 @@ create_config_files() {
     "ripgrep",        // Fast text search
     "fd",            // File finding
     "bat",           // Enhanced cat with syntax highlighting
-    "nodejs_22",     // Language-specific packages
+    "nodejs_24",     // Language-specific packages
     "pnpm", "typescript", "eslint", "prettier", "jest"
   ]
 }
@@ -110,7 +110,7 @@ dev_impl:
 ```
 
 ### Comprehensive README.md Structure
-```markdown
+````markdown
 # Project Name
 
 ## Available Commands
@@ -119,7 +119,7 @@ dev_impl:
 devbox --list
 devbox build
 devbox test
-```
+````
 
 ### Just Commands
 ```bash

@@ -159,7 +159,7 @@ allow-dirty = false
 ## README.md Sections
 
 ### Rust-Specific Content
-```markdown
+````markdown
 ## Development Setup
 
 ### Prerequisites
@@ -182,7 +182,7 @@ just bootstrap
 
 # Start development
 just dev
-```
+````
 
 ## Project Structure
 src/                     # Source code

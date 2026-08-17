@@ -33,4 +33,4 @@ Comprehensive repository health analysis for outdated information, conflicting r
 
 - **Full skill**: [`skills/software-dev/repository-health-review/SKILL.md`](skills/software-dev/repository-health-review/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-10T21:38:16Z
+- **Generated**: 2026-08-17T03:55:48Z

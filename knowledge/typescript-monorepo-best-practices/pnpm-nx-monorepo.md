@@ -342,6 +342,7 @@ Nx replaces Turborepo as the build orchestrator. Configuration lives in
     "packageManager": "pnpm"
   },
   "namedInputs": {
+    "sharedGlobals": ["{workspaceRoot}/nx.json", "{workspaceRoot}/pnpm-workspace.yaml", "{workspaceRoot}/pnpm-lock.yaml"],
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",

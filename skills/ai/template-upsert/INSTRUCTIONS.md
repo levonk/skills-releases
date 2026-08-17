@@ -2585,6 +2585,33 @@ Ensure no secrets, keys, or sensitive paths are exposed in templates. Before pac
 - **Body**: Scan template body for hardcoded credentials, API keys, or tokens.
 - **Paths**: No hardcoded absolute paths — use indirect references and the Context Declaration.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Decide mode: check whether the target template file exists (Mode A: Create vs Mode C: Update)
+- [ ] Select the template location (skills-src repo / current project / user directory)
+- [ ] Step 0 (Mode A) / Research (Mode C): Run the research phase — local scan, cross-check with prompts, skills.sh / GitHub
+- [ ] Mode A Step 1: Initialize the template directory via `scripts/init_template.py`
+- [ ] Mode A Step 2: Customize frontmatter (template, slug, description, use, engine, outputs_to, variables.schema, date, tags, see-also)
+- [ ] Mode A Step 3: Write the template body — structure sections, variables, rendering rules; follow the meta-template contract
+- [ ] Mode A Step 4: Verify — validate rendering behavior, consistency with calling workflows, dry-run render with representative variables
+- [ ] Mode A Step 5: Deliver to `config/ai/templates/<category>/` and update workflow references
+- [ ] Mode C Step 1: Read the existing template fully (frontmatter, body, variable schema, partials/includes)
+- [ ] Mode C Step 2: Audit against the template guidelines checklist (frontmatter, variable schema, meta-template compliance, usage, rendering rules, stale variables)
+- [ ] Mode C Step 3: Propose changes (Critical / Important / Nice to have) with before/after — do not apply yet
+- [ ] Mode C Step 4: Ask for user confirmation before applying
+- [ ] Mode C Step 5: Apply approved changes as separate commits
+- [ ] Mode C Step 6: Update `date.knowledge-basis` and `date.last-used`
+- [ ] Mode C Step 7: Consistency verification — frontmatter valid, variable schema well-formed, partials/includes resolve, calling workflows still resolve, dry-run render
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the template-upsert run complete, verify every item below.

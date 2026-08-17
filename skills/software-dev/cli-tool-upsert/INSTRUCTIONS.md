@@ -2361,6 +2361,27 @@ Keep SKILL.md lean; move detail to `references/` and deterministic phases to
 `scripts/`. See `references/axi-principles.md` and
 `references/cli-best-practices.md` for detailed guidance loaded on demand.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Research existing tools — search locally, on GitHub, and on package registries for an existing CLI that already does what's needed (Mode A Step 0)
+- [ ] Select tier and language — run `scripts/audit_cli.py --path <target> --suggest-tier` and pick embedded script vs full CLI tool (Mode A Step 1)
+- [ ] Generate from template (embedded) — use the canonical bash or Python template with PEP 723 header and AXI output contract (Mode A Step 2)
+- [ ] Scaffold from boilerplate (full CLI) — use the `levonk-base-boilerplate` copier wrapper to scaffold the new CLI tool (Mode A Step 3)
+- [ ] Apply AXI principles — structured errors, definitive empty states, no interactive prompts, correct exit codes, output discipline, idempotent mutations (Mode A Step 4)
+- [ ] Add XDG cache/data separation — transient data in `XDG_CACHE_HOME`, persistent data in `XDG_DATA_HOME`, config in `XDG_CONFIG_HOME` (Mode A Step 5)
+- [ ] Validate — run `scripts/audit_cli.py --path <target>` to verify AXI compliance (Mode A Step 6)
+- [ ] Test with an agent — invoke the CLI via shell execution with flags, no TTY, and verify output is parseable (Mode A Step 7)
+- [ ] Audit existing CLI (Mode B only) — read the CLI fully, audit against the AXI checklist, classify changes, propose interactive changes, get confirmation, then apply (Mode B Steps 1-7)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the cli-tool-upsert run complete, verify every item below.

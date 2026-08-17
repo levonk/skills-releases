@@ -1457,6 +1457,24 @@ The critical contracts:
 - **Avoid QEMU for heavy compilation** — use cross-compilation or native hosts
 - **`--push` required for multi-platform** — `--load` only works single-platform
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Check for pre-built upstream images — run `scripts/check-upstream-image.sh <image-name>` to search registries for official multi-arch images (Step 1)
+- [ ] Determine runtime Nix dependency — decide whether the service genuinely needs `nix-store` or `nix` CLI at runtime (Step 2)
+- [ ] Execute the selected branch — follow the reference file for Branch A (wrap pre-built), Branch B (Dockerfile + buildx), or Branch C (Nix flake) (Step 3)
+- [ ] Verify multi-arch — run `scripts/verify-multi-arch.sh <image:tag>` to confirm the image covers all target architectures (Step 4)
+- [ ] Push to registry — use `--push` for multi-platform builds and verify with `docker manifest inspect` (Step 5)
+- [ ] Scan for identity leaks — run `scripts/scan-artifacts.sh` on generated files and fix HARD findings before committing (Step 6)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the container-image-build run complete, verify every item

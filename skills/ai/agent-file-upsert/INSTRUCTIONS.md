@@ -2752,6 +2752,29 @@ Done! Updated:
 - internal-docs/anti-patterns/INDEX.md + anti-patterns-YYYYMMDDHHmm-direct-nx-commands.md
 ```
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Phase 0: Detect the project's agent-file convention (AGENTS.md / CLAUDE.md / AGENT.md) and classify the relationship
+- [ ] Phase 0b: Run the research phase (artifact-specific search for AGENTS.md hierarchies and conventions)
+- [ ] Phase 1: Analyze the repository — documentation, structure, components, patterns
+- [ ] Phase 1b: Run delta analysis (update mode only) — script generates structured report, subagent interprets POSITIVE / NEGATIVE / IMPROVEMENTS
+- [ ] Phase 2: Generate root AGENTS.md (user-facing index) and `.agents/knowledge/developer.md` (developer guide); scaffold in create mode, install knowledge bundles in adopt mode
+- [ ] Phase 3: Generate sub-folder AGENTS.md files for each major package/directory
+- [ ] Phase 4: Document special considerations (design system, database, API, testing)
+- [ ] Phase 5: Maintain `internal-docs/oos/` out-of-scope documentation
+- [ ] Phase 5b: Maintain `internal-docs/improvements/` (INDEX.md + date-stamped detailed files)
+- [ ] Phase 5c: Maintain `internal-docs/anti-patterns/` with triple-marking (AGENTS.md reference, INDEX.md preamble 🛑, detailed file title)
+- [ ] Phase 6: Document the usage protocol (hierarchical traversal rules) in the root AGENTS.md
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the agent-file-upsert run complete, verify every item below.

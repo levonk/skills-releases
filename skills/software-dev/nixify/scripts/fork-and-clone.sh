@@ -16,25 +16,25 @@ UPSTREAM_URL="https://github.com/$OWNER/$REPO"
 FORK_URL="https://github.com/$CURRENT_USER/$REPO"
 
 if [ "$MODE" = "--dry-run" ]; then
-  if [ "$HAS_DIRECT_ACCESS" = "false" ]; then
-    echo "Would fork $OWNER/$REPO to $FORK_URL"
-    echo "Would clone from $FORK_URL"
-  else
-    echo "Would clone directly from $UPSTREAM_URL"
-  fi
-  echo "Would add upstream remote: $UPSTREAM_URL"
-  echo "Would fetch and rebase from upstream/main"
-  exit 0
+	if [ "$HAS_DIRECT_ACCESS" = "false" ]; then
+		echo "Would fork $OWNER/$REPO to $FORK_URL"
+		echo "Would clone from $FORK_URL"
+	else
+		echo "Would clone directly from $UPSTREAM_URL"
+	fi
+	echo "Would add upstream remote: $UPSTREAM_URL"
+	echo "Would fetch and rebase from upstream/main"
+	exit 0
 fi
 
 if [ "$HAS_DIRECT_ACCESS" = "false" ]; then
-  if [ "$MODE" = "--verbose" ]; then echo "Forking repository..."; fi
-  gh repo fork "$OWNER/$REPO" --clone=false
-  if [ "$MODE" = "--verbose" ]; then echo "Fork created at: $FORK_URL"; fi
-  git clone "$FORK_URL"
+	if [ "$MODE" = "--verbose" ]; then echo "Forking repository..."; fi
+	gh repo fork "$OWNER/$REPO" --clone=false
+	if [ "$MODE" = "--verbose" ]; then echo "Fork created at: $FORK_URL"; fi
+	git clone "$FORK_URL"
 else
-  if [ "$MODE" = "--verbose" ]; then echo "Cloning directly from upstream..."; fi
-  git clone "$UPSTREAM_URL"
+	if [ "$MODE" = "--verbose" ]; then echo "Cloning directly from upstream..."; fi
+	git clone "$UPSTREAM_URL"
 fi
 
 cd "$REPO"
@@ -44,7 +44,7 @@ git fetch upstream
 git rebase upstream/main
 
 if [ "$MODE" = "--verbose" ]; then
-  echo "Clone complete. Upstream remote added and rebased."
+	echo "Clone complete. Upstream remote added and rebased."
 fi
 
 echo "cloned at $(pwd)"

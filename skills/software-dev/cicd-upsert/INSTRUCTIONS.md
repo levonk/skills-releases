@@ -2247,6 +2247,32 @@ speed, secret format differences (act base64 vs real CI PEM), and container
 file ownership mismatches.
 
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Research existing patterns — check for CI-adjacent files and run `scripts/analyze_pipeline.py --path <repo>` (Mode A Step 0 / Mode B research phase)
+- [ ] Detect CI system and project structure — run `analyze_pipeline.py` and confirm the detected stack matches the project (Mode A Step 1 / Mode B Step 1)
+- [ ] Ensure build tooling is in devbox.json — add missing tools; align versions from a single source (Mode A Step 2)
+- [ ] Create incremental build filters — set up change detection with profile filtering to avoid the required-checks deadlock (Mode A Step 3)
+- [ ] Set up pre-built CI image (if needed) — create `Dockerfile.ci` and publish workflow with rebuild-on-change triggers (Mode A Step 4)
+- [ ] Create the build workflow — generate the main CI workflow with concurrency, timeouts, permissions, and container shell config (Mode A Step 5)
+- [ ] Add security scans — secret-detection → SAST → dependency scan → build → container scan → DAST, gating on critical/high (Mode A Step 6)
+- [ ] Add guardrails and gates — configure branch protection, required checks, and merge queues (Mode A Step 7)
+- [ ] Add versioning and tagging — set up automated semantic versioning and changelog generation (Mode A Step 8)
+- [ ] Add provenance and lineage — sign artifacts, generate SBOMs, embed git metadata in container images (Mode A Step 9)
+- [ ] Add deployment validation (if applicable) — smoke tests, health checks, or progressive deployment (Mode A Step 10)
+- [ ] Add testing strategy — unit tests on every PR, integration tests, E2E tests pre-merge or nightly (Mode A Step 11)
+- [ ] Validate and test locally — run the pipeline with `act` and verify all steps pass (Mode A Step 12 / Mode B Step 8)
+- [ ] Audit existing pipeline (Mode B only) — classify changes as automatic or interactive, propose interactive changes, get confirmation, then apply (Mode B Steps 2-7)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the cicd-upsert run complete, verify every item below.

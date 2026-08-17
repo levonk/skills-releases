@@ -1661,6 +1661,26 @@ classifier output is authoritative, not gut feel.
 | `detect-platform-scope.sh` reports `all` but the project is actually macOS-only | Signals were too weak (e.g. no CI matrix, no platform-specific crates, just a README mention the script missed) | Manually set `platform_scope=darwin_only` and `target_platforms=["x86_64-darwin","aarch64-darwin"]`. The script is conservative — it prefers false negatives over false positives. See Step 4a — Manual override |
 
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Detect project type and architecture (Step 1-3)
+- [ ] Select flake template (Step 4)
+- [ ] Detect platform scope (Step 4a)
+- [ ] Generate flake.nix (Step 5-14)
+- [ ] Build and test (`nix build`, `nix run .#<project> -- --help`) (Step 15-22)
+- [ ] Generate CI and garnix.yaml (Step 23-24)
+- [ ] Generate NixOS service module if applicable (Step 25)
+- [ ] Write PR body and open PR (Step 26-27)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the nixify run complete, verify every item below. Items

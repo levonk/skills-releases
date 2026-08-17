@@ -1374,6 +1374,11 @@ include mechanism so consumers are self-contained.
 - `$UPSTREAM_OWNER` / `$UPSTREAM_REPO` — the target repository
 - Issue title and body content (from the user or a template)
 - Search terms for duplicate detection (project-specific)
+- `$RELATED_ISSUES` (optional) — comma-separated issue/PR numbers to
+  cross-reference from (posts a comment on each linking to the new issue)
+- `$UMBRELLA_ISSUE` (optional) — issue number of a broad umbrella issue that
+  this new issue is a focused sub-issue of (triggers a differentiation comment
+  on the new issue itself, explaining why it is not a duplicate)
 
 #### Steps
 
@@ -1538,6 +1543,10 @@ rather than using free-form markdown. The `labels` field pre-labels the issue
      changed, reference it in a new issue; if not, don't re-open
    - Closed issue, resolved → the feature exists; don't duplicate
 
+   **Rate limit awareness**: When running multiple searches in sequence,
+   space them by 0.5s (reads) to avoid GitHub's secondary rate limit. See
+   `api-rate-limit-awareness.md` for the full protocol.
+
    Present search results to the user before proceeding.
 
 4. **Draft the issue body**: Using the project's own issue template (if found
@@ -1598,10 +1607,68 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
    posting method, and `gh issue edit --body-file` until the validator
    passes. Do not declare the issue filing complete with a failing validator.
 
+8. **Post-creation cross-referencing** (optional): If the user provided
+   `$RELATED_ISSUES` (or identified related issues during the duplicate search
+   in step 3), post cross-reference comments linking them to the new issue.
+   If the user provided `$UMBRELLA_ISSUE`, also post a differentiation comment
+   on the new issue itself.
+
+   For each related issue number in `$RELATED_ISSUES`:
+   a. Check if the issue/PR is locked before commenting:
+      ```bash
+      LOCKED=$(gh api "repos/$UPSTREAM_OWNER/$UPSTREAM_REPO/issues/$NUM" \
+        --jq '.locked' 2>/dev/null)
+      ```
+   b. If `LOCKED` is `true`: skip with a note ("#$NUM is locked — cross-reference
+      skipped"). Do NOT retry — locking blocks comments, and retrying wastes an
+      API call (learned from microsoft/vscode#311317).
+   c. If not locked: write the cross-reference comment to a file and post with
+      `--body-file` (same guard as step 6):
+      ```bash
+      gh issue comment $NUM --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" \
+        --body-file /tmp/cross-ref-$NUM.md
+      ```
+
+   Cross-reference comment template (write to `/tmp/cross-ref-$NUM.md`):
+   ```markdown
+   Related: opened #$NEW_ISSUE_NUMBER for <one-line summary>.
+
+   <2-3 sentence explanation of how this relates to the current issue and why
+   a focused sub-issue was filed.>
+   ```
+
+   If `$UMBRELLA_ISSUE` was provided, post a differentiation comment on the
+   new issue itself (write to `/tmp/differentiation.md`, post with
+   `gh issue comment $NEW_ISSUE_NUMBER --body-file /tmp/differentiation.md`):
+   ```markdown
+   ### How this differs from #$UMBRELLA_ISSUE
+
+   This is a focused sub-issue, not a duplicate:
+
+   - **#$UMBRELLA_ISSUE** (opened <year>) covers <broad scope>. It predates
+     <specific feature> by <N> years.
+   - **This issue** (#$NEW_ISSUE_NUMBER) covers <specific path/code/feature>
+     introduced in <PR/commit>.
+
+   <Why the focused issue is more actionable — one getter change vs broad
+   restructure, etc.>
+   ```
+
+   Present the differentiation comment to the user for review before posting
+   — it is a public comment on someone else's repo.
+
+   **Rate limit awareness**: When cross-referencing multiple related issues,
+   space comments by 2s (mutations) to avoid GitHub's secondary rate limit.
+   See `api-rate-limit-awareness.md` for the full protocol.
+
 #### Output
 
 - Issue number (for use in PR `Resolves #N` links)
 - Issue URL (presented to the user)
+- Cross-reference comments posted on related issues (if `$RELATED_ISSUES`
+  was provided)
+- Differentiation comment posted on the new issue (if `$UMBRELLA_ISSUE`
+  was provided)
 
 
 Record the issue number — it is required for the PR body's `Resolves #N` link.
@@ -1897,6 +1964,31 @@ relevant concept pages before opening a PR:
 | CLA gate re-warns after signing | Ledger entry not recorded, or `expires_at` passed | Run `scripts/skill-config.sh set --layer user "cla.$ORG.signed_at" "$(date +%Y-%m-%d)"` and set `expires_at` to +365d |
 | `skill-config.sh` fails with "yq required" | yq (mikefarah/yq, Go version) not installed | `devbox add yq` or `brew install yq` |
 
+
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Phase 1: Create or reference the orientation issue — run `discover-contribution-standards.sh --skill github-pr`, run `search-existing-work.sh`, record the issue number for `Resolves #N` (Phase 1)
+- [ ] Phase 2: Fork (if needed), set up feature branch from a fresh rebase onto upstream/main, validate existing tests as a baseline (Phase 2)
+- [ ] Phase 3: Apply the code change with minimal scope, sync before commit (rebase), squash into a single clean feature commit (Phase 3 Steps 4-6)
+- [ ] Phase 3: Run the project's formatter and linter, commit style changes separately if any produced changes (Phase 3 Step 7)
+- [ ] Phase 3: Run `scan-artifacts.sh` on created files and fix HARD identity leaks (Phase 3 Step 8)
+- [ ] Phase 4: CLA gate (pre-push) — consult the CLA ledger, surface terms/sign link if missing or expired, record the ledger entry, get explicit user acknowledgment (Phase 4 Step 9)
+- [ ] Phase 4: Validate PR cleanliness — no merge commits, no unrelated changes, clean linear history, at most two commits (Phase 4 Step 10)
+- [ ] Phase 4: Push the branch to your fork — never merge upstream into the feature branch (Phase 4 Step 11)
+- [ ] Phase 4: Generate the PR description using the project's PR template with `Resolves #N`, placeholders substituted by text replacement (Phase 4 Step 12)
+- [ ] Phase 4: Present the complete PR content to the user for review — no auto-open (Phase 4 Step 13)
+- [ ] Phase 4: Post the PR with `gh pr create --body-file` after user approval (Phase 4 Step 14)
+- [ ] Phase 4: Validate the posted body with `validate-pr-issue.sh` — fix and re-post if corrupted (Phase 4 Step 15)
+- [ ] Phase 4: CLA watch (post-open) — poll for CLA bot comments/checks, surface failures, upgrade or invalidate the ledger entry (Phase 4 Step 16, if CLA required)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
 
 ## Definition of Done
 

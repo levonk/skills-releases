@@ -13,27 +13,27 @@ UPSTREAM_BRANCH="${1:-main}"
 VERBOSE="${2:-}"
 
 if git remote get-url upstream >/dev/null 2>&1; then
-  REMOTE=upstream
+	REMOTE=upstream
 else
-  REMOTE=origin
+	REMOTE=origin
 fi
 
 if [ "$VERBOSE" = "--verbose" ]; then
-  echo "Fetching $REMOTE and rebasing onto $REMOTE/$UPSTREAM_BRANCH..."
+	echo "Fetching $REMOTE and rebasing onto $REMOTE/$UPSTREAM_BRANCH..."
 fi
 
 git fetch "$REMOTE"
 
 if ! git rebase "$REMOTE/$UPSTREAM_BRANCH"; then
-  # ponytail: git rebase fails for two distinct reasons — dirty tree (needs
-  # commit/stash) and merge conflicts (needs resolve + --continue). git prints
-  # the specific error to stderr; we add the two recovery paths so the agent
-  # doesn't try --continue on a dirty tree (no-op) or stash on conflicts (loses
-  # the rebase state).
-  echo "error: rebase onto $REMOTE/$UPSTREAM_BRANCH failed." >&2
-  echo "  - Dirty tree (unstaged changes): commit or stash, then re-run this script." >&2
-  echo "  - Merge conflicts: resolve them, then 'git rebase --continue' and re-run." >&2
-  exit 1
+	# ponytail: git rebase fails for two distinct reasons — dirty tree (needs
+	# commit/stash) and merge conflicts (needs resolve + --continue). git prints
+	# the specific error to stderr; we add the two recovery paths so the agent
+	# doesn't try --continue on a dirty tree (no-op) or stash on conflicts (loses
+	# the rebase state).
+	echo "error: rebase onto $REMOTE/$UPSTREAM_BRANCH failed." >&2
+	echo "  - Dirty tree (unstaged changes): commit or stash, then re-run this script." >&2
+	echo "  - Merge conflicts: resolve them, then 'git rebase --continue' and re-run." >&2
+	exit 1
 fi
 
 # Report how many commits we are ahead of the upstream tip.

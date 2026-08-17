@@ -1522,6 +1522,237 @@ When available, prefer dedicated secret scanners over manual grep:
 These catch obfuscated secrets and non-obvious patterns that manual grep misses.
 Use `cli-tool-discovery.sh` to locate them if not on PATH.
 
+
+---
+description: Shared two-stage lifecycle protocol (todo → archive) for work-tracking documents — handoffs, features, and any artifact with a Definition of Done gate. Supports audience variants (agent vs human) via the {root} parameter
+---
+
+### Work-Tracking Document Lifecycle
+
+Work-tracking documents (handoffs, feature PRDs, task indexes) use a
+**two-stage lifecycle**: pending work lives in a flat `todo/` directory for
+easy reference, and completed work is archived into a dated hierarchy so you
+can tell at a glance what is active and what is finished.
+
+#### Two-Stage Layout
+
+| Stage | Path shape | Purpose |
+|-------|-----------|---------|
+| **Pending** | `{root}/todo/{filename}` | Active work — the receiving session reads from here |
+| **Archived** | `{root}/archive/YYYY/MM/{filename}` | Completed work — moved here via `git mv` after all DoD items are `[x]` |
+
+Where:
+- `{root}` — the document-type root (e.g., `.agents/handoffs` for agent
+  handoffs, `.agents/handoffs/human` for human handoffs,
+  `internal-docs/feature` for features)
+- `{filename}` — the permanent filename, never changes between stages
+- `YYYY/MM` — derived from the document's **creation timestamp** (embedded in
+  the filename), not the completion date
+
+**The filename never changes between pending and archived.** Only the parent
+directory changes. This means a document can be referenced by name regardless
+of its lifecycle stage.
+
+**Why a flat `todo/` directory:** when you tell an agent "work on the
+`fix-auth-bug` handoff" or "resume the `project-prefs` feature", the agent
+finds it immediately at `{root}/todo/{filename}` — no date-path guessing. The
+dated hierarchy is only needed for completed work, where you browse by month
+to review what was finished.
+
+#### Audience Variants
+
+The lifecycle mechanics (two-stage layout, archive trigger, frontmatter dates,
+`git mv` protocol) are identical across audiences. What differs is the
+**{root}**, the **document format**, and the **routing criteria** — when to
+create a document for one audience vs the other.
+
+| Audience | `{root}` | Reader | Format | When to create |
+|----------|----------|--------|--------|----------------|
+| **Agent** | `.agents/handoffs` | The next AI session | Context-dense: full git state, task list with `[ ]`/`[~]`/`[x]`/`[!]` marks, DoD, suggested skills, technical context | Session ends with work remaining; context needs to survive across sessions |
+| **Human** | `.agents/handoffs/human` | The user | Action-oriented: what is needed, why, what was tried, exact steps to resolve | A task is blocked on something only a human can provide (API keys, access, decisions, approvals) |
+
+**Routing criteria — when to create a human handoff:**
+
+A blocked task (`[!]`) routes to the human queue when the blocker requires
+human-only action. Human-only actions include:
+- Providing credentials, API keys, tokens, or access that cannot be generated
+  programmatically
+- Making a decision between options the agent has researched but cannot
+  choose (architectural, product, priority)
+- Granting permissions (repository access, CI approval, deployment
+  authorization)
+- Approving a destructive or irreversible operation the agent cannot perform
+  without explicit consent
+- Providing information that exists only in the human's context (business
+  requirements, stakeholder preferences, external system details)
+
+A blocked task stays in the agent handoff when the blocker can be resolved by
+a future agent session (waiting on an upstream dependency, needing more
+research, requiring a different skill).
+
+**A single blocked task may route to both queues:** the agent handoff retains
+the `[!]` mark with a reference to the human handoff file, and the human
+handoff contains the action-oriented request. When the human resolves the
+blocker, the agent handoff's `[!]` is cleared and the human handoff is
+archived.
+
+**Human handoff format:** self-contained — a human should be able to read
+just this document (or the GitHub issue created from it) and understand the
+full picture without reading the agent handoff. Required sections:
+- **Title** — what is needed, in one line
+- **Project Context** — the project name, what it is, and a 1-2 sentence
+  description so the human knows which project this is about
+- **Feature Context** — what feature or work was being attempted when the
+  blocker was hit, and why it matters (the goal, not just the task)
+- **Current State** — what has been done so far: completed items, in-progress
+  items, and where the blocker sits in the overall work
+- **What I need from you** — the specific action, numbered if multiple steps
+- **Why I can't proceed** — the blocker explained for a non-agent reader
+- **What I tried** — the approaches attempted before blocking
+- **Context** — links to the agent handoff, relevant files, run log, or
+  external references
+- **How to unblock me** — what to do after the action is taken (e.g., "re-run
+  the ai-upsert skill" or "tell me the API key is in `.env`")
+
+**Human handoff filename:** same `YYYYMMDDHHmm-{slug}.md` convention. The slug
+should describe the action needed, not the task that blocked (e.g.,
+`202608121752-provide-openai-api-key.md`, not
+`202608121752-blocked-on-eval-runner.md`).
+
+**GitHub issue creation:** when `gh` is available and the repo has a GitHub
+remote, also create a GitHub issue from the human handoff content. The issue
+is the visibility layer — it shows up in the issue list, can be assigned and
+labeled, and stays open until the human resolves the blocker. The file is
+always created first (crash safety); the issue is conditional on `gh` and a
+remote.
+
+Protocol:
+1. Write the human handoff file to `.agents/handoffs/human/todo/` first.
+2. Check for `gh` and a GitHub remote (`git remote get-url origin`).
+3. If both exist, create the issue:
+   ```bash
+   gh issue create \
+     --title "{action needed — one line}" \
+     --body-file ".agents/handoffs/human/todo/{TIMESTAMP}-{SLUG}.md" \
+     --label "human-handoff"
+   ```
+   Create the `human-handoff` label first if it doesn't exist:
+   ```bash
+   gh label create "human-handoff" --description "Action item requiring human input (API keys, access, decisions, approvals)" --color "BFD4F2" 2>/dev/null || true
+   ```
+4. Record the issue number in the human handoff file's frontmatter:
+   ```yaml
+   github_issue: 42
+   ```
+5. If `gh` is unavailable or no GitHub remote exists, skip issue creation —
+   the file alone is durable. Note in the file: "No GitHub issue created
+   (gh unavailable or no remote)."
+
+**Issue body:** the human handoff file content directly, via `--body-file`
+(see the `gh-posting-guard` include for why `--body-file` is mandatory —
+never `--body` with an inline string). The file's Project Context, Feature
+Context, and Current State sections give the human enough background to
+understand the request without reading the agent handoff.
+
+**Issue lifecycle:** the issue stays open until the human resolves the
+blocker. When the issue is closed, the AI archives the human handoff file
+from `human/todo/` to `human/archive/YYYY/MM/` via `git mv`. Do not
+auto-close issues — the human closes them explicitly after resolving the
+blocker.
+
+**Archive trigger — reconciliation:** the AI does not poll for issue closure.
+Instead, the next ai-upsert run reconciles human handoffs in Phase 0:
+
+1. Scan `.agents/handoffs/human/todo/` for files with `github_issue`
+   frontmatter.
+2. For each, check if the issue is closed:
+   ```bash
+   gh issue view {number} --json state --jq '.state'
+   ```
+3. If `CLOSED`, archive the file via `git mv` to `human/archive/YYYY/MM/`.
+4. If `OPEN`, leave it — the human has not yet acted.
+
+This piggybacks on the existing run lifecycle — no separate process or cron
+needed. The issue is the visibility layer (the human sees it and closes it);
+the reconciliation is the cleanup layer (the AI archives on next run).
+
+**Human handoff archive:** when the human has provided what was needed and the
+blocking task is resolved (marked `[x]` in the agent handoff), archive the
+human handoff from `human/todo/` to `human/archive/YYYY/MM/` via `git mv`,
+following the same archive protocol below. If a GitHub issue was created,
+the reconciliation step above handles the archive trigger — the AI checks
+issue state on the next run and archives if closed. The human handoff's DoD
+is two items: "the blocker was resolved and the requesting task is
+unblocked" and "the GitHub issue (if created) is closed."
+
+#### Lifecycle Frontmatter Dates
+
+Work-tracking documents track three dates in their frontmatter under the
+`date:` key, all in `YYYY-MM-DD` format:
+
+| Field | When to update | Meaning |
+|-------|----------------|---------|
+| `date.created` | When the document is first created — never updated thereafter | The document's birth date (also embedded in the filename timestamp) |
+| `date.completed` | When the document is archived (all DoD items `[x]`, moved to `archive/`) | The date the work was verified complete and archived |
+| `date.last-activity` | When any work is done on the document — a task is marked `[~]`, `[x]`, or `[!]`, or the document is edited | The last time progress was made on this work |
+
+```yaml
+date:
+  created: "2026-07-11"
+  completed: "2026-07-15"      # set only when archiving
+  last-activity: "2026-07-14"  # updated on every work session
+```
+
+**Distinction from skill frontmatter dates:** skills use `date.last-used`
+(when the skill was invoked) and `date.knowledge-basis` (when 3rd-party tech
+refs were verified). Work-tracking documents use `date.last-activity` (when
+progress was made on the work) and `date.completed` (when the work was
+finished). The two date sets are not interchangeable — a skill is *used*, a
+work-tracking document is *worked on*.
+
+**When updating:**
+- Set `date.created` on creation only. Never change it afterward.
+- Update `date.last-activity` every time you mark a task `[~]`, `[x]`, or
+  `[!]`, or edit the document's content. This is the freshness signal for
+  active work — a stale `last-activity` on a `todo/` document means it may be
+  abandoned.
+- Set `date.completed` only when archiving (all DoD items `[x]`, `git mv` to
+  `archive/`). Never set it while the document is still in `todo/`.
+
+#### Archive Trigger
+
+A document moves from `todo/` to `archive/` when **all Definition of Done
+items are `[x]`** — verified complete, not just marked complete. Documents
+with any `[ ]` (pending), `[~]` (in-progress), or `[!]` (blocked) items remain
+in `todo/`.
+
+**Protocol:**
+
+1. Verify every DoD item is `[x]` with evidence (passing tests, clean tree,
+   deliverables match). Do not archive on intent alone.
+2. Update `date.completed` to the current date.
+3. Move the document via `git mv` (preserves history):
+   ```bash
+   git mv {root}/todo/{filename} {root}/archive/YYYY/MM/{filename}
+   ```
+   Where `YYYY/MM` is derived from the document's creation timestamp (the
+   `YYYYMMDDHHmm` prefix in the filename), not the completion date.
+4. Commit the archive move with a `#tag` array:
+   ```bash
+   git commit -m "docs({type}): archive completed {type} {slug}" \
+             -m "All DoD items verified [x]. Moved from todo/ to archive/{YYYY}/{MM}/." \
+             -m "#project-{project} #module-{type} #type-docs #skill-{type}-archived #skill-grm-created"
+   ```
+
+#### Backfilling Pre-Existing Documents
+
+Documents created before the two-stage lifecycle was adopted may still live
+at a legacy dated path (`{root}/YYYY/MM/{filename}`). To backfill:
+
+1. **Completed documents** — `git mv {root}/YYYY/MM/{filename} {root}/archive/YYYY/MM/{filename}` (use the filename's embedded timestamp for the archive `YYYY/MM/`). Set `date.completed` if missing.
+2. **In-progress documents** — `git mv {root}/YYYY/MM/{filename} {root}/todo/{filename}`. Leave `date.completed` unset.
+3. Commit the backfill with `docs: backfill {type} to todo/archive lifecycle`
+
 # Handoff
 
 A skill for capturing and restoring AI conversation context for seamless work continuation across sessions.
@@ -1569,28 +1800,112 @@ This section provides handoff-specific guidance that complements the universal c
 
 ### Handoff Storage Location
 
-Handoff documents use a **two-stage lifecycle**: pending handoffs live in a
-flat `todo/` directory for easy reference (minimal typing when telling an agent
-which handoff to work on), and completed handoffs are archived into a dated
-hierarchy so you can tell at a glance what has been finished.
+Handoff documents follow the shared **two-stage lifecycle** (todo → archive)
+defined in the `work-lifecycle` include above. The `work-lifecycle` include
+now supports **audience variants** (agent vs human) — see its "Audience
+Variants" section for the routing criteria and format differences.
+
+#### Agent Handoffs (default)
+
+The standard handoff — context-dense, written for the next AI session.
 
 | Stage | Path | Purpose |
 |-------|------|---------|
 | **Pending** | `{REPO_ROOT}/.agents/handoffs/todo/YYYYMMDDHHmm-handoffslug.md` | Active handoffs awaiting work — the receiving session reads from here |
 | **Archived** | `{REPO_ROOT}/.agents/handoffs/archive/YYYY/MM/YYYYMMDDHHmm-handoffslug.md` | Completed handoffs — moved here via `git mv` after all DoD tasks are `[x]` |
 
-Where:
-- `YYYY` - 4-digit year (from the handoff's creation timestamp)
-- `MM` - 2-digit month (from the handoff's creation timestamp)
-- `DD` - 2-digit day
-- `HH` - 2-digit hour (24-hour format)
-- `mm` - 2-digit minute
-- `handoffslug` - kebab-case descriptive slug for the handoff
+#### Human Handoffs
 
-**The filename never changes between pending and archived.** The same
-`YYYYMMDDHHmm-handoffslug.md` name is used in both locations — only the
-directory changes. The archive's `YYYY/MM/` is derived from the filename's
-embedded timestamp (the handoff's creation date), not the completion date.
+Action-oriented handoffs for the user — created when a task is blocked on
+something only a human can provide (API keys, access, decisions, approvals).
+See the `work-lifecycle` include's "Audience Variants" section for the full
+routing criteria.
+
+| Stage | Path | Purpose |
+|-------|------|---------|
+| **Pending** | `{REPO_ROOT}/.agents/handoffs/human/todo/YYYYMMDDHHmm-slug.md` | Action requests awaiting human response |
+| **Archived** | `{REPO_ROOT}/.agents/handoffs/human/archive/YYYY/MM/YYYYMMDDHHmm-slug.md` | Resolved action requests — moved via `git mv` when the blocker is resolved |
+
+**Human handoff format** (self-contained — a human should be able to read
+just this document or the GitHub issue created from it and understand the
+full picture without reading the agent handoff):
+
+```markdown
+---
+date:
+  created: "YYYY-MM-DD"
+  completed: ""
+  last-activity: "YYYY-MM-DD"
+github_issue: 42
+---
+
+# {Action needed — one line}
+
+**Project Context:**
+- Project: {project name}
+- What it is: {1-2 sentence description of the project}
+
+**Feature Context:**
+- Feature: {what feature or work was being attempted}
+- Why it matters: {the goal — why this work is being done}
+
+**Current State:**
+- Done: {completed items, or "none yet"}
+- In progress: {in-progress items}
+- Blocked: {where this blocker sits in the overall work}
+
+**What I need from you:**
+1. {specific action step}
+2. {specific action step}
+
+**Why I can't proceed:** {blocker explained for a non-agent reader —
+what is missing and why the agent cannot generate or obtain it}
+
+**What I tried:**
+- {approach 1 and why it didn't work}
+- {approach 2 and why it didn't work}
+
+**Context:**
+- Agent handoff: `.agents/handoffs/todo/{filename}.md`
+- Run log: `.agents/log/{filename}.md` (if applicable)
+- Relevant files: {paths}
+
+**How to unblock me:** {what to do after the action is taken — e.g.,
+"re-run the ai-upsert skill" or "tell me the API key is in `.env`"}
+```
+
+**Human handoff filename:** `YYYYMMDDHHmm-{slug}.md` where the slug describes
+the action needed (e.g., `provide-openai-api-key`, not `blocked-on-evals`).
+
+**When to create a human handoff:** immediately when a blocker is identified
+as requiring human action — not at end-of-run. This is the crash-safety
+guarantee: the human action request is durable on disk even if the run
+crashes.
+
+**GitHub issue creation:** after writing the human handoff file, if `gh` is
+available and the repo has a GitHub remote, create a GitHub issue from the
+file content. The issue is the visibility layer — it shows up in the issue
+list, can be assigned and labeled, and stays open until the human resolves
+the blocker. The file is always created first (crash safety); the issue is
+conditional on `gh` and a remote.
+
+Protocol (see the `work-lifecycle` include's "Audience Variants" section for
+the full version):
+1. Write the human handoff file to `.agents/handoffs/human/todo/` first.
+2. Check for `gh` and a GitHub remote (`git remote get-url origin`).
+3. If both exist, create the `human-handoff` label (if missing) and the
+   issue via `gh issue create --body-file --label "human-handoff"`. Use
+   `--body-file`, never `--body` (see the `gh-posting-guard` include).
+4. Record the issue number in the human handoff file's frontmatter
+   (`github_issue: 42`).
+5. If `gh` is unavailable or no remote exists, skip issue creation — the
+   file alone is durable.
+
+**When to archive a human handoff:** when the human has provided what was
+needed and the blocking task in the agent handoff is marked `[x]`. If a
+GitHub issue was created, verify it is closed before archiving. Archive
+via `git mv` from `human/todo/` to `human/archive/YYYY/MM/` per the
+`work-lifecycle` include's archive protocol.
 
 **Example lifecycle:**
 1. Created (pending): `~/p/gh/levonk/myproject/.agents/handoffs/todo/202606251430-feature-auth-implementation.md`
@@ -1730,7 +2045,7 @@ below).
 - **Current State**: Where are we in the process?
 - **Key Decisions**: What decisions have been made?
 - **Next Steps**: What needs to be done next?
-- **Success Criteria**: How do we know when we're done?
+- **Definition of Done**: How do we verify the work was done right? (verification gate with [script]/[manual] checks)
 - **Git Commit Hash**: The HEAD commit hash captured in step 0 (or "not a git
   repository"). This pins the exact repo state at handoff time so the receiving
   session can `git checkout` or `git diff` against it to reconstruct what was
@@ -1770,18 +2085,25 @@ See commit: abc123def456
 
 #### 4. Structure the Handoff Document
 
-Use the standard handoff template for consistency. The template includes sections for Current State (completed/blocking), Project Overview, Key Decisions, Technical Context, Next Steps, Definition of Done, Success Criteria, Open Questions, Do Not, Suggested Skills, and Additional Context.
+Use the standard handoff template for consistency. The template includes sections for Current State (completed/blocking), Project Overview, Key Decisions, Technical Context, Next Steps, Task List, Definition of Done, Open Questions, Do Not, Suggested Skills, and Additional Context.
 
-**Definition of Done section**: Populate the `## Definition of Done` checkbox
+**Task List section**: Populate the `## Task List` checkbox
 list from the Next Steps. Each next step becomes one `- [ ] {task pending}`
 line, in priority order. If a task was already started in this session, mark
 it `[~]` (in progress) or `[x]` (done, if verified) instead of `[ ]`. If a
 task is blocked, mark it `[!]` with the blocker in parentheses.
 
-**The section must be self-contained in the handoff document.** The receiving
+**Definition of Done section**: Populate the `## Definition of Done` verification
+gate with checks that confirm the Task List was completed correctly, not just
+marked complete. Tag each item `[script]` (deterministic check — script exits
+non-zero if not done) or `[manual]` (judgment call the agent must verify).
+Include a "Not Done (common false-completion signals)" anti-checklist. See
+`references/handoff-template.md` for the standard DoD items.
+
+**Both sections must be self-contained in the handoff document.** The receiving
 session only sees the handoff document — it does NOT have access to this
 skill's INSTRUCTIONS.md or the template reference file. Therefore, the
-generated `## Definition of Done` section must include, verbatim from the
+generated `## Task List` section must include, verbatim from the
 template:
 
 1. The **mark legend** (`[ ]` pending, `[~]` in progress, `[x]` done,
@@ -1893,8 +2215,8 @@ wrong toolchain).
 When presented with a handoff document:
 
 1. **Read and understand** the current state
-2. **Verify in-progress tasks.** Before trusting the `## Definition of Done`
-   list, re-check every task marked `[~]` (in progress). For each `[~]` task,
+2. **Verify in-progress tasks.** Before trusting the `## Task List`,
+   re-check every task marked `[~]` (in progress). For each `[~]` task,
    confirm the work is actually underway — look for evidence in the working
    tree (`git status`, `git diff`), running processes, or recent edits to the
    files that task touches. If there is no evidence the task is being worked,
@@ -1902,18 +2224,19 @@ When presented with a handoff document:
    `[ ]` because it hides available work from the next agent and makes the
    list lie about the repo's real state.
 3. **Identify the next available task** — the first `[ ]` task in priority
-   order from the Definition of Done list (fall back to the Next Steps list
-   if the handoff has no DoD section)
-4. **Check for blockers** — tasks marked `[!]` in the DoD list and entries in
+   order from the Task List (fall back to the Next Steps list
+   if the handoff has no Task List section)
+4. **Check for blockers** — tasks marked `[!]` in the Task List and entries in
    Open Questions/Blocking Issues
-5. **Verify success criteria** are clear and measurable
+5. **Verify the Definition of Done checks** are clear and measurable — these
+   are the verification gates that confirm completed tasks were done right
 6. **Review suggested skills** and invoke if appropriate
 
 #### 2. Begin Work
 
 Start with: "I understand the context. Based on the handoff document, I'm continuing work on [project]. The next step is [first available `[ ]` task]. Let me begin."
 
-Mark the chosen task `[~]` in the handoff's `## Definition of Done` section
+Mark the chosen task `[~]` in the handoff's `## Task List` section
 **before** starting work on it — this signals to any concurrent agent that the
 task is claimed.
 
@@ -1933,8 +2256,8 @@ Then proceed with the first available task without asking questions unless:
 #### 3. Update Handoff
 
 After completing each major step:
-1. **Update the Definition of Done marks.** Flip `[~]` → `[x]` only after the
-   task's success criteria are met and verified (build passes, test passes,
+1. **Update the Task List marks.** Flip `[~]` → `[x]` only after the
+   task's Definition of Done checks pass (build passes, test passes,
    file exists, etc.) — never mark `[x]` on intent alone. If a task is
    blocked, mark it `[!]` with the blocker in parentheses on the same line
    (e.g., `- [!] {task blocked (waiting on upstream API access)}`) and move
@@ -1944,24 +2267,27 @@ After completing each major step:
 4. Add any new decisions made
 5. Update open questions
 6. Add new files/artifacts created
-7. **Append newly discovered tasks** as `[ ]` lines in the Definition of Done
-   list, in priority order. Do not silently delete tasks; if a task is no
+7. **Append newly discovered tasks** as `[ ]` lines in the Task List,
+   in priority order. Do not silently delete tasks; if a task is no
    longer relevant, mark it `[x]` with a note
    (`- [x] {task} (obsolete: reason)`).
 
 #### 4. Archive Completed Handoffs
 
-When **all** Definition of Done tasks are `[x]` (or marked `[x]` with an
-"obsolete" note), the handoff's work is complete. Archive it so the pending
-directory only contains handoffs that still need work — this is how you tell
-at a glance what has been finished.
+When **all** Task List items are `[x]` (or marked `[x]` with an
+"obsolete" note) AND all Definition of Done checks pass, the handoff's work
+is complete. Archive it so the pending directory only contains handoffs that
+still need work — this is how you tell at a glance what has been finished.
 
-**Protocol:**
+Follow the shared **archive protocol** defined in the `work-lifecycle` include
+above (→ "Archive Trigger"). The handoff-specific details:
 
-1. Verify every DoD checkbox is `[x]` (or `[x]` with an obsolete note). If any
-   `[ ]`, `[~]`, or genuine `[!]` tasks remain, do NOT archive — the handoff
-   is still active.
-2. Derive the archive path from the handoff filename's embedded timestamp:
+1. Verify every Task List checkbox is `[x]` (or `[x]` with an obsolete note)
+   and every Definition of Done checkbox is `[x]`. If any `[ ]`, `[~]`, or
+   genuine `[!]` tasks remain, or any DoD check is unchecked, do NOT archive —
+   the handoff is still active.
+2. Set `date.completed` in the handoff frontmatter to the current date.
+3. Derive the archive path from the handoff filename's embedded timestamp:
    ```bash
    FILENAME="${TIMESTAMP}-${SLUG}.md"          # e.g. 202606251430-feature-auth.md
    YEAR="${FILENAME:0:4}"                       # 2026
@@ -1969,17 +2295,17 @@ at a glance what has been finished.
    ARCHIVE_DIR="{REPO_ROOT}/.agents/handoffs/archive/${YEAR}/${MONTH}"
    mkdir -p "$ARCHIVE_DIR"
    ```
-3. Move the handoff from `todo/` to `archive/` using `git mv` (preserves git
+4. Move the handoff from `todo/` to `archive/` using `git mv` (preserves git
    history — never use plain `mv`):
    ```bash
    cd {REPO_ROOT}
    git mv ".agents/handoffs/todo/${FILENAME}" ".agents/handoffs/archive/${YEAR}/${MONTH}/${FILENAME}"
    ```
-4. Commit the archive move with the **standard handoff archive commit message**
+5. Commit the archive move with the **standard handoff archive commit message**
    and mandatory `#tag` array:
    ```bash
    git commit -m "docs(handoff): archive completed handoff ${SLUG}" \
-             -m "All Definition of Done tasks verified [x]. Moved from todo/ to archive/${YEAR}/${MONTH}/." \
+             -m "All Task List items verified [x] and Definition of Done checks pass. Moved from todo/ to archive/${YEAR}/${MONTH}/." \
              -m "#project-{PROJECT} #module-handoff #type-docs #skill-handoff-archived #skill-grm-created"
    ```
    Replace `{PROJECT}` with the target project's kebab-case name. If the
@@ -2014,12 +2340,15 @@ If the target project is not a git repository, use plain `mv` instead of
 - **Acknowledge receipt** - Confirm you've understood the context
 - **Start with action** - Begin with the first next step, not questions
 - **Update incrementally** - Keep the handoff document current as you work
+- **Update `date.last-activity`** - Every time you mark a task `[~]`, `[x]`,
+  or `[!]`, update the handoff's `date.last-activity` frontmatter to the
+  current date (per the `work-lifecycle` include above)
 - **Ask only when necessary** - If something is truly missing, ask specifically
 - **Invoke suggested skills** - Use the skills recommended in the handoff
-- **Archive when done** - When all DoD tasks are `[x]`, `git mv` the handoff
-  from `todo/` to `archive/YYYY/MM/` and commit with the standard archive
-  commit message + `#tag` array (step 4 of Context Restoration). This keeps
-  `todo/` clean — only pending work shows up there.
+- **Archive when done** - When all DoD tasks are `[x]`, set `date.completed`,
+  `git mv` the handoff from `todo/` to `archive/YYYY/MM/` and commit with the
+  standard archive commit message + `#tag` array (step 4 of Context
+  Restoration). This keeps `todo/` clean — only pending work shows up there.
 
 #### File Management
 - **Use consistent naming**: `YYYYMMDDHHmm-handoffslug.md` (never changes
@@ -2065,9 +2394,90 @@ AI: "I'll create a comprehensive handoff document with all decisions, next steps
 
 ### Example Handoff Structure
 
-Based on the infrahub example, a good handoff for complex projects includes sections for Target Architecture, Required Tasks (with investigation items and files to check), Success Criteria, and Files Modified This Session.
+Based on the infrahub example, a good handoff for complex projects includes sections for Target Architecture, Required Tasks (with investigation items and files to check), Task List, Definition of Done, and Files Modified This Session.
 
 For the full extended example template, see: [`references/handoff-template.md`](references/handoff-template.md)
+
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+**Context Capture:**
+- [ ] Commit pending work (Pre-Handoff Checkpoint, step 0)
+- [ ] Emit Required Reading directive (step 1)
+- [ ] Gather essential context (step 2)
+- [ ] Reference existing artifacts (step 3)
+- [ ] Structure the handoff document with Task List + Definition of Done (step 4)
+- [ ] Redact sensitive information (step 5)
+- [ ] Save handoff document to `.agents/handoffs/todo/` (step 6)
+- [ ] Commit the handoff document (step 7)
+
+**Context Restoration:**
+- [ ] Read the target project's agent-instructions file (step 0)
+- [ ] Analyze the handoff document (step 1)
+- [ ] Begin work on the first available `[ ]` task (step 2)
+- [ ] Update handoff marks after each major step (step 3)
+- [ ] Archive completed handoffs when all tasks `[x]` and DoD checks pass (step 4)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
+## Definition of Done
+
+Before declaring the handoff run complete, verify every item below.
+Items marked **[script]** are deterministically verified by a script — if
+the script exits non-zero, the item is NOT done. Items marked **[manual]**
+require the agent to check something the scripts cannot verify.
+
+### Context Capture
+
+- [ ] **[manual]** The handoff document includes all required sections from
+  the template (Current State, Git State, Required Reading, Project
+  Overview, Key Decisions, Technical Context, Next Steps, Task List,
+  Definition of Done, Open Questions, Do Not, Suggested Skills) (step 4)
+- [ ] **[manual]** The Task List is populated from the Next Steps with
+  correct status marks (`[ ]`/`[~]`/`[x]`/`[!]`) and includes the mark
+  legend (step 4)
+- [ ] **[manual]** The Definition of Done section includes `[script]`/`[manual]`
+  tagged verification checks and a "Not Done" anti-checklist (step 4)
+- [ ] **[manual]** Sensitive information is redacted (API keys, tokens,
+  passwords, PII replaced with `[REDACTED]` placeholders) (step 5)
+- [ ] **[script]** `scan-secrets.sh` finds no secrets in the handoff document
+  (step 5)
+- [ ] **[manual]** The handoff document is saved to
+  `.agents/handoffs/todo/{TIMESTAMP}-{SLUG}.md` (step 6)
+- [ ] **[script]** The handoff document is committed with the standard
+  handoff commit message and `#tag` array (step 7)
+
+### Context Restoration
+
+- [ ] **[manual]** The target project's agent-instructions file was read
+  before analyzing the handoff (step 0)
+- [ ] **[manual]** Every `[~]` task was re-verified — stale in-progress
+  marks demoted to `[ ]` (step 1)
+- [ ] **[manual]** The chosen task was marked `[~]` before starting work
+  (step 2)
+- [ ] **[manual]** Task List marks are updated after each major step —
+  `[~]` → `[x]` only when DoD checks pass (step 3)
+
+### Not Done (common false-completion signals)
+
+If any of these are true, the run is NOT complete:
+
+- Handoff document saved but not committed → the receiving session can't
+  find it in git history
+- Task List populated but no Definition of Done section → the receiving
+  session has no verification gate
+- DoD section present but no `[script]` items → deterministic checks were
+  skipped (only judgment calls remain)
+- Sensitive information "redacted" but `scan-secrets.sh` still finds
+  patterns → redaction was incomplete
+- All Task List items `[x]` but DoD checks not run → tasks were marked
+  done without verification
 
 ## Context Declaration
 

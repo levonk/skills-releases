@@ -29,14 +29,14 @@ shift
 DEPS=()
 VERBOSE=""
 if [ $# -ge 1 ] && [ "${1:-}" = "--verbose" ]; then
-  VERBOSE="--verbose"
-  shift
+	VERBOSE="--verbose"
+	shift
 fi
 # Remaining args are dependencies
 DEPS=("$@")
 
 if [ "$VERBOSE" = "--verbose" ]; then
-  echo "Searching nixpkgs for: $PROJECT" >&2
+	echo "Searching nixpkgs for: $PROJECT" >&2
 fi
 
 # --- Helpers -----------------------------------------------------------------
@@ -44,15 +44,15 @@ fi
 # eval_nixpkgs_version <ref> <pkg>
 # Prints the version string (quoted) or returns non-zero.
 eval_nixpkgs_version() {
-  local ref="$1" pkg="$2"
-  nix eval --system x86_64-linux "${ref}#${pkg}.version" 2>/dev/null
+	local ref="$1" pkg="$2"
+	nix eval --system x86_64-linux "${ref}#${pkg}.version" 2>/dev/null
 }
 
 # eval_nixpkgs_platforms <ref> <pkg>
 # Prints a JSON array of platforms or returns non-zero.
 eval_nixpkgs_platforms() {
-  local ref="$1" pkg="$2"
-  nix eval --json --system x86_64-linux "${ref}#${pkg}.meta.platforms" 2>/dev/null
+	local ref="$1" pkg="$2"
+	nix eval --json --system x86_64-linux "${ref}#${pkg}.meta.platforms" 2>/dev/null
 }
 
 # --- Project check -----------------------------------------------------------
@@ -62,7 +62,7 @@ eval_nixpkgs_platforms() {
 # ("1.19.0"); we keep that form rather than stripping quotes.
 NIXPKGS_VERSION="null"
 NIXPKGS_PLATFORMS="[]"
-NIXPKGS_REF_USED="null"  # JSON null; becomes "unstable" or "darwin-stable" (quoted) on success
+NIXPKGS_REF_USED="null" # JSON null; becomes "unstable" or "darwin-stable" (quoted) on success
 PROJECT_IN_NIXPKGS=false
 
 # Primary: nixpkgs-unstable (the channel most users get). --system x86_64-linux
@@ -71,14 +71,14 @@ PROJECT_IN_NIXPKGS=false
 # and standard Nix.
 VERSION_RAW=""
 if command -v nix >/dev/null 2>&1; then
-  if VERSION_RAW=$(eval_nixpkgs_version "nixpkgs" "$PROJECT"); then
-    NIXPKGS_VERSION="$VERSION_RAW"
-    NIXPKGS_REF_USED='"unstable"'
-    PROJECT_IN_NIXPKGS=true
-    if [ "$VERBOSE" = "--verbose" ]; then
-      echo "Found in nixpkgs-unstable: $(printf '%s' "$VERSION_RAW" | jq -r .)" >&2
-    fi
-  fi
+	if VERSION_RAW=$(eval_nixpkgs_version "nixpkgs" "$PROJECT"); then
+		NIXPKGS_VERSION="$VERSION_RAW"
+		NIXPKGS_REF_USED='"unstable"'
+		PROJECT_IN_NIXPKGS=true
+		if [ "$VERBOSE" = "--verbose" ]; then
+			echo "Found in nixpkgs-unstable: $(printf '%s' "$VERSION_RAW" | jq -r .)" >&2
+		fi
+	fi
 fi
 
 # Fallback: nixpkgs-26.05-darwin (stable darwin channel; works on all hosts
@@ -86,30 +86,30 @@ fi
 # realistic install path for x86_64-darwin users.
 DARWIN_STABLE_REF="github:NixOS/nixpkgs/nixpkgs-26.05-darwin"
 if [ "$PROJECT_IN_NIXPKGS" = false ] && command -v nix >/dev/null 2>&1; then
-  if VERSION_RAW=$(eval_nixpkgs_version "$DARWIN_STABLE_REF" "$PROJECT"); then
-    NIXPKGS_VERSION="$VERSION_RAW"
-    NIXPKGS_REF_USED='"darwin-stable"'
-    PROJECT_IN_NIXPKGS=true
-    if [ "$VERBOSE" = "--verbose" ]; then
-      echo "Found in nixpkgs-26.05-darwin: $(printf '%s' "$VERSION_RAW" | jq -r .)" >&2
-    fi
-  fi
+	if VERSION_RAW=$(eval_nixpkgs_version "$DARWIN_STABLE_REF" "$PROJECT"); then
+		NIXPKGS_VERSION="$VERSION_RAW"
+		NIXPKGS_REF_USED='"darwin-stable"'
+		PROJECT_IN_NIXPKGS=true
+		if [ "$VERBOSE" = "--verbose" ]; then
+			echo "Found in nixpkgs-26.05-darwin: $(printf '%s' "$VERSION_RAW" | jq -r .)" >&2
+		fi
+	fi
 fi
 
 # Platforms: only meaningful if we found the project. Use the same ref that
 # succeeded for version; if unstable succeeded, prefer it (most current).
 X86_64_DARWIN_IN_META=false
 if [ "$PROJECT_IN_NIXPKGS" = true ] && command -v nix >/dev/null 2>&1; then
-  PLATFORMS_REF="nixpkgs"
-  if [ "$NIXPKGS_REF_USED" = "darwin-stable" ]; then
-    PLATFORMS_REF="github:NixOS/nixpkgs/nixpkgs-26.05-darwin"
-  fi
-  if PLATFORMS_RAW=$(eval_nixpkgs_platforms "$PLATFORMS_REF" "$PROJECT"); then
-    NIXPKGS_PLATFORMS="$PLATFORMS_RAW"
-    if printf '%s' "$PLATFORMS_RAW" | jq -e 'index("x86_64-darwin")' >/dev/null 2>&1; then
-      X86_64_DARWIN_IN_META=true
-    fi
-  fi
+	PLATFORMS_REF="nixpkgs"
+	if [ "$NIXPKGS_REF_USED" = "darwin-stable" ]; then
+		PLATFORMS_REF="github:NixOS/nixpkgs/nixpkgs-26.05-darwin"
+	fi
+	if PLATFORMS_RAW=$(eval_nixpkgs_platforms "$PLATFORMS_REF" "$PROJECT"); then
+		NIXPKGS_PLATFORMS="$PLATFORMS_RAW"
+		if printf '%s' "$PLATFORMS_RAW" | jq -e 'index("x86_64-darwin")' >/dev/null 2>&1; then
+			X86_64_DARWIN_IN_META=true
+		fi
+	fi
 fi
 
 # x86_64-darwin install probe: does nixpkgs-26.05-darwin actually build it?
@@ -119,42 +119,42 @@ fi
 X86_64_DARWIN_INSTALLABLE=false
 NIXPKGS_DARWIN_STABLE_VERSION="null"
 if [ "$PROJECT_IN_NIXPKGS" = true ] && command -v nix >/dev/null 2>&1; then
-  if DARWIN_VER=$(nix eval "${DARWIN_STABLE_REF}#${PROJECT}.version" 2>/dev/null); then
-    X86_64_DARWIN_INSTALLABLE=true
-    NIXPKGS_DARWIN_STABLE_VERSION="$DARWIN_VER"
-  fi
+	if DARWIN_VER=$(nix eval "${DARWIN_STABLE_REF}#${PROJECT}.version" 2>/dev/null); then
+		X86_64_DARWIN_INSTALLABLE=true
+		NIXPKGS_DARWIN_STABLE_VERSION="$DARWIN_VER"
+	fi
 fi
 
 # --- Dependencies check (existing behavior, preserved) -----------------------
 
 DEPS_JSON="{}"
 for dep in "${DEPS[@]:-}"; do
-  [ -z "$dep" ] && continue
-  if [ "$VERBOSE" = "--verbose" ]; then
-    echo "Searching nixpkgs for dependency: $dep" >&2
-  fi
-  DEP_FOUND=false
-  if command -v nix >/dev/null 2>&1; then
-    if nix eval --system x86_64-linux "nixpkgs#${dep}.version" >/dev/null 2>&1 \
-      || nix eval "${DARWIN_STABLE_REF}#${dep}.version" >/dev/null 2>&1; then
-      DEP_FOUND=true
-    fi
-  fi
-  DEPS_JSON=$(echo "$DEPS_JSON" | jq --arg dep "$dep" --argjson found "$DEP_FOUND" '. + {($dep): $found}')
+	[ -z "$dep" ] && continue
+	if [ "$VERBOSE" = "--verbose" ]; then
+		echo "Searching nixpkgs for dependency: $dep" >&2
+	fi
+	DEP_FOUND=false
+	if command -v nix >/dev/null 2>&1; then
+		if nix eval --system x86_64-linux "nixpkgs#${dep}.version" >/dev/null 2>&1 ||
+			nix eval "${DARWIN_STABLE_REF}#${dep}.version" >/dev/null 2>&1; then
+			DEP_FOUND=true
+		fi
+	fi
+	DEPS_JSON=$(echo "$DEPS_JSON" | jq --arg dep "$dep" --argjson found "$DEP_FOUND" '. + {($dep): $found}')
 done
 
 # --- Output ------------------------------------------------------------------
 
 jq -n \
-  --argjson project_in_nixpkgs "$PROJECT_IN_NIXPKGS" \
-  --argjson dependencies_in_nixpkgs "$DEPS_JSON" \
-  --argjson nixpkgs_version "$NIXPKGS_VERSION" \
-  --argjson nixpkgs_platforms "$NIXPKGS_PLATFORMS" \
-  --argjson x86_64_darwin_in_meta "$X86_64_DARWIN_IN_META" \
-  --argjson x86_64_darwin_installable "$X86_64_DARWIN_INSTALLABLE" \
-  --argjson nixpkgs_darwin_stable_version "$NIXPKGS_DARWIN_STABLE_VERSION" \
-  --argjson nixpkgs_ref_used "$NIXPKGS_REF_USED" \
-  '{project_in_nixpkgs: $project_in_nixpkgs,
+	--argjson project_in_nixpkgs "$PROJECT_IN_NIXPKGS" \
+	--argjson dependencies_in_nixpkgs "$DEPS_JSON" \
+	--argjson nixpkgs_version "$NIXPKGS_VERSION" \
+	--argjson nixpkgs_platforms "$NIXPKGS_PLATFORMS" \
+	--argjson x86_64_darwin_in_meta "$X86_64_DARWIN_IN_META" \
+	--argjson x86_64_darwin_installable "$X86_64_DARWIN_INSTALLABLE" \
+	--argjson nixpkgs_darwin_stable_version "$NIXPKGS_DARWIN_STABLE_VERSION" \
+	--argjson nixpkgs_ref_used "$NIXPKGS_REF_USED" \
+	'{project_in_nixpkgs: $project_in_nixpkgs,
     dependencies_in_nixpkgs: $dependencies_in_nixpkgs,
     nixpkgs_version: $nixpkgs_version,
     nixpkgs_platforms: $nixpkgs_platforms,

@@ -2460,6 +2460,33 @@ Ensure no secrets, keys, or sensitive paths are exposed in agent definitions.
 Review tool contracts for hardcoded credentials and validate that tool inputs
 do not accept unvalidated external data.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Decide mode: check whether the target agent file exists (Mode A: Create vs Mode C: Update)
+- [ ] Step 0 (Mode A) / Research (Mode C): Run the research phase — search local `internal-docs/agents/`, skills.sh / GitHub, cross-check with prompts/templates
+- [ ] Mode A Step 1: Initialize the agent directory via `scripts/init-agent.py`
+- [ ] Mode A Step 2: Customize frontmatter (agent, description, use, personality, categories, capabilities, model-level, tools, tags)
+- [ ] Mode A Step 3: Define the agent design focus — expertise, autonomous operation, boundaries
+- [ ] Mode A Step 4: Apply agent-specific guidelines
+- [ ] Mode A Step 5: Run `scripts/verify-agent.py` and fix all issues
+- [ ] Mode A Step 6: Deliver to `internal-docs/agents/` with `date.last-used` set
+- [ ] Mode C Step 1: Read the existing agent fully (frontmatter, body, i/o, workflow, guardrails)
+- [ ] Mode C Step 2: Audit against the agent guidelines checklist (capabilities, template, usage, model level, tools, personality, frontmatter)
+- [ ] Mode C Step 3: Propose changes (Critical / Important / Nice to have) with before/after — do not apply yet
+- [ ] Mode C Step 4: Ask for user confirmation before applying
+- [ ] Mode C Step 5: Apply approved changes as separate commits
+- [ ] Mode C Step 6: Update `date.knowledge-basis` and `date.last-used`
+- [ ] Mode C Step 7: Run consistency verification (`verify-agent.py`) and confirm i/o schema, tool contracts, and rendering
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the agent-upsert run complete, verify every item below.

@@ -1391,6 +1391,31 @@ For critical warnings, workflow principles, ticket status flow, dependency manag
 
 *This skill ensures consistent, high-quality development while maintaining clear ticket state tracking and continuously improving the development process through reflection and opportunity identification.*
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Foundation check — run `orchestrator.sh --verbose loop` (or `dev-loop-helper.sh --verbose foundation`) for environment validation and security scanning (Step 0)
+- [ ] Ticket selection — run `dev-loop-helper.sh --verbose next` to get the next actionable ticket (Step 1)
+- [ ] Start work — run `dev-loop-helper.sh --verbose start <ticket-id>` to mark the ticket in_progress (Step 2)
+- [ ] High quality — verify upstream has adequate testing before building on top of it (Step 3)
+- [ ] Strategy — determine the implementation approach before coding (Step 4)
+- [ ] Implementation — do the actual work per the strategy (Step 5)
+- [ ] Verification — invoke the `code-quality-validation` skill for testing and quality checks (Step 6)
+- [ ] Ticket audit — validate coverage against ticket requirements (90%+ threshold) (Step 7)
+- [ ] Completion — use `git-repository-management` skill for commit organization and repository cleanup (Step 8 / Step 9)
+- [ ] Assess — identify opportunities for improvement in technology, process, and project (Step 10)
+- [ ] Codify — create tickets for identified improvements and prioritize them (Step 11)
+- [ ] Final cleanup commit — use `git-repository-management` skill for final cleanup (Step 12)
+- [ ] Loop again — grab the next ticket and repeat (Step 13)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the ai-development-loop run complete, verify every item

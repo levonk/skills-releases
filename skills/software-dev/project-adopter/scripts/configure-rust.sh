@@ -9,179 +9,180 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../common/config-functions.sh
 if [[ -f "$SCRIPT_DIR/../common/config-functions.sh" ]]; then
-    source "$SCRIPT_DIR/../common/config-functions.sh"
+	source "$SCRIPT_DIR/../common/config-functions.sh"
 fi
 
 # Configure Rust project
 configure_rust_project() {
-    local project_path="$1"
-    local mode="${2:-adopt}"     # adopt | standardize
-    local app_type="${3:-unknown}" # web | cli | api | library
-    local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library
+	local project_path="$1"
+	local mode="${2:-adopt}"           # adopt | standardize
+	local app_type="${3:-unknown}"     # web | cli | api | library
+	local project_type="${4:-unknown}" # frontend-web | api-service | cli-tool | library
 
-    log_info "Configuring Rust project (mode: $mode, app_type: $app_type)"
+	log_info "Configuring Rust project (mode: $mode, app_type: $app_type)"
 
-    # Handle Cargo.toml
-    if [[ -f "$project_path/Cargo.toml" ]]; then
-        configure_cargo_toml "$project_path" "$mode" "$app_type" "$project_type"
-    fi
+	# Handle Cargo.toml
+	if [[ -f "$project_path/Cargo.toml" ]]; then
+		configure_cargo_toml "$project_path" "$mode" "$app_type" "$project_type"
+	fi
 
-    # Handle Rust formatting configuration
-    configure_rustfmt_config "$project_path" "$mode"
+	# Handle Rust formatting configuration
+	configure_rustfmt_config "$project_path" "$mode"
 
-    # Handle Clippy configuration
-    configure_clippy_config "$project_path" "$mode"
+	# Handle Clippy configuration
+	configure_clippy_config "$project_path" "$mode"
 
-    # Handle Rust analyzer configuration
-    configure_rust_analyzer_config "$project_path" "$mode"
+	# Handle Rust analyzer configuration
+	configure_rust_analyzer_config "$project_path" "$mode"
 
-    # Handle framework-specific configs
-    configure_rust_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
+	# Handle framework-specific configs
+	configure_rust_framework_configs "$project_path" "$mode" "$app_type" "$project_type"
 }
 
 # Configure Cargo.toml
 configure_cargo_toml() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    log_info "Configuring Cargo.toml for Rust project"
+	log_info "Configuring Cargo.toml for Rust project"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Standardize mode - comprehensive additions
-        add_standardize_cargo_dependencies "$project_path" "$app_type" "$project_type"
-        add_standardize_cargo_features "$project_path" "$app_type" "$project_type"
-    else
-        # Adopt mode - minimal essential additions
-        add_adopt_cargo_dependencies "$project_path" "$app_type" "$project_type"
-    fi
+	if [[ "$mode" == "standardize" ]]; then
+		# Standardize mode - comprehensive additions
+		add_standardize_cargo_dependencies "$project_path" "$app_type" "$project_type"
+		add_standardize_cargo_features "$project_path" "$app_type" "$project_type"
+	else
+		# Adopt mode - minimal essential additions
+		add_adopt_cargo_dependencies "$project_path" "$app_type" "$project_type"
+	fi
 }
 
 # Add standardize mode dependencies to Cargo.toml
 add_standardize_cargo_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    local dev_deps_to_add=""
-    local deps_to_add=""
+	local dev_deps_to_add=""
+	local deps_to_add=""
 
-    # Base dev dependencies for all Rust projects
-    dev_deps_to_add='"tokio-test", "criterion", "proptest"'
+	# Base dev dependencies for all Rust projects
+	dev_deps_to_add='"tokio-test", "criterion", "proptest"'
 
-    # App-type specific dependencies
-    case "$app_type" in
-        "web")
-            deps_to_add="$deps_to_add, \"wasm-bindgen\", \"wasm-bindgen-futures\""
-            dev_deps_to_add="$dev_deps_to_add, \"wasm-pack\", \"wasm-bindgen-test\""
-            if [[ "$project_type" == *"frontend-web"* ]]; then
-                deps_to_add="$deps_to_add, \"web-sys\", \"js-sys\""
-            fi
-            ;;
-        "cli")
-            deps_to_add="$deps_to_add, \"clap\", \"anyhow\", \"thiserror\""
-            ;;
-        "api")
-            deps_to_add="$deps_to_add, \"tokio\", \"serde\", \"serde_json\", \"axum\""
-            dev_deps_to_add="$dev_deps_to_add, \"tower-http\""
-            ;;
-    esac
+	# App-type specific dependencies
+	case "$app_type" in
+	"web")
+		deps_to_add="$deps_to_add, \"wasm-bindgen\", \"wasm-bindgen-futures\""
+		dev_deps_to_add="$dev_deps_to_add, \"wasm-pack\", \"wasm-bindgen-test\""
+		if [[ "$project_type" == *"frontend-web"* ]]; then
+			deps_to_add="$deps_to_add, \"web-sys\", \"js-sys\""
+		fi
+		;;
+	"cli")
+		deps_to_add="$deps_to_add, \"clap\", \"anyhow\", \"thiserror\""
+		;;
+	"api")
+		deps_to_add="$deps_to_add, \"tokio\", \"serde\", \"serde_json\", \"axum\""
+		dev_deps_to_add="$dev_deps_to_add, \"tower-http\""
+		;;
+	esac
 
-    # Framework-specific dependencies
-    case "$project_type" in
-        "frontend-web")
-            if [[ -f "$project_path/index.html" ]] || [[ -d "$project_path/www" ]]; then
-                deps_to_add="$deps_to_add, \"yew\""
-                dev_deps_to_add="$dev_deps_to_add, \"trunk\""
-            fi
-            ;;
-        "api-service")
-            deps_to_add="$deps_to_add, \"sqlx\", \"uuid\", \"chrono\""
-            ;;
-    esac
+	# Framework-specific dependencies
+	case "$project_type" in
+	"frontend-web")
+		if [[ -f "$project_path/index.html" ]] || [[ -d "$project_path/www" ]]; then
+			deps_to_add="$deps_to_add, \"yew\""
+			dev_deps_to_add="$dev_deps_to_add, \"trunk\""
+		fi
+		;;
+	"api-service")
+		deps_to_add="$deps_to_add, \"sqlx\", \"uuid\", \"chrono\""
+		;;
+	esac
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1; then
-        echo "Adding standardize dependencies to Cargo.toml using yq-go"
-        # Add devDependencies
-        # yq-go eval ".[\"dev-dependencies\"] += {$dev_deps_to_add}" "$project_path/Cargo.toml" -i
-        # Add dependencies if any
-        if [[ -n "$deps_to_add" ]]; then
-            # yq-go eval ".dependencies += {$deps_to_add}" "$project_path/Cargo.toml" -i
-        fi
-    else
-        log_warn "yq-go not available, skipping Cargo.toml dependency updates"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1; then
+		echo "Adding standardize dependencies to Cargo.toml using yq-go"
+		# Add devDependencies
+		# yq-go eval ".[\"dev-dependencies\"] += {$dev_deps_to_add}" "$project_path/Cargo.toml" -i
+		# Add dependencies if any
+		if [[ -n "$deps_to_add" ]]; then
+			# yq-go eval ".dependencies += {$deps_to_add}" "$project_path/Cargo.toml" -i
+			true
+		fi
+	else
+		log_warn "yq-go not available, skipping Cargo.toml dependency updates"
+	fi
 }
 
 # Add adopt mode dependencies to Cargo.toml
 add_adopt_cargo_dependencies() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    # Adopt mode - minimal essential dependencies only
-    local essential_deps=""
+	# Adopt mode - minimal essential dependencies only
+	local essential_deps=""
 
-    case "$app_type" in
-        "web")
-            essential_deps='"wasm-bindgen"'
-            ;;
-        "cli")
-            essential_deps='"clap", "anyhow"'
-            ;;
-        "api")
-            essential_deps='"tokio", "serde"'
-            ;;
-    esac
+	case "$app_type" in
+	"web")
+		essential_deps='"wasm-bindgen"'
+		;;
+	"cli")
+		essential_deps='"clap", "anyhow"'
+		;;
+	"api")
+		essential_deps='"tokio", "serde"'
+		;;
+	esac
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1 && [[ -n "$essential_deps" ]]; then
-        echo "Adding adopt dependencies to Cargo.toml using yq-go"
-        # yq-go eval ".dependencies += {$essential_deps}" "$project_path/Cargo.toml" -i
-    else
-        log_warn "yq-go not available or no dependencies to add"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1 && [[ -n "$essential_deps" ]]; then
+		echo "Adding adopt dependencies to Cargo.toml using yq-go"
+		# yq-go eval ".dependencies += {$essential_deps}" "$project_path/Cargo.toml" -i
+	else
+		log_warn "yq-go not available or no dependencies to add"
+	fi
 }
 
 # Add standardize mode features
 add_standardize_cargo_features() {
-    local project_path="$1"
-    local app_type="$2"
-    local project_type="$3"
+	local project_path="$1"
+	local app_type="$2"
+	local project_type="$3"
 
-    # Add common features based on app type
-    local features_to_add=""
+	# Add common features based on app type
+	local features_to_add=""
 
-    case "$app_type" in
-        "web")
-            features_to_add='"default", "console_error_panic_hook", "exception_handler"'
-            ;;
-        "cli")
-            features_to_add='"default", "derive"'
-            ;;
-        "api")
-            features_to_add='"default", "full", "macros"'
-            ;;
-    esac
+	case "$app_type" in
+	"web")
+		features_to_add='"default", "console_error_panic_hook", "exception_handler"'
+		;;
+	"cli")
+		features_to_add='"default", "derive"'
+		;;
+	"api")
+		features_to_add='"default", "full", "macros"'
+		;;
+	esac
 
-    # Apply surgical changes
-    if command -v yq-go >/dev/null 2>&1 && [[ -n "$features_to_add" ]]; then
-        echo "Adding features to Cargo.toml using yq-go"
-        # yq-go eval ".features.default += [$features_to_add]" "$project_path/Cargo.toml" -i
-    else
-        log_warn "yq-go not available or no features to add"
-    fi
+	# Apply surgical changes
+	if command -v yq-go >/dev/null 2>&1 && [[ -n "$features_to_add" ]]; then
+		echo "Adding features to Cargo.toml using yq-go"
+		# yq-go eval ".features.default += [$features_to_add]" "$project_path/Cargo.toml" -i
+	else
+		log_warn "yq-go not available or no features to add"
+	fi
 }
 
 # Configure rustfmt
 configure_rustfmt_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/rustfmt.toml" ]]; then
-        cat > "$project_path/rustfmt.toml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/rustfmt.toml" ]]; then
+		cat >"$project_path/rustfmt.toml" <<'EOF'
 edition = "2021"
 hard_tabs = false
 tab_spaces = 4
@@ -202,17 +203,17 @@ where_single_line = false
 imports_granularity = "Crate"
 group_imports = "StdExternalCrate"
 EOF
-        log_info "✓ Created rustfmt.toml"
-    fi
+		log_info "✓ Created rustfmt.toml"
+	fi
 }
 
 # Configure Clippy
 configure_clippy_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/clippy.toml" ]]; then
-        cat > "$project_path/clippy.toml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/clippy.toml" ]]; then
+		cat >"$project_path/clippy.toml" <<'EOF'
 # General configuration
 cognitive-complexity-threshold = 30
 too-many-arguments-threshold = 7
@@ -243,17 +244,17 @@ suspicious_operation_groupings = "allow"
 multiple_crate_versions = "allow"
 wildcard_dependencies = "allow"
 EOF
-        log_info "✓ Created clippy.toml"
-    fi
+		log_info "✓ Created clippy.toml"
+	fi
 }
 
 # Configure Rust analyzer
 configure_rust_analyzer_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/.rust-analyzer.toml" ]]; then
-        cat > "$project_path/.rust-analyzer.toml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/.rust-analyzer.toml" ]]; then
+		cat >"$project_path/.rust-analyzer.toml" <<'EOF'
 # Rust analyzer configuration
 [procMacro]
 enable = true
@@ -298,40 +299,40 @@ addCallArgumentSnippets = true
 postfix.enable = true
 snippets.custom = {}
 EOF
-        log_info "✓ Created .rust-analyzer.toml"
-    fi
+		log_info "✓ Created .rust-analyzer.toml"
+	fi
 }
 
 # Configure Rust framework-specific configurations
 configure_rust_framework_configs() {
-    local project_path="$1"
-    local mode="$2"
-    local app_type="$3"
-    local project_type="$4"
+	local project_path="$1"
+	local mode="$2"
+	local app_type="$3"
+	local project_type="$4"
 
-    # Yew configuration
-    if [[ -f "$project_path/index.html" ]] || [[ -d "$project_path/www" ]]; then
-        configure_yew_config "$project_path" "$mode"
-    fi
+	# Yew configuration
+	if [[ -f "$project_path/index.html" ]] || [[ -d "$project_path/www" ]]; then
+		configure_yew_config "$project_path" "$mode"
+	fi
 
-    # Axum configuration
-    if [[ "$app_type" == "api" ]] || [[ "$project_type" == *"api-service"* ]]; then
-        configure_axum_config "$project_path" "$mode"
-    fi
+	# Axum configuration
+	if [[ "$app_type" == "api" ]] || [[ "$project_type" == *"api-service"* ]]; then
+		configure_axum_config "$project_path" "$mode"
+	fi
 
-    # Trunk configuration for web apps
-    if [[ "$app_type" == "web" ]] && [[ "$mode" == "standardize" ]]; then
-        configure_trunk_config "$project_path" "$mode"
-    fi
+	# Trunk configuration for web apps
+	if [[ "$app_type" == "web" ]] && [[ "$mode" == "standardize" ]]; then
+		configure_trunk_config "$project_path" "$mode"
+	fi
 }
 
 # Configure Yew
 configure_yew_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/index.html" ]]; then
-        cat > "$project_path/index.html" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/index.html" ]]; then
+		cat >"$project_path/index.html" <<'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -344,29 +345,29 @@ configure_yew_config() {
 </body>
 </html>
 EOF
-        log_info "✓ Created index.html for Yew app"
-    fi
+		log_info "✓ Created index.html for Yew app"
+	fi
 }
 
 # Configure Axum
 configure_axum_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]]; then
-        # Create basic Axum project structure
-        mkdir -p "$project_path/src/handlers"
-        
-        if [[ ! -f "$project_path/src/handlers/mod.rs" ]]; then
-            cat > "$project_path/src/handlers/mod.rs" << 'EOF'
+	if [[ "$mode" == "standardize" ]]; then
+		# Create basic Axum project structure
+		mkdir -p "$project_path/src/handlers"
+
+		if [[ ! -f "$project_path/src/handlers/mod.rs" ]]; then
+			cat >"$project_path/src/handlers/mod.rs" <<'EOF'
 pub mod health;
 pub mod api;
 EOF
-            log_info "✓ Created handlers/mod.rs"
-        fi
+			log_info "✓ Created handlers/mod.rs"
+		fi
 
-        if [[ ! -f "$project_path/src/handlers/health.rs" ]]; then
-            cat > "$project_path/src/handlers/health.rs" << 'EOF'
+		if [[ ! -f "$project_path/src/handlers/health.rs" ]]; then
+			cat >"$project_path/src/handlers/health.rs" <<'EOF'
 use axum::{Json, response::IntoResponse};
 use serde_json::Value;
 
@@ -377,18 +378,18 @@ pub async fn health_check() -> impl IntoResponse {
     }))
 }
 EOF
-            log_info "✓ Created handlers/health.rs"
-        fi
-    fi
+			log_info "✓ Created handlers/health.rs"
+		fi
+	fi
 }
 
 # Configure Trunk
 configure_trunk_config() {
-    local project_path="$1"
-    local mode="$2"
+	local project_path="$1"
+	local mode="$2"
 
-    if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/Trunk.toml" ]]; then
-        cat > "$project_path/Trunk.toml" << 'EOF'
+	if [[ "$mode" == "standardize" ]] && [[ ! -f "$project_path/Trunk.toml" ]]; then
+		cat >"$project_path/Trunk.toml" <<'EOF'
 [build]
 # The index HTML file to drive the bundling process.
 target = "index.html"
@@ -429,8 +430,8 @@ dist = "dist"
 # Optionally perform additional explicit file cleanups.
 cargo = false
 EOF
-        log_info "✓ Created Trunk.toml"
-    fi
+		log_info "✓ Created Trunk.toml"
+	fi
 }
 
 # Export functions for use by adopt-project.sh

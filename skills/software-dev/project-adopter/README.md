@@ -35,7 +35,7 @@ config), and a single `project-adoption` commit on a rollback-safe tag.
 ## What It Sets Up
 
 1. **Detect** stack via `project-detection` (50+ build systems / CI platforms)
-2. **devbox.json** with language-appropriate packages (`nodejs_22`, `rustc`,
+2. **devbox.json** with language-appropriate packages (`nodejs_24`, `rustc`,
    `python3`, `go`, etc.)
 3. **justfile** with auto-detecting targets: `just build` →
    `_devbox build_impl` → (in devbox) `just build_impl` → `[build tool]`

@@ -1747,6 +1747,24 @@ The `git-repository-management` skill can call this skill to update
 `.gitignore` as part of a commit workflow. When invoked from another skill,
 use `--output .gitignore` to target only the VCS ignore file.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Reconcile — run `generate_ignores.py reconcile` to harvest orphan patterns from deployed ignore files and assign them to concern files (Step 1)
+- [ ] Audit — run `generate_ignores.py audit` to check which output files are missing or stale in the target project (Step 2)
+- [ ] Generate (dry-run first) — run `generate_ignores.py generate --dry-run`, review the proposed changes, then apply generation to all outputs (Step 3)
+- [ ] Review and commit — inspect `git diff`, confirm markers and project-specific content are preserved, then commit with the traceability header (Step 4)
+- [ ] Update workspace files (optional) — run `generate_ignores.py workspace` to auto-merge exclude settings into all `*.code-workspace` files (Step 5)
+- [ ] Update ripgrep config (optional) — run `generate_ignores.py ripgrep` to update `config` and `ripgrepignore` deterministically (Step 6)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the ignorefile-manager run complete, verify every item below.

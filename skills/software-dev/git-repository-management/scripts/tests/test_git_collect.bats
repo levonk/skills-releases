@@ -50,9 +50,19 @@ setup_repo() {
 # Runs from within the repo dir so devbox detection (which keys off CWD at
 # launch) sees no devbox.json and falls back to direct execution — otherwise
 # `devbox run -- git ...` fails in the temp dir and diff output is lost.
+# Unsets DEVBOX_SHELL_ENABLED and IN_NIX_SHELL so cli-tool-discovery.sh
+# doesn't short-circuit on "already inside devbox/nix" when bats itself
+# runs via `devbox run --`.
 run_collect() {
     local dir="$1"
-    ( cd "$dir" && bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
+    local extra_path="${2:-}"
+    # GIT_CONFIG_GLOBAL=/dev/null disables the user's global git config
+    # (which may include broken external diff drivers like difftastic).
+    # Optional second arg prepends a dir to PATH (used by jj fallback test
+    # to inject a fake broken jj binary).
+    local path_env="PATH=$extra_path:$PATH"
+    [[ -z "$extra_path" ]] && path_env=""
+    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
 }
 
 # --- basic collection tests ---
@@ -158,6 +168,42 @@ EOF
     local dir; dir="$(setup_repo jj-detect README.md)"
     local out; out="$(run_collect "$dir")"
     assert_contains "JJ:1" "$out"
+}
+
+@test "jj_log falls back to git log when jj fails at runtime" {
+    # Regression: jj_log() used to only check binary availability
+    # (command -v jj), not runtime success. A broken jj config (e.g. invalid
+    # TOML) made every jj invocation fail, and the 2>/dev/null || echo
+    # "<none>" fallback in the caller silently blanked RECENT_LOG. The fix
+    # makes jj_log() fall back to git log on any jj runtime failure.
+    local dir; dir="$(setup_repo jj-fallback README.md)"
+    # Make a second commit so git log has something to show
+    echo "more" > "$dir/second.txt"
+    git -C "$dir" add -A
+    git -C "$dir" commit -q -m "second commit"
+    # Force jj to fail by setting JJ_PATH to a fake binary that exits 1.
+    # The script's JJ_AVAILABLE check uses `command -v jj`, so we put a
+    # broken jj on PATH that exits 1 (simulating a config error).
+    local fake_bin="$TEST_BASE/fake-bin"
+    mkdir -p "$fake_bin"
+    cat > "$fake_bin/jj" <<'EOF'
+#!/usr/bin/env bash
+echo "Config error: broken jj" >&2
+exit 1
+EOF
+    chmod +x "$fake_bin/jj"
+    local out
+    out="$(run_collect "$dir" "$fake_bin")"
+    # RECENT_LOG should contain the git log output with the commit subject
+    # "second commit" — not <none>, which is what the old code produced when
+    # jj failed silently. We check for the commit subject (the positive
+    # signal) rather than asserting no <none> anywhere, since FULL_DIFF
+    # legitimately shows <none> when there are no pending changes.
+    assert_contains "second commit" "$out"
+    # Extract the RECENT_LOG section and verify it is not <none>
+    local recent_section
+    recent_section="$(printf '%s\n' "$out" | sed -n '/^RECENT_LOG:/,/^STAGED:/p' | grep -v '^STAGED:')"
+    assert_not_contains "<none>" "$recent_section"
 }
 
 # --- quality check tests ---
@@ -299,7 +345,7 @@ EOF
     local dir; dir="$(setup_repo json-mode src/main.py)"
     echo "changed" > "$dir/src/main.py"
     local out
-    out="$(cd "$dir" && bash "$GIT_COLLECT" --json "$dir" 2>&1)" || true
+    out="$(cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$GIT_COLLECT" --json "$dir" 2>/dev/null)" || true
     # Verify it's valid JSON via jq if available, else basic shape check
     if command -v jq >/dev/null 2>&1; then
         printf '%s' "$out" | jq -e . >/dev/null 2>&1 || {
@@ -326,7 +372,7 @@ EOF
     echo "staged change" > "$dir/src/main.py"
     git -C "$dir" add src/main.py
     local out
-    out="$(cd "$dir" && bash "$GIT_COLLECT" --json "$dir" 2>&1)" || true
+    out="$(cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$GIT_COLLECT" --json "$dir" 2>/dev/null)" || true
     if command -v jq >/dev/null 2>&1; then
         local count
         count=$(printf '%s' "$out" | jq '.staged | length' 2>/dev/null || echo "0")
@@ -590,6 +636,62 @@ EOF
     [[ "$elapsed" -lt 15 ]] || {
         echo "git-collect took ${elapsed}s with WRAPPER_DEVBOX_DISABLED=1 — cache may not be working" >&3
         echo "expected <15s, got ${elapsed}s" >&3
+        return 1
+    }
+}
+
+# --- rtk_available caching regression test ---
+# git-collect.sh hung for 30+ minutes under 10 parallel agent sessions
+# because rtk_available() was called on every git_cmd() / rtk_wrap()
+# invocation, each spawning cli-tool-discovery.sh which re-probes devbox
+# (15s timeout). The fix caches rtk_available() and makes it honor
+# WRAPPER_DEVBOX_DISABLED (skip cli-tool-discovery, PATH check only).
+# This test verifies the WRAPPER_DEVBOX_DISABLED fast path: when devbox
+# is known broken, rtk_available must NOT spawn cli-tool-discovery.sh.
+
+@test "rtk_available skips cli-tool-discovery when WRAPPER_DEVBOX_DISABLED=1" {
+    command -v rtk >/dev/null 2>&1 || skip "rtk not installed"
+    local dir
+    dir="$TEST_BASE/rtk-cache-disabled"
+    rm -rf "$dir"; mkdir -p "$dir"
+    git init -q "$dir"
+    git -C "$dir" config user.email "test@test.com"
+    git -C "$dir" config user.name "Test"
+    cat > "$dir/devbox.json" <<'EOF'
+{
+  "packages": [],
+  "shell": { "init_hook": "" }
+}
+EOF
+    echo "content" > "$dir/README.md"
+    git -C "$dir" add -A
+    git -C "$dir" commit -q -m "initial"
+    echo "modified" > "$dir/README.md"
+    # Create a fake cli-tool-discovery.sh that writes a marker file if
+    # called. With the WRAPPER_DEVBOX_DISABLED fast path, rtk_available()
+    # must NOT spawn cli-tool-discovery.sh at all — it falls back to
+    # `command -v rtk` (PATH check only). If the marker file exists after
+    # the run, the fix is broken.
+    local fake_bin="$TEST_BASE/fake-cli-bin"
+    local marker="$TEST_BASE/cli-discovery-called.marker"
+    rm -f "$marker"
+    mkdir -p "$fake_bin"
+    cat > "$fake_bin/cli-tool-discovery.sh" <<EOF
+#!/usr/bin/env bash
+touch "$marker"
+echo "FOUND:rtk"
+EOF
+    chmod +x "$fake_bin/cli-tool-discovery.sh"
+    ( cd "$dir" && \
+      env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL \
+      GIT_CONFIG_GLOBAL=/dev/null \
+      WRAPPER_DEVBOX_DISABLED=1 \
+      CLI_TOOL_DISCOVERY="$fake_bin/cli-tool-discovery.sh" \
+      bash "$GIT_COLLECT" "$dir" >/dev/null 2>&1 ) || true
+    [[ ! -f "$marker" ]] || {
+        echo "rtk_available() called cli-tool-discovery.sh despite WRAPPER_DEVBOX_DISABLED=1" >&3
+        echo "the fast path should skip cli-tool-discovery and use command -v rtk only" >&3
+        rm -f "$marker"
         return 1
     }
 }

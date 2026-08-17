@@ -2116,6 +2116,22 @@ resolve mode exits 0 with the wrapped command on stdout.
   shouldn't happen in normal operation (the script is materialized at build
   time), but the fallback ensures the script degrades gracefully.
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Step 1 — Detect the environment wrapper (devbox, mise, flox, direnv, or nix) via `cli-tool-discovery.sh`
+- [ ] Step 2 — Check rtk availability and whether the command is rtk-supported (via `rtk rewrite`)
+- [ ] Step 3 — Compose and execute the wrapped command via `scripts/wrap_command.sh` (resolve or exec mode)
+- [ ] Step 4 — Handle edge cases (chained commands, TUI exclusions, already-inside-wrapper, rtk-not-found, raw-output requests)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the shell-wrapper run complete, verify every item below.

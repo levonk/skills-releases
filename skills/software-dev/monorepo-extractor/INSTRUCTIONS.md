@@ -1514,6 +1514,27 @@ read -p "Press enter after team confirmation..."
 - **CI/CD updates**: Update automation to point to new repository
 - **Token rotation**: Rotate any tokens that may be embedded in history
 
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] Verify all required tools are available with minimum versions via `verify-tools.sh` (Core Workflow Step 1)
+- [ ] Validate monorepo state — no uncommitted changes, no stashed entries, remote synchronized, branch exists on remote, no unpushed commits, `git fsck` passes (Core Workflow Step 2)
+- [ ] Detect build systems, package managers, and CI/CD platforms via `detect-build-systems.sh` and `detect-ci-cd-systems.sh` (Core Workflow Step 3)
+- [ ] Analyze workspace configurations and shared resources via `analyze-workspace-configs.sh` (Core Workflow Step 4)
+- [ ] Extract the project — duplicate the monorepo, intelligently prune unrelated projects and history while preserving shared resources (Core Workflow Steps 5-6)
+- [ ] Update workspace configurations in the new repo to reflect single-project structure (Core Workflow Step 7)
+- [ ] Validate project-specific targets (bootstrap, build, lint, test) work in the new repo via `validate-project-targets.sh` (Core Workflow Step 8)
+- [ ] Run final validation via `validate-extraction.sh` — repository integrity and history completeness (Core Workflow Step 9)
+- [ ] Clean up — safely remove the project from the original monorepo with a reference to the new location (Core Workflow Step 10)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
+
 ## Definition of Done
 
 Before declaring the monorepo-extractor run complete, verify every item below.

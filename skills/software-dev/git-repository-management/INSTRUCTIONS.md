@@ -1639,6 +1639,55 @@ bash ./scripts/git-repo-init.bash --init-only [TARGET-DIR]  # (conditional) Full
 ./scripts/git-archive.sh --prune [--retention-months N] --confirm [path]  # Prune old archive refs
 ```
 
+### Feeding the Batch Spec to git-commit-batch.sh (Format A — Heredoc)
+
+`git-commit-batch.sh` reads commit specifications from STDIN. **Use a
+heredoc (Format A)** for any batch with a body, a `#tag` array, or multiple
+commits — it avoids the `\n`-escaping errors that `printf` one-liners
+produce. The `#tag` array is **mandatory** (see the Commit Message Tagging
+Standard inlined above); the script rejects commits without it via
+`COMMIT_FAILED:NO_TAG_ARRAY`.
+
+```bash
+cat <<'BATCH' | ./scripts/git-commit-batch.sh --slug my-batch
+COMMIT:Add JWT auth with login endpoint and session middleware
+
+- Implement login endpoint with JWT generation
+- Add session validation middleware
+- Cover with auth tests
+
+#project-auth #module-jwt #type-feat #skill-grm-created
+FILES:src/auth/login.py
+FILES:src/auth/session.py
+FILES:tests/auth/test_login.py
+COMMIT:Document JWT auth in API docs
+
+- Document the new /auth/login endpoint
+- Add JWT token format section to README
+
+#project-auth #module-docs #type-docs #skill-grm-created
+FILES:docs/api/authentication.md
+FILES:README.md
+BATCH
+```
+
+**Format rules:**
+- `COMMIT:<subject>` starts a new commit block — subject only, body on
+  following lines
+- Blank line separates subject from body (required — the script rejects
+  bodyless commits with `COMMIT_FAILED:NO_BODY`)
+- Blank line separates body prose from the `#tag` array line
+- `#tag` array is the last line of the body, before `FILES:` — one line of
+  space-separated `#kebab-case` tags, `#skill-grm-created` always last
+- `FILES:<path>` — one file per line, after the tag line; paths with spaces
+  are preserved (the entire line after `FILES:` is the path)
+- Multiple `COMMIT:` blocks in the same heredoc = multiple commits, executed
+  in order (order least-complicated → most-complicated for rollback safety)
+
+**For single-commit checkpoints** (no body complexity, one or two files),
+the `printf` one-liner format (Format B) is acceptable — see the Checkpoint
+Commit entry point below. For anything larger, use the heredoc.
+
 > **Working in a subdirectory?** All scripts automatically discover the repository root from any subdirectory. You can also pass the target path explicitly:
 > ```bash
 > ./scripts/git-collect.sh /path/to/repo
@@ -1682,7 +1731,22 @@ full collect-analyze-push cycle. Use when:
 ```bash
 # Single commit — one COMMIT block, no collect, no push, no quality checks
 # Pre/post auto-tags still fire for rollback safety
-printf 'COMMIT:Checkpoint before auth refactor\n\n- Pre-task checkpoint before starting JWT migration\nFILES:src/auth/index.ts\nFILES:src/auth/types.ts' \
+# Heredoc (Format A) — no \n escaping, #tag array included
+cat <<'BATCH' | ./scripts/git-commit-batch.sh --slug checkpoint-auth-refactor
+COMMIT:Checkpoint before auth refactor
+
+- Pre-task checkpoint before starting JWT migration
+
+#project-auth #module-jwt #type-chore #skill-grm-created
+FILES:src/auth/index.ts
+FILES:src/auth/types.ts
+BATCH
+```
+
+For a minimal single-file checkpoint where the one-liner is readable, the
+`printf` format (Format B) also works — but always include the `#tag` array:
+```bash
+printf 'COMMIT:Checkpoint before auth refactor\\n\\n- Pre-task checkpoint before JWT migration\\n\\n#project-auth #module-jwt #type-chore #skill-grm-created\nFILES:src/auth/index.ts\n' \
   | ./scripts/git-commit-batch.sh --slug checkpoint-auth-refactor
 ```
 
@@ -1833,6 +1897,26 @@ For quality check results, quality check integration, security considerations, e
 
 For tagging HEAD, automatic run tagging, tag format, tag creation commands, tagging rules, usage patterns (complete repository management, cleanup, analysis, dry run), environment integration, script command reference, RTK usage, and development loop integration, see [Tagging and Pushing](references/tagging-and-pushing.md).
 
+
+## Task List
+
+Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
+starting, `[x]` when verified done, `[!]` if blocked.
+
+- [ ] (conditional) If `git-collect.sh` emits `NOT_A_GIT_REPO`, run `git-repo-init.bash` with the correct scope, then re-collect (Repository Initialization)
+- [ ] Collect all data — run `git-collect.sh` (or `--json`) to get changes + quality check results (Phase 2)
+- [ ] Analyze the collected data and group changes into logical commits with meaningful titles and bodies following vertical grouping rules (Phase 3)
+- [ ] Validate the commit plan with `git-commit-batch.sh --dry-run` before execution (Phase 4)
+- [ ] Execute all commits via `git-commit-batch.sh` — mandatory commit bodies, no AI signatures, pre/post auto-tags created (Phase 4)
+- [ ] Push commits and tags via `git-push.sh` — divergence handled automatically, never manually rebase (Phase 4/6)
+- [ ] (optional) Create user-requested tags via `git-tag.sh --category <cat> --slug <slug>` — never bare `git tag` (Phase 6)
+- [ ] (if requested) Identify, archive, and optionally prune stale branches/tags via `git-archive.sh` (Branch & Tag Archiving)
+
+**Mark legend:**
+- `[ ]` — task pending (not yet started)
+- `[~]` — task in progress (actively being worked)
+- `[x]` — task done (verified complete)
+- `[!]` — task blocked (cannot proceed; note the blocker inline)
 
 ## Definition of Done
 
