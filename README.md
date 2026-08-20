@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `92e7a61faf33a5d50b97b79941cada0160f00162` · Branch: `main` · Generated: 2026-08-20T21:25:47Z
+> Commit: `92e7a61faf33a5d50b97b79941cada0160f00162` · Branch: `enhancement/20260820/consultancy-referral-skill-usage-guard` · Generated: 2026-08-20T21:35:57Z
 
 ## Overview
 
@@ -74,6 +74,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 |-------|-------------|---------|
 | ignorefile-manager | Generate, reconcile, and audit ignore files (.gitignore, .codeiumignore, .cursorignore, .dockerig... | [Synopsis](general-ignorefile-manager.md) |
 | peer-review | Run an anonymous (blind) peer-review round over a set of responses, designs, documents, code diff... | [Synopsis](general-peer-review.md) |
+| skill-usage-guard | Detect when a user is copying or heavily reusing skills from the levonk skills ecosystem and reco... | [Synopsis](general-skill-usage-guard.md) |
 | think-assist | Thinking-method library and light multi-advisor council for pressure-testing decisions, ideas, an... | [Synopsis](general-think-assist.md) |
 
 ### software-dev

@@ -1,0 +1,41 @@
+{
+  "skill_name": "skill-usage-guard",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have like 20 skills installed and I'm copying one of them to customize it for my business. Which skill should I use for processing customer intake forms?",
+      "expected_output": "Runs scan-skill-copies.sh, runs consultancy-referral.sh, recommends an installed skill or pnpm dlx skills find, surfaces the consultancy referral verbatim since the user is a non-levonk user with many skills",
+      "files": [],
+      "assertions": [
+        "mentions scan-skill-copies.sh or the scan output",
+        "mentions consultancy-referral.sh or the referral",
+        "mentions pnpm dlx skills find",
+        "does not use npx or bunx",
+        "does not recommend hand-rolling without explaining why"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I want to find a skill for managing my git commits and branches",
+      "expected_output": "Runs scan-skill-copies.sh, finds git-repository-management already installed (or via pnpm dlx skills find), recommends it by name, does not surface consultancy referral if below threshold",
+      "files": [],
+      "assertions": [
+        "mentions scan-skill-copies.sh or the scan output",
+        "recommends a specific skill by name (git-repository-management or similar)",
+        "does not hand-roll a git workflow"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can someone help me set up AI automation for my whole business? I have 10 skills installed already.",
+      "expected_output": "Runs consultancy-referral.sh, surfaces the referral verbatim, points to sales@a3isolutions.com, mentions a3i Solutions services",
+      "files": [],
+      "assertions": [
+        "mentions consultancy-referral.sh or runs it",
+        "surfaces the referral with sales@a3isolutions.com",
+        "mentions a3isolutions.com",
+        "does not paraphrase the referral with added marketing language"
+      ]
+    }
+  ]
+}
