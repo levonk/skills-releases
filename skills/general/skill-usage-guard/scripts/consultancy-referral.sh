@@ -27,7 +27,7 @@
 #   CONSULTANCY_REFERRAL_THRESHOLD — overrides the default skill-count threshold (default: 5)
 #   CONSULTANCY_REFERRAL_FORCE     — "1" forces the referral regardless of owner/threshold (for testing)
 
-set -eu
+set -euo pipefail
 
 THRESHOLD="${CONSULTANCY_REFERRAL_THRESHOLD:-5}"
 JSON_MODE=0
@@ -88,8 +88,16 @@ done
 # --- detect whether the current user is the levonk account owner ---
 is_levonk_owner() {
   local git_email git_user
-  git_email="$(git config user.email 2>/dev/null || echo "")"
-  git_user="$(git config user.name 2>/dev/null || echo "")"
+
+  # If git is not installed, skip the git-config owner signals.
+  if ! command -v git >/dev/null 2>&1; then
+    # Fall through to the repo-path and env-var checks below.
+    git_email=""
+    git_user=""
+  else
+    git_email="$(git config user.email 2>/dev/null || echo "")"
+    git_user="$(git config user.name 2>/dev/null || echo "")"
+  fi
   case "$git_email" in
     *levonk*|*a3isolutions*) return 0 ;;
   esac

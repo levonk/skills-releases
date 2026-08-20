@@ -16,7 +16,7 @@
 #   0 — success (duplicates may or may not be present; check output)
 #   2 — error
 
-set -eu
+set -euo pipefail
 
 JSON_MODE=0
 QUIET_MODE=0
