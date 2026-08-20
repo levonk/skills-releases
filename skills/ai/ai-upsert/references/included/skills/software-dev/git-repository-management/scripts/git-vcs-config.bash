@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =====================================================================
 # Git VCS Configuration Library
-# Bundled from levonk/dotfiles (home/current/dot_local/bin/executable_git-vcs-config.bash.tmpl)
-# for the git-repository-management skill. Chezmoi template expressions for
-# git.user / git.email / git_defaults.user / git_defaults.email have been
-# replaced with empty-string defaults; the determine_git_user / determine_git_email
-# fallback chains (CLI arg → git config → env vars) still work standalone.
+# Managed by chezmoi | https://github.com/levonk/dotfiles
+#
+# Chezmoi deploys this script to ~/.local/bin/git-vcs-config.bash (the
+# `executable_` source prefix makes chezmoi set the exec bit on apply;
+# the `.tmpl` suffix tells chezmoi to process Go template directives).
 #
 # Purpose:
 #   - Parse TOML configuration files for git repository management
@@ -634,8 +634,7 @@ determine_git_user() {
     local cli_user="${1:-}"
     local final_user=""
 
-    # Chezmoi-injected defaults stripped to empty strings in the bundled copy.
-    # The fallback chain below (CLI arg → git config → env vars) covers identity.
+    # Get values from chezmoi's built-in .git object (injected via template)
     local chezmoi_git_user=''
     local chezmoi_git_defaults_user=''
 
@@ -671,7 +670,7 @@ determine_git_email() {
     local cli_email="${1:-}"
     local final_email=""
 
-    # Chezmoi-injected defaults stripped to empty strings in the bundled copy.
+    # Get values from chezmoi's built-in .git object (injected via template)
     local chezmoi_git_email=''
     local chezmoi_git_defaults_email=''
 
@@ -693,4 +692,5 @@ determine_git_email() {
 }
 
 export -f determine_git_user determine_git_email
+
 

@@ -875,6 +875,112 @@ For creating or modifying boilerplates, see: [Boilerplate Development Guide](doc
 
 
 ---
+description: Shared content quality directives — positive and negative writing behaviors for AI-generated content. Lead with the most important information, use plain specific language, state each fact once, match detail to task, challenge incorrect assumptions, optimize for clarity over quotability. No flattery, praise, validation, motivating language, or agreement without reason. Includes 5-tier emoji comparison guidance that leverages the shared coverage-scale-icons include.
+---
+
+### Content Quality Directives
+
+Binding writing behaviors for all AI-generated content (skill instructions,
+knowledge pages, audit findings, recommendations, summaries). These directives
+layer on top of `base-content-principles.md` (token efficiency, progressive
+disclosure) and `professional-tone.md` (no sycophancy, direct prose).
+
+#### Positive Behaviors
+
+- **Lead with the most important information.** Place the answer, the decision,
+  or the critical finding in the first sentence or the first bullet. Do not
+  bury it under setup, context, or hedging. The reader should get the core
+  value from the first line alone
+- **Use plain, specific language.** Pick the simplest domain term that
+  compresses the most information. Prefer "use" over "leverage", "start" over
+  "commence", "fast and reliable" over "performant". Specificity beats
+  vagueness — "3x faster" beats "much faster", "the JWT validator" beats "the
+  thing that checks tokens"
+- **State each fact once.** Do not repeat the same point in the intro, the
+  body, and the summary. If a fact needs to appear in multiple sections, link
+  to the canonical statement instead of restating it
+- **Match detail to task.** A one-line status update does not need a
+  five-paragraph background. A production migration plan does not fit in a
+  bullet. Scale the depth of the response to the stakes and complexity of the
+  request. Over-explaining simple tasks wastes the reader's time;
+  under-explaining complex tasks creates risk
+- **Challenge incorrect assumptions directly and explain why.** If the user
+  or the source material assumes something that is wrong, say so plainly:
+  name the assumption, state what is actually true, and give the evidence.
+  Do not soften the correction or leave the assumption standing because
+  challenging it feels impolite. See `professional-tone.md` → Disagree When
+  Warranted
+- **Optimize for clarity and engineering value, not quotability.** Write
+  content that a practitioner can act on, not content that sounds good in a
+  slide. A concrete instruction ("set `timeout_ms: 5000`") beats a memorable
+  aphorism ("time is the enemy of reliability"). Avoid parallelism, alliteration,
+  and rhetorical flourish that sacrifices precision for style
+
+#### Negative Behaviors (Do NOT)
+
+- **Do NOT flatter.** No "great question", "excellent point", "astute
+  observation". See `professional-tone.md` → No Sycophancy
+- **Do NOT praise.** No "this is a really well-structured repo", "beautiful
+  implementation". Evaluate the work, do not compliment the author
+- **Do NOT validate.** No "you're absolutely right", "I completely agree".
+  If the user is correct, act on it without preamble. If the user is
+  mistaken, say so
+- **Do NOT use motivating language.** No "let's dive in", "we're excited to",
+  "I'd love to help you with this". State what you are going to do, then do it
+- **Do NOT agree without reason.** Reflexive agreement is sycophancy. Evaluate
+  the substance first. If you agree, state why. If you disagree, state why.
+  "You're right, but…" is a smell — either agree and act, or disagree and
+  explain
+
+#### Comparison Output
+
+When comparing options, approaches, features, or trade-offs, use structured
+formats for clarity:
+
+- **Bulleted lists** for parallel items (pros, cons, steps, options)
+- **Tables** for multi-dimensional comparisons (item × dimension)
+- **Diagrams** (mermaid, ASCII) for flows, sequences, and relationships
+
+##### 5-Tier Emoji Comparison Scale
+
+When a comparison rates how well each option meets a criterion, use the
+canonical 5-tier emoji scale. The icons and their meanings are defined in the
+shared coverage-scale include (`shared/includes/coverage-scale-icons.md`)
+— that file is the single source of truth. Use the same icons consistently
+across all comparison output — feature matrices, option evaluations, approach
+ratings, and trade-off tables. Do not redefine the scale; reference the shared
+include as the canonical definition
+
+**Icon quick reference** (canonical definitions in
+`shared/includes/coverage-scale-icons.md`):
+
+| Icon | Meaning | When to use |
+|---|---|---|
+| 🏆 | Best-in-class | Standout, industry-leading, the marquee option |
+| ✅ | Meets | First-class, well-supported, fully addresses the criterion |
+| ➖ | Meets but not great | Partial, limited, requires plugins, or has caveats |
+| ⚠️ | Does not meet | Exists but broken, deprecated, or has serious issues |
+| ❌ | Fails | Not addressed, or requires significant custom work |
+
+When presenting a comparison, include the one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ meets · ➖ partial · ⚠️ problematic · ❌ missing
+```
+
+##### Comparison Table Structure
+
+- **Options across the top** (column headers), with inline links if applicable
+- **Criteria down the side** (row headers), grouped into sections if there
+  are many
+- **Icons in cells** for quick visual scanning
+- **Identical-value rows at the bottom** (criteria where all options have the
+  same rating) — these are table-stakes, not differentiators
+- **Differentiating criteria at the top** — these are the ones that actually
+  drive a decision
+
+
+---
 description: Guidance for delegating work to subagents with reduced initial memory — front-load context, review results, and choose serialization vs parallelization deliberately
 ---
 
@@ -2038,6 +2144,55 @@ The `## Required Reading` section is the contract: the receiving session reads
 it before analyzing the handoff document (see Context Restoration Process
 below).
 
+#### 1b. Emit Skill Contract Directive
+
+If this work was started under a skill (e.g. `execute-upsert`, `ai-upsert`,
+`readme-upsert`), emit a `## Skill Contract` section immediately after the
+`## Required Reading` block. This pins the binding skill contract so the
+receiving session follows the skill's phase workflow, commit steps, and
+Definition of Done checklist — instead of inventing its own constraints.
+
+**Detection — what to record:**
+
+| Field | Source | Example |
+|-------|--------|---------|
+| Skill name | The skill that was invoked | `execute-upsert` |
+| Phase | The current phase number and name | `Phase 6 (Execute)` |
+| Story | The story title or task description | `fix the failing bats test` |
+
+**Emission format:**
+
+```markdown
+## Skill Contract
+
+If this work was started under a skill (e.g. `execute-upsert`, `ai-upsert`),
+the receiving session MUST follow that skill's `INSTRUCTIONS.md` — including
+its phase workflow, commit steps, and Definition of Done checklist. The skill
+name and phase pin the binding contract; the summary does not reproduce it.
+
+**Skill**: {skill-name}, Phase {N} ({phase name}) — story: "{story title}"
+**Binding**: Read `~/.agents/skills/{skill-name}/INSTRUCTIONS.md` before
+declaring work done. Follow its phase workflow and DoD checklist. Do not
+invent constraints that conflict with the skill's contract.
+```
+
+Replace the placeholders with the detected values. Reference the skill by
+name and path; do not duplicate its `INSTRUCTIONS.md` contents in the
+handoff — the receiving session reads the file directly.
+
+**If no skill was active**, emit:
+
+```markdown
+## Skill Contract
+
+No skill contract — this work was not started under a skill. Apply the
+project's AGENTS.md and standard development conventions.
+```
+
+The `## Skill Contract` section is binding: the receiving session must read
+the named skill's `INSTRUCTIONS.md` before declaring work done (see Context
+Restoration Process below).
+
 #### 2. Gather Essential Context
 
 **Always include:**
@@ -2209,6 +2364,22 @@ found, skip this step and proceed.
 Loading project conventions first prevents misinterpreting the handoff against
 the wrong assumptions (e.g., wrong build commands, wrong commit conventions,
 wrong toolchain).
+
+#### 0b. Read the Skill Contract
+
+If the handoff has a `## Skill Contract` section naming a skill, read that
+skill's `INSTRUCTIONS.md` (at `~/.agents/skills/{skill-name}/INSTRUCTIONS.md`)
+before doing any work. Follow its phase workflow, commit steps, and Definition
+of Done checklist for the remainder of this session.
+
+The skill contract is binding — it overrides generic AI-assistant defaults
+(e.g. "do not commit unless asked"). If the skill says to commit after each
+story, commit. If the skill has a Quality Floor checklist, run it before
+declaring done. Do not invent constraints that conflict with the skill's
+contract.
+
+If the `## Skill Contract` section says "No skill contract", skip this step
+and apply the project's AGENTS.md and standard development conventions.
 
 #### 1. Analyze the Handoff Document
 

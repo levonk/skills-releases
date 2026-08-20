@@ -875,6 +875,112 @@ For creating or modifying boilerplates, see: [Boilerplate Development Guide](doc
 
 
 ---
+description: Shared content quality directives — positive and negative writing behaviors for AI-generated content. Lead with the most important information, use plain specific language, state each fact once, match detail to task, challenge incorrect assumptions, optimize for clarity over quotability. No flattery, praise, validation, motivating language, or agreement without reason. Includes 5-tier emoji comparison guidance that leverages the shared coverage-scale-icons include.
+---
+
+### Content Quality Directives
+
+Binding writing behaviors for all AI-generated content (skill instructions,
+knowledge pages, audit findings, recommendations, summaries). These directives
+layer on top of `base-content-principles.md` (token efficiency, progressive
+disclosure) and `professional-tone.md` (no sycophancy, direct prose).
+
+#### Positive Behaviors
+
+- **Lead with the most important information.** Place the answer, the decision,
+  or the critical finding in the first sentence or the first bullet. Do not
+  bury it under setup, context, or hedging. The reader should get the core
+  value from the first line alone
+- **Use plain, specific language.** Pick the simplest domain term that
+  compresses the most information. Prefer "use" over "leverage", "start" over
+  "commence", "fast and reliable" over "performant". Specificity beats
+  vagueness — "3x faster" beats "much faster", "the JWT validator" beats "the
+  thing that checks tokens"
+- **State each fact once.** Do not repeat the same point in the intro, the
+  body, and the summary. If a fact needs to appear in multiple sections, link
+  to the canonical statement instead of restating it
+- **Match detail to task.** A one-line status update does not need a
+  five-paragraph background. A production migration plan does not fit in a
+  bullet. Scale the depth of the response to the stakes and complexity of the
+  request. Over-explaining simple tasks wastes the reader's time;
+  under-explaining complex tasks creates risk
+- **Challenge incorrect assumptions directly and explain why.** If the user
+  or the source material assumes something that is wrong, say so plainly:
+  name the assumption, state what is actually true, and give the evidence.
+  Do not soften the correction or leave the assumption standing because
+  challenging it feels impolite. See `professional-tone.md` → Disagree When
+  Warranted
+- **Optimize for clarity and engineering value, not quotability.** Write
+  content that a practitioner can act on, not content that sounds good in a
+  slide. A concrete instruction ("set `timeout_ms: 5000`") beats a memorable
+  aphorism ("time is the enemy of reliability"). Avoid parallelism, alliteration,
+  and rhetorical flourish that sacrifices precision for style
+
+#### Negative Behaviors (Do NOT)
+
+- **Do NOT flatter.** No "great question", "excellent point", "astute
+  observation". See `professional-tone.md` → No Sycophancy
+- **Do NOT praise.** No "this is a really well-structured repo", "beautiful
+  implementation". Evaluate the work, do not compliment the author
+- **Do NOT validate.** No "you're absolutely right", "I completely agree".
+  If the user is correct, act on it without preamble. If the user is
+  mistaken, say so
+- **Do NOT use motivating language.** No "let's dive in", "we're excited to",
+  "I'd love to help you with this". State what you are going to do, then do it
+- **Do NOT agree without reason.** Reflexive agreement is sycophancy. Evaluate
+  the substance first. If you agree, state why. If you disagree, state why.
+  "You're right, but…" is a smell — either agree and act, or disagree and
+  explain
+
+#### Comparison Output
+
+When comparing options, approaches, features, or trade-offs, use structured
+formats for clarity:
+
+- **Bulleted lists** for parallel items (pros, cons, steps, options)
+- **Tables** for multi-dimensional comparisons (item × dimension)
+- **Diagrams** (mermaid, ASCII) for flows, sequences, and relationships
+
+##### 5-Tier Emoji Comparison Scale
+
+When a comparison rates how well each option meets a criterion, use the
+canonical 5-tier emoji scale. The icons and their meanings are defined in the
+shared coverage-scale include (`shared/includes/coverage-scale-icons.md`)
+— that file is the single source of truth. Use the same icons consistently
+across all comparison output — feature matrices, option evaluations, approach
+ratings, and trade-off tables. Do not redefine the scale; reference the shared
+include as the canonical definition
+
+**Icon quick reference** (canonical definitions in
+`shared/includes/coverage-scale-icons.md`):
+
+| Icon | Meaning | When to use |
+|---|---|---|
+| 🏆 | Best-in-class | Standout, industry-leading, the marquee option |
+| ✅ | Meets | First-class, well-supported, fully addresses the criterion |
+| ➖ | Meets but not great | Partial, limited, requires plugins, or has caveats |
+| ⚠️ | Does not meet | Exists but broken, deprecated, or has serious issues |
+| ❌ | Fails | Not addressed, or requires significant custom work |
+
+When presenting a comparison, include the one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ meets · ➖ partial · ⚠️ problematic · ❌ missing
+```
+
+##### Comparison Table Structure
+
+- **Options across the top** (column headers), with inline links if applicable
+- **Criteria down the side** (row headers), grouped into sections if there
+  are many
+- **Icons in cells** for quick visual scanning
+- **Identical-value rows at the bottom** (criteria where all options have the
+  same rating) — these are table-stakes, not differentiators
+- **Differentiating criteria at the top** — these are the ones that actually
+  drive a decision
+
+
+---
 description: Guidance for delegating work to subagents with reduced initial memory — front-load context, review results, and choose serialization vs parallelization deliberately
 ---
 
@@ -1705,6 +1811,12 @@ full structure):
    `handoff` (to capture context again if the next session also stops).
 6. **Additional Context** — the PRD path, task index path, branch names,
    worktree paths, and any commits made this session.
+7. **Skill Contract** — `execute-upsert`, Phase 6 (Execute), with the
+   current story title. The receiving session MUST read
+   `~/.agents/skills/execute-upsert/INSTRUCTIONS.md` and follow its phase
+   workflow, commit steps, and Project Quality Floor checklist before
+   declaring work done. Do not invent constraints (e.g. "do not commit
+   unless asked") that conflict with the skill's contract.
 
 #### Handoff Storage Location
 
@@ -1792,7 +1904,7 @@ index live (e.g., `~/p/gh/levonk/infrahub/.agents/handoffs/`).
 | container | Container orchestration (local dev) | **k3s** | kind, minikube, microk8s, full k8s | — |
 | container | Container orchestration (production) | **k8s** (full Kubernetes) | k3s, Docker Swarm, Nomad | — |
 | deployment | Service deployment & configuration | **Ansible** (`community.docker` modules) | `docker compose` for deployment | `docker-compose.yml` is valid for sharing a deployable service externally (outside the org) where the recipient doesn't have the Ansible overhead |
-| security | Auth provider | **better-auth** (passkey / organization / two-factor plugins) | Supabase Auth, Auth0, Clerk, Lucia | Auth method preference: passkey-first > passkey > Google/Apple OAuth > local password + 2FA > local password only; email always collected for recovery |
+| security | Auth provider | **better-auth** (passkey / magic-link / organization / two-factor plugins) | Supabase Auth, Auth0, Clerk, Lucia | Supported methods: passkey, Google, Apple, magic link, username/password (+2FA recommended). Preference: passkey-first > passkey > Google > Apple > magic link > username/password + 2FA; email always collected for recovery |
 | data | Database (SaaS / multi-tenant OLTP) | **Supabase Postgres** with RLS via per-request session variables | PocketBase, SQLite-per-tenant, shared-schema Postgres without RLS, per-tenant Postgres clusters | — |
 | data | Analytics / ETL sidecar | **Per-tenant SQLite export + DuckDB** | PocketBase as OLTP, direct analytics on production Postgres, per-tenant Postgres replicas | — |
 | tooling | Ad-hoc runner resolution (all ecosystems) | **`cli-tool-discovery.sh --runner <python\|node\|rust\|go>`** | Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` in scripts | The runner mode pairs binary resolution with the canonical invocation. Returns JSON with `script`, `package`, `fallback`, and `recommendation` fields. Single source of truth for "how do I invoke an ad-hoc command in ecosystem X?" — `detect-package-manager.sh` delegates to it for the `runner` field |
@@ -2943,6 +3055,82 @@ do (any story is `[ ] Todo`, `[~] In-Progress`, or `[!] Blocked`), invoke
 the `handoff` skill to capture context before terminating. Clean
 completions (all `[x] Done`) skip the handoff — Phase 8 is the final step.
 
+## Tab Title Protocol
+
+Throughout execution, set the terminal/multiplexer tab title to reflect the
+current pipeline status so the user can see progress at a glance from the
+tab bar. The format is:
+
+```
+<indicator> <workflow-slug> <project-slug> [story-slug]
+```
+
+| Indicator | Meaning | When |
+|-----------|---------|------|
+| `~` | in-progress | Pipeline or story is actively running |
+| `!` | blocked | Pipeline or story is blocked, needs human input |
+| `x` | done | Pipeline or story completed successfully |
+
+**Example**: `~ skill-src-upsert dotfiles-include` means the
+`skill-src-upsert` workflow is actively working on the `dotfiles-include`
+project.
+
+Use `scripts/set-tab-title.sh` to set the tab title. The script handles
+cmux (`cmux rename-tab`), tmux (`tmux rename-pane`), zellij
+(`zellij action rename-pane`), screen (`screen -X title`), and bare
+terminals (OSC 0). It sources `notifications.sh` (bundled from the
+dotfiles submodule) for multiplexer detection and DCS passthrough.
+
+### When to set the tab title
+
+1. **Pipeline start** (Phase 1, after self-update):
+   ```bash
+   ./scripts/set-tab-title.sh --status in-progress --workflow execute-upsert --project {project-slug}
+   ```
+   Replace `{project-slug}` with the kebab-case slug of the project being
+   executed (e.g., `dotfiles-include`, `auth-service-v2`). If the
+   invocation is driven by a workflow file (e.g.,
+   `skill-src-upsert.md`), use the workflow's `slug` field as the
+   workflow argument instead of `execute-upsert`.
+
+2. **Story start** (Phase 6, before dispatching each subagent):
+   ```bash
+   ./scripts/set-tab-title.sh --status in-progress --workflow {workflow-slug} --project {project-slug} --story {story-id-slug}
+   ```
+   Example: `~ skill-src-upsert dotfiles-include 04-002-add-jwt`
+
+3. **Story blocked** (Phase 6, when a subagent returns BLOCKED):
+   ```bash
+   ./scripts/set-tab-title.sh --status blocked --workflow {workflow-slug} --project {project-slug} --story {story-id-slug}
+   ```
+   Example: `! skill-src-upsert dotfiles-include 04-002-add-jwt`
+
+4. **Story done** (Phase 6, after a story is marked [x] Done):
+   ```bash
+   ./scripts/set-tab-title.sh --status in-progress --workflow {workflow-slug} --project {project-slug} --story {next-story-id-slug}
+   ```
+   Keep the indicator `~` (in-progress) because the pipeline continues
+   to the next story. Only set `x` when the entire pipeline is done.
+
+5. **Pipeline blocked** (Phase 7, when all remaining stories are blocked):
+   ```bash
+   ./scripts/set-tab-title.sh --status blocked --workflow {workflow-slug} --project {project-slug}
+   ```
+
+6. **Pipeline done** (Phase 8, after all stories are [x] Done and docs are updated):
+   ```bash
+   ./scripts/set-tab-title.sh --status done --workflow {workflow-slug} --project {project-slug}
+   ```
+
+### Tab title script location
+
+The script is at `scripts/set-tab-title.sh` in the built skill output. If
+the skill is installed globally, it is at
+`~/.agents/skills/execute-upsert/scripts/set-tab-title.sh`. If the script
+is not present (older install or the skill was invoked by reading
+`SKILL.md` manually), skip the tab title calls — they are a UX enhancement,
+not a functional requirement. The pipeline works without them.
+
 ## Execution Mode: Autonomous
 
 **This skill runs to completion. It does not pause between stories to ask
@@ -3006,6 +3194,20 @@ handoff file (if resuming) provides the state.
 
 If the self-update made no changes (all skills already at latest), proceed
 to Phase 2.
+
+### Set Tab Title
+
+After self-update, set the tab title to in-progress for the project being
+executed (see the Tab Title Protocol section above):
+
+```bash
+./scripts/set-tab-title.sh --status in-progress --workflow {workflow-slug} --project {project-slug}
+```
+
+Use `execute-upsert` as the workflow slug unless a workflow file (e.g.,
+`skill-src-upsert.md`) is driving the invocation — in that case, use the
+workflow's `slug` frontmatter field. Derive `{project-slug}` from the
+feature/request being executed (kebab-case).
 
 ## Phase 2: Assess
 
@@ -3306,19 +3508,21 @@ so you don't re-create branches or re-run completed stories.
    redo it.
 
 2. **Check for existing story branches / worktrees** before dispatching a
-   subagent for a `[ ] Todo` or `[~] In-Progress` story. Stories are
+   subagent for a `[ ] Todo` or `[~] In-Progress` story. **Every story runs
+   in its own git worktree** — sequential and parallel alike. Stories are
    typically developed on branches named
    `feature/current/{slug}/story-{NN-NNN}-{story-name}` (or whatever
    convention the project's task files specify in their `branch:`
-   frontmatter field). Run:
+   frontmatter field), each checked out in its own worktree at
+   `/tmp/{project}-worktrees/{story-slug}`. Run:
    ```bash
    git worktree list
    git branch --list "feature/current/{slug}/story-*"
    ```
    - If a story's branch already exists AND the index marks it `[x] Done`,
-     the work is on that branch — do NOT re-create the branch or re-run
-     the story. Switch to the most advanced `[x] Done` story branch
-     (highest story ID) and resume from there.
+     the work is on that branch — do NOT re-create the branch or worktree
+     or re-run the story. Switch to the most advanced `[x] Done` story
+     branch (highest story ID) and resume from there.
    - If a story's branch already exists AND the index marks it
      `[~] In-Progress`, the prior subagent left mid-work on that branch.
      Before assuming the subagent is still working, verify liveness — see
@@ -3328,13 +3532,99 @@ so you don't re-create branches or re-run completed stories.
      not active work. Either resume the subagent on that branch (if the
      work is recoverable and the subagent is alive) or
      `git reset --hard <checkpoint>` on that branch and re-dispatch a
-     fresh subagent. Do NOT create a new branch.
+     fresh subagent into the existing worktree. Do NOT create a new
+     branch or worktree.
    - If a story's branch does NOT exist, proceed normally — create the
-     branch as part of the subagent dispatch.
+     branch AND its worktree as part of the subagent dispatch (see
+     "Worktree Setup" below and `references/parallel-dispatch.md`).
+
+   **Worktree Setup (every story, sequential and parallel).** Before
+   dispatching any subagent, create a dedicated worktree for the story so
+   the subagent's working tree is isolated from the orchestrator's index
+   and from other stories. The orchestrator stays on the integration
+   branch in the main working tree; each subagent works in its own
+   worktree:
+   ```bash
+   # 1. Create a worktree on a new story branch from the integration branch
+   git worktree add -b <story-branch> /tmp/<project>-worktrees/<story-slug> <base-sha>
+
+   # 2. Symlink shared dependencies so the worktree can build and test
+   #    without re-installing. Adapt to the project's package manager:
+   ln -sfn <main-repo>/node_modules <worktree>/node_modules
+
+   # 3. For monorepos with workspace packages, symlink those too:
+   ln -sfn <main-repo>/node_modules/@<scope> <worktree>/node_modules/@<scope>
+   ```
+   For non-JavaScript projects, adapt the dependency symlink (e.g.,
+   `target/` for Rust, `.venv/` for Python). The goal is: the worktree
+   can run the project's test/lint/build commands without a full install.
+   See `references/parallel-dispatch.md` → "Worktree Setup" for the full
+   protocol (it applies to every story, not just parallel batches).
 
 3. **Check the current git branch**. If it is a story branch or a planning
    branch for this slug, you are mid-execution — read the task index to
    determine where to resume, do not start from Phase 1.
+
+4. **Scan for orphaned story branches and reconcile them.** Do not ask the
+   user whether to commit, abandon, or reconcile incomplete work — the
+   answer is ALWAYS reconcile. Proactively discover every non-archived
+   branch in the story name format and complete it, or do the PR and merge
+   the skill specifies. Run:
+   ```bash
+   # List all branches matching the story name format for this slug
+   git branch --list "feature/current/{slug}/story-*"
+
+   # Also list worktrees that may have tombstoned story work
+   git worktree list
+   ```
+   For each branch found that is NOT already referenced in the task index
+   as `[x] Done` (i.e., an orphaned branch from a crashed session, a
+   resumed run that lost track of it, or a story that was started but
+   never marked done):
+
+   a. **Inspect the branch's work.** Check what commits and uncommitted
+      changes exist on the branch:
+      ```bash
+      git log --oneline <integration-branch>..<story-branch>
+      git -C <worktree-if-exists> status --porcelain
+      ```
+   b. **Classify the work:**
+      - **Substantial completed work** (commits with real changes, tests
+        passing) — the story was effectively done but never marked
+        `[x] Done`. Reconcile: verify the work against the story's
+        acceptance criteria (dispatch a work verification subagent if
+        needed), mark the story `[x] Done` in the index, merge the
+        branch into the integration branch with `git merge --no-ff`,
+        and remove the worktree. This is the PR-and-merge path the
+        skill specifies for completed work.
+      - **Partial in-progress work** (some commits or uncommitted
+        changes, incomplete) — the story was started but not finished.
+        Reconcile: resume the work by dispatching a fresh dev subagent
+        into the existing worktree (or re-create the worktree from the
+        branch if it was removed), with the partial work as context.
+        The subagent completes the story, then the orchestrator
+        verifies, marks `[x] Done`, merges, and cleans up.
+      - **Empty / tombstone** (no commits beyond the base SHA, no
+        uncommitted changes) — the branch was created but no work was
+        done. Reconcile: delete the empty branch and worktree, mark
+        the story `[ ] Todo` in the index (if not already), and
+        dispatch a fresh subagent normally.
+   c. **Never ask the user** whether to commit, abandon, or reconcile.
+      The answer is always reconcile — complete the work or do the
+      PR and merge. The only exception is a story that is genuinely
+      blocked on human input (the blocker requires credentials,
+      access, or a decision the agent cannot make) — in that case,
+      mark it `[!] Blocked` with the `## Blocker` section and continue
+      to the next runnable story.
+
+   This scan catches work that would otherwise be orphaned: a session
+   crash after a subagent committed to a story branch but before the
+   orchestrator marked it done, a resumed run that started from the
+   task index and missed a branch that was not yet recorded, or a
+   parallel dispatch where one subagent finished but the orchestrator
+   was interrupted before the merge. Reconciling these branches
+   ensures no completed work is lost and no in-progress work is
+   abandoned.
 
 ### Blocked Story Convention
 
@@ -3431,13 +3721,26 @@ For each task story that isn't completed yet:
    greppable story boundaries, not a functional requirement — the
    commit history itself is the audit trail.
 
-3. **Launch a subagent** to execute the story. The subagent receives:
+3. **Launch a subagent** to execute the story, working in the story's
+   dedicated worktree (created in the Resume Detection step above). The
+   subagent receives:
    - **Goal**: Implement the story by following the task-processing protocol
      defined in `references/tasks-processor.md` (the tasks-processor workflow's
      content, inlined at build time).
    - **Inputs**: The story file path, the project's `AGENTS.md` path, the
      task directory path, and the work protocol from
      `references/tasks-processor.md`.
+   - **Worktree path**: The absolute path to the story's worktree
+     (`/tmp/<project>-worktrees/<story-slug>`). The subagent MUST work
+     only in this worktree and commit to the story branch checked out
+     there. The orchestrator remains on the integration branch in the
+     main working tree and merges the story branch after verification
+     (see step 4 below).
+   - **Tab Title**: Before dispatching, update the tab title to show the
+     story in progress:
+     ```bash
+     ./scripts/set-tab-title.sh --status in-progress --workflow {workflow-slug} --project {project-slug} --story {story-id-slug}
+     ```
    - **Tech Context Block**: The binding tech context block produced in
      Phase 3 (Establish Technologies). Inject it verbatim into the dispatch
      prompt. The subagent MUST use the tools declared in the block — never
@@ -3486,12 +3789,21 @@ For each task story that isn't completed yet:
 4. **Review the subagent's work**:
    - If the subagent returned `BLOCKED`: mark the story `[!] Blocked` in the
      index with the `blocked_reason`, write the `## Blocker` section into the
-     story file, commit the index + story file update, and **continue to the
-     next runnable story** — do not stop the pipeline.
+     story file, commit the index + story file update, set the tab title to
+     blocked, and **continue to the next runnable story** — do not stop the
+     pipeline.
+     ```bash
+     ./scripts/set-tab-title.sh --status blocked --workflow {workflow-slug} --project {project-slug} --story {story-id-slug}
+     ```
    - If the subagent returned success: verify the story is marked `[x] Done`
      in the index file, check the commit exists and includes both code and
      task file updates, and run the smallest check that would fail if the
-     work is wrong (typecheck or targeted test).
+     work is wrong (typecheck or targeted test). Update the tab title to
+     in-progress for the next story (or keep the current story slug if this
+     was the last story):
+     ```bash
+     ./scripts/set-tab-title.sh --status in-progress --workflow {workflow-slug} --project {project-slug} --story {next-story-id-slug}
+     ```
 
    **Run a code review subagent on the story commit.** After the dev
    subagent has committed its work and the orchestrator has verified the
@@ -3614,6 +3926,30 @@ For each task story that isn't completed yet:
    per-story commit ranges independently of the grm skill's own
    `tags/auto/grm/...` tags.
 
+   **Merge the story branch back into the integration branch.** Because
+   every story runs in its own worktree on its own branch, the orchestrator
+   must merge the verified story branch back into the integration branch
+   (the branch the orchestrator is on in the main working tree) before
+   moving to the next story. This applies to sequential and parallel
+   stories alike:
+   ```bash
+   # On the integration branch in the main working tree:
+   git merge --no-ff <story-branch> -m "merge: story {STORY_ID_AND_SLUG} into integration branch"
+   ```
+   Use `--no-ff` to preserve the story's commit history. If the merge
+   conflicts (rare for sequential stories since the integration branch
+   only moved by prior story merges), resolve by keeping both sides'
+   additions per the merge reconciliation protocol in
+   `references/parallel-dispatch.md`. After the merge is committed and
+   validated, remove the story's worktree:
+   ```bash
+   git worktree remove /tmp/<project>-worktrees/<story-slug>
+   ```
+   Do this only after the merge is committed — if the merge needs to be
+   redone, the worktree is the recovery point. For blocked stories
+   (`[!] Blocked`), keep the worktree until the blocker is resolved (the
+   partial work on the story branch is the recovery point).
+
 5. **Chain to the next story**: After handling the current story (whether
    `[x] Done` or `[!] Blocked`), loop back to step 1 and select the next
    runnable story. Keep going until no `[ ] Todo` story can be run — either
@@ -3669,6 +4005,12 @@ After the execution loop ends (no more runnable stories), if ANY stories are
 proceeding to Phase 8 (Document). The report must include every blocked story
 with the four required fields: the question, the options, the recommendation,
 and why it was recommended.
+
+Set the tab title to blocked:
+
+```bash
+./scripts/set-tab-title.sh --status blocked --workflow {workflow-slug} --project {project-slug}
+```
 
 ### Report Format
 
@@ -3932,23 +4274,40 @@ archive the feature per the shared `work-lifecycle` include above
 This keeps `internal-docs/feature/todo/` clean — only active features show up
 there. Completed features are browsable by month under `archive/`.
 
+### Set Tab Title to Done
+
+After the final commit and archive step, set the tab title to done:
+
+```bash
+./scripts/set-tab-title.sh --status done --workflow {workflow-slug} --project {project-slug}
+```
+
+If any stories are `[!] Blocked` (deferred), keep the tab title as `!`
+(blocked) instead of `x` (done) so the user sees at a glance that the
+pipeline ended with unresolved blockers.
+
 ## Task List
 
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
 starting, `[x]` when verified done, `[!]` if blocked.
 
 - [ ] Phase 1: self-update all skills to the latest version (skip if `SKIP_SELF_UPDATE=1`)
+- [ ] Phase 1: set tab title to in-progress (`~ {workflow-slug} {project-slug}`)
 - [ ] Phase 2: assess whether the request is large enough to warrant the full pipeline
 - [ ] Phase 3: detect the tech stack and produce the binding tech context block
 - [ ] Phase 4: locate or create the PRD (with Mermaid architecture and UX-flow diagrams)
 - [ ] Phase 5: locate or create task files from the PRD
 - [ ] Phase 6: execute stories via subagents with per-story code review, marking blocked stories
+- [ ] Phase 6: set tab title to in-progress per story (`~ {workflow-slug} {project-slug} {story-id-slug}`)
+- [ ] Phase 6: set tab title to blocked on blocked stories (`! {workflow-slug} {project-slug} {story-id-slug}`)
 - [ ] Phase 6: detect resume state — skip `[x] Done` stories, recover `[~]` In-Progress branches
 - [ ] Phase 6: run work verification subagent after doubt-driven review, before marking [x] Done
 - [ ] Phase 7: present the consolidated blocker report when no more runnable stories remain
+- [ ] Phase 7: set tab title to blocked if any stories are blocked (`! {workflow-slug} {project-slug}`)
 - [ ] Phase 7.5: final all-stories verification pass — re-verify every [x] Done story, check dependency paths
 - [ ] Phase 8: update the PRD, task files, and project documentation
 - [ ] Phase 8: archive completed feature (git mv todo/ → archive/YYYY/MM/) when all stories [x] Done
+- [ ] Phase 8: set tab title to done (`x {workflow-slug} {project-slug}`) or blocked (`!`) if deferred items remain
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -3967,6 +4326,7 @@ the agent to check something the scripts cannot verify.
 
 - [ ] **[manual]** Self-update ran (`devbox run -- pnpm dlx skills add levonk/skills-releases --all`) unless `SKIP_SELF_UPDATE=1` or resume-with-version-match (Phase 1)
 - [ ] **[manual]** If self-update changed skill versions, execute-upsert was re-invoked to pick up new logic (Phase 1 — After Self-Update)
+- [ ] **[manual]** Tab title was set to in-progress after self-update (`~ {workflow-slug} {project-slug}`) (Phase 1 — Set Tab Title)
 
 ### Phase 2: Assess
 
@@ -3994,6 +4354,9 @@ the agent to check something the scripts cannot verify.
 ### Phase 6: Execute
 
 - [ ] **[manual]** Every `[x] Done` story was skipped — no subagent re-dispatched for completed work (Phase 6 — Resume Detection)
+- [ ] **[manual]** Orphaned story branches were scanned for and reconciled — completed work merged, in-progress work resumed, empty branches deleted (Phase 6 — Resume Detection step 4)
+- [ ] **[manual]** Every story ran in its own git worktree — sequential and parallel alike (Phase 6 — Resume Detection / Worktree Setup)
+- [ ] **[manual]** Each verified story branch was merged back into the integration branch with `git merge --no-ff` and the worktree removed (Phase 6 — Merge step)
 - [ ] **[manual]** Each subagent dispatch received the tech context block as a binding constraint (Phase 6 Step 3)
 - [ ] **[manual]** A pre-task commit checkpoint was created before each subagent dispatch (Phase 6 Step 2)
 - [ ] **[manual]** A code review subagent was dispatched on each story commit with a structured verdict (CLEAN / NEEDS_FIXES / BLOCKED) (Phase 6 Step 4)
@@ -4001,11 +4364,13 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** Every [x] Done story has a `## Verification` section in its story file recording the verdict, checker, and date (Phase 6 — Work Verification Gate)
 - [ ] **[manual]** Blocked stories are marked `[!] Blocked` with a `## Blocker` section containing question, options, recommendation, and why (Phase 6 — Blocked Story Convention)
 - [ ] **[manual]** Progress was emitted to the user after every subagent completion (Phase 6 Step 5)
+- [ ] **[manual]** Tab title was updated on each story start, blocked story, and story done (Phase 6 — Tab Title Protocol)
 
 ### Phase 7: Blocker Report
 
 - [ ] **[manual]** If any stories are `[!] Blocked`: a consolidated blocker report was presented in the conversation with question, options, recommendation, and why for each (Phase 7)
 - [ ] **[manual]** The report includes a summary of completed, blocked, and remaining Todo stories (Phase 7)
+- [ ] **[manual]** Tab title was set to blocked if any stories are blocked (`! {workflow-slug} {project-slug}`) (Phase 7 — Tab Title Protocol)
 
 ### Phase 7.5: Final Verification
 
@@ -4022,6 +4387,7 @@ the agent to check something the scripts cannot verify.
 - [ ] **[script]** `git status --porcelain` returns empty after the final commit — the tree is clean (Phase 8)
 - [ ] **[manual]** If all stories are `[x] Done`: the feature was archived via `git mv` from `todo/` to `archive/YYYY/MM/`, `date.completed` was set, and the archive commit was made (Phase 8 — Archive Completed Feature)
 - [ ] **[manual]** If any stories are `[!] Blocked` (deferred): the feature was left in `todo/` with deferred items noted in the PRD — NOT archived (Phase 8 — Archive Completed Feature)
+- [ ] **[manual]** Tab title was set to done (`x {workflow-slug} {project-slug}`) or blocked (`!`) if deferred items remain (Phase 8 — Set Tab Title to Done)
 
 ### Disruption Handoff
 
@@ -4035,6 +4401,9 @@ If any of these are true, the run is NOT complete:
 - A subagent completed but no code review was dispatched → the review step was skipped (Phase 6 Step 4)
 - A subagent completed but no work verification subagent was dispatched → the verification step was skipped (Phase 6 — Work Verification Gate)
 - A story is marked `[x] Done` but has no `## Verification` section → the per-story verification gate was skipped (Phase 6 — Work Verification Gate)
+- A story was executed directly on the integration branch without a dedicated worktree → the worktree-per-story requirement was not met (Phase 6 — Worktree Setup)
+- A story branch was never merged back into the integration branch after verification → the merge step was skipped (Phase 6 — Merge step)
+- An orphaned story branch exists (matches `feature/current/{slug}/story-*` but not referenced as `[x] Done` in the index) → the orphaned branch reconciliation scan was not run (Phase 6 — Resume Detection step 4)
 - A story is marked `[x] Done` but its diff is empty → the work was never started (Phase 6 — Work Verification Gate, NOT_STARTED verdict)
 - A story is marked `[x] Done` but has a `[ ] Todo`, `[~] In-Progress`, or `[!] Blocked` story in its transitive dependency path → dependency-path violation (Phase 7.5 Step 2)
 - The final verification pass was not run → Phase 7.5 was skipped (Phase 7.5)
@@ -4159,6 +4528,84 @@ description: Shared clarifying-questions protocol — ask numbered, outcome-fram
 ---
 description: Shared ask-user protocol — anytime the AI has a question for the user, present the question, a recommendation, and the reasoning. Lightweight default for general project work; clarifying-questions.md escalates from this base for artifact generation.
 ---
+
+---
+description: Shared communication shorthand — short codes (D1, O1, F1, R1, Q1, A1) for referring to findings, decisions, options, risks, questions, and actions across a conversation. Assigned when presenting 3+ items of a kind, preserved throughout the session, never reused for a different point. Included by ask-user.md so the shorthand is available wherever questions are asked.
+---
+
+### Communication Shorthand
+
+
+
+When presenting **three or more** findings, decisions, options, risks,
+questions, or actions, assign each one a short code. Use markdown headings
+or bold labels so the codes are scannable.
+
+#### Standard Codes
+
+| Code | Used for | Example |
+|---|---|---|
+| **D1, D2, Dn** | Decisions | `D1 — Commit the auth module first` |
+| **O1, O2, On** | Options | `O1 — Use pnpm (recommended)` |
+| **F1, F2, Fn** | Findings | `F1 — The test suite is flaky on macOS` |
+| **R1, R2, Rn** | Risks | `R1 — Migration is irreversible without backup` |
+| **Q1, Q2, Qn** | Questions | `Q1 — Should I squash or merge?` |
+| **A1, A2, An** | Actions | `A1 — Add the missing PEP 723 header` |
+
+Invent new code prefixes for sections that do not fit the standard set. For
+example, `S1` for suggestions, `G1` for goals, `C1` for constraints. Use
+the same prefix+number pattern and document the prefix on first use.
+
+#### Rules
+
+- **Assign codes only when there are 3+ items of a kind.** Do not code a
+  single finding or a pair of options — just state them. Codes are for
+  navigation, not decoration
+- **Preserve the same codes throughout the conversation.** If `D1` was
+  "commit the auth module first" in the first response, `D1` means that
+  same decision for the rest of the session. Do not reassign
+- **Do not reuse a number for a different point.** `D1` cannot mean
+  "commit the auth module" in one message and "fix the unit test" in the
+  next. If a new decision arises, assign it the next available number
+  (`D2`, `D3`, etc.) — never recycle a used number
+- **Do not create codes for short, simple answers.** If the answer is one
+  sentence, just answer. Codes add value when the user needs to refer back
+  to a specific point in a longer exchange
+- **Number sequentially within a prefix.** `D1`, `D2`, `D3` — do not skip
+  numbers or use gaps
+- **Bullets do not need trailing periods.** A bullet ending mid-sentence
+  or at a phrase is fine without a period. Full sentences in prose get
+  periods; list items do not require them
+
+#### Example
+
+```text
+### Findings
+
+- F1 — The CI pipeline runs `just test` but not `just bats`. Script
+  failures are invisible to CI
+- F2 — Two skill scripts reference `npx` instead of `pnpm dlx`,
+  violating the tech-stack rule
+- F3 — The `handoff` skill's `scan-artifacts.sh` is not materialized
+  into the built output
+
+### Decisions
+
+- D1 — Add `just bats` to the CI workflow (recommended — closes the
+  script-test gap with no downside)
+- D2 — Fix the `npx` references in a separate commit (keeps the CI
+  change reviewable on its own)
+
+### Actions
+
+- A1 — Add `just bats` to `.github/workflows/build-and-publish.yml`
+- A2 — Replace `npx` with `pnpm dlx` in the two scripts
+- A3 — Materialize `scan-artifacts.sh` into the handoff skill
+```
+
+The user can now reply "do D1 and A1, skip D2 for now" and the reference
+is unambiguous.
+
 
 ### Ask the User (Question + Recommendation + Why)
 

@@ -22,6 +22,7 @@
 | [PropertyRoom](https://www.propertyroom.com/) | Seized electronics, jewelry | 30–70% | Police auctions; 16.5% buyer's premium; most start at $1 no reserve |
 | GovDeals electronics lots | Bulk IT equipment, surplus | 20–50% | State/local schools surplus IT; 7.5–12.5% buyer's premium |
 | USPS unclaimed mail lots | Mystery lots, gamble | Variable | [GovDeals Atlanta Surplus Center](https://www.govdeals.com/) — sold in bulk lots, pickup only |
+| [Whatnot](https://www.whatnot.com/) | Older/discontinued models, liquidation-style deals | 10–50% | Live flash-sale auctions via app; good for last-gen electronics and collectibles. Verify condition and lock status (for Macs/phones) before bidding; buyer protection covers non-receipt and SNAD |
 
 **Never buy used**: Batteries below 80% health, items with water damage indicators tripped, counterfeit-prone items (cables, chargers, memory cards).
 

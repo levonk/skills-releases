@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `67fda0ec616c2510fc7e1ec7eb3c3bad3ef6ee6a` · Branch: `main` · Generated: 2026-08-17T03:55:48Z
+> Commit: `92e7a61faf33a5d50b97b79941cada0160f00162` · Branch: `main` · Generated: 2026-08-20T21:25:47Z
 
 ## Overview
 
@@ -18,12 +18,15 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | agent-file-upsert | Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Conte... | [Synopsis](ai-agent-file-upsert.md) |
 | agent-upsert | Create new expert agents, modify and improve existing agents, and audit agent definitions for rel... | [Synopsis](ai-agent-upsert.md) |
 | ai-guidance-improver | Analyze and improve existing AI guidance files (skills, workflows, agents, prompts, AGENTS.md) an... | [Synopsis](ai-ai-guidance-improver.md) |
+| ai-skill-upsert | Create new skills, modify and improve existing skills, and measure skill performance. Before crea... | [Synopsis](ai-ai-skill-upsert.md) |
 | ai-upsert | Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, an... | [Synopsis](ai-ai-upsert.md) |
 | ai-workflow-upsert | Create new workflows, modify and improve existing workflows, and convert between workflow and ski... | [Synopsis](ai-ai-workflow-upsert.md) |
 | code-quality-validation | Comprehensive code quality validation supporting multiple languages with linting, formatting, tes... | [Synopsis](ai-code-quality-validation.md) |
 | code-review-guidance | Systematic code review checklist covering infrastructure, schemas, integrations, security, perfor... | [Synopsis](ai-code-review-guidance.md) |
 | git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](ai-git-repository-management.md) |
 | handoff | Capture and restore AI conversation context for seamless work continuation across sessions. Use w... | [Synopsis](ai-handoff.md) |
+| knowledge-bundle-lifecycle | Maintain and grow OKF knowledge bundles through ingest, query, and lint operations. Use when user... | [Synopsis](ai-knowledge-bundle-lifecycle.md) |
+| knowledge-bundle-upsert | Create and maintain OKF knowledge bundles through four operations: create a new bundle from scrat... | [Synopsis](ai-knowledge-bundle-upsert.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](ai-project-detection.md) |
 | prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
 | readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](ai-readme-upsert.md) |

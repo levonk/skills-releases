@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =====================================================================
 # Git Repository Setup Script (Configuration-Driven, Unified)
-# Bundled from levonk/dotfiles (home/current/dot_local/bin/executable_git-repo-init.bash)
-# for the git-repository-management skill. Sources git-vcs-config.bash from the
-# same directory (the bundled copy has chezmoi template expressions stripped to
-# empty-string defaults; identity fallbacks still work standalone).
+# Managed by chezmoi | https://github.com/levonk/dotfiles
+#
+# Chezmoi deploys this script to ~/.local/bin/git-repo-init.bash (the
+# `executable_` source prefix makes chezmoi set the exec bit on apply).
 #
 # Purpose:
 #   Unified git repository management. Auto-detects mode:
@@ -1329,3 +1329,4 @@ main() {
 }
 
 main "$@"
+

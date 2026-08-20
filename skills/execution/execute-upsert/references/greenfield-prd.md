@@ -107,6 +107,84 @@ description: Shared clarifying-questions protocol — ask numbered, outcome-fram
 description: Shared ask-user protocol — anytime the AI has a question for the user, present the question, a recommendation, and the reasoning. Lightweight default for general project work; clarifying-questions.md escalates from this base for artifact generation.
 ---
 
+---
+description: Shared communication shorthand — short codes (D1, O1, F1, R1, Q1, A1) for referring to findings, decisions, options, risks, questions, and actions across a conversation. Assigned when presenting 3+ items of a kind, preserved throughout the session, never reused for a different point. Included by ask-user.md so the shorthand is available wherever questions are asked.
+---
+
+### Communication Shorthand
+
+
+
+When presenting **three or more** findings, decisions, options, risks,
+questions, or actions, assign each one a short code. Use markdown headings
+or bold labels so the codes are scannable.
+
+#### Standard Codes
+
+| Code | Used for | Example |
+|---|---|---|
+| **D1, D2, Dn** | Decisions | `D1 — Commit the auth module first` |
+| **O1, O2, On** | Options | `O1 — Use pnpm (recommended)` |
+| **F1, F2, Fn** | Findings | `F1 — The test suite is flaky on macOS` |
+| **R1, R2, Rn** | Risks | `R1 — Migration is irreversible without backup` |
+| **Q1, Q2, Qn** | Questions | `Q1 — Should I squash or merge?` |
+| **A1, A2, An** | Actions | `A1 — Add the missing PEP 723 header` |
+
+Invent new code prefixes for sections that do not fit the standard set. For
+example, `S1` for suggestions, `G1` for goals, `C1` for constraints. Use
+the same prefix+number pattern and document the prefix on first use.
+
+#### Rules
+
+- **Assign codes only when there are 3+ items of a kind.** Do not code a
+  single finding or a pair of options — just state them. Codes are for
+  navigation, not decoration
+- **Preserve the same codes throughout the conversation.** If `D1` was
+  "commit the auth module first" in the first response, `D1` means that
+  same decision for the rest of the session. Do not reassign
+- **Do not reuse a number for a different point.** `D1` cannot mean
+  "commit the auth module" in one message and "fix the unit test" in the
+  next. If a new decision arises, assign it the next available number
+  (`D2`, `D3`, etc.) — never recycle a used number
+- **Do not create codes for short, simple answers.** If the answer is one
+  sentence, just answer. Codes add value when the user needs to refer back
+  to a specific point in a longer exchange
+- **Number sequentially within a prefix.** `D1`, `D2`, `D3` — do not skip
+  numbers or use gaps
+- **Bullets do not need trailing periods.** A bullet ending mid-sentence
+  or at a phrase is fine without a period. Full sentences in prose get
+  periods; list items do not require them
+
+#### Example
+
+```text
+### Findings
+
+- F1 — The CI pipeline runs `just test` but not `just bats`. Script
+  failures are invisible to CI
+- F2 — Two skill scripts reference `npx` instead of `pnpm dlx`,
+  violating the tech-stack rule
+- F3 — The `handoff` skill's `scan-artifacts.sh` is not materialized
+  into the built output
+
+### Decisions
+
+- D1 — Add `just bats` to the CI workflow (recommended — closes the
+  script-test gap with no downside)
+- D2 — Fix the `npx` references in a separate commit (keeps the CI
+  change reviewable on its own)
+
+### Actions
+
+- A1 — Add `just bats` to `.github/workflows/build-and-publish.yml`
+- A2 — Replace `npx` with `pnpm dlx` in the two scripts
+- A3 — Materialize `scan-artifacts.sh` into the handoff skill
+```
+
+The user can now reply "do D1 and A1, skip D2 for now" and the reference
+is unambiguous.
+
+
 ### Ask the User (Question + Recommendation + Why)
 
 Anytime you have a question for the user — mid-task, at a decision point, or

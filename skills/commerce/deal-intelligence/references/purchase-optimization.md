@@ -81,6 +81,12 @@ When the user has provided `payment_methods` in their request, use that data to 
 - **Amazon Visa (Prime)**: 5% Amazon + Whole Foods
 - **Target RedCard**: 5% Target (debit or credit)
 - **Walmart+ credit card**: 5% Walmart.com, 2% in-store
+- **Apple Card**: 3% Daily Cash on Apple purchases (apple.com, Apple Store,
+  Apple Services, Apple Developer programs); 2% on Apple Pay, 1% on physical
+  card swipe. Stacks with 0% APR Apple Card Monthly Installments — the 3%
+  applies to the post-trade-in balance financed. See
+  `references/acquisition-strategy.md` → Apple-Specific Acquisition Stack for
+  how the 3% combines with financing, lease, refurb, and trade-in.
 
 ## Extended Warranty Stacking
 
@@ -127,7 +133,8 @@ Before every purchase over $50:
 - [ ] Check for discounted gift cards at Raise/CardCookie
 - [ ] Activate any Chase Offers / Amex Offers for the retailer
 - [ ] Search for coupon codes on Slickdeals, RetailMeNot, Honey
-- [ ] Select credit card with highest multiplier for merchant category
+- [ ] Check [Slickdeals](https://slickdeals.net/) for active deal threads on the exact model/SKU — community-sourced deals often surface price mistakes, coupon stacks, and clearance drops before any tracker
+- [ ] Select credit card with highest multiplier for merchant category (for Apple purchases, Apple Card 3% usually wins)
 - [ ] Confirm card provides extended warranty or purchase protection if needed
 - [ ] Check if retailer price-matches (Best Buy, Target, etc.)
 - [ ] Verify cashback portal tracks the purchase (screenshot confirmation page)

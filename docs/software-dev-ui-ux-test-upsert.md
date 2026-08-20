@@ -30,4 +30,4 @@ Create or update UI/UX tests for web and mobile applications using a two-tier te
 
 - **Full skill**: [`skills/software-dev/ui-ux-test-upsert/SKILL.md`](skills/software-dev/ui-ux-test-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-17T03:55:48Z
+- **Generated**: 2026-08-20T21:25:47Z

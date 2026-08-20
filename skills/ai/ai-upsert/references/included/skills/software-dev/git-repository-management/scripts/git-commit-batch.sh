@@ -172,6 +172,16 @@ wrapper_prefix() {
 	# NOT the disabled one — but in practice, if devbox.json exists and devbox
 	# is disabled, the other wrappers are not relevant for this repo.
 	if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
+		# When both devbox and rtk are disabled (e.g. test environment with
+		# WRAPPER_DEVBOX_DISABLED=1 and RTK_SKIP=1), skip ALL wrapper detection
+		# — the caller is explicitly opting out of wrapping. This avoids the
+		# ~1s cli-tool-discovery.sh probe per invocation.
+		if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
+			WRAPPER_PREFIX_CACHE=""
+			WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
+			printf ''
+			return
+		fi
 		# Still check for non-devbox wrappers via cli-tool-discovery, but only
 		# if there's no devbox.json up the tree (if there IS one, devbox was
 		# the intended wrapper and it's broken — don't waste 15s re-probing).
@@ -231,10 +241,9 @@ wrapper_prefix() {
 # This is the simple wrapper — it does NOT probe. Call probe_devbox first if
 # you want hang-safety. wrapper_prefix() honors WRAPPER_DEVBOX_DISABLED.
 devbox_run() {
-	local wrapper
-	wrapper="$(wrapper_prefix)"
-	if [[ -n "$wrapper" ]]; then
-		$wrapper "$@"
+	wrapper_prefix >/dev/null
+	if [[ -n "${WRAPPER_PREFIX_CACHE:-}" ]]; then
+		$WRAPPER_PREFIX_CACHE "$@"
 	else
 		"$@"
 	fi
@@ -337,7 +346,8 @@ rtk_prefix() {
 		return
 	fi
 	local result=""
-	if [[ -n "$(rtk_available)" ]]; then
+	rtk_available >/dev/null
+	if [[ -n "${RTK_AVAILABLE_CACHE:-}" ]]; then
 		# Probe with the full command — rtk rewrite needs the subcommand to
 		# determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
 		rtk rewrite -- "$@" >/dev/null 2>&1
@@ -357,19 +367,19 @@ rtk_prefix() {
 rtk_wrap_command() {
 	local tool="$1"
 	shift
-	local rtk_prefix_val
-	rtk_prefix_val="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
-	local wrapper
-	wrapper="$(wrapper_prefix)"
-	if [[ -n "$rtk_prefix_val" ]]; then
-		if [[ -n "$wrapper" ]]; then
-			$wrapper rtk "$tool" "$@"
+	local safe_tool="${tool//[^a-zA-Z0-9]/_}"
+	local cache_var="RTK_PREFIX_CACHE__${safe_tool}"
+	rtk_prefix "$tool" "$@" >/dev/null 2>&1
+	wrapper_prefix >/dev/null
+	if [[ -n "${!cache_var:-}" ]]; then
+		if [[ -n "${WRAPPER_PREFIX_CACHE:-}" ]]; then
+			$WRAPPER_PREFIX_CACHE rtk "$tool" "$@"
 		else
 			rtk "$tool" "$@"
 		fi
 	else
-		if [[ -n "$wrapper" ]]; then
-			$wrapper "$tool" "$@"
+		if [[ -n "${WRAPPER_PREFIX_CACHE:-}" ]]; then
+			$WRAPPER_PREFIX_CACHE "$tool" "$@"
 		else
 			"$tool" "$@"
 		fi
@@ -381,9 +391,8 @@ rtk_wrap_command() {
 # This is the canonical git command wrapper — all git-repository-management
 # scripts use this instead of redefining their own git_cmd().
 git_cmd() {
-	local rtk_p
-	rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
-	if [[ -n "$rtk_p" ]]; then
+	rtk_prefix git "$@" >/dev/null 2>&1
+	if [[ -n "${RTK_PREFIX_CACHE__git:-}" ]]; then
 		devbox_run rtk git "$@"
 	else
 		devbox_run git "$@"
@@ -397,9 +406,10 @@ git_cmd() {
 rtk_wrap() {
 	local tool="$1"
 	shift
-	local rtk_p
-	rtk_p="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
-	if [[ -n "$rtk_p" ]]; then
+	local safe_tool="${tool//[^a-zA-Z0-9]/_}"
+	local cache_var="RTK_PREFIX_CACHE__${safe_tool}"
+	rtk_prefix "$tool" "$@" >/dev/null 2>&1
+	if [[ -n "${!cache_var:-}" ]]; then
 		devbox_run rtk "$tool" "$@"
 	else
 		devbox_run "$tool" "$@"
@@ -411,6 +421,11 @@ rtk_wrap() {
 # This sets WRAPPER_DEVBOX_DISABLED=1 if devbox hangs, which wrapper_prefix()
 # and devbox_run() honor for the rest of the script.
 probe_devbox || true
+
+# Warm caches in the parent shell so $(git_cmd ...) subshells inherit them.
+# Without this, each $(git_cmd ...) call re-probes wrapper_prefix() (~1s each).
+wrapper_prefix >/dev/null
+rtk_prefix git >/dev/null 2>&1 || true
 
 discover_repo_root() {
 	local target_path="${1:-.}"

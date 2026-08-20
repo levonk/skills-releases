@@ -37,7 +37,7 @@
      breaks reproducibility, multi-arch builds, Docker build contexts, CI
      shallow clones, GitOps workflows, and cross-platform consistency. Notes
      that Git has no built-in keyword identifiers (the `ident` attribute
-     expands `$Id$` to the blob SHA-1, not commit/tag/semver).
+     expands `$Id: fe1e702656057f214822e4dc2e67596dcd0836d8 $` to the blob SHA-1, not commit/tag/semver).
   Added 4 sources: the Copilot share, gitattributes smudge/clean docs, OCI
   image-spec annotations, and docker buildx multi-platform docs. Cross-linked
   to [pin-image-digests](pin-image-digests.md) (input pinning vs output

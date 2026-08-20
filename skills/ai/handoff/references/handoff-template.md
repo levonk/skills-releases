@@ -109,6 +109,22 @@ any path you touch.
 > progressive-disclosure root to read — proceed without project-level agent
 > conventions."
 
+## Skill Contract
+
+If this work was started under a skill (e.g. `execute-upsert`, `ai-upsert`),
+the receiving session MUST follow that skill's `INSTRUCTIONS.md` — including
+its phase workflow, commit steps, and Definition of Done checklist. The skill
+name and phase pin the binding contract; the summary does not reproduce it.
+
+**Skill**: {skill-name}, Phase {N} ({phase name}) — story: "{story title}"
+**Binding**: Read `~/.agents/skills/{skill-name}/INSTRUCTIONS.md` before
+declaring work done. Follow its phase workflow and DoD checklist. Do not
+invent constraints that conflict with the skill's contract.
+
+If no skill was active, replace this section with: "No skill contract — this
+work was not started under a skill. Apply the project's AGENTS.md and standard
+development conventions."
+
 ## Project Overview
 
 ### Objective
@@ -380,6 +396,22 @@ any path you touch.
 > section with: "No agent-instructions file found at the project root. No
 > progressive-disclosure root to read — proceed without project-level agent
 > conventions."
+
+## Skill Contract
+
+If this work was started under a skill (e.g. `execute-upsert`, `ai-upsert`),
+the receiving session MUST follow that skill's `INSTRUCTIONS.md` — including
+its phase workflow, commit steps, and Definition of Done checklist. The skill
+name and phase pin the binding contract; the summary does not reproduce it.
+
+**Skill**: {skill-name}, Phase {N} ({phase name}) — story: "{story title}"
+**Binding**: Read `~/.agents/skills/{skill-name}/INSTRUCTIONS.md` before
+declaring work done. Follow its phase workflow and DoD checklist. Do not
+invent constraints that conflict with the skill's contract.
+
+If no skill was active, replace this section with: "No skill contract — this
+work was not started under a skill. Apply the project's AGENTS.md and standard
+development conventions."
 
 ## Target Architecture
 

@@ -58,11 +58,24 @@ run_collect() {
     local extra_path="${2:-}"
     # GIT_CONFIG_GLOBAL=/dev/null disables the user's global git config
     # (which may include broken external diff drivers like difftastic).
+    # WRAPPER_DEVBOX_DISABLED=1 and RTK_SKIP=1 bypass the devbox/rtk probes
+    # so tests don't hang on the 15s devbox probe in temp dirs without
+    # devbox.json. Tests that explicitly test devbox/rtk detection use
+    # run_collect_with_probe() instead.
     # Optional second arg prepends a dir to PATH (used by jj fallback test
     # to inject a fake broken jj binary).
     local path_env="PATH=$extra_path:$PATH"
     [[ -z "$extra_path" ]] && path_env=""
-    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
+    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null WRAPPER_DEVBOX_DISABLED=1 RTK_SKIP=1 $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
+}
+
+# Variant that keeps devbox/rtk probes enabled — used by detection tests.
+run_collect_with_probe() {
+    local dir="$1"
+    local extra_path="${2:-}"
+    local path_env="PATH=$extra_path:$PATH"
+    [[ -z "$extra_path" ]] && path_env=""
+    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null PROBE_DEVBOX_TIMEOUT_SECS=3 $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
 }
 
 # --- basic collection tests ---
@@ -115,7 +128,7 @@ run_collect() {
 @test "rtk detection" {
     command -v rtk >/dev/null 2>&1 || skip "RTK not installed"
     local dir; dir="$(setup_repo rtk-detect README.md)"
-    local out; out="$(run_collect "$dir")"
+    local out; out="$(run_collect_with_probe "$dir")"
     assert_contains "RTK:1" "$out"
 }
 
@@ -125,7 +138,7 @@ run_collect() {
     # test shell's PATH, so this test is best-effort.
     command -v rtk >/dev/null 2>&1 && skip "rtk is installed"
     local dir; dir="$(setup_repo no-rtk README.md)"
-    local out; out="$(run_collect "$dir")"
+    local out; out="$(run_collect_with_probe "$dir")"
     # RTK may still be detected via devbox shims inside the script. Accept
     # either RTK:0 or RTK:1 — the test only asserts the flag is present.
     assert_contains "RTK:" "$out"
@@ -149,7 +162,7 @@ EOF
     echo "content" > "$dir/README.md"
     git -C "$dir" add -A
     git -C "$dir" commit -q -m "initial"
-    local out; out="$(run_collect "$dir")"
+    local out; out="$(run_collect_with_probe "$dir")"
     # DEVBOX may be 1 (probe succeeded) or 0 (probe failed and fell back to
     # direct execution). Both are valid outcomes — the script degrades
     # gracefully. We only assert that the DEVBOX line is present.
@@ -159,7 +172,7 @@ EOF
 @test "devbox not available" {
     command -v devbox >/dev/null 2>&1 && skip "devbox is installed"
     local dir; dir="$(setup_repo no-devbox README.md)"
-    local out; out="$(run_collect "$dir")"
+    local out; out="$(run_collect_with_probe "$dir")"
     assert_contains "DEVBOX:0" "$out"
 }
 

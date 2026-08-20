@@ -102,8 +102,16 @@ includes both, so one yt-dlp call covers both sources.
 ## notes.md
 
 The summary note is LLM-generated from the transcript. It is **not** produced
-by `vid-transcripts.py` — the agent reads `transcript.md` (or the TOON data
-directly) and writes the summary.
+by `vid-transcripts.py` — the agent reads `transcript.md` (the Obsidian/TOON
+note with the 9-column table and deep-links) and writes the summary.
+
+When the agent needs timestamp links or cue `idx` cross-references in the
+summary, read `transcript.md` directly — its TOON table carries the
+`link` and `idx` columns needed for that. When the agent only needs the
+cleaned words for synthesis (no timestamp links required in the output), run
+`vid-transcripts.py --format text` on the same VTT to get a lighter input
+with no TOON header/indent wrapper. See "Format Selection by Consumer" in
+`INSTRUCTIONS.md`.
 
 ### Structure
 

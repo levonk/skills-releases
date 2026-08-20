@@ -875,6 +875,112 @@ For creating or modifying boilerplates, see: [Boilerplate Development Guide](doc
 
 
 ---
+description: Shared content quality directives — positive and negative writing behaviors for AI-generated content. Lead with the most important information, use plain specific language, state each fact once, match detail to task, challenge incorrect assumptions, optimize for clarity over quotability. No flattery, praise, validation, motivating language, or agreement without reason. Includes 5-tier emoji comparison guidance that leverages the shared coverage-scale-icons include.
+---
+
+### Content Quality Directives
+
+Binding writing behaviors for all AI-generated content (skill instructions,
+knowledge pages, audit findings, recommendations, summaries). These directives
+layer on top of `base-content-principles.md` (token efficiency, progressive
+disclosure) and `professional-tone.md` (no sycophancy, direct prose).
+
+#### Positive Behaviors
+
+- **Lead with the most important information.** Place the answer, the decision,
+  or the critical finding in the first sentence or the first bullet. Do not
+  bury it under setup, context, or hedging. The reader should get the core
+  value from the first line alone
+- **Use plain, specific language.** Pick the simplest domain term that
+  compresses the most information. Prefer "use" over "leverage", "start" over
+  "commence", "fast and reliable" over "performant". Specificity beats
+  vagueness — "3x faster" beats "much faster", "the JWT validator" beats "the
+  thing that checks tokens"
+- **State each fact once.** Do not repeat the same point in the intro, the
+  body, and the summary. If a fact needs to appear in multiple sections, link
+  to the canonical statement instead of restating it
+- **Match detail to task.** A one-line status update does not need a
+  five-paragraph background. A production migration plan does not fit in a
+  bullet. Scale the depth of the response to the stakes and complexity of the
+  request. Over-explaining simple tasks wastes the reader's time;
+  under-explaining complex tasks creates risk
+- **Challenge incorrect assumptions directly and explain why.** If the user
+  or the source material assumes something that is wrong, say so plainly:
+  name the assumption, state what is actually true, and give the evidence.
+  Do not soften the correction or leave the assumption standing because
+  challenging it feels impolite. See `professional-tone.md` → Disagree When
+  Warranted
+- **Optimize for clarity and engineering value, not quotability.** Write
+  content that a practitioner can act on, not content that sounds good in a
+  slide. A concrete instruction ("set `timeout_ms: 5000`") beats a memorable
+  aphorism ("time is the enemy of reliability"). Avoid parallelism, alliteration,
+  and rhetorical flourish that sacrifices precision for style
+
+#### Negative Behaviors (Do NOT)
+
+- **Do NOT flatter.** No "great question", "excellent point", "astute
+  observation". See `professional-tone.md` → No Sycophancy
+- **Do NOT praise.** No "this is a really well-structured repo", "beautiful
+  implementation". Evaluate the work, do not compliment the author
+- **Do NOT validate.** No "you're absolutely right", "I completely agree".
+  If the user is correct, act on it without preamble. If the user is
+  mistaken, say so
+- **Do NOT use motivating language.** No "let's dive in", "we're excited to",
+  "I'd love to help you with this". State what you are going to do, then do it
+- **Do NOT agree without reason.** Reflexive agreement is sycophancy. Evaluate
+  the substance first. If you agree, state why. If you disagree, state why.
+  "You're right, but…" is a smell — either agree and act, or disagree and
+  explain
+
+#### Comparison Output
+
+When comparing options, approaches, features, or trade-offs, use structured
+formats for clarity:
+
+- **Bulleted lists** for parallel items (pros, cons, steps, options)
+- **Tables** for multi-dimensional comparisons (item × dimension)
+- **Diagrams** (mermaid, ASCII) for flows, sequences, and relationships
+
+##### 5-Tier Emoji Comparison Scale
+
+When a comparison rates how well each option meets a criterion, use the
+canonical 5-tier emoji scale. The icons and their meanings are defined in the
+shared coverage-scale include (`shared/includes/coverage-scale-icons.md`)
+— that file is the single source of truth. Use the same icons consistently
+across all comparison output — feature matrices, option evaluations, approach
+ratings, and trade-off tables. Do not redefine the scale; reference the shared
+include as the canonical definition
+
+**Icon quick reference** (canonical definitions in
+`shared/includes/coverage-scale-icons.md`):
+
+| Icon | Meaning | When to use |
+|---|---|---|
+| 🏆 | Best-in-class | Standout, industry-leading, the marquee option |
+| ✅ | Meets | First-class, well-supported, fully addresses the criterion |
+| ➖ | Meets but not great | Partial, limited, requires plugins, or has caveats |
+| ⚠️ | Does not meet | Exists but broken, deprecated, or has serious issues |
+| ❌ | Fails | Not addressed, or requires significant custom work |
+
+When presenting a comparison, include the one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ meets · ➖ partial · ⚠️ problematic · ❌ missing
+```
+
+##### Comparison Table Structure
+
+- **Options across the top** (column headers), with inline links if applicable
+- **Criteria down the side** (row headers), grouped into sections if there
+  are many
+- **Icons in cells** for quick visual scanning
+- **Identical-value rows at the bottom** (criteria where all options have the
+  same rating) — these are table-stakes, not differentiators
+- **Differentiating criteria at the top** — these are the ones that actually
+  drive a decision
+
+
+---
 description: Guidance for delegating work to subagents with reduced initial memory — front-load context, review results, and choose serialization vs parallelization deliberately
 ---
 
@@ -1537,7 +1643,7 @@ classifier output is authoritative, not gut feel.
 15. **Update installation documentation**: Update README and docs with Nix install instructions. **Use the `flake_type` value from Step 12** to select the correct template — `references/documentation-updates.md` has separate sections for Source Build, Prebuilt Tarball, and Hybrid Fallback Prebuilt Tarball flakes. Do NOT mix: Prebuilt Tarball READMEs must not include tag-pinning (`github:.../vX.Y.Z`) for the prebuilt `#default` output — the `#source` output works at any tag since it builds from source. **When `hybrid_fallback=true`** (from Step 12), use the Hybrid Fallback snippet from `references/documentation-updates.md` — it documents that `#default` falls back to source on platforms without a prebuilt binary, and that users can explicitly choose `#prebuilt` (prebuilt-only platforms) or `#source` (all platforms). **Use the `include_devbox` value from Step 13** to decide whether to add the Devbox subsection — include it only when devbox is in this PR. See `references/documentation-updates.md` for insertion examples, docs-site installation pages, releasing documentation, and translated README handling.
 
 16. **Add advanced features**: See `references/advanced-features.md`. The first two items are required; the rest are optional:
-    - **GitHub Actions CI for Nix validation** — REQUIRED for all flake types: a `.github/workflows/nix.yml` that runs `nix flake check --all-systems --no-build`, `nix build .#default`, and `nix run .#default -- --version` (or the project's smoke command). Without CI, the Nix path rots silently — a flake that passes today breaks on the next nixpkgs-unstable bump and nobody notices until a user reports it. This is the gate that maintainers demand before accepting a flake PR. See `references/advanced-features.md` — GitHub Actions CI for Nix. **Path-filter the workflow to `flake.nix`, `flake.lock`, `**/*.nix`, and `.github/workflows/nix.yml`** so it only fires when Nix files change, not on every source/docs commit. **For source-build flakes, also add the project's lockfile to the path filter** (`bun.lock`, `package-lock.json`, `Cargo.lock`, `go.sum`, etc.) — a lockfile change invalidates the source build's fixed-output derivation hash, and if the lockfile isn't in the path filter, dependency bumps never trigger Nix CI and the breakage reaches users. See `references/advanced-features.md` — GitHub Actions CI for Nix — Lockfile path-filter. **For prebuilt tarball flakes, consider a cross-platform matrix** (`ubuntu-latest` + `macos-13` + `macos-14`) — `nix flake check --all-systems --no-build` evaluates without realising fetchurl derivations, so a hash mismatch on darwin is invisible when CI only runs on ubuntu.
+    - **GitHub Actions CI for Nix validation** — REQUIRED for all flake types: a `.github/workflows/nix.yml` that runs `nix flake check --all-systems --no-build`, `nix build .#default`, and `nix run .#default -- --version` (or the project's smoke command). Without CI, the Nix path rots silently — a flake that passes today breaks on the next nixpkgs-unstable bump and nobody notices until a user reports it. This is the gate that maintainers demand before accepting a flake PR. See `references/advanced-features.md` — GitHub Actions CI for Nix. **Path-filter the workflow to `flake.nix`, `flake.lock`, `**/*.nix`, and `.github/workflows/nix.yml`** so it only fires when Nix files change, not on every source/docs commit. **For source-build flakes, also add the project's lockfile to the path filter** (`bun.lock`, `package-lock.json`, `Cargo.lock`, `go.sum`, etc.) — a lockfile change invalidates the source build's fixed-output derivation hash, and if the lockfile isn't in the path filter, dependency bumps never trigger Nix CI and the breakage reaches users. See `references/advanced-features.md` — GitHub Actions CI for Nix — Lockfile path-filter. **For prebuilt tarball flakes, consider a cross-platform matrix** (`ubuntu-latest` + `macos-26` + `macos-26-intel`) — `nix flake check --all-systems --no-build` evaluates without realising fetchurl derivations, so a hash mismatch on darwin is invisible when CI only runs on ubuntu. When `macos-26-intel` is decommissioned (~Nov 2028), the self-prune job comments out the Intel entry and swaps `x86_64-darwin` FOD hashes to `lib.fakeHash` automatically — see `references/advanced-features.md` — Self-Pruning on Runner Decommission.
     - **Release-triggered hash automation** — REQUIRED for the Prebuilt Tarball Flake path (skip if `flake_type=source_build` or `force_source_build=true`): a GitHub Action that auto-bumps `version` and refreshes per-platform `sha256` hashes in `flake.nix`, then opens a PR. This is the deliverable that makes a repo-owned flake acceptable to maintainers who don't know Nix; without it every release needs manual hash updates and the flake rots one release after merge. **Use the `trigger` value from Step 7** to select the correct template: `scheduled_lag_check` -> Template A (daily lag-check, recommended for `GITHUB_TOKEN`-created releases); `release_published` -> Template B (`release: published`, only for PAT/App-token releases). See `references/advanced-features.md` — Release-Triggered Hash Automation. **The ASSET_MAP in the workflow MUST include every platform the project ships a binary asset for** — the template includes a reverse-check guard that fails the workflow if it detects binary assets for a platform not in ASSET_MAP, but the initial ASSET_MAP must be filled in correctly by inspecting the project's release assets. **After adding the workflow, verify it via manual `workflow_dispatch`** (see the Verification subsection) — the automation is not exercised by the PR's own CI.
     - **Garnix CI configuration** — OPTIONAL: a `garnix.yaml` that makes the repo ready for [Garnix](https://garnix.io) hosted CI if the maintainer enables the Garnix GitHub App. Garnix builds all flake outputs across platforms and provides FOD hash-rot detection — complementing the required `nix.yml` (which is the contributor-controlled fallback). See Step 16c and `references/advanced-features.md` — Garnix CI (Hosted Alternative). **Only add when the maintainer has expressed interest in hosted Nix CI** — the contributor cannot install the Garnix App on a repo they don't own, so `garnix.yaml` is inert until the maintainer opts in.
     - Home-manager module for declarative configuration

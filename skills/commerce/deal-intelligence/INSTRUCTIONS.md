@@ -875,6 +875,112 @@ For creating or modifying boilerplates, see: [Boilerplate Development Guide](doc
 
 
 ---
+description: Shared content quality directives — positive and negative writing behaviors for AI-generated content. Lead with the most important information, use plain specific language, state each fact once, match detail to task, challenge incorrect assumptions, optimize for clarity over quotability. No flattery, praise, validation, motivating language, or agreement without reason. Includes 5-tier emoji comparison guidance that leverages the shared coverage-scale-icons include.
+---
+
+### Content Quality Directives
+
+Binding writing behaviors for all AI-generated content (skill instructions,
+knowledge pages, audit findings, recommendations, summaries). These directives
+layer on top of `base-content-principles.md` (token efficiency, progressive
+disclosure) and `professional-tone.md` (no sycophancy, direct prose).
+
+#### Positive Behaviors
+
+- **Lead with the most important information.** Place the answer, the decision,
+  or the critical finding in the first sentence or the first bullet. Do not
+  bury it under setup, context, or hedging. The reader should get the core
+  value from the first line alone
+- **Use plain, specific language.** Pick the simplest domain term that
+  compresses the most information. Prefer "use" over "leverage", "start" over
+  "commence", "fast and reliable" over "performant". Specificity beats
+  vagueness — "3x faster" beats "much faster", "the JWT validator" beats "the
+  thing that checks tokens"
+- **State each fact once.** Do not repeat the same point in the intro, the
+  body, and the summary. If a fact needs to appear in multiple sections, link
+  to the canonical statement instead of restating it
+- **Match detail to task.** A one-line status update does not need a
+  five-paragraph background. A production migration plan does not fit in a
+  bullet. Scale the depth of the response to the stakes and complexity of the
+  request. Over-explaining simple tasks wastes the reader's time;
+  under-explaining complex tasks creates risk
+- **Challenge incorrect assumptions directly and explain why.** If the user
+  or the source material assumes something that is wrong, say so plainly:
+  name the assumption, state what is actually true, and give the evidence.
+  Do not soften the correction or leave the assumption standing because
+  challenging it feels impolite. See `professional-tone.md` → Disagree When
+  Warranted
+- **Optimize for clarity and engineering value, not quotability.** Write
+  content that a practitioner can act on, not content that sounds good in a
+  slide. A concrete instruction ("set `timeout_ms: 5000`") beats a memorable
+  aphorism ("time is the enemy of reliability"). Avoid parallelism, alliteration,
+  and rhetorical flourish that sacrifices precision for style
+
+#### Negative Behaviors (Do NOT)
+
+- **Do NOT flatter.** No "great question", "excellent point", "astute
+  observation". See `professional-tone.md` → No Sycophancy
+- **Do NOT praise.** No "this is a really well-structured repo", "beautiful
+  implementation". Evaluate the work, do not compliment the author
+- **Do NOT validate.** No "you're absolutely right", "I completely agree".
+  If the user is correct, act on it without preamble. If the user is
+  mistaken, say so
+- **Do NOT use motivating language.** No "let's dive in", "we're excited to",
+  "I'd love to help you with this". State what you are going to do, then do it
+- **Do NOT agree without reason.** Reflexive agreement is sycophancy. Evaluate
+  the substance first. If you agree, state why. If you disagree, state why.
+  "You're right, but…" is a smell — either agree and act, or disagree and
+  explain
+
+#### Comparison Output
+
+When comparing options, approaches, features, or trade-offs, use structured
+formats for clarity:
+
+- **Bulleted lists** for parallel items (pros, cons, steps, options)
+- **Tables** for multi-dimensional comparisons (item × dimension)
+- **Diagrams** (mermaid, ASCII) for flows, sequences, and relationships
+
+##### 5-Tier Emoji Comparison Scale
+
+When a comparison rates how well each option meets a criterion, use the
+canonical 5-tier emoji scale. The icons and their meanings are defined in the
+shared coverage-scale include (`shared/includes/coverage-scale-icons.md`)
+— that file is the single source of truth. Use the same icons consistently
+across all comparison output — feature matrices, option evaluations, approach
+ratings, and trade-off tables. Do not redefine the scale; reference the shared
+include as the canonical definition
+
+**Icon quick reference** (canonical definitions in
+`shared/includes/coverage-scale-icons.md`):
+
+| Icon | Meaning | When to use |
+|---|---|---|
+| 🏆 | Best-in-class | Standout, industry-leading, the marquee option |
+| ✅ | Meets | First-class, well-supported, fully addresses the criterion |
+| ➖ | Meets but not great | Partial, limited, requires plugins, or has caveats |
+| ⚠️ | Does not meet | Exists but broken, deprecated, or has serious issues |
+| ❌ | Fails | Not addressed, or requires significant custom work |
+
+When presenting a comparison, include the one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ meets · ➖ partial · ⚠️ problematic · ❌ missing
+```
+
+##### Comparison Table Structure
+
+- **Options across the top** (column headers), with inline links if applicable
+- **Criteria down the side** (row headers), grouped into sections if there
+  are many
+- **Icons in cells** for quick visual scanning
+- **Identical-value rows at the bottom** (criteria where all options have the
+  same rating) — these are table-stakes, not differentiators
+- **Differentiating criteria at the top** — these are the ones that actually
+  drive a decision
+
+
+---
 description: Guidance for delegating work to subagents with reduced initial memory — front-load context, review results, and choose serialization vs parallelization deliberately
 ---
 
@@ -1426,6 +1532,73 @@ For the warranty types, terms-to-compare matrix, warranty comparison table
 format, risk-adjusted cost calculation, and when warranty should override
 price, see `references/warranty-comparison.md`.
 
+### 6. Acquisition Strategy — Lease vs Finance vs Buy-New vs Refurbished vs Used
+
+After sourcing (Section 2), timing (Section 3), optimization (Section 4), and
+warranty (Section 5), evaluate the **acquisition structure** itself. The same
+item at the same price can have a different tax-adjusted total cost of
+ownership (TCO) depending on whether you buy new, buy refurbished, buy
+used/liquidation, finance (incl. 0% APR), or lease. This is the layer above
+sticker-price optimization — it decides the *structure* of the acquisition.
+
+**Run acquisition-strategy analysis when any of these apply:**
+
+- The item has **lease options** (Apple Business Lease, equipment leasing,
+  auto leasing) and the user may have a tax write-off path (Section 179,
+  MACRS depreciation, or operating-expense deduction)
+- The item has **financing options** (0% APR promotions, Apple Card Monthly
+  Installments, manufacturer financing) — 0% APR with no cash-discount forgone
+  always beats paying cash (time value of money is free money)
+- The item has a **rich second-hand market** (Macs, iPhones, cameras, watches,
+  cars, industrial equipment) where used/refurbished could deliver better
+  price/performance — especially when a new version is imminent (depreciation
+  cliff)
+- The item is **high-value** (Effort Tier Major $500–$5k or High-value $5k+)
+  and the structure decision materially changes TCO
+- The user **frequently upgrades** (every 1–3 years) and dislikes reselling —
+  lease may make sense even without a tax write-off
+
+**Skip for:** Quick tier (under $50), consumables, low-value items with no
+lease/finance/used-market, or items where the structure decision cannot change
+TCO by more than the analysis cost.
+
+**Run the deterministic calculator** for each candidate:
+
+```bash
+# Single candidate with all structures (defaults: 38% tax, 10% sales tax, 3yr hold)
+uv run --script scripts/acquisition_strategy.py \
+    --name "Mac Studio M3 Ultra 256GB" --new-price 7199 --residual 2500 \
+    --apple-card-pct 3 --sales-tax-avoidable-used \
+    --fin-apr 0 --fin-term 12 \
+    --refurb-price 6119 --used-price 5500 \
+    --lease-monthly 209 --lease-term 36
+
+# Compare multiple candidates (JSON for the Deal Intelligence Report)
+uv run --script scripts/acquisition_strategy.py --json \
+    --name "MacBook Pro M5 Max 128GB" --new-price 6499 --residual 1620 \
+    --name "Mac Studio M3 Ultra 256GB" --new-price 7199 --residual 2500
+
+# Sensitivity across hold periods (does the winner change at 2yr vs 4yr?)
+uv run --script scripts/acquisition_strategy.py \
+    --name "Mac Studio M3 Ultra" --new-price 7199 --residual 2500 \
+    --sensitivity hold:2,3,4
+
+# No Section 179 scenario (user can't write off the asset)
+uv run --script scripts/acquisition_strategy.py \
+    --name "Mac Studio M3 Ultra" --new-price 7199 --residual 2500 --no-sec179
+```
+
+For the full math (tax-adjusted NPV formulas, lease-vs-buy breakeven,
+depreciation-cliff handling, the worked MacBook Pro vs Mac Studio example,
+lock-verification cross-links, and the Apple-specific acquisition stack
+including trade-in), see `references/acquisition-strategy.md`.
+
+**Lock verification for used Macs/phones:** If the analysis recommends buying
+used, the lock-verification procedure is a **required** step, not optional.
+See `references/acquisition-strategy.md` → Lock Verification section, which
+cross-links to `needs-discovery/references/domains/computers.md` (lock types)
+and `acquisition/references/handoff-verification.md` (in-person protocol).
+
 ## Core Workflow — Services
 
 When the Needs Discovery Brief indicates **Type: Service** or **Type: Both**:
@@ -1604,6 +1777,9 @@ Deliver a **Deal Intelligence Report**:
 ### Warranty Comparison
 [Warranty terms comparison across suppliers — see references/warranty-comparison.md]
 
+### Acquisition Strategy (if applicable)
+[Tax-adjusted NPV table for lease vs finance vs buy-new vs refurb vs used — see references/acquisition-strategy.md and scripts/acquisition_strategy.py]
+
 ### Timing
 [Timing recommendation block]
 
@@ -1625,6 +1801,7 @@ Deliver a **Deal Intelligence Report**:
 - `references/purchase-optimization.md` — Optimization stack steps, savings stack format, card selection logic, cashback portal comparison, credit card benefit matrices
 - `references/part-number-research.md` — Part-number sourcing workflow, cross-brand equivalent identification, condition assessment, supplier reputation checks, part-number comparison output format
 - `references/warranty-comparison.md` — Warranty types, terms-to-compare matrix, warranty comparison table format, risk-adjusted cost calculation, when warranty overrides price
+- `references/acquisition-strategy.md` — Lease vs finance (incl. 0% APR) vs buy-new vs buy-refurbished vs buy-used/liquidation math: tax-adjusted NPV (Section 179, MACRS depreciation, effective tax rate, sales-tax avoidance on used), residual/resale value, upgrade-cycle frequency, "new version imminent" depreciation cliffs, lease-vs-buy breakeven, lock-verification cross-links, Apple-specific acquisition stack (buy/finance/lease/refurbished/trade-in + 3% Apple Card), worked MacBook Pro M5 Max vs Mac Studio M3 Ultra vs wait-for-M5-Ultra example
 - `references/cross-brand-identical.md` — OEM/rebrand identification (model prefix decoding, reference design matching, FCC ID matching, ODM databases), cross-brand comparison table format, when cross-brand differences justify the brand tax, brand premium assessment for luxury/status goods (quality comparison, premium calculation, when premium is justified vs paying for the logo)
 - `references/auction-constraints.md` — Vehicle auction constraints (smog/CARB compliance, export-only, salvage/rebuilt titles, damage levels, dealer license gating) and property auction constraints (buildability checklist: ingress, topography, zoning, lot dimensions, easements, utilities, roads; title risks; risk levels by auction type); universal auction constraints (locale/travel, registration gating, total acquisition cost)
 - `references/auction-participation.md` — Step-by-step participation instructions for each major auction platform (GSA Auctions, GSA Fleet, GovDeals, Copart, IAAI, Public Surplus, Municibid, GovPlanet, PropertyRoom, Bid4Assets, US Marshals contractors, Treasury/IRS, county tax deed, state surplus, B-Stock); includes dealer agent/broker process
@@ -1643,6 +1820,7 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Products: determine the optimal purchase window via market timing analysis (Section 3)
 - [ ] Products: build the purchase optimization stack — gift cards, cashback, card bonuses, coupons (Section 4)
 - [ ] Products: compare warranty terms across candidate suppliers (Section 5)
+- [ ] Products: run acquisition-strategy analysis (lease vs finance vs buy-new vs refurb vs used) when the item has lease/financing/used-market options or is high-value (Section 6)
 - [ ] Services: verify the vendor tier from needs-discovery (S0)
 - [ ] Services: gather 3+ provider quotes and vet each (license, insurance, bonding, reviews, complaints, tenure) (S1–S2)
 - [ ] Services: research pricing benchmarks and flag outlier quotes (S3)
@@ -1690,6 +1868,14 @@ require the agent to check something the scripts cannot verify.
 - [ ] **[manual]** When a Replacement Part section exists in the brief: part-number sourcing was run instead of model-name sourcing (Section 1.5)
 - [ ] **[manual]** Warranty terms were compared across candidate suppliers — cheaper option is not always cheaper once warranty is factored (Section 5)
 
+### Acquisition Strategy (When Applicable)
+
+- [ ] **[script]** `scripts/acquisition_strategy.py` ran successfully for each candidate with lease/financing/used-market options or high-value tier (Section 6)
+- [ ] **[manual]** The report includes an Acquisition Strategy section with a tax-adjusted NPV table covering all applicable structures (buy-new cash, buy-new finance, refurb, used, lease) (Section 6 / Output Format)
+- [ ] **[manual]** The NPV math used the user's effective tax rate, sales tax rate, and holding period — not generic defaults unless the user accepted the defaults (Section 6)
+- [ ] **[manual]** When the recommendation is "buy used": lock-verification requirement is stated with a cross-link to `acquisition/references/handoff-verification.md` (Section 6 / Lock Verification)
+- [ ] **[manual]** When 0% financing is available: the report notes it beats cash (time value of money) unless a cash-discount is forgone that exceeds the opportunity savings (Section 6)
+
 ### Auction Constraints (When Applicable)
 
 - [ ] **[manual]** When any candidate source is an auction: `references/auction-constraints.md` was loaded for vehicle/property-specific risks (Section 2.2)
@@ -1704,6 +1890,8 @@ If any of these are true, the run is NOT complete:
 - The report recommends a source but no timing recommendation → the user does not know when to buy (Section 3)
 - The optimization stack lists cashback but no card selection rationale from `payment_methods` → card choice is unjustified (Section 4)
 - An auction source is recommended but auction constraints were not loaded → vehicle/property-specific risks are unaddressed (Section 2.2)
+- The item has lease/financing/used-market options and is high-value, but no Acquisition Strategy section appears → the structure decision was skipped (Section 6)
+- The acquisition-strategy recommendation is "buy used" but no lock-verification cross-link is present → the user is not warned about the paperweight risk (Section 6 / Lock Verification)
 - The Next Step does not hand off to shopping-acquisition → the pipeline is broken (Output Format)
 
 
@@ -1711,8 +1899,8 @@ If any of these are true, the run is NOT complete:
 
 ### File Paths
 - Main skill: `config/ai/skills/commerce/deal-intelligence/SKILL.md`
-- Scripts: `scripts/search_pyp_inventory.py` (salvage yard inventory search), `scripts/search_part_suppliers.py` (OEM part-number supplier search)
-- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/cross-brand-identical.md`, `references/auction-constraints.md`, `references/auction-participation.md`, `references/pyp-california-locations.md`, `references/salvage-sourcing-methodology.md`, `references/fcev-vehicle-catalog.md`, `references/fcev-part-numbers.md`, `references/part-supplier-catalog.md`
+- Scripts: `scripts/search_pyp_inventory.py` (salvage yard inventory search), `scripts/search_part_suppliers.py` (OEM part-number supplier search), `scripts/acquisition_strategy.py` (lease vs finance vs buy-new vs refurb vs used tax-adjusted NPV calculator)
+- References: `references/price-research.md`, `references/sourcing-guide.md`, `references/sourcing-sources.toml`, `references/market-timing.md`, `references/purchase-optimization.md`, `references/part-number-research.md`, `references/warranty-comparison.md`, `references/acquisition-strategy.md`, `references/cross-brand-identical.md`, `references/auction-constraints.md`, `references/auction-participation.md`, `references/pyp-california-locations.md`, `references/salvage-sourcing-methodology.md`, `references/fcev-vehicle-catalog.md`, `references/fcev-part-numbers.md`, `references/part-supplier-catalog.md`
 
 ### Related Skills
 - `shopping-needs-discovery` (dependency) — discovers and refines purchasing requirements

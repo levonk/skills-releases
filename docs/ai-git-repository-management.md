@@ -37,4 +37,4 @@ Comprehensive git repository workflow for status analysis, change organization, 
 
 - **Full skill**: [`skills/ai/git-repository-management/SKILL.md`](skills/ai/git-repository-management/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-17T03:55:48Z
+- **Generated**: 2026-08-20T21:25:47Z

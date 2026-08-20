@@ -45,6 +45,34 @@ description: Base AI guidance include that bundles common templates for all AI g
 ---
 
 ---
+description: Shared work-marker directive (no-bown-mandm rule) — start each unit of work with a bot emoji and end each work delivery with a quill emoji. Placed early in skill instructions so the markers are visible in every response. The markers signal whether the rules were read and whether the context window was exceeded.
+---
+
+### Work Markers (no-bown-mandm Rule)
+
+
+
+- **Start each unit of work with 🤖.** The bot emoji opens the work block.
+  It signals that the skill's instructions are loaded and the work is
+  beginning under the rules
+- **End each work delivery with 🖋️.** The quill emoji closes the work block.
+  It signals that the work is complete and the delivery is ready for the
+  user
+
+These markers are not decorative. They are a diagnostic tool:
+
+- Missing 🤖 at the start → the skill instructions were not loaded, or the
+  rules were skipped. Re-read the skill before continuing
+- Missing 🖋️ at the end → the context window was exceeded mid-work, or the
+  delivery was cut short. Re-establish context before continuing
+- Both missing → the rules were not read at all. Stop and re-read
+
+Place these markers at the start and end of the work content, not around
+every intermediate message. One 🤖 opens the work; one 🖋️ closes the
+delivery.
+
+
+---
 description: Self-update requirement template for AI guidance files to track usage for maintenance and cleanup
 ---
 
@@ -536,8 +564,7 @@ description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and
 Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
 detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
-finally checks repo-root fallback dirs (`$REPO_ROOT/bin`, `scripts/`,
-`.local/bin`) as a last resort — all in one pass. **Never give up on
+accounts for the project's tech stack — all in one pass. **Never give up on
 the first `command -v` failure.**
 
 For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
@@ -582,112 +609,6 @@ cli-tool-discovery.sh --runner <python|node|rust|go>
 In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
-
-#### Devbox-aware resolution flow
-
-The devbox shell environment variable (`DEVBOX_SHELL` or `IN_DEVBOX_SHELL`)
-is checked **first**, before any other resolution. This simplifies all
-downstream logic: if we're already inside a `devbox shell`, devbox-managed
-binaries are on `PATH` and no wrapper detection is needed (mise/flox/direnv/nix
-are skipped entirely).
-
-- **Inside a `devbox shell`** (env var set): `command -v` → path-exhaustion →
-  `devbox add <tool>` → retry. If found, returns `FOUND`; otherwise skips
-  other wrappers and goes directly to the nix/uv fallback.
-- **Not inside a `devbox shell`**, but devbox is available and a `devbox.json`
-  exists up the tree: verifies the tool exists inside the devbox environment
-  (`devbox run -- command -v <tool>`). If not found, tries `devbox add` +
-  recheck. If confirmed available, returns `WRAPPER:devbox run --`. If still
-  not found inside devbox, falls through to normal flow and nix/uv fallback.
-- **devbox unavailable or no `devbox.json`**: normal flow — `command -v`,
-  other wrappers (mise, flox, direnv, nix), path-exhaustion.
-
-#### nix/uv fallback
-
-When the tool is not found by any of the above methods, the script tries to
-install it via available package managers — searching the repo first before
-attempting install:
-
-- **uv → pip** (special case for `tool == uv`): ensures uv is recorded in
-  devbox.json and falls back to pip/pip3/python3 -m pip for Python package
-  operations.
-- **nix**: if nix is available, searches nixpkgs for `<tool>` (via
-  `nix eval nixpkgs#<tool>.meta.mainProgram`). If a package exists, installs
-  it via `nix profile install` and rechecks PATH.
-- **uv**: if uv is available, tries `uv tool install <tool>` from PyPI
-  (the install attempt itself serves as the search — it fails fast if the
-  package doesn't exist). If successful, rechecks PATH.
-
-#### Repo-root fallback (last resort)
-
-After all system PATH locations and package manager lookups are exhausted,
-the script checks `$REPO_ROOT/bin`, `$REPO_ROOT/scripts`, and
-`$REPO_ROOT/.local/bin` as a **last resort**. This covers project-local tool
-shim layouts like [Hermit](https://cashapp.github.io/hermit/), where
-`bin/<tool>` symlinks auto-bootstrap the tool on first run.
-
-**Why last?** Repo-root `bin/` directories are the least secure search
-location — a cloned repository could contain malicious executables in `bin/`.
-System paths, home directories, and package managers are all more trustworthy
-because they require explicit installation or system-level access. By
-searching repo-root `bin/` only after everything else fails, the script
-minimizes the risk of a rogue project binary shadowing a legitimate system
-tool.
-
-Tech-stack-specific repo dirs (`node_modules/.bin`, `target/release`,
-`.venv/bin`, `vendor/bin`, etc.) are **not** deferred — they are
-build-system-managed and stay in the normal search order. Only the
-unconditional `$REPO_ROOT/bin` / `scripts/` / `.local/bin` fallback is
-deferred to last.
-
-```mermaid
-flowchart TD
-    Start["cli-tool-discovery.sh<br/>resolve_tool()"] --> InShell{"1. In devbox shell?<br/>(DEVBOX_SHELL /<br/>IN_DEVBOX_SHELL)"}
-    InShell -- "yes" --> ShellPathCheck{"1a. On PATH?<br/>(command -v)"}
-    ShellPathCheck -- "yes" --> FoundShellPath["FOUND: path"]
-    ShellPathCheck -- "no" --> ShellExhaust["1b. Path-exhaustion<br/>(standard locations +<br/>package managers)"]
-    ShellExhaust --> ShellExhaustFound{"found?"}
-    ShellExhaustFound -- "yes" --> FoundShellExhaust["FOUND: path"]
-    ShellExhaustFound -- "no" --> DevboxAdd["1c. devbox add tool<br/>(install into project)"]
-    DevboxAdd --> RetryCheck{"1d. Retry: on PATH or<br/>path-exhaustion found?"}
-    RetryCheck -- "yes" --> FoundRetry["FOUND: path"]
-    RetryCheck -- "no" --> FallbackStart["4. nix/uv fallback"]
-    InShell -- "no" --> DevboxAvail{"2. devbox available?<br/>(command -v devbox)"}
-    DevboxAvail -- "no" --> NormalFlow["3. Normal flow"]
-    DevboxAvail -- "yes" --> DevboxJson{"devbox.json exists<br/>up the tree?"}
-    DevboxJson -- "no" --> NormalFlow
-    DevboxJson -- "yes" --> DevboxVerify["2a. On PATH inside devbox?<br/>(devbox run -- command -v)"]
-    DevboxVerify --> DevboxVerifyFound{"found?"}
-    DevboxVerifyFound -- "yes" --> WrapperDevbox["WRAPPER: devbox run --"]
-    DevboxVerifyFound -- "no" --> DevboxAdd2["2b. devbox add + recheck<br/>inside devbox"]
-    DevboxAdd2 --> DevboxAddFound{"found?"}
-    DevboxAddFound -- "yes" --> WrapperDevbox
-    DevboxAddFound -- "no" --> NormalFlow
-    WrapperDevbox -- "caller execs<br/>devbox run -- tool" --> ShellPathCheck
-    NormalFlow --> NormalPathCheck{"3a. On PATH?<br/>(command -v)"}
-    NormalPathCheck -- "yes" --> FoundNormalPath["FOUND: path"]
-    NormalPathCheck -- "no" --> OtherWrappers["3b. Other wrappers<br/>(mise, flox, direnv, nix)"]
-    OtherWrappers --> NormalExhaust["3c. Global path-exhaustion<br/>(standard locations +<br/>package managers)"]
-    NormalExhaust --> NormalExhaustFound{"found?"}
-    NormalExhaustFound -- "yes" --> FoundNormalExhaust["FOUND: path"]
-    NormalExhaustFound -- "no" --> RepoRootFallback["3d. Repo-root fallback<br/>($REPO_ROOT/bin, scripts/,<br/>.local/bin — LAST, least secure)"]
-    RepoRootFallback --> RepoRootFound{"found?"}
-    RepoRootFound -- "yes" --> FoundRepoRoot["FOUND: path"]
-    RepoRootFound -- "no" --> FallbackStart
-    FallbackStart --> UvSpecial{"4a. tool == uv?"}
-    UvSpecial -- "yes" --> PipFallback["FALLBACK: pip<br/>(ensure_devbox_package + pip)"]
-    UvSpecial -- "no" --> NixFallback{"4b. nix available?<br/>search nixpkgs for tool"}
-    NixFallback -- "found + installed" --> NixRecheck["recheck PATH"]
-    NixRecheck --> NixFound{"found?"}
-    NixFound -- "yes" --> FoundNix["FOUND: path"]
-    NixFound -- "no" --> UvFallback{"4c. uv available?<br/>uv tool install tool"}
-    NixFallback -- "not found" --> UvFallback
-    UvFallback -- "installed" --> UvRecheck["recheck PATH"]
-    UvRecheck --> UvFound{"found?"}
-    UvFound -- "yes" --> FoundUv["FOUND: path"]
-    UvFound -- "no" --> NotFound["5. NOT_FOUND"]
-    UvFallback -- "not found" --> NotFound
-```
 
 #### Output (runner mode)
 
@@ -757,35 +678,6 @@ discover the runner programmatically.
   `--runner <ecosystem>` instead so the binary and invocation stay paired
   and the policy lives in one place (the tech-stack table, mirrored by the
   runner mode)
-
-#### Timeout configuration
-
-All internal probe and install operations are hang-safe — they run with a
-timeout so a broken devbox, slow brew cache, or stalled nix substituter
-cannot block the resolver indefinitely. Exec mode (`-- <tool> [args]`) is
-never timed; it's the user's command.
-
-| Env var | Default | Scope |
-|---------|---------|-------|
-| `CLTOOL_PROBE_TIMEOUT_SECS` | `30` | Lookups: `brew list`, `brew --prefix`, `mise which`, `asdf which`, `nix eval`, `rtk rewrite` |
-| `CLTOOL_INSTALL_TIMEOUT_SECS` | `120` | Network installs: `devbox add`, `nix profile install`, `uv tool install` |
-| `DEVBOX_PROBE_TIMEOUT_SECS` | `15` | `devbox run -- command -v` probes specifically |
-
-On timeout, the probe or install is treated as a failure and the resolver
-falls through to the next strategy (ultimately `NOT_FOUND`). Override the
-defaults for slow networks or cold caches:
-
-```bash
-CLTOOL_PROBE_TIMEOUT_SECS=60 CLTOOL_INSTALL_TIMEOUT_SECS=300 bash cli-tool-discovery.sh <tool>
-```
-
-The Python include (`cli-tool-discovery.py.tmpl`) reads the same env vars
-(`CLTOOL_PROBE_TIMEOUT_SECS`, `CLTOOL_INSTALL_TIMEOUT_SECS`) and applies
-them to `subprocess.run(..., timeout=...)` calls in `resolve_tool` and
-`_rtk_supports`. `subprocess.TimeoutExpired` is caught and treated as
-not-found. `run_tool` / `run_tool_exec` / `devbox_run` / `rtk_wrap` pass
-`**kwargs` through to `subprocess.run`, so callers can opt into a timeout
-by passing `timeout=<secs>` if needed.
 
 
 ---
@@ -1353,6 +1245,112 @@ For creating or modifying boilerplates, see: [Boilerplate Development Guide](doc
 ## Context Declaration
 {{ include "includes/context-declaration.md" . }}
 ```
+
+
+---
+description: Shared content quality directives — positive and negative writing behaviors for AI-generated content. Lead with the most important information, use plain specific language, state each fact once, match detail to task, challenge incorrect assumptions, optimize for clarity over quotability. No flattery, praise, validation, motivating language, or agreement without reason. Includes 5-tier emoji comparison guidance that leverages the shared coverage-scale-icons include.
+---
+
+### Content Quality Directives
+
+Binding writing behaviors for all AI-generated content (skill instructions,
+knowledge pages, audit findings, recommendations, summaries). These directives
+layer on top of `base-content-principles.md` (token efficiency, progressive
+disclosure) and `professional-tone.md` (no sycophancy, direct prose).
+
+#### Positive Behaviors
+
+- **Lead with the most important information.** Place the answer, the decision,
+  or the critical finding in the first sentence or the first bullet. Do not
+  bury it under setup, context, or hedging. The reader should get the core
+  value from the first line alone
+- **Use plain, specific language.** Pick the simplest domain term that
+  compresses the most information. Prefer "use" over "leverage", "start" over
+  "commence", "fast and reliable" over "performant". Specificity beats
+  vagueness — "3x faster" beats "much faster", "the JWT validator" beats "the
+  thing that checks tokens"
+- **State each fact once.** Do not repeat the same point in the intro, the
+  body, and the summary. If a fact needs to appear in multiple sections, link
+  to the canonical statement instead of restating it
+- **Match detail to task.** A one-line status update does not need a
+  five-paragraph background. A production migration plan does not fit in a
+  bullet. Scale the depth of the response to the stakes and complexity of the
+  request. Over-explaining simple tasks wastes the reader's time;
+  under-explaining complex tasks creates risk
+- **Challenge incorrect assumptions directly and explain why.** If the user
+  or the source material assumes something that is wrong, say so plainly:
+  name the assumption, state what is actually true, and give the evidence.
+  Do not soften the correction or leave the assumption standing because
+  challenging it feels impolite. See `professional-tone.md` → Disagree When
+  Warranted
+- **Optimize for clarity and engineering value, not quotability.** Write
+  content that a practitioner can act on, not content that sounds good in a
+  slide. A concrete instruction ("set `timeout_ms: 5000`") beats a memorable
+  aphorism ("time is the enemy of reliability"). Avoid parallelism, alliteration,
+  and rhetorical flourish that sacrifices precision for style
+
+#### Negative Behaviors (Do NOT)
+
+- **Do NOT flatter.** No "great question", "excellent point", "astute
+  observation". See `professional-tone.md` → No Sycophancy
+- **Do NOT praise.** No "this is a really well-structured repo", "beautiful
+  implementation". Evaluate the work, do not compliment the author
+- **Do NOT validate.** No "you're absolutely right", "I completely agree".
+  If the user is correct, act on it without preamble. If the user is
+  mistaken, say so
+- **Do NOT use motivating language.** No "let's dive in", "we're excited to",
+  "I'd love to help you with this". State what you are going to do, then do it
+- **Do NOT agree without reason.** Reflexive agreement is sycophancy. Evaluate
+  the substance first. If you agree, state why. If you disagree, state why.
+  "You're right, but…" is a smell — either agree and act, or disagree and
+  explain
+
+#### Comparison Output
+
+When comparing options, approaches, features, or trade-offs, use structured
+formats for clarity:
+
+- **Bulleted lists** for parallel items (pros, cons, steps, options)
+- **Tables** for multi-dimensional comparisons (item × dimension)
+- **Diagrams** (mermaid, ASCII) for flows, sequences, and relationships
+
+##### 5-Tier Emoji Comparison Scale
+
+When a comparison rates how well each option meets a criterion, use the
+canonical 5-tier emoji scale. The icons and their meanings are defined in the
+shared coverage-scale include (`shared/includes/coverage-scale-icons.md`)
+— that file is the single source of truth. Use the same icons consistently
+across all comparison output — feature matrices, option evaluations, approach
+ratings, and trade-off tables. Do not redefine the scale; reference the shared
+include as the canonical definition
+
+**Icon quick reference** (canonical definitions in
+`shared/includes/coverage-scale-icons.md`):
+
+| Icon | Meaning | When to use |
+|---|---|---|
+| 🏆 | Best-in-class | Standout, industry-leading, the marquee option |
+| ✅ | Meets | First-class, well-supported, fully addresses the criterion |
+| ➖ | Meets but not great | Partial, limited, requires plugins, or has caveats |
+| ⚠️ | Does not meet | Exists but broken, deprecated, or has serious issues |
+| ❌ | Fails | Not addressed, or requires significant custom work |
+
+When presenting a comparison, include the one-line legend:
+
+```markdown
+**Icons**: 🏆 best · ✅ meets · ➖ partial · ⚠️ problematic · ❌ missing
+```
+
+##### Comparison Table Structure
+
+- **Options across the top** (column headers), with inline links if applicable
+- **Criteria down the side** (row headers), grouped into sections if there
+  are many
+- **Icons in cells** for quick visual scanning
+- **Identical-value rows at the bottom** (criteria where all options have the
+  same rating) — these are table-stakes, not differentiators
+- **Differentiating criteria at the top** — these are the ones that actually
+  drive a decision
 
 
 ---

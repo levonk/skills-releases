@@ -159,6 +159,17 @@ in
 [`acquisition/references/handoff-verification.md`](../../../acquisition/references/handoff-verification.md).
 The computer-specific essentials:
 
+> **Acquisition-strategy cross-link:** Once you have identified candidate
+> computers and their lock risks, hand off to the deal-intelligence skill's
+> **Acquisition Strategy** analysis (Section 6) to compare lease vs finance
+> (incl. 0% APR) vs buy-new vs buy-refurbished vs buy-used on a tax-adjusted
+> NPV basis. The math lives in
+> [`deal-intelligence/references/acquisition-strategy.md`](../../../deal-intelligence/references/acquisition-strategy.md)
+> with a deterministic calculator at
+> [`deal-intelligence/scripts/acquisition_strategy.py`](../../../deal-intelligence/scripts/acquisition_strategy.py).
+> The lock-verification cost (time + risk) is a required input to the
+> used-acquisition NPV — do not skip it to make "buy used" look cheaper.
+
 1. **Get the serial number** (bottom case, or Apple menu → About This Mac /
    Settings → System → About) and run it through `checkcoverage.apple.com`
    (Apple) or the manufacturer's warranty checker. This confirms model/year —

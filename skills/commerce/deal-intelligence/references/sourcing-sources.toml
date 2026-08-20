@@ -2478,3 +2478,21 @@ local_pickup = false
 ships = false
 sold_price_history = false
 notes = "Price drop alerts, coupon aggregation; browser extension"
+
+[[source]]
+name = "Whatnot"
+url = "https://www.whatnot.com/"
+type = "auction"
+auction_type = "live-bid"
+buy_it_now = false
+api = false
+government_level = "none"
+categories = ["electronics", "collectibles", "fashion", "general"]
+condition = ["new", "refurbished", "used"]
+buyer_premium = "0%"
+online = true
+in_person = false
+local_pickup = false
+ships = true
+sold_price_history = false
+notes = "Live flash-sale auctions via app; good for older/discontinued models, collectibles, and liquidation-style deals. Verify condition and lock status (for devices) before bidding; buyer protection covers non-receipt and SNAD"

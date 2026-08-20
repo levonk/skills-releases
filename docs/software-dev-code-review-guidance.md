@@ -39,4 +39,4 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 
 - **Full skill**: [`skills/software-dev/code-review-guidance/SKILL.md`](skills/software-dev/code-review-guidance/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-17T03:55:48Z
+- **Generated**: 2026-08-20T21:25:47Z

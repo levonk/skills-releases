@@ -1,12 +1,12 @@
 ---
 type: Practice
 title: Auth Provider Selection
-description: better-auth as the auth provider with Supabase Postgres for storage-engine RLS via session variables. Passkey-first preference ordering. Email always collected for account recovery.
-tags: [auth, better-auth, supabase, passkey, webauthn, rls, multi-tenant, saas, decision]
+description: better-auth as the auth provider with Supabase Postgres for storage-engine RLS via session variables. Supported methods: passkey, Google, Apple, magic link, username/password (+2FA). Preference ordering passkey-first. Email always collected for account recovery.
+tags: [auth, better-auth, supabase, passkey, magic-link, webauthn, rls, multi-tenant, saas, decision]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-18"
-  last-used: "2026-07-18"
+  knowledge-basis: "2026-08-19"
+  last-used: "2026-08-19"
 supersedes: supabase-auth-pattern.md
 sources:
   - id: feat-202607170936-bookkeeping-saas-mvp
@@ -15,6 +15,9 @@ sources:
   - id: better-auth-passkey-plugin
     resource: "https://better-auth.com/docs/plugins/passkey"
     title: "better-auth passkey plugin"
+  - id: better-auth-magic-link-plugin
+    resource: "https://better-auth.com/docs/plugins/magic-link"
+    title: "better-auth magic link plugin"
   - id: supabase-auth-passkeys-beta
     resource: "https://supabase.com/docs/guides/auth/passkeys"
     title: "Supabase Auth passkeys (beta)"
@@ -127,18 +130,27 @@ The session-variable pattern must be proven, not assumed:
 
 ## Auth Method Preference Ordering
 
-From most preferred to least preferred:
+The supported auth methods, from most preferred to least preferred:
 
 1. **Passkey-first** — sign up with a passkey, no password ever created.
    Phishing-resistant, best UX, best security. Requires
    `registration.requireSession: false` in better-auth.
 2. **Passkey** — add a passkey to an existing account (second factor or
    convenience credential).
-3. **Google / Apple OAuth** — social sign-in. Lower friction than passwords,
-   but the user is dependent on the IdP.
-4. **Local password + 2FA** — password with TOTP / WebAuthn second factor.
-5. **Local password only** — last resort. Never the only option if a higher
-   tier is available.
+3. **Google OAuth** — social sign-in via Google. Lower friction than
+   passwords, but the user is dependent on the IdP.
+4. **Apple OAuth** — social sign-in via Apple. Same trade-off as Google;
+   listed separately because Apple Sign In requires its own configuration
+   (Service ID, private key, App ID) and is mandatory for App Store apps
+   that offer third-party sign-in.
+5. **Magic link** — passwordless email-based sign-in via the better-auth
+   magic-link plugin. Convenient and phishing-resistant at the credential
+   layer (no password to steal), but email account takeover equals app
+   account takeover — so it ranks below IdP-backed OAuth, where the IdP
+   adds its own 2FA / device trust.
+6. **Username/password + 2FA** — password with TOTP / WebAuthn second
+   factor. 2FA is recommended, not optional; the password-only (no 2FA)
+   tier is no longer in the standard.
 
 ### Email is always collected
 
@@ -151,6 +163,10 @@ lost device). The email is the recovery root, not a sign-in method.
   ceremony completes.
 - OAuth flows still record the email in the local `users` table, not just in
   the OAuth provider's profile.
+- Magic link users prove email ownership on every sign-in, so the recovery
+  requirement is inherently satisfied — but the email must still be stored
+  in the local `users` table so recovery works even if magic-link delivery
+  is later disabled.
 - Email verification is required before the account is considered recoverable.
 
 ## When to reconsider Supabase Auth instead
