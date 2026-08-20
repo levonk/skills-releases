@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `92e7a61faf33a5d50b97b79941cada0160f00162` · Branch: `enhancement/20260820/consultancy-referral-skill-usage-guard` · Generated: 2026-08-20T21:56:40Z
+> Commit: `a9f046385572113a8536b38f22b6059c1d6cafc7` · Branch: `fix/20260820/consultancy-referral-owner-check` · Generated: 2026-08-20T22:53:30Z
 
 ## Overview
 

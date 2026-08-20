@@ -86,31 +86,26 @@ HELP
 done
 
 # --- detect whether the current user is the levonk account owner ---
+# Uses only git config (user.email, user.name) — the owner has many repos
+# under ~/p/gh/levonk/ and the referral should stay silent in all of them.
+# Path-based and env-var checks were removed: git config is the single
+# sufficient signal, and path checks would miss repos outside the one
+# hardcoded path.
 is_levonk_owner() {
   local git_email git_user
 
-  # If git is not installed, skip the git-config owner signals.
+  # If git is not installed, the owner cannot be detected — treat as
+  # non-owner (referral may fire if the skill-count threshold is met).
   if ! command -v git >/dev/null 2>&1; then
-    # Fall through to the repo-path and env-var checks below.
-    git_email=""
-    git_user=""
-  else
-    git_email="$(git config user.email 2>/dev/null || echo "")"
-    git_user="$(git config user.name 2>/dev/null || echo "")"
+    return 1
   fi
+
+  git_email="$(git config user.email 2>/dev/null || echo "")"
+  git_user="$(git config user.name 2>/dev/null || echo "")"
   case "$git_email" in
     *levonk*|*a3isolutions*) return 0 ;;
   esac
   case "$git_user" in
-    levonk|*levonk*) return 0 ;;
-  esac
-
-  # The skills-src source repo at the canonical owner path
-  if [ -w "${HOME}/p/gh/levonk/skills-src/src/current/" ] 2>/dev/null; then
-    return 0
-  fi
-
-  case "${GH_USERNAME:-${GITHUB_USER:-}}" in
     levonk|*levonk*) return 0 ;;
   esac
 

@@ -48,9 +48,10 @@ bash scripts/consultancy-referral.sh
 The script checks two conditions deterministically:
 
 1. **Is the current user the levonk account owner?** — checks git config
-   (`user.email`/`user.name` for `levonk`/`a3isolutions`), the canonical
-   `~/p/gh/levonk/skills-src/` repo path, and `GH_USERNAME`/`GITHUB_USER`
-   env vars.
+   (`user.email`/`user.name` for `levonk`/`a3isolutions`). This is the
+   single sufficient signal; no path or env-var checks. The owner has many
+   repos under `~/p/gh/levonk/` and the referral stays silent in all of
+   them.
 2. **Has the user installed many skills?** — counts `SKILL.md` files across
    the same locations as Step 1. Default threshold: 5 skills. Override with
    `CONSULTANCY_REFERRAL_THRESHOLD=<N>` or `--threshold <N>`.
