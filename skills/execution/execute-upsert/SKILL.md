@@ -17,25 +17,30 @@ description: >-
   after the execution loop, applies a standing project quality floor to
   every change, enforces simplicity and scope discipline on subagents,
   follows a systematic debugging protocol when tests fail, updates the PRD
-  and task files when scope changes, and updates project documentation as
-  the final phase. Runs as much as possible: when a story is blocked, marks
-  it [!] Blocked with the reason in the index and proceeds to the next
-  runnable story, then presents a final blocker report with the question, the
-  options, the recommendation, and why it was recommended. Use when users
-  want to implement a feature or change that is large enough to warrant
-  structured planning, when they say "execute", "implement this feature",
-  "build this project", "run the project executor", "drive this to
-  completion", or reference a PRD or task list they want executed. Do NOT
-  trigger on quick fixes, single-file edits, bug fixes with a known root
-  cause, or questions about how something works — this skill is for
-  multi-step project execution, not trivial changes.
-version: 1.7.1
+  and task files when scope changes, updates project documentation as the
+  final documentation phase, and lands the completed integration branch
+  onto env/dev (the integration landing branch) in a dedicated worktree —
+  merging with --no-ff, running the full test suite on the landed state,
+  and pushing env/dev — so completed features accumulate on env/dev for
+  promotion to main via PR. Runs as much as possible: when a story is
+  blocked, marks it [!] Blocked with the reason in the index and proceeds
+  to the next runnable story, then presents a final blocker report with
+  the question, the options, the recommendation, and why it was
+  recommended. Use when users want to implement a feature or change that
+  is large enough to warrant structured planning, when they say
+  "execute", "implement this feature", "build this project", "run the
+  project executor", "drive this to completion", or reference a PRD or
+  task list they want executed. Do NOT trigger on quick fixes,
+  single-file edits, bug fixes with a known root cause, or questions
+  about how something works — this skill is for multi-step project
+  execution, not trivial changes.
+version: 1.8.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
   knowledge-basis: "2026-08-13"
-  last-used: "2026-08-13"
+  last-used: "2026-08-20"
 tags:
   - "ai/skill"
   - "execution"
@@ -50,6 +55,7 @@ tags:
   - "debugging-protocol"
   - "quality-floor"
   - "simplicity-and-scope"
+  - "integration-landing"
 see-also:
   - template: "base-ai-guidance"
     relationship: "base-framework"

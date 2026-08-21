@@ -4347,6 +4347,159 @@ If any stories are `[!] Blocked` (deferred), keep the tab title as `!`
 (blocked) instead of `x` (done) so the user sees at a glance that the
 pipeline ended with unresolved blockers.
 
+## Phase 9: Integration Landing (env/dev)
+
+After Phase 8 completes (final commit + archive), land the feature
+branch onto the project's integration landing branch — `env/dev`. This
+is the shared branch where feature work from multiple execute-upsert
+runs accumulates before being promoted to `main` (typically via a PR).
+Phase 9 runs only when **all** stories are `[x] Done` — if any story is
+`[!] Blocked`, the feature branch is not landed (the feature is not
+complete; landing partial work would destabilize `env/dev` for other
+in-flight features).
+
+**Why `env/dev` and not `main`**: `main` is the protected release branch.
+`env/dev` is the integration landing branch where completed feature
+branches merge, run the full test suite together, and accumulate before
+being promoted to `main` via PR. Landing on `env/dev` keeps `main` clean
+while giving a shared branch to catch cross-feature integration
+regressions before they reach a release.
+
+**Why reuse the feature worktree**: the feature was developed in a
+dedicated worktree (Phase 6 — Worktree Setup). That worktree already
+has the feature branch checked out, dependencies symlinked, and the
+full project state. Phase 9 reuses it: the landing script runs inside
+the existing worktree, switches it to `env/dev`, merges, tests, and
+pushes. No new worktree is created. The orchestrator's main checkout is
+never touched.
+
+**Why a script**: all git operations in Phase 9 are deterministic —
+push, switch, pull, sync long-lived branches, merge, test, push. There
+is no judgment involved. The `scripts/land-on-env-dev.sh` script
+encapsulates the entire sequence with proper error handling, exit codes,
+and a JSON summary. The AI only decides whether to proceed based on the
+exit code.
+
+### Step 1: Verify Pre-Conditions (AI judgment)
+
+Before calling the script, verify the AI-judgment pre-conditions:
+
+1. **All stories `[x] Done`** — re-read the task index. If any story is
+   `[!] Blocked`, `[ ] Todo`, or `[~] In-Progress`, **skip Phase 9
+   entirely** and note in the final summary: "Phase 9 skipped — feature
+   not complete (N stories not [x] Done)."
+2. **`env/dev` is the integration landing branch** — confirm from the
+   project's `AGENTS.md` or by asking the user. Some projects may use a
+   different branch name. If the project has no `env/dev` and the user
+   has not confirmed it, skip Phase 9.
+3. **The user has not said "do not land on env/dev"** — respect explicit
+   overrides; present the feature branch name for the user to land
+   manually.
+
+The remaining pre-conditions (env/dev exists on remote, feature branch
+has commits beyond env/dev) are checked deterministically by the script
+in Step 2.
+
+### Step 2: Run the Landing Script
+
+Run `scripts/land-on-env-dev.sh` from inside the feature worktree (the
+same worktree Phase 6 created). Pass the feature branch name, project
+slug, feature slug, and the test commands from the tech context block
+(Phase 3):
+
+```bash
+./scripts/land-on-env-dev.sh \
+  --feature-branch "feature/current/{slug}" \
+  --project-slug "{project-kebab-case}" \
+  --feature-slug "{feature-slug}" \
+  --test-command "devbox run -- just test" \
+  --test-command "devbox run -- just validate" \
+  --test-command "devbox run -- just build"
+```
+
+Adapt the `--test-command` flags to the project's actual commands from
+the tech context block. Multiple `--test-command` flags are run in
+order; all must pass. If no test commands are provided, the test step
+is skipped (use this only for projects with no test suite).
+
+The script handles all deterministic git operations:
+- Push the feature branch to the remote
+- Switch the worktree to `env/dev` and pull latest (`--ff-only`)
+- Fetch and merge long-lived branches (`main`/`master`, `env/prd`) into
+  `env/dev` if it is behind them (uses `git merge-base --is-ancestor`
+  to skip no-op merges; uses `--no-ff` to preserve branch points)
+- Merge the feature branch into `env/dev` with `--no-ff`
+- Run the test suite on the landed `env/dev` state
+- Push `env/dev` (pull-remerge + re-test on non-fast-forward; never
+  force-push)
+
+### Step 3: Handle the Exit Code
+
+The script exits with a status code and prints a JSON summary on the
+last line of stdout. Handle each exit code:
+
+| Exit | Meaning | AI action |
+|------|---------|-----------|
+| 0 | Success — feature landed and pushed | Proceed to Step 4 (clean up worktree) |
+| 1 | Pre-condition failure (env/dev missing, no new commits) | Skip Phase 9; note the reason in the summary |
+| 2 | Merge conflict (long-lived sync or feature merge) | Present a blocker to the user with the conflict details; the script already aborted the merge |
+| 3 | Test failure — env/dev was NOT pushed | Present a blocker with the test output; recommend either fix + re-run or `git reset --hard HEAD~1` to revert |
+| 4 | Push rejected and pull-remerge also conflicted | Present a blocker; the script aborted the remerge |
+| 5 | Unexpected error | Present the error to the user |
+
+Parse the JSON summary from the last line of stdout for the Phase 9
+summary:
+
+```json
+{"status":"landed","feature_branch":"...","envdev_before":"abc123",
+ "envdev_after":"def456","tests":"pass","pushed":true}
+```
+
+### Step 4: Clean Up the Worktree
+
+After the script exits 0 (success), remove the feature worktree (its
+purpose is complete — the feature is landed on `env/dev` and the
+feature branch is pushed):
+
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel --git-common-dir 2>/dev/null || git rev-parse --show-toplevel)"
+WORKTREE_DIR="$(pwd)"  # we're inside the worktree
+cd "$REPO_ROOT"
+git worktree remove "$WORKTREE_DIR"
+```
+
+The orchestrator's main checkout is untouched throughout Phase 9 — it
+was never switched. The user can decide when to promote `env/dev` to
+`main` (typically via a PR after reviewing the accumulated features on
+`env/dev`).
+
+### Phase 9 Summary
+
+Emit a short summary after Phase 9 completes (or is skipped), using the
+JSON from the script's stdout:
+
+```markdown
+### Phase 9: Integration Landing
+
+- **Status**: landed | skipped (reason) | conflict | test-failure | push-rejected
+- **Feature branch**: <from JSON>
+- **env/dev before**: <from JSON>
+- **env/dev after**: <from JSON>
+- **Tests on env/dev**: pass | fail | skipped
+- **Pushed**: yes | no
+```
+
+### When NOT to Run Phase 9
+
+- **Any story is `[!] Blocked`** — the feature is not complete; landing
+  partial work destabilizes `env/dev`.
+- **The project has no `env/dev` branch** and the user has not confirmed
+  it as the integration landing branch — do not create branches without
+  user confirmation.
+- **The user explicitly said "do not land on env/dev"** — respect the
+  override; present the feature branch name for the user to land
+  manually.
+
 ## Task List
 
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
@@ -4369,6 +4522,11 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Phase 8: update the PRD, task files, and project documentation
 - [ ] Phase 8: archive completed feature (git mv todo/ → archive/YYYY/MM/) when all stories [x] Done
 - [ ] Phase 8: set tab title to done (`x {workflow-slug} {project-slug}`) or blocked (`!`) if deferred items remain
+- [ ] Phase 9: verify AI-judgment pre-conditions (all stories [x] Done, env/dev is the integration landing branch, user has not opted out)
+- [ ] Phase 9: run `scripts/land-on-env-dev.sh` with feature branch, project slug, feature slug, and test commands from tech context
+- [ ] Phase 9: handle exit code (0 → proceed; 1 → skip; 2/3/4/5 → present blocker with details)
+- [ ] Phase 9: clean up the feature worktree (`git worktree remove`) after exit 0
+- [ ] Phase 9: emit Phase 9 summary from the script's JSON output
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -4450,6 +4608,15 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** If any stories are `[!] Blocked` (deferred): the feature was left in `todo/` with deferred items noted in the PRD — NOT archived (Phase 8 — Archive Completed Feature)
 - [ ] **[manual]** Tab title was set to done (`x {workflow-slug} {project-slug}`) or blocked (`!`) if deferred items remain (Phase 8 — Set Tab Title to Done)
 
+### Phase 9: Integration Landing (env/dev)
+
+- [ ] **[manual]** AI-judgment pre-conditions were verified — all stories `[x] Done`, `env/dev` is the integration landing branch, user has not opted out (Phase 9 Step 1). If any pre-condition failed, Phase 9 was skipped with a recorded reason.
+- [ ] **[script]** `scripts/land-on-env-dev.sh` was run with the correct `--feature-branch`, `--project-slug`, `--feature-slug`, and `--test-command` arguments from the tech context block (Phase 9 Step 2)
+- [ ] **[script]** The script exited 0 — feature branch was pushed, worktree switched to `env/dev`, long-lived branches synced, feature merged with `--no-ff`, tests passed, `env/dev` pushed (Phase 9 Step 2)
+- [ ] **[manual]** The exit code was handled correctly — 0 → proceed to cleanup; 1 → skip with note; 2/3/4/5 → present blocker to user with details from the script's stderr (Phase 9 Step 3)
+- [ ] **[manual]** The feature worktree was removed via `git worktree remove` after the script exited 0 (Phase 9 Step 4)
+- [ ] **[manual]** A Phase 9 summary was emitted using the JSON from the script's stdout (Phase 9 — Summary)
+
 ### Disruption Handoff
 
 - [ ] **[manual]** If the pipeline stopped with work remaining: the `handoff` skill was invoked with execution state and the user was told the handoff path + resume command (Disruption Handoff)
@@ -4474,6 +4641,11 @@ If any of these are true, the run is NOT complete:
 - The PRD has no Architecture Diagram → the PRD template's diagram requirement was not met (Phase 4)
 - All stories are `[x] Done` but the feature is still in `todo/` → the archive step was skipped (Phase 8 — Archive Completed Feature)
 - The feature was archived to `archive/YYYY/MM/` but `date.completed` was not set in the PRD frontmatter → the lifecycle frontmatter is incomplete (Phase 8)
+- All stories are `[x] Done` and Phase 9 was not skipped, but `env/dev` was not pushed → the script did not exit 0 or the push failed (Phase 9 Step 2–3)
+- The feature branch was landed on `env/dev` but the full test suite was not run on the landed state → the script was run without `--test-command` flags, or tests were skipped despite the project having a test suite (Phase 9 Step 2)
+- The feature worktree still exists after Phase 9 completed → the worktree cleanup was skipped (Phase 9 Step 4)
+- `scripts/land-on-env-dev.sh` was not called and the git operations were done manually → the deterministic script requirement was not met (Phase 9 Step 2)
+- The script exited non-zero but no blocker was presented to the user → the exit code handling was skipped (Phase 9 Step 3)
 
 
 ## Context Declaration
@@ -6902,6 +7074,13 @@ When working with task lists, the AI must:
 - `references/included/skills/software-dev/project-detection/SKILL.md` — Bundled project-detection skill (tech stack detection)
 - `references/included/skills/software-dev/code-review-guidance/SKILL.md` — Bundled code-review-guidance skill (per-story code review checklist)
 - `references/included/skills/content/diagram-upsert/SKILL.md` — Bundled diagram-upsert skill (Mermaid/PlantUML/Excalidraw authoring and validation for PRD diagrams)
+
+### Scripts
+
+- `scripts/refresh.sh` — Wrapper-pattern refresh (runs `pnpm dlx skills update`, prints INSTRUCTIONS.md to stdout)
+- `scripts/set-tab-title.sh` — Cross-multiplexer tab/pane title with status indicator (~ in-progress, ! blocked, x done)
+- `scripts/cli-tool-discovery.sh` — CLI tool resolution (devbox/PATH/package managers) and ad-hoc runner discovery
+- `scripts/land-on-env-dev.sh` — Phase 9 deterministic integration landing (push feature branch, switch worktree to env/dev, sync long-lived branches, merge, test, push env/dev)
 
 ### Project Info
 
