@@ -31,4 +31,4 @@ Generate beginner-friendly tutorials from codebases. Use when asked to analyze a
 
 - **Full skill**: [`skills/software-dev/codebase-tutorial/SKILL.md`](skills/software-dev/codebase-tutorial/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-24T11:16:15Z
+- **Generated**: 2026-08-24T20:08:44Z

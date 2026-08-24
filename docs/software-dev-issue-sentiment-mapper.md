@@ -265,4 +265,4 @@ def bulk_api_call(items, api_fn, delay=2.0, max_retries=3):
 
 - **Full skill**: [`skills/software-dev/issue-sentiment-mapper/SKILL.md`](skills/software-dev/issue-sentiment-mapper/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-24T11:16:15Z
+- **Generated**: 2026-08-24T20:08:44Z

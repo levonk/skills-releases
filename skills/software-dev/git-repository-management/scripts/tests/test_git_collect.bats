@@ -674,11 +674,12 @@ setup_repo_with_submodule() {
 
     # Add the submodule — redirect ALL output to /dev/null so it doesn't
     # pollute the stdout that this function echoes (the path only).
-    # Use file:// protocol to avoid SSH prompts on some git versions.
-    git -C "$parent" submodule add -q "file://$sub" "vendor/sub" >/dev/null 2>&1
+    # Use -c protocol.file.allow=always to bypass git's security restriction
+    # on file:// protocol for local submodules (required on modern git).
+    git -c protocol.file.allow=always -C "$parent" submodule add -q "$sub" "vendor/sub" >/dev/null 2>&1
     git -C "$parent" commit -q -m "add submodule" >/dev/null 2>&1 || true
     # Ensure the submodule is initialized and checked out
-    git -C "$parent" submodule update --init >/dev/null 2>&1 || true
+    git -c protocol.file.allow=always -C "$parent" submodule update --init >/dev/null 2>&1 || true
     echo "$parent"
 }
 

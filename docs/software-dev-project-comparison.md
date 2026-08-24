@@ -29,4 +29,4 @@ Compare multiple software projects to determine whether they belong to the same 
 
 - **Full skill**: [`skills/software-dev/project-comparison/SKILL.md`](skills/software-dev/project-comparison/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-24T11:16:15Z
+- **Generated**: 2026-08-24T20:08:44Z

@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `44dbb19108b86c550d6dc4db40f2c750cd1bfbd5` · Branch: `main` · Generated: 2026-08-24T11:16:15Z
+> Commit: `872e2811877271fc45a349b7b73e62fe32114aa3` · Branch: `enhancement/20260824/ai-marketing-skills-ingest` · Generated: 2026-08-24T20:08:44Z
 
 ## Overview
 
