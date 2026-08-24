@@ -25,7 +25,8 @@ Projects are detected as Rust when they contain:
 {
   "packages": [
     "just", "yq-go", "jq", "ripgrep", "fd", "bat",
-    "rustc", "cargo", "clippy", "rustfmt", "rust-analyzer"
+    "rustc", "cargo", "clippy", "rustfmt", "rust-analyzer",
+    "cargo-audit", "cargo-outdated"
   ]
 }
 ```
@@ -41,6 +42,14 @@ Projects are detected as Rust when they contain:
   ]
 }
 ```
+
+### Shared Devbox Package Partial
+
+The boilerplate provides a shared devbox package partial at
+`_shared/partials/devbox-partials/devbox-packages-rust.jinja` that both
+Rust templates (CLI and package) include. This ensures `cargo-audit` and
+`cargo-outdated` are always provisioned — the tools are part of the standard
+Rust devbox environment, not an optional addition.
 
 ## justfile Changes
 
@@ -108,10 +117,36 @@ build-release:
 doc:
     cargo doc --open
 
-# Security audit
+# Security audit (blocking — vulnerable deps fail validation)
 audit:
     cargo audit
+
+# Outdated check (non-blocking — reports drift, never aborts validate)
+outdated:
+    cargo outdated --exit-code 0 || true
+
+# Full validation pipeline (fmt, lint, test, doc, audit, outdated)
+validate:
+    just format-check
+    just lint
+    just test
+    just doc-no-open
+    just audit
+    just outdated
 ```
+
+### Validation Pipeline
+
+`just validate` runs the full 6-step pipeline. The first 5 steps are
+blocking — any failure aborts validate. The outdated check is non-blocking
+(`--exit-code 0` with `|| log_warn`) so drift reports never abort validate:
+
+1. `cargo fmt --check` (blocking)
+2. `cargo clippy -D warnings` (blocking)
+3. `cargo test` (blocking)
+4. `cargo doc` (blocking)
+5. `cargo audit` (blocking — vulnerable deps fail validation)
+6. `cargo outdated --exit-code 0` (non-blocking — reports drift only)
 
 ## Cargo.toml Surgical Changes
 

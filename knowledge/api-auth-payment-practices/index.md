@@ -12,7 +12,7 @@ task specifications.
 ## Concepts
 
 * [Overview](overview.md) - Synthesis of the full API auth payment practice set
-* [auth-provider-selection](auth-provider-selection.md) - better-auth as auth provider + Supabase Postgres for storage-engine RLS via session variables; supported methods passkey/Google/Apple/magic link/username+password(+2FA), preference passkey-first; email always collected for recovery (supersedes supabase-auth-pattern)
+* [auth-provider-selection](auth-provider-selection.md) - better-auth as auth provider + Supabase Postgres for storage-engine RLS via session variables; passkey-first preference ordering; email always collected for recovery (supersedes supabase-auth-pattern)
 * [supabase-auth-pattern](supabase-auth-pattern.md) - Historical: Supabase Auth with email/password + OAuth, cookie-based sessions, server actions (superseded by auth-provider-selection)
 * [multi-tenant-rls](multi-tenant-rls.md) - Row-Level Security on every table, tenant_id isolation, no shared schemas
 * [payment-provider-interface](payment-provider-interface.md) - Abstract Stripe behind PaymentProvider interface for future provider swaps

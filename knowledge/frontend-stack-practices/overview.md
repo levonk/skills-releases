@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Frontend Stack Practices Overview
-description: Synthesis of frontend stack practices — explicit file extensions, path alias safety, ESLint composition API, Vitest testing, code style conventions, and HTMX hypermedia-first interaction design for TypeScript/React projects.
+description: Synthesis of frontend stack practices — explicit file extensions, path alias safety, ESLint composition API, Vitest testing, code style conventions, HTMX hypermedia-first interaction design, and cross-platform client image loading (Android, iOS, Web, Flutter, React Native, Desktop) for TypeScript/React and mobile projects.
 tags: [typescript, react, eslint, vitest, frontend, overview, synthesis]
 date:
   created: "2026-07-17"
-  knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  knowledge-basis: "2026-08-21"
+  last-used: "2026-08-21"
 sources:
   - id: adr-20251019001-explicit-file-extensions
     resource: "internal-docs/adr/adr-20251019001-explicit-file-extensions.md"
@@ -20,6 +20,48 @@ sources:
   - id: adr-20251106002-vitest-for-testing
     resource: "internal-docs/adr/adr-20251106002-vitest-for-testing.md"
     title: "levonk-base-boilerplate"
+  - id: medium-android-image-loading-libraries-2024
+    resource: "https://medium.com/intuition/android-image-loading-libraries-glide-picasso-fresco-and-coil-f8a61008aeb9"
+    title: "Android Image Loading Libraries — Sandeep Kella, April 2024"
+  - id: coil-kt-github
+    resource: "https://github.com/coil-kt/coil"
+    title: "Coil (coil-kt/coil) — v3.5.0 June 2026"
+  - id: kingfisher-github
+    resource: "https://github.com/onevcat/Kingfisher"
+    title: "Kingfisher (onevcat/Kingfisher) — v8.10.0 June 2026"
+  - id: expo-image-docs
+    resource: "https://docs.expo.dev/versions/latest/sdk/image/"
+    title: "expo-image — Expo SDK documentation"
+  - id: bumptech-glide-github
+    resource: "https://github.com/bumptech/glide"
+    title: "Glide (bumptech/glide) — v5.0.9 July 2026"
+  - id: facebook-fresco-github
+    resource: "https://github.com/facebook/fresco"
+    title: "Fresco (facebook/fresco) — v3.7.0 June 2026"
+  - id: square-picasso-github
+    resource: "https://github.com/square/picasso"
+    title: "Picasso (square/picasso) — deprecated"
+  - id: nuke-github
+    resource: "https://github.com/kean/Nuke"
+    title: "Nuke (kean/Nuke) — latest July 2026"
+  - id: sdwebimage-github
+    resource: "https://github.com/SDWebImage/SDWebImage"
+    title: "SDWebImage (SDWebImage/SDWebImage) — v5.21.7 Feb 2026"
+  - id: mdn-loading-lazy
+    resource: "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#loading"
+    title: "MDN — native loading=lazy attribute"
+  - id: nextjs-image-docs
+    resource: "https://nextjs.org/docs/app/api-reference/components/image"
+    title: "Next.js Image component documentation (v4)"
+  - id: sharp-github
+    resource: "https://github.com/lovell/sharp"
+    title: "sharp (lovell/sharp) — v0.35.3 June 2026"
+  - id: cached-network-image-ce
+    resource: "https://pub.dev/packages/cached_network_image_ce"
+    title: "cached_network_image_ce — pub.dev, v4.10.0 July 2026"
+  - id: tauri-plugin-redb-cache
+    resource: "https://github.com/tauri-apps/tauri-plugin-redb-cache"
+    title: "tauri-plugin-redb-cache — v0.1.2"
 ---
 
 ---
@@ -119,15 +161,17 @@ If any answer is "no," revise before publishing.
 
 # Frontend Stack Practices Overview
 
-This bundle documents practices for the TypeScript/React frontend stack. Each
-concept was extracted from real project ADRs — the standards that ensure
-consistent module systems, safe imports, flexible linting, unified testing, and
-hypermedia-first interaction design across all frontend projects.
+This bundle documents practices for the TypeScript/React frontend stack and
+cross-platform client image loading. Each concept was extracted from real
+project ADRs and verified 2026 research — the standards that ensure consistent
+module systems, safe imports, flexible linting, unified testing, hypermedia-first
+interaction design, and correct image loading library selection across all
+client platforms.
 
 ## The Frontend Stack
 
 ```
-file-extensions → path-aliases → eslint-config → testing → code-style → interaction-model
+file-extensions → path-aliases → eslint-config → testing → code-style → interaction-model → image-loading
 ```
 
 | Phase | Practice | Prevents |
@@ -138,6 +182,9 @@ file-extensions → path-aliases → eslint-config → testing → code-style �
 | Testing | [Vitest Testing Framework](vitest-testing-framework.md) | Slow tests, Jest config complexity, fragmented test runners |
 | Style | [Code Style Conventions](code-style-conventions.md) | Inconsistent formatting, style debates, mixed conventions |
 | Interaction | [HTMX Hypermedia-First](htmx-hypermedia-first.md) | SPA complexity for CRUD UIs, duplicated client state, heavier payloads |
+| Images | [Android Image Loading](android-image-loading.md) | OOM crashes, janky scrolling, deprecated library usage |
+| Images | [iOS Image Loading](ios-image-loading.md) | Memory spikes, ObjC/Swift mismatch, missing SwiftUI support |
+| Images | [Cross-Platform Image Loading](cross-platform-image-loading.md) | Unmaintained libraries, missing native standards, memory leaks |
 
 ## Canonical Tech-Stack Choices
 
@@ -183,13 +230,19 @@ kept in sync via the templater at build time.
 | container | Container orchestration (local dev) | **k3s** | kind, minikube, microk8s, full k8s | — |
 | container | Container orchestration (production) | **k8s** (full Kubernetes) | k3s, Docker Swarm, Nomad | — |
 | deployment | Service deployment & configuration | **Ansible** (`community.docker` modules) | `docker compose` for deployment | `docker-compose.yml` is valid for sharing a deployable service externally (outside the org) where the recipient doesn't have the Ansible overhead |
-| security | Auth provider | **better-auth** (passkey / magic-link / organization / two-factor plugins) | Supabase Auth, Auth0, Clerk, Lucia | Supported methods: passkey, Google, Apple, magic link, username/password (+2FA recommended). Preference: passkey-first > passkey > Google > Apple > magic link > username/password + 2FA; email always collected for recovery |
+| security | Auth provider | **better-auth** (passkey / organization / two-factor plugins) | Supabase Auth, Auth0, Clerk, Lucia | Auth method preference: passkey-first > passkey > Google/Apple OAuth > local password + 2FA > local password only; email always collected for recovery |
 | data | Database (SaaS / multi-tenant OLTP) | **Supabase Postgres** with RLS via per-request session variables | PocketBase, SQLite-per-tenant, shared-schema Postgres without RLS, per-tenant Postgres clusters | — |
 | data | Analytics / ETL sidecar | **Per-tenant SQLite export + DuckDB** | PocketBase as OLTP, direct analytics on production Postgres, per-tenant Postgres replicas | — |
 | tooling | Ad-hoc runner resolution (all ecosystems) | **`cli-tool-discovery.sh --runner <python\|node\|rust\|go>`** | Hardcoding `uvx` / `pnpm dlx` / `cargo binstall` / `go install` in scripts | The runner mode pairs binary resolution with the canonical invocation. Returns JSON with `script`, `package`, `fallback`, and `recommendation` fields. Single source of truth for "how do I invoke an ad-hoc command in ecosystem X?" — `detect-package-manager.sh` delegates to it for the `runner` field |
 | tooling | Code intelligence (text search) | **ripgrep** (fresh, no index) + **xgrep** (repeated queries, trigram index) + **fzf** (interactive fuzzy) | grep, find, skim | Per ADR-20260520001 §6×2 matrix rows 1, 4, 5 (filename, exact, fuzzy). ripgrep for one-off fresh searches; xgrep for 2–46× faster repeated queries; fzf for interactive selection |
 | tooling | Code intelligence (semantic search) | **semble_rs** (hybrid BM25 + Model2Vec, ephemeral, single Rust binary) | qmd, Sourcegraph Cody | Per ADR-20260520001 §6. Ephemeral index rebuilt every run — zero config. Also provides `digest` for build/CI log compression (-99%) and `tree` for token-efficient codebase trees |
 | tooling | Code intelligence (AST: indexed) | **CodeGraph** (single-project, auto-sync) + **Graphify** (multimodal: code + PDFs/docs/video) + **GitNexus** (multi-repo impact analysis) — run together per workload | Standardizing on one indexed AST tool for all workloads (each wins only 2 of 6 rounds — no universal winner; see ADR-20260520001 v3.0.0), building a unified wrapper (hides meaningful capability differences) | Per ADR-20260520001 v3.0.0 §4 AST Search / §5 AST Insights, "With index" row. These are indexed AST tools (persistent node/edge graph + MCP), not a separate modality. CodeGraph (MIT, file watcher 2s, single MCP tool, dynamic dispatch) for fresh single-project work. Graphify (MIT, Python, 36 langs, multimodal) when docs/PDFs/video link to code. GitNexus (⚠️ PolyForm NC — commercial license required for business use, 17 MCP tools, cross-repo) for multi-repo impact. See `software-architecture-essentials/indexed-ast-tools.md` for the sub-decision tree. Setup via the **dev-env-upsert** skill (manages devbox.json + .envrc + justfile as a coupled trio, file-type-aware detection-driven install of the right tool, folds indexing into `prime_impl` per the Standard Developer UX Flow). See `software-architecture-essentials/indexed-ast-tools.md` § Setup via dev-env-upsert. |
+| mobile | Image loading (Android) | **Coil** (Kotlin/Compose, v3.5.0) | Picasso (deprecated by Square), Glide for new Kotlin/Compose projects, Fresco for non-memory-intensive apps | **Glide** (v5.0.9) for legacy View-based or image-heavy apps (galleries, e-commerce grids) — battle-tested 4-level cache, superior cache hit ratio. **Fresco** (v3.7.0) for memory-intensive feeds or very old devices — native memory management, bitmap recycling, progressive JPEGs. See `frontend-stack-practices/android-image-loading.md` |
+| mobile | Image loading (iOS) | **Kingfisher** (Swift/SwiftUI, v8.10.0) | SDWebImage for new pure-Swift projects | **Nuke** for performance-critical or memory-constrained apps (40% lower memory footprint). **SDWebImage** (v5.21.7) only for legacy Objective-C codebases or when watchOS/tvOS/visionOS support is required. See `frontend-stack-practices/ios-image-loading.md` |
+| mobile | Image loading (Flutter) | **cached_network_image_ce** (v4.10.0) | `cached_network_image` (original, unmaintained since Aug 2024 — memory leaks, 300+ open issues) | Drop-in replacement with 8x faster cache reads (sqflite → hive_ce). 99% API compatible. See `frontend-stack-practices/cross-platform-image-loading.md` |
+| mobile | Image loading (React Native) | **expo-image** | `react-native-fast-image` (legacy), built-in `Image` (no persistent disk cache on Android) | Wraps SDWebImage (iOS) + Glide (Android). BlurHash/ThumbHash placeholders, WebP/AVIF, smooth transitions. See `frontend-stack-practices/cross-platform-image-loading.md` |
+| frontend | Image loading (Web) | **Native `loading="lazy"`** + **`next/image`** (Next.js) + **sharp** (server-side) | JS lazy-loading libraries (browser-native standard replaces them) | `loading="lazy"` is universal (Chrome 77+, Firefox 121+, Safari 16.4+). `next/image` v4 defaults to AVIF. sharp v0.35.3 requires Node.js >= 20.9.0. Use unjs/ipx for image optimization service layer. See `frontend-stack-practices/cross-platform-image-loading.md` |
+| desktop | Image loading (Tauri) | **tauri-plugin-redb-cache** (v0.1.2) | Custom ad-hoc caching without size limits | Two-tier caching (LRU memory + Redb persistent), automatic Zlib compression, cross-platform. See `frontend-stack-practices/cross-platform-image-loading.md` |
 
 ### Notable "considered and rejected" choices
 
@@ -205,6 +258,9 @@ kept in sync via the templater at build time.
 - **Supabase Auth** — rejected in favor of better-auth. No passkey-first onboarding; passkey API beta as of April 2026; tightly coupled to Postgres via `auth.uid()` in RLS policies (migration = end-user-impact risk); MAU billing above 50k.
 - **PocketBase** — rejected as primary OLTP and as a free-tier backend. Collection rules are app-layer filters, not storage-engine RLS (unacceptable for financial data with FTC Safeguards exposure). SQLite remains in the stack as the **analytics export format**, not as a live backend.
 - **Standardizing on one indexed AST tool** — rejected per ADR-20260520001 v3.0.0. The three contenders (CodeGraph, Graphify, GitNexus) each win exactly two of six rounds (index freshness, content breadth, dynamic dispatch, query power, multi-repo support, visualization) — there is no universal winner. Defaulting to CodeGraph for a multi-repo microservices project loses GitNexus's cross-repo blast radius; defaulting to GitNexus for a single-project zero-setup workflow loses CodeGraph's auto-sync; defaulting to either for a project with architecture docs/PDFs loses Graphify's multimodal coverage. The three do not conflict at runtime and can be run together. GitNexus's PolyForm Noncommercial license is a separate consideration — procure a commercial license before indexing proprietary code for business use.
+- **Picasso (Android image loading)** — deprecated by Square. No new releases to Maven Central. Migrate to Coil for new projects; keep Picasso only in legacy Java codebases with no migration budget. See `frontend-stack-practices/android-image-loading.md`.
+- **cached_network_image (Flutter, original)** — unmaintained since August 2024. 300+ open issues including critical memory leaks and scroll performance bugs. Use `cached_network_image_ce` (community edition) — drop-in replacement with 8x faster cache reads. See `frontend-stack-practices/cross-platform-image-loading.md`.
+- **react-native-fast-image** — superseded by `expo-image`. expo-image wraps the same native libraries (SDWebImage + Glide) with better features (BlurHash, AVIF, smooth transitions). Migrate when convenient. See `frontend-stack-practices/cross-platform-image-loading.md`.
 
 > **Decision process & rationale** for these choices — including the full risk
 > hierarchy, alternatives considered, and AI + human timeline estimate format
@@ -220,10 +276,11 @@ kept in sync via the templater at build time.
 
 ## Scope
 
-This bundle covers **frontend TypeScript/React development practices** — file
-extensions, path aliases, ESLint configuration, testing, code style, and
-hypermedia-first interaction design (HTMX over client-side JS). It does
-**not** cover:
+This bundle covers **frontend TypeScript/React development practices and
+cross-platform client image loading** — file extensions, path aliases, ESLint
+configuration, testing, code style, hypermedia-first interaction design (HTMX
+over client-side JS), and image loading library selection for Android, iOS,
+Web, Flutter, React Native, and Desktop. It does **not** cover:
 
 - Monorepo build orchestration — see
   [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md).
@@ -238,6 +295,12 @@ hypermedia-first interaction design (HTMX over client-side JS). It does
 - `internal-docs/adr/adr-20251019002-path-alias-safety.md` — job-aide (253 lines)
 - `internal-docs/adr/adr-20251019003-plugin-composition-api.md` — job-aide (266 lines)
 - `internal-docs/adr/adr-20251106002-vitest-for-testing.md` — boilerplate (83 lines)
+- Medium — "Android Image Loading Libraries: Glide, Picasso, Fresco, and Coil" (April 2024)
+- GitHub — coil-kt/coil v3.5.0, bumptech/glide v5.0.9, facebook/fresco v3.7.0, square/picasso (deprecated)
+- GitHub — onevcat/Kingfisher v8.10.0, kean/Nuke, SDWebImage v5.21.7
+- Expo — expo-image SDK documentation
+- pub.dev — cached_network_image_ce v4.10.0
+- GitHub — tauri-plugin-redb-cache v0.1.2
 
 ## Related Knowledge Bundles
 

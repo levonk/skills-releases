@@ -6,6 +6,7 @@
 - [Check for Prebuilt Release Tarballs](#check-for-prebuilt-release-tarballs)
 - [Partial Platform Coverage](#partial-platform-coverage)
 - [Complex Distribution Requirements](#complex-distribution-requirements)
+- [Multi-Toolchain Desktop Apps](#multi-toolchain-desktop-apps)
 - [Success and Failure Patterns](#success-and-failure-patterns)
 - [Make Build Scripts Nix-Aware](#make-build-scripts-nix-aware)
 - [Ensure Lockfiles in npm Tarballs](#ensure-lockfiles-in-npm-tarballs)
@@ -252,6 +253,141 @@ grep -r "postinstall" package.json 2>/dev/null | head -5
 - A flake that builds only the binary but omits required assets produces non-functional software
 - `nix flake check` validates derivation structure, not runtime behavior
 - Users will install a broken tool if the README advertises a non-functional installation method
+
+---
+
+## Multi-Toolchain Desktop Apps
+
+> **Knowledge base**: The canonical concept page for this practice is
+> [`multi-toolchain-desktop-apps`](../included/knowledge/nix-build-practices/multi-toolchain-desktop-apps.md)
+> in the `nix-build-practices` bundle. This section is the skill-specific
+> operational guidance; the bundle page is the compounding reference.
+
+**CRITICAL**: Some projects combine multiple toolchains (Rust + Node/Bun, Go +
+web) coordinated by a desktop app framework. These exceed the single-language
+nixify templates (`source-build/rust.md`, `source-build/node-complex.md`,
+`source-build/bun.md`) and need a framework-specific template. The most common
+case is **Tauri** — a Rust backend compiled with the Tauri CLI, plus a JS
+frontend (Svelte, React, Vue) built with a JS package manager, and optionally a
+Bun-compiled sidecar.
+
+**How to detect**: Run `scripts/detect-multi-toolchain.sh <project-dir>`. The
+script inspects for `tauri.conf.json` + Cargo.toml `tauri` dep (Tauri),
+`wails.json` + go.mod `wails` dep (Wails), and Electron with native addons. It
+reports:
+
+- `is_multi_toolchain`: true when a multi-toolchain framework is detected
+- `framework`: `tauri` | `wails` | `electron-native` | `none`
+- `toolchains`: array of toolchain names (e.g. `["rust","node","bun"]`)
+- `recommended_template`: the template to use at Step 12 (e.g.
+  `source-build/tauri.md`), or empty if no dedicated template exists
+- `signals`: array of `{ signal, source, detail }` for each detection signal
+- `subagent_checks`: array of strings for non-deterministic checks the subagent
+  must verify (build order, bun requirement, git cargo dep hashes)
+
+**Decision tree:**
+
+- **`is_multi_toolchain=true` and `framework=tauri`**: Use
+  `source-build/tauri.md`. The Tauri template uses `cargo-tauri.hook` +
+  `pnpm.fetchDeps` (workspace-aware) + optional `bun.fetchDeps` for the sidecar.
+  Skip the Node complexity classifier — the Tauri template handles the frontend
+  build internally. The subagent must confirm the exact build order (SDK → bun
+  sidecar → vite frontend → cargo/tauri), whether bun is a hard requirement,
+  and discover `cargoLock.outputHashes` for each git cargo dependency.
+- **`is_multi_toolchain=true` and `framework=wails`**: No dedicated template
+  yet. Fall through to `source-build/go.md` as a base and manually handle the
+  frontend build in `preBuild`. Document the gap in the PR body.
+- **`is_multi_toolchain=true` and `framework=electron-native`**: No dedicated
+  template. Use `source-build/node-complex.md` with attention to native addon
+  rebuilds and Electron packaging (Electron itself may need to be provided via
+  `nixpkgs.electron` rather than npm-installed).
+- **`is_multi_toolchain=false`**: Proceed with single-language template routing
+  (Node complexity classifier, Rust, Go, etc.).
+
+**Failure mode — single-language template on a Tauri project:**
+
+A Tauri project routed to `source-build/rust.md` (because it has a Cargo.toml)
+or `source-build/node-complex.md` (because it has a pnpm workspace) produces a
+binary that is missing the frontend bundle. The Tauri `build.rs` stages the
+frontend dist, sidecar, and capability specs into the Rust resources — if the
+frontend was never built, `build.rs` either fails (missing `dist/` directory)
+or produces a binary that crashes at runtime when the webview tries to load a
+non-existent frontend. `nix flake check` passes (the derivation is structurally
+valid) but `nix run` produces a broken app.
+
+**The build-order challenge:**
+
+Tauri projects often have a custom build script (`scripts/build.mjs` or
+similar) that orchestrates the multi-toolchain build in a specific order:
+
+1. Build SDK / shared workspace packages (`pnpm --filter <sdk> run build:all`)
+2. Build Bun sidecar (`cd <ext-builder> && bun install && bun run build:js`)
+3. Build frontend (`pnpm --filter <app> run build` → produces `frontendDist/`)
+4. Build Rust + bundle (`pnpm tauri build` → `cargo build` with `build.rs`
+   staging resources)
+
+The Nix derivation's `preBuild` must reproduce this order before
+`cargo-tauri.hook` runs `cargo build`. The subagent validation from Step 5
+confirms the exact order by reading the project's build script.
+
+**Git cargo dependencies:**
+
+Tauri projects often have git cargo dependencies (e.g. `tauri-nspannel`,
+`monitor` from `ahkohd/tauri-toolkit`). These need explicit hashes in
+`cargoLock.outputHashes`. The discovery cycle:
+
+1. Set `hash = "sha256-AAA..."` (fake) for each git dep
+2. Run `nix build .#<pname>`
+3. The build fails with a hash mismatch error showing the correct hash
+4. Copy the correct hash from the error output
+5. Replace the fake hash in `flake.nix`
+6. Rebuild — the FOD now passes
+
+**Code signing + updater artifacts:**
+
+`tauri.conf.json` may have `"createUpdaterArtifacts": true` and a signing
+identity configured. Nix builds cannot sign (no keychain) and should not
+produce updater artifacts (no signing keys). Disable both via a config override
+in `prePatch`:
+
+```bash
+substituteInPlace <src-tauri>/tauri.conf.json \
+  --replace '"createUpdaterArtifacts": true' '"createUpdaterArtifacts": false'
+```
+
+**Platform system libraries:**
+
+Tauri apps need platform-specific system libraries:
+
+- **Linux**: WebKitGTK 4.1 (`webkitgtk_4_1`), GTK3, `glib-networking`,
+  `libayatana-appindicator`, `librsvg`, `xdg-utils`, `openssl`
+- **macOS**: Cocoa, AppKit, CoreFoundation, Security, SystemConfiguration
+  frameworks (via `darwin.apple_sdk.frameworks.*`)
+
+The `source-build/tauri.md` template includes these conditionally via
+`pkgs.lib.optionals pkgs.stdenv.isLinux` / `isDarwin`.
+
+**Downstream consumption:**
+
+- `is_multi_toolchain` and `framework` are consumed at Step 12 to select the
+  template.
+- `subagent_checks` drives the Step 5b subagent validation.
+- `toolchains` is informational — the template handles the toolchain
+  coordination internally.
+
+**Examples:**
+
+- **asyar** (Tauri 2.x, Svelte 5 frontend, pnpm workspace, Bun sidecar):
+  `is_multi_toolchain=true`, `framework=tauri`,
+  `toolchains=["rust","node"]`, `recommended_template="source-build/tauri.md"`.
+  The flake uses `cargo-tauri.hook` with `preBuild` reproducing the
+  SDK → sidecar → frontend → cargo order. Git cargo deps (`tauri-nspannel`,
+  `monitor`) need `outputHashes` discovery. The vendored
+  `mac-notification-sys` crate is handled by `cleanSource` including the
+  `vendor/` directory.
+- **Simple Rust CLI** (no frontend, no Tauri): `is_multi_toolchain=false`.
+  Proceed with `source-build/rust.md` as before — no multi-toolchain handling
+  needed.
 
 ---
 

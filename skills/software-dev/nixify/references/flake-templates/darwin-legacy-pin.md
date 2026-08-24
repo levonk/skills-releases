@@ -69,57 +69,6 @@ the pinned nixpkgs, not unstable — so the check validates that the legacy pin
 actually works, not just that unstable works. This is the whole point: CI
 catches a build that passes on unstable but breaks on the legacy pin.
 
-## Intel macOS runner retirement runbook
-
-GitHub Actions is decommissioning Intel macOS runners. The current runner is
-`macos-26-intel`, estimated to be decommissioned ~Nov 2028 per GitHub staff
-in [actions/runner-images#13739](https://github.com/actions/runner-images/issues/13739)
-(explicitly hedged — "dates may change slightly"). After decommission, no
-GitHub-hosted Intel macOS runner is available for `x86_64-darwin` validation
-or platform-gated FOD hash computation.
-
-### What breaks when the runner is gone
-
-| Capability | Status after decommission |
-|------------|--------------------------|
-| Prebuilt tarball hash generation (`fetchurl`) | **Works** — `nix store prefetch-file` is platform-independent, runs on ubuntu |
-| Platform-independent FOD hash generation (Rust `cargoHash`, Go `vendorHash`) | **Works** — runs on ubuntu |
-| Platform-gated FOD hash generation (npm `npmDepsHash` with `@esbuild/*` optional deps) | **Broken for x86_64-darwin** — requires the target platform to execute `npm install` |
-| `nix flake check --all-systems --no-build` | **Works** — evaluation doesn't realise derivations |
-| `nix build .#default --system x86_64-darwin` on ubuntu | **Works for prebuilt tarballs** (fetchurl doesn't execute on target) — **broken for source-build** (stdenv can't cross-compile to darwin from linux) |
-| `nix build .#source --system x86_64-darwin` validation | **Broken** — needs an Intel macOS runner to execute the build |
-| `nix run .#default --system x86_64-darwin` smoke test | **Broken** — needs an Intel macOS runner to exec the binary |
-
-### What the self-prune job does
-
-The `self-prune` job in `.github/workflows/nix.yml` detects `validate-x86-darwin`
-failure and opens a PR automatically. See `references/advanced-features.md` —
-Self-Pruning on Runner Decommission for the full template. The PR either:
-
-1. **Updates to a newer runner label** if GitHub ships one (e.g. `macos-27-intel`)
-2. **Comments out the dead job + adds a warning + swaps to `lib.fakeHash`** if no
-   newer label exists
-
-### Re-enablement options after decommission
-
-| Option | Cost | What it enables |
-|--------|------|-----------------|
-| Self-hosted runner on owned Intel Mac | Free (hardware you own) | Full validation + FOD hash computation |
-| Rented Intel Mac cloud (MacStadium, MacinCloud, AWS EC2 Mac) | Paid | Full validation + FOD hash computation |
-| Manual local capture on an Intel Mac | Free (one-time per release) | FOD hash only — paste real hash into a PR |
-| `lib.fakeHash` (default after self-prune) | Free | Honest "unverified" signal — community user can paste real hash via PR |
-
-### GitHub announcement links
-
-- [actions/runner-images#13739](https://github.com/actions/runner-images/issues/13739) —
-  macOS 26 GA announcement, includes GitHub staff estimate for `macos-26-intel`
-  decommission (~July 2028 deprecation, ~Nov 2028 decommission)
-- [actions/runner-images#13045](https://github.com/actions/runner-images/issues/13045) —
-  original `macos-15-intel` announcement (August 2027 retirement — superseded by
-  `macos-26-intel` for projects that migrated)
-- [actions/runner-images#13027](https://github.com/actions/runner-images/issues/13027) —
-  community discussion "What's the plan for macOS x86_64?"
-
 ## Updating the pin
 
 Bump the legacy pin when:

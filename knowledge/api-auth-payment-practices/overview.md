@@ -151,9 +151,9 @@ auth-provider-selection → multi-tenant-rls → payment-provider → token-stor
   [Auth Provider Selection](auth-provider-selection.md))
 - **Plaid/Stripe access_tokens encrypted at rest**, never logged, never exposed to client
 - **No CPA-reserved activities** — no audited/certified financial statements
-- **Auth method preference** — passkey-first > passkey > Google > Apple >
-  magic link > username/password + 2FA; email always collected for recovery
-  (see [Auth Provider Selection](auth-provider-selection.md))
+- **Passkey-first auth preference** — passkey-first > passkey > Google/Apple
+  OAuth > local password + 2FA > local password only; email always collected
+  for recovery (see [Auth Provider Selection](auth-provider-selection.md))
 
 ## Scope
 

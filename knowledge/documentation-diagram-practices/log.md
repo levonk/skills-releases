@@ -1,5 +1,31 @@
 # Directory Update Log
 
+## 2026-08-21
+
+* **Ingest**: Added [editorial-html-svg-diagrams.md](editorial-html-svg-diagrams.md)
+  — new concept page synthesizing the editorial HTML/SVG diagram practices from
+  the upstream MIT-licensed [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design)
+  skill. Covers the deletion-first philosophy, 4px grid, complexity budgets,
+  six mandatory connector rules, the "AI slop" anti-pattern list, skinnable
+  design-system semantic roles, brand-onboarding gate, accessible SVG contract,
+  semantic-pattern-then-visual-type selection, draw.io/Mermaid import flow, and
+  the pre-output taste-gate checklist. Distinct from the markdown-embedded
+  tools (Mermaid/PlantUML/Excalidraw) — applies when the diagram is the
+  deliverable (standalone HTML/SVG/PNG for blog posts, slides, OG cards,
+  print), not an inline markdown embed.
+* **Update**: Updated [diagram-tool-selection.md](diagram-tool-selection.md)
+  — added a 4th route (Editorial HTML/SVG) to the tool table and decision
+  tree, with a cross-link to the new concept page and the upstream repo.
+  Broadened the "mix tools" guidance to note that editorial HTML/SVG is a
+  separate deliverable, not an inline embed.
+* **Update**: Updated [index.md](index.md) with the new concept entry and
+  broadened the bundle description to cover standalone editorial deliverables
+  alongside markdown-embedded diagrams.
+* **Update**: Updated [overview.md](overview.md) synthesis — added the
+  editorial route to the tool-landscape diagram, the synthesis table, the
+  scope statement (editorial design system is now in scope for standalone
+  deliverables), and the sources list (diagram-design attribution).
+
 ## 2026-08-05
 
 * **Ingest**: Authored 2 new Rust documentation concept pages sourced from

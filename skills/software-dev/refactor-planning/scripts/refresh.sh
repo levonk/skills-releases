@@ -8,8 +8,8 @@
 #   4. Find pnpm via cli-tool-discovery
 #   5. Detect existing nono session (skip sandbox if already inside one)
 #   6. Run `pnpm dlx skills update <skill-name>` — sandboxed via nono if available
-#   7. Update last-used date in SKILL.md frontmatter (after update overwrites it)
-#   8. Print INSTRUCTIONS.md to stdout
+#   7. Write today's date to the cache file regardless of outcome
+#   8. Cat INSTRUCTIONS.md to stdout
 #
 # Sandbox: uses nono (https://github.com/nolabs-ai/nono) with a bundled profile
 # at references/nono-profile.json. If nono is not installed, or we are already
@@ -33,13 +33,8 @@ SKILL_NAME="$(basename "$SKILL_DIR")"
 INSTRUCTIONS="$SKILL_DIR/INSTRUCTIONS.md"
 
 # --- Helper: print INSTRUCTIONS.md and exit ---
-# The stdout of this function IS the skill's body. The agent reads stdout
-# and does NOT need to separately read INSTRUCTIONS.md from disk — doing so
-# would read the same content twice. The stderr banner below makes this
-# explicit so the agent knows the stdout that follows is INSTRUCTIONS.md.
 print_body() {
 	if [ -f "$INSTRUCTIONS" ]; then
-		echo "refresh.sh: printing INSTRUCTIONS.md to stdout — this IS the skill body. Do NOT read INSTRUCTIONS.md separately; you already have it from this output." >&2
 		cat "$INSTRUCTIONS"
 		exit 0
 	fi
@@ -178,7 +173,7 @@ run_update() {
 run_update >&2 || true
 echo "$TODAY" >"$DATE_FILE" 2>/dev/null || true
 
-# --- 7. Update last-used in SKILL.md frontmatter ---
+# --- 7b. Update last-used in SKILL.md frontmatter ---
 # `skills update` overwrites the entire skill directory, including SKILL.md.
 # This destroys any last-used update the AI made from the self-update-requirement
 # include (which fires BEFORE refresh in the wrapper pattern). To fix this,
@@ -196,6 +191,16 @@ if [ -f "$SKILL_MD" ]; then
 			sed "s/^\([[:space:]]*last-used:[[:space:]]*\)\"[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\"/\1\"$TODAY\"/" "$SKILL_MD" >"$TMP_FILE" && mv "$TMP_FILE" "$SKILL_MD"
 		fi
 	fi
+fi
+
+# --- 7c. Install project-level hooks (if the skill ships them) ---
+# Some skills (e.g. execute-upsert) ship an install-hooks.sh script that writes
+# Devin CLI hooks into the consumer project's .devin/ directory. This is the
+# deterministic hook distribution mechanism — no agent judgment needed. The
+# call is conditional: only skills that have scripts/install-hooks.sh trigger it.
+INSTALL_HOOKS="$SCRIPT_DIR/install-hooks.sh"
+if [ -x "$INSTALL_HOOKS" ]; then
+	"$INSTALL_HOOKS" >&2 || true
 fi
 
 # --- 8. Print the (now current) body ---

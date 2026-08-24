@@ -25,7 +25,7 @@ Projects are detected as Node.js/TypeScript when they contain:
 {
   "packages": [
     "just", "yq-go", "jq", "ripgrep", "fd", "bat",
-    "nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest"
+    "nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest"
   ]
 }
 ```
@@ -35,7 +35,7 @@ Projects are detected as Node.js/TypeScript when they contain:
 {
   "packages": [
     "just", "yq-go", "jq", "ripgrep", "fd", "bat",
-    "nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest",
+    "nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest",
     "playwright", "tailwindcss", "postcss", "vite", "webpack", "rollup", "esbuild"
   ]
 }
@@ -408,7 +408,7 @@ export default defineConfig({
 
 | Dependency | Source of Truth | Version | Purpose |
 |-----------|------------------|--------|---------|
-| **@types/node** | `apply_surgical_configs()` - Node.js deps | ^24.0.0 | Node.js type definitions |
+| **@types/node** | `apply_surgical_configs()` - Node.js deps | ^20.0.0 | Node.js type definitions |
 | **typescript** | `apply_surgical_configs()` - Node.js deps | ^7.0.2 | TypeScript compiler |
 | **eslint** | `apply_surgical_configs()` - Node.js deps | ^8.0.0 | Code linting |
 | **prettier** | `apply_surgical_configs()` - Node.js deps | ^3.0.0 | Code formatting |
@@ -546,7 +546,7 @@ module.exports = {
 ## Development Setup
 
 ### Prerequisites
-- Node.js 24+
+- Node.js 22+
 - pnpm
 - Devbox
 - Just
@@ -709,7 +709,7 @@ just loop
 ```
 
 ### Common Issues
-- **Node version mismatch** - Ensure Node.js 24+ in devbox.json
+- **Node version mismatch** - Ensure Node.js 22+ in devbox.json
 - **pnpm not found** - Check devbox shell environment
 - **TypeScript errors** - Verify tsconfig.json configuration
 - **Test failures** - Check Jest configuration

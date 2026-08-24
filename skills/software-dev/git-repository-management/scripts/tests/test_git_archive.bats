@@ -11,6 +11,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BATS_TEST_FILENAME:-$BASH_SOURCE[0]}")" && pwd)"
 ARCHIVE="$SCRIPT_DIR/../git-archive.sh"
 TEST_BASE="/tmp/skill-test/git-archive"
 
+# Disable worktree isolation guard and nice-relaunch for tests — test repos
+# are not linked worktrees and tests need normal priority for reliable timing.
+export SKILL_ALLOW_MAIN_WRITE=1
+export NICE_RELAUNCH=0
+
 assert_contains() {
     local needle="$1" haystack="$2"
     [[ "$haystack" == *"$needle"* ]] || {

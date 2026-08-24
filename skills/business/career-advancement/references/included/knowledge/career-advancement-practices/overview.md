@@ -244,6 +244,32 @@ the candidate's side.
   The "give a presentation" format: audience analysis, narrative arc
   structure, slide design, Q&A protocol, the show-don't-tell principle for
   demos, and common failure modes.
+- **[Minto Pyramid Principle](minto-pyramid-principle.md)** — Barbara Minto's
+  structured-thinking method for answer-first communication: the Gate (when
+  NOT to use pyramid), the brutal Level 1 test, three logic rules, MECE with
+  the duplication test, SCQA with audience dosing and anti-patterns, evidence
+  taxonomy and strength classification, the mechanics-vs-reasons test, problem
+  definition (R1/R2), diagnostic frameworks, logic trees, the 7-step build,
+  validation with scoring rubric, the failure catalogue, epistemic discipline
+  and the confidence contract, tiered renderers, depth levels, named
+  operations (buried-lede, reason audit, so-what pass), and applications to
+  interview answers, presentations, case interviews, and written communication
+  throughout the hiring pipeline. Synthesized from Barbara Minto's original
+  framework and six open-source AI skill implementations.
+- **[Consulting Problem-Solving Frameworks](consulting-problem-solving-frameworks.md)**
+  — The McKinsey-style problem-solving toolkit that complements the Minto
+  Pyramid Principle's communication layer. Covers the 7-step problem-solving
+  process (define, disaggregate, prioritize, workplan, analyze, synthesize,
+  communicate), hypothesis-driven problem solving with Day 1 Answers and
+  falsifiable hypotheses (If X then Y because Z), issue trees (driver,
+  process, option, hypothesis) with MECE branch design and five validation
+  gates, the 80/20 prioritization scoring model (Impact × Confidence / Effort
+  × Speed), strategic analysis frameworks with accurate attribution (Porter's
+  Five Forces — HBS not McKinsey, McKinsey 7S — Peters & Waterman, SWOT — SRI
+  not McKinsey, BCG Matrix — BCG not McKinsey, VRIO — Barney), second-order
+  thinking, and structured thinking principles (purpose determines structure,
+  planar cuts, boundary conditions). Synthesized from established consulting
+  methodology and ten open-source AI skill implementations.
 - **[Recruiter Communication](recruiter-communication.md)** — Recruiters as
   professional matchmakers, the intake meeting pattern matching,
   optimizing for recruiter discovery, and information boundaries (what not
@@ -302,6 +328,25 @@ the candidate's side.
   — Protected-class information, politics, religion, alcohol/tobacco,
   firearms, personal details, negative content, and the disclosure audit
   checklist. The "forward to a stranger" test.
+
+### Founder Content System (operationalizing the writing channel)
+
+- **[Founder Content System](founder-content-system.md)** — The complete
+  methodology for ghostwriting founder social content across X, LinkedIn,
+  Instagram, TikTok, YouTube, Facebook, and a blog. The one-sentence method:
+  facts come from verified sources, voice comes from the client's verbatim
+  writing, style is enforced by countable checks, and every correction
+  compounds in a ledger. Covers the five-phase pipeline (intake inventory,
+  facts layer, voice layer, rules layer, drafting workflow with seven gates),
+  the day-of reactive track for news pegs, the universal banned-pattern list
+  (slop lint), platform coverage and per-platform register differences, the
+  subagent dependency (isolated drafting and cold adversarial review), and
+  the meta-lessons for why voice guides fail and this system works. The
+  codified knowledge behind the `founder-content-system` skill — the skill is
+  the execution layer, this page is the why and what. Cross-references
+  Personal Brand, LinkedIn Profile Optimization, Safe Pair of Hands
+  Positioning, Metrics and Quantification, Fluff and Buzzword Elimination,
+  and the Minto Pyramid Principle.
 
 ## What This Bundle Is Not
 

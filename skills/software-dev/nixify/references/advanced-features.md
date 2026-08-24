@@ -563,9 +563,6 @@ on:
 
 permissions:
   contents: read
-  # id-token: write is required by magic-nix-cache-action for the GitHub
-  # Actions cache v2 API (OIDC token exchange for cache auth).
-  id-token: write
 
 concurrency:
   group: nix-{{{ printf "%s" "${{{ github.workflow }}}" }}}-{{{ printf "%s" "${{{ github.event.pull_request.number || github.ref }}}" }}}
@@ -578,7 +575,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        # MANDATORY: pin to a commit SHA, not a mutable @vN ref. See the
+        # "Action pinning" note below the template for the security rationale
+        # and the one-command SHA resolver.
+        uses: actions/checkout@<checkout-sha> # v<N>
         with:
           persist-credentials: false
 
@@ -586,15 +586,8 @@ jobs:
         # DeterminateSystems/nix-installer-action installs Nix natively on the
         # runner so `nix build` / `nix run` work directly (a Docker-container
         # approach can run `nix flake check` but is awkward for build+smoke).
-        uses: DeterminateSystems/nix-installer-action@v16
-
-      - name: Enable Nix binary cache (GitHub Actions cache)
-        # magic-nix-cache-action uses GitHub Actions' built-in cache to share
-        # Nix build outputs between workflow runs — free, zero-config, no
-        # secrets. Saves 30-50% CI time on repeated builds. Was temporarily
-        # broken Feb-Jun 2025 (GitHub cache API v2 migration), revived in
-        # v13 (July 2025). Requires permissions: id-token: write above.
-        uses: DeterminateSystems/magic-nix-cache-action@v13
+        # MANDATORY: pin to a commit SHA, not a mutable @vN ref.
+        uses: DeterminateSystems/nix-installer-action@<nix-installer-sha> # v<N>
 
       - name: nix flake check --all-systems
         # --no-build: evaluate every system's outputs (including darwin on
@@ -608,6 +601,13 @@ jobs:
         run: nix build .#default --print-build-logs
 
       - name: nix run .#default -- --version
+        # SECURITY: Gate behind non-PR events when a pull_request trigger is
+        # active. `nix run` executes the built binary outside the Nix sandbox
+        # on the runner, where it can reach GitHub's OIDC endpoint and the
+        # GITHUB_TOKEN. On a PR, that binary is PR-controlled code. `nix build`
+        # above is safe (realises inside the sandbox, no network). Drop this
+        # `if:` guard only if the workflow has no pull_request trigger.
+        if: github.event_name != 'pull_request'
         run: nix run .#default -- --version
 
       - name: nix build .#source (if exists)
@@ -633,6 +633,7 @@ jobs:
       - ".github/workflows/nix.yml"
   ```
   Adjust `branches: [main]` to match the project's default branch.
+- **SECURITY — `nix run` on PRs executes PR-controlled code**: When a `pull_request` trigger is active, the `nix run .#default -- --version` step must carry `if: github.event_name != 'pull_request'`. `nix run` executes the built binary outside the Nix sandbox on the runner, where it can reach GitHub's OIDC endpoint and the `GITHUB_TOKEN`. On a PR, that binary is PR-controlled code — a malicious PR could exfiltrate tokens. `nix build` is safe (realises inside the sandbox with no network). The template above already includes this guard; keep it when adding a PR trigger. This applies even without `id-token: write` — the default `GITHUB_TOKEN` with `contents: read` is still valuable to an attacker.
 - **Lockfile path-filter (source-build flakes — MANDATORY)**: When the flake exposes a `#source` output that builds from source via a fixed-output derivation (FOD) keyed on a lockfile hash, **the lockfile MUST be in the `paths:` filter**. A lockfile change invalidates the FOD's `outputHash`, but if the lockfile isn't in the path filter, the Nix CI never runs on dependency bumps and the breakage reaches users instead of being caught in CI. Add the project's lockfile(s) to the `paths:` list:
   - Bun: `bun.lock`
   - npm: `package-lock.json`
@@ -658,14 +659,19 @@ jobs:
   ```yaml
   strategy:
     matrix:
-      runner: [ubuntu-latest, macos-26, macos-26-intel]
+      runner: [ubuntu-latest, macos-13, macos-14]
   runs-on: ${{ matrix.runner }}
   ```
-  `macos-26` is ARM (aarch64-darwin), `macos-26-intel` is Intel (x86_64-darwin). This is the only way CI can catch the class of hash mismatch that the Archon PR #2131 ASSET_MAP omission caused. When GitHub Actions decommissions `macos-26-intel` (estimated ~Nov 2028 per [actions/runner-images#13739](https://github.com/actions/runner-images/issues/13739)), the `self-prune` job in the single-file workflow (see [Self-Pruning on Runner Decommission](#self-pruning-on-runner-decommission) below) comments out the Intel entry and swaps `x86_64-darwin` source-build FOD hashes to `lib.fakeHash` automatically.
+  `macos-13` is Intel (x86_64-darwin), `macos-14` is ARM (aarch64-darwin). This is the only way CI can catch the class of hash mismatch that the Archon PR #2131 ASSET_MAP omission caused.
 - Replace `--version` with the project's actual smoke command (e.g. `--help`, `--version`, or a no-op subcommand). The point is to exec the patched binary end-to-end.
 - The `#source` build step uses `jq` to detect whether the output exists before building. If the project's runner doesn't have `jq`, install it first or replace the check with `nix build .#source 2>/dev/null || true` (less precise but functional).
-- Pin `actions/checkout` and `nix-installer-action` to commit SHAs (with `# vX.Y.Z` comments) if the project's existing workflows do so — match the repo's convention.
-- **Add `DeterminateSystems/magic-nix-cache-action@v13` after the Nix install step** (see the updated template above). It uses GitHub Actions' built-in cache to share Nix build outputs between workflow runs — free, zero-config, no secrets needed (works on forks and PRs). Saves 30-50% CI time on repeated builds. The action was temporarily broken in Feb 2025 when GitHub deprecated the legacy Actions cache API, but was revived in June 2025 ([PR #139](https://github.com/DeterminateSystems/magic-nix-cache/pull/139)) against the new cache v2 API and is actively maintained (v13, July 2025). It requires `permissions: id-token: write` for the new cache API. The cache is per-workflow-per-repo (not a shared binary cache) — use [Cachix](#cachix-integration-binary-caching) or [FlakeHub Cache](https://flakehub.com/cache) if you need cross-machine or cross-team caching.
+- **MANDATORY — pin all third-party actions to commit SHAs**: Replace every `<*-sha>` placeholder and `# v<N>` comment with the actual commit SHA and version tag before posting the PR. Mutable refs (`@v6`, `@main`) allow a compromised maintainer account to repoint the ref to malicious code that executes in the workflow. This is especially critical when the workflow grants `id-token: write` (required by some caching actions for OIDC token exchange) — a mutable ref + OIDC permission means arbitrary code can request GitHub OIDC tokens. Automated reviewers (Greptile, CodeQL) flag this as a P2 security issue. Resolve the current SHA for a tag via:
+  ```bash
+  gh api repos/<owner>/<repo>/git/refs/tags/<tag> --jq '.object.sha'
+  ```
+  Use the latest stable tag (not `main`/`latest`). Verify the tag is at least 7 days old (supply-chain safety). Format: `uses: <owner>/<repo>@<40-char-sha> # v<tag>`. Match the project's existing action pinning convention if it pins to SHAs already; if it uses mutable refs, pin to SHAs anyway — this is a security requirement, not a style choice.
+
+**DO NOT add `DeterminateSystems/magic-nix-cache-action`.** Its hosted backend was sunset in February 2025 and the step now degrades to a silent no-op; it adds noise and a dead dependency for no benefit. If binary caching is actually needed, use Cachix (see [Cachix Integration](#cachix-integration-binary-caching)).
 
 **Skip if:** The project does not use GitHub Actions for CI.
 
@@ -805,7 +811,7 @@ fodChecks: true
   exceeds the single-runner `nix.yml` (e.g., the project has darwin-specific
   outputs that `nix.yml` only evaluates via `--no-build`).
 - **Skip it** when the project already has a robust GitHub Actions matrix
-  (ubuntu + macos-26 + macos-26-intel) and the maintainer hasn't mentioned Garnix.
+  (ubuntu + macos-13 + macos-14) and the maintainer hasn't mentioned Garnix.
   Adding an inert config file the maintainer didn't ask for is presumptuous.
 - **Never** add it without the `nix.yml` — `nix.yml` is the contributor's
   guarantee; `garnix.yaml` is a bonus that only activates on maintainer opt-in.
@@ -837,25 +843,11 @@ the project already has a robust cross-platform GitHub Actions matrix.
 For the **Prebuilt Tarball Flake** path, every release requires bumping `version` and refreshing the
 per-platform `sha256` hashes in `flake.nix`. Doing this by hand is the #1 objection maintainers raise
 to accepting a repo-owned flake ("I don't know Nix and this adds per-release maintenance"). Automation
-removes that burden entirely: it bumps the version, refreshes hashes, and opens a PR — zero Nix
-knowledge required from the maintainer.
+removes that burden entirely: it prefetches the new release assets, rewrites `flake.nix`, and opens a
+PR — zero Nix knowledge required from the maintainer.
 
 **This is a required deliverable for release-based repos using the Prebuilt Tarball Flake, not an
 optional extra.** Without it, the flake rots one release after merge.
-
-### Tooling: nix-update + nix-update-action
-
-This skill uses [nix-update](https://github.com/Mic92/nix-update) (by Mic92) for hash generation —
-the standard, maintained tool that handles version detection and FOD hash updates for all languages
-the skill supports (Rust `cargoHash`, Go `vendorHash`, npm `npmDepsHash`, pnpm, Yarn, PHP, Maven,
-.NET, Elixir, Zig, and custom dependency hashes via `--custom-dep`). It also handles prebuilt
-tarball `fetchurl`/`fetchzip` hashes via `nix store prefetch-file` under the hood.
-
-The GitHub Action wrapper [winapps-org/nix-update-action](https://github.com/winapps-org/nix-update-action)
-(maintained fork of `selfuryon/nix-update-action`) runs nix-update on a schedule and opens a PR
-automatically. This replaces the custom Python prefetch scripts this skill previously shipped —
-nix-update covers more FOD types, is actively maintained, and doesn't require the contributor to
-hand-write a hash-rewrite script per project.
 
 ### CRITICAL: the `GITHUB_TOKEN` trap (why `release: published` often does not work)
 
@@ -870,17 +862,18 @@ https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#trigger
 1. Inspect the project's release workflow (e.g. `.github/workflows/release.yml`). Find the
    `gh release create` step and check its `GH_TOKEN` / `GITHUB_TOKEN` env.
 2. If it uses a **PAT or GitHub App token** -> `release: published` works. Use the
-   `release: published` trigger below.
+   `release: published` template below.
 3. If it uses **`secrets.GITHUB_TOKEN`** (the common case, including all cargo-dist setups) ->
-   `release: published` will NOT fire. Use the **scheduled** trigger below instead. It runs daily,
-   compares `flake.nix`'s `version` to the latest GitHub release, and only acts when they differ.
-   Fully decoupled from how releases are created; needs no PAT and no edits to the release pipeline.
+   `release: published` will NOT fire. Use the **scheduled lag-check** template below instead. It
+   runs daily, compares `flake.nix`'s `version` to the latest GitHub release, and only acts when
+   they differ. Fully decoupled from how releases are created; needs no PAT and no edits to the
+   release pipeline.
 
 ### Template A: scheduled lag-check (recommended for `GITHUB_TOKEN`-created releases)
 
 Runs daily (and on manual dispatch). When the latest GitHub release outpaces `flake.nix`'s pinned
-`version`, nix-update bumps the version and refreshes hashes, then opens a PR. No dependency on the
-release event, no PAT, no edits to the release pipeline.
+`version`, prefetches new SRI hashes and opens a PR. No dependency on the release event, no PAT, no
+edits to the release pipeline.
 
 **Create `.github/workflows/nix-release.yml`:**
 
@@ -888,8 +881,8 @@ release event, no PAT, no edits to the release pipeline.
 name: Update Nix flake
 
 # Checks whether flake.nix lags behind the latest GitHub release. If it does,
-# nix-update bumps the version and refreshes per-platform FOD hashes, then
-# opens a PR.
+# prefetches the new release's per-platform SRI hashes, rewrites flake.nix,
+# and opens a PR.
 #
 # Runs on a schedule instead of release: published because releases are created
 # with GITHUB_TOKEN, which does not start new workflow runs. A daily lag-check
@@ -903,9 +896,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  # id-token: write is required by magic-nix-cache-action for the GitHub
-  # Actions cache v2 API (OIDC token exchange for cache auth).
-  id-token: write
 
 concurrency:
   group: nix-flake-release
@@ -918,40 +908,145 @@ jobs:
     if: github.repository == '<owner>/<repo>'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@<checkout-sha> # v<N>
         with:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@<install-nix-sha> # v<N>
 
-      - name: Enable Nix binary cache (GitHub Actions cache)
-        # Caches nix-update's --build verification output between daily runs.
-        # Without this, each daily lag-check rebuilds the package from scratch
-        # to verify the hash — wasted cycles when nothing changed.
-        uses: DeterminateSystems/magic-nix-cache-action@v13
+      - name: Check for lag and rewrite flake.nix
+        env:
+          # system|asset-substring — one per line. The substring must uniquely
+          # match the release asset filename for that system (including the
+          # .tar.gz suffix so it does not match the sibling .sha256 files).
+          ASSET_MAP: |
+            x86_64-linux|x86_64-unknown-linux-musl
+            aarch64-linux|aarch64-unknown-linux-musl
+            x86_64-darwin|x86_64-apple-darwin
+            aarch64-darwin|aarch64-apple-darwin
+        run: |
+          set -euo pipefail
+          tag=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')
+          latest="${tag#v}"
+          current=$(python3 -c 'import re; s=open("flake.nix").read(); m=re.search(r"version = \"([^\"]*)\";", s); print(m.group(1))')
+          echo "flake.nix version: $current  |  latest release: $latest (tag $tag)"
+          if [ "$current" = "$latest" ]; then
+            echo "flake.nix is up to date; nothing to do."
+            echo "LAGGING=no" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "LAGGING=yes" >> "$GITHUB_ENV"
+          echo "VERSION=$latest" >> "$GITHUB_ENV"
+          export TAG="$tag"
+          python3 <<'PYEOF'
+          import json, os, re, subprocess, urllib.request
+          tag = os.environ["TAG"]
+          version = tag.lstrip("v")
+          repo = os.environ["GITHUB_REPOSITORY"]
+          with urllib.request.urlopen(
+              f"https://api.github.com/repos/{repo}/releases/latest") as r:
+              release = json.load(r)
+          # Drop sibling checksum files (.sha256) so a tarball substring does
+          # not also match its "<tarball>.sha256" companion (cargo-dist etc.).
+          names = {a["name"] for a in release["assets"]
+                   if not a["name"].endswith(".sha256")}
+          asset_map = {}
+          for line in os.environ["ASSET_MAP"].splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"):
+                  continue
+              sys_, sub = line.split("|", 1)
+              asset_map[sys_.strip()] = sub.strip()
+          # Reverse-check guard: detect release assets that look like platform
+          # binaries but are NOT in ASSET_MAP. If a project ships for 4 platforms
+          # but ASSET_MAP only lists 3, the omitted platform's hash goes stale
+          # while its URL still gets the version bump — users on that platform
+          # get a hash mismatch. This catches the omission class of bug that
+          # CI cannot see (nix flake check --all-systems --no-build evaluates
+          # without realising fetchurl derivations, and nix build only runs on
+          # the runner's own system). See Archon PR #2131 feedback.
+          known_platforms = {"x86_64-linux", "aarch64-linux",
+                             "x86_64-darwin", "aarch64-darwin"}
+          matched_subs = set(asset_map.values())
+          unmatched = []
+          for name in names:
+              # Skip non-binary assets (checksums, source tarballs, .deb, .rpm, etc.)
+              if not (name.endswith(".tar.gz") or name.endswith(".zip")):
+                  continue
+              if any(sub in name for sub in matched_subs):
+                  continue
+              # Check if the asset name contains a platform identifier
+              for plat in known_platforms:
+                  # Match common platform naming patterns in asset filenames
+                  plat_patterns = {
+                      "x86_64-linux": ["x86_64-linux", "x86_64-unknown-linux", "linux-x64", "linux-x86_64", "x64-linux"],
+                      "aarch64-linux": ["aarch64-linux", "aarch64-unknown-linux", "linux-arm64", "linux-aarch64", "arm64-linux"],
+                      "x86_64-darwin": ["x86_64-darwin", "x86_64-apple-darwin", "darwin-x64", "darwin-x86_64", "macos-x64", "x64-darwin", "x64-macos"],
+                      "aarch64-darwin": ["aarch64-darwin", "aarch64-apple-darwin", "darwin-arm64", "darwin-aarch64", "macos-arm64", "arm64-darwin", "arm64-macos"],
+                  }
+                  if any(p in name.lower() for p in plat_patterns[plat]):
+                      if plat not in asset_map:
+                          unmatched.append((plat, name))
+                      break
+          if unmatched:
+              plats = ", ".join(f"{p} ({n})" for p, n in unmatched)
+              raise SystemExit(
+                  f"RELEASE ASSET COMPLETENESS CHECK FAILED: release {tag} has "
+                  f"binary assets for platforms not in ASSET_MAP: {plats}. "
+                  f"Add them to ASSET_MAP or the hash for those platforms will "
+                  f"go stale while the URL gets the version bump — users on the "
+                  f"omitted platform get a hash mismatch. ASSET_MAP currently "
+                  f"covers: {sorted(asset_map.keys())}")
+          src = open("flake.nix").read()
+          src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
+          if n != 1:
+              raise SystemExit('could not find version = "..." in flake.nix')
+          for sys_, sub in asset_map.items():
+              match = next((n for n in names if sub in n), None)
+              if not match:
+                  raise SystemExit(f"no asset for {sys_} ({sub}) in {tag}; have: {sorted(names)}")
+              url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
+              out = json.loads(subprocess.check_output(
+                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url]))
+              sri = out["hash"]
+              pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
+              def repl(m):
+                  b = m.group(1)
+                  b = re.sub(r'file = "[^"]*";', f'file = "{match}";', b, count=1)
+                  b = re.sub(r'sha256 = "[^"]*";', f'sha256 = "{sri}";', b, count=1)
+                  return b
+              src, n = pat.subn(repl, src, count=1)
+              if n != 1:
+                  raise SystemExit(f"could not find assets block for {sys_} in flake.nix")
+          open("flake.nix", "w").write(src)
+          print(f"bumped flake.nix to {version}: {list(asset_map)}")
+          PYEOF
 
-      - name: Update flake via nix-update
-        uses: winapps-org/nix-update-action@v1.3.0
+      - name: Open PR
+        if: env.LAGGING == 'yes'
+        uses: peter-evans/create-pull-request@<create-pr-sha> # v<N>
         with:
-          # The flake attribute to bump (e.g. "default", "prebuilt", or the
-          # project name). nix-update detects the latest version from GitHub
-          # releases and updates the version + all FOD hashes (fetchurl,
-          # cargoHash, npmDepsHash, vendorHash, etc.) in one pass.
-          packages: default
-          # Run nix-update --flake so it operates on the flake output, not a
-          # nixpkgs package path.
-          extra-args: --flake --build
-          # Author/committer identity for the PR commit.
-          git-author-name: 'github-actions[bot]'
-          git-author-email: 'github-actions[bot]@users.noreply.github.com'
-          git-committer-name: 'github-actions[bot]'
-          git-committer-email: 'github-actions[bot]@users.noreply.github.com'
+          commit-message: "chore(nix): bump flake to v{{{ printf "%s" "${{{ env.VERSION }}}" }}}"
+          title: "chore(nix): bump flake to v{{{ printf "%s" "${{{ env.VERSION }}}" }}}"
+          branch: chore/nix-flake-v{{{ printf "%s" "${{{ env.VERSION }}}" }}}
+          base: master
+          body: |
+            Auto-generated by the `Update Nix flake` workflow (daily lag-check).
+            The latest GitHub release is v{{{ printf "%s" "${{{ env.VERSION }}}" }}} but `flake.nix` was
+            pinned to an older version. This PR bumps `version` and refreshes the per-platform SRI
+            hashes by prefetching the new release assets.
+
+            Note: PRs opened by `GITHUB_TOKEN` do not trigger downstream workflow runs (e.g. CI),
+            so this PR will show no checks. Review the diff before merging — it should be a
+            version bump plus per-platform hash refresh with no source changes.
 ```
 
 ### Template B: `release: published` (only if releases are created with a PAT/App token)
 
-Use this only when the decision tree above confirmed the release is created with a PAT or
+Use this only when Step 1 of the decision tree confirmed the release is created with a PAT or
 GitHub App token (not `secrets.GITHUB_TOKEN`). Otherwise this workflow will silently never fire.
 
 ```yaml
@@ -964,7 +1059,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write
 
 concurrency:
   group: nix-flake-release
@@ -976,42 +1070,122 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@<checkout-sha> # v<N>
         with:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@<install-nix-sha> # v<N>
 
-      - name: Enable Nix binary cache (GitHub Actions cache)
-        uses: DeterminateSystems/magic-nix-cache-action@v13
+      - name: Rewrite flake.nix with new release
+        env:
+          ASSET_MAP: |
+            x86_64-linux|x86_64-unknown-linux-musl
+            aarch64-linux|aarch64-unknown-linux-musl
+            x86_64-darwin|x86_64-apple-darwin
+            aarch64-darwin|aarch64-apple-darwin
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          python3 <<'PYEOF'
+          import json, os, re, subprocess
+          tag = os.environ["GITHUB_REF_NAME"]
+          version = tag.lstrip("v")
+          event = json.load(open(os.environ["GITHUB_EVENT_PATH"]))
+          asset_map = {}
+          for line in os.environ["ASSET_MAP"].splitlines():
+              line = line.strip()
+              if not line or line.startswith("#"):
+                  continue
+              sys_, sub = line.split("|", 1)
+              asset_map[sys_.strip()] = sub.strip()
+          names = {a["name"] for a in event["release"]["assets"]
+                   if not a["name"].endswith(".sha256")}
+          # Reverse-check guard: detect release assets that look like platform
+          # binaries but are NOT in ASSET_MAP. See Template A for full rationale.
+          known_platforms = {"x86_64-linux", "aarch64-linux",
+                             "x86_64-darwin", "aarch64-darwin"}
+          matched_subs = set(asset_map.values())
+          unmatched = []
+          for name in names:
+              if not (name.endswith(".tar.gz") or name.endswith(".zip")):
+                  continue
+              if any(sub in name for sub in matched_subs):
+                  continue
+              for plat in known_platforms:
+                  plat_patterns = {
+                      "x86_64-linux": ["x86_64-linux", "x86_64-unknown-linux", "linux-x64", "linux-x86_64", "x64-linux"],
+                      "aarch64-linux": ["aarch64-linux", "aarch64-unknown-linux", "linux-arm64", "linux-aarch64", "arm64-linux"],
+                      "x86_64-darwin": ["x86_64-darwin", "x86_64-apple-darwin", "darwin-x64", "darwin-x86_64", "macos-x64", "x64-darwin", "x64-macos"],
+                      "aarch64-darwin": ["aarch64-darwin", "aarch64-apple-darwin", "darwin-arm64", "darwin-aarch64", "macos-arm64", "arm64-darwin", "arm64-macos"],
+                  }
+                  if any(p in name.lower() for p in plat_patterns[plat]):
+                      if plat not in asset_map:
+                          unmatched.append((plat, name))
+                      break
+          if unmatched:
+              plats = ", ".join(f"{p} ({n})" for p, n in unmatched)
+              raise SystemExit(
+                  f"RELEASE ASSET COMPLETENESS CHECK FAILED: release {tag} has "
+                  f"binary assets for platforms not in ASSET_MAP: {plats}. "
+                  f"Add them to ASSET_MAP or the hash for those platforms will "
+                  f"go stale while the URL gets the version bump. ASSET_MAP "
+                  f"currently covers: {sorted(asset_map.keys())}")
+          repo = os.environ["GITHUB_REPOSITORY"]
+          src = open("flake.nix").read()
+          src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
+          if n != 1:
+              raise SystemExit('could not find version = "..." in flake.nix')
+          for sys_, sub in asset_map.items():
+              match = next((n for n in names if sub in n), None)
+              if not match:
+                  raise SystemExit(f"no asset for {sys_} ({sub}) in {tag}; have: {sorted(names)}")
+              url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
+              out = json.loads(subprocess.check_output(
+                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url]))
+              sri = out["hash"]
+              pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
+              def repl(m):
+                  b = m.group(1)
+                  b = re.sub(r'file = "[^"]*";', f'file = "{match}";', b, count=1)
+                  b = re.sub(r'sha256 = "[^"]*";', f'sha256 = "{sri}";', b, count=1)
+                  return b
+              src, n = pat.subn(repl, src, count=1)
+              if n != 1:
+                  raise SystemExit(f"could not find assets block for {sys_} in flake.nix")
+          open("flake.nix", "w").write(src)
+          print(f"bumped flake.nix to {version}: {list(asset_map)}")
+          PYEOF
 
-      - name: Update flake via nix-update
-        uses: winapps-org/nix-update-action@v1.3.0
+      - name: Open PR
+        uses: peter-evans/create-pull-request@<create-pr-sha> # v<N>
         with:
-          packages: default
-          extra-args: --flake --build
-          git-author-name: 'github-actions[bot]'
-          git-author-email: 'github-actions[bot]@users.noreply.github.com'
-          git-committer-name: 'github-actions[bot]'
-          git-committer-email: 'github-actions[bot]@users.noreply.github.com'
+          commit-message: "chore(nix): bump flake to v{{{ printf "%s" "${{{ env.VERSION }}}" }}}"
+          title: "chore(nix): bump flake to v{{{ printf "%s" "${{{ env.VERSION }}}" }}}"
+          branch: chore/nix-flake-v{{{ printf "%s" "${{{ env.VERSION }}}" }}}
+          base: master
+          body: |
+            Auto-generated by the `Update Nix flake` workflow on release publication.
+            Bumps `version` and refreshes per-platform SRI hashes in `flake.nix` by
+            prefetching the new release assets. No manual editing required.
 ```
 
 **Customization notes (both templates):**
-- `packages`: the flake attribute to bump. Use `default` for the standard `#default` output, or the project name for `#<project-name>`. For prebuilt tarball flakes with separate `#prebuilt` and `#source` outputs, bump `default` (which aliases `#prebuilt`).
-- `extra-args: --flake --build`: `--flake` tells nix-update to operate on the flake output (not a nixpkgs package path). `--build` verifies the update by building the package after bumping — catches hash mismatches before the PR is opened. Drop `--build` if the build takes too long for a scheduled job.
+- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects binary assets (`.tar.gz`/`.zip`) for a platform not in ASSET_MAP — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch).
+- `base: master`: change to `main` if the project's default branch is `main`.
 - `if: github.repository == '<owner>/<repo>'` (Template A): prevents the scheduled job from running on forks. Replace with the upstream owner/repo.
-- **What nix-update handles automatically**: version detection from GitHub releases (also GitLab, crates.io, npm, PyPI, etc.), `fetchurl`/`fetchzip` hash refresh, and all language-specific FOD hashes (Rust `cargoHash`, Go `vendorHash`, npm `npmDepsHash`, pnpm, Yarn, PHP, Maven, .NET, Elixir, Zig, custom via `--custom-dep`). This replaces the custom Python prefetch scripts this skill previously shipped.
-- **Platform-gated FOD hashes (npm/Bun with native addons)**: nix-update on ubuntu computes platform-independent FOD hashes (Rust, Go, prebuilt tarballs) correctly. For platform-gated FODs (npm `npmDepsHash` with `@esbuild/*`-style optional deps), the hash differs per platform and nix-update on ubuntu can only compute the linux hash. The `x86_64-darwin` and `aarch64-darwin` hashes for platform-gated FODs are computed by the validate job in `nix.yml` (see [Self-Pruning on Runner Decommission](#self-pruning-on-runner-decommission) below) which runs `nix build .#source` on the target platform and captures the "got" hash from the fakehash error.
-- PRs opened by `GITHUB_TOKEN` (both templates) do not trigger downstream CI workflows. The diff is a version bump plus per-platform hash refresh with no source changes. **Review the diff before merging** — do not self-declare "safe to merge as-is" in the PR body. If CI on the bump PR is required, use a PAT for the action (but that reintroduces secret-management burden).
+- The script targets the `assets = { "<system>" = { file = ...; sha256 = ...; }; }` shape from the Prebuilt Tarball Flake template. For other flake shapes, adapt the regex.
+- Hashes are written in SRI form (`sha256-...=`), which modern Nix accepts in the `sha256` field.
+- `nix store prefetch-file` requires Nix >= 2.20; `cachix/install-nix-action` (SHA-pinned) installs a recent release.
+- PRs opened by `GITHUB_TOKEN` (both templates) do not trigger downstream CI workflows. The diff is a version bump plus per-platform hash refresh with no source changes. **Review the diff before merging** — do not self-declare "safe to merge as-is" in the PR body. If CI on the bump PR is required, use a PAT for `peter-evans/create-pull-request` (but that reintroduces secret-management burden).
 - To make it fully hands-off, add a final `gh pr merge --merge --auto` step (with `env: GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}`) or enable auto-merge on the branch via repository settings. **Only do this if the project explicitly accepts auto-merged hash bumps** — some maintainers consider unreviewed merges a security concern (Archon PR #2131 feedback cited the `contents: write` + `pull-requests: write` self-declared unreviewed-merge path as a declining reason).
-- Pin `winapps-org/nix-update-action` to a commit SHA (with `# v1.3.0` comment) if the project's existing workflows pin actions — match the repo's convention.
+- **MANDATORY — pin all third-party actions to commit SHAs**: Same rule as the nix.yml template above. Replace every `<*-sha>` placeholder and `# v<N>` comment with the actual commit SHA and version tag. These workflows grant `contents: write` and `pull-requests: write` — a mutable ref compromise could push arbitrary commits or open PRs against the repo. Resolve SHAs via `gh api repos/<owner>/<repo>/git/refs/tags/<tag> --jq '.object.sha'`.
 
-**Hybrid fallback interaction (partial platform coverage):** When the flake uses the Hybrid Fallback Variant from `references/flake-templates/prebuilt-tarball.md` (`hybrid_fallback=true` from Step 12), nix-update bumps the version and prebuilt tarball hashes for platforms that have release assets. The `#source` output on fallback platforms (platforms without a prebuilt binary) is NOT hash-automated by nix-update: it builds from source at the git tag, so it tracks the commit, not release assets. This is correct and requires no special handling. The `#source` outputs on fallback platforms are validated by the Nix CI workflow (`nix build .#source`), not by the hash automation. If a project later adds a prebuilt binary for a previously-missing platform, the next nix-update run will populate its hash automatically.
+**Hybrid fallback interaction (partial platform coverage):** When the flake uses the Hybrid Fallback Variant from `references/flake-templates/prebuilt-tarball.md` (`hybrid_fallback=true` from Step 12), the hash automation workflow only bumps hashes for platforms in `ASSET_MAP` — the platforms that have prebuilt release assets. The `#source` output on fallback platforms (platforms without a prebuilt binary) is NOT hash-automated: it builds from source at the git tag, so it tracks the commit, not release assets. This is correct and requires no special handling — the `ASSET_MAP` simply lists only the prebuilt platforms, and the reverse-check guard ensures no prebuilt platform is omitted. The `#source` outputs on fallback platforms are validated by the Nix CI workflow (`nix build .#source`), not by the hash automation. If a project later adds a prebuilt binary for a previously-missing platform, add that platform to `ASSET_MAP` and to the flake's `assets` attrset — the next hash automation run will populate its hash.
 
-**CI blind spot — cross-platform hash validation:** `nix flake check --all-systems --no-build` evaluates every system's outputs without realising fetchurl derivations, so a fetch-hash mismatch is invisible at evaluation time. `nix build .#default` only runs on the runner's own system (typically `ubuntu-latest`), so it cannot catch a hash mismatch on `x86_64-darwin` or `aarch64-darwin`. nix-update's `--build` flag catches hash mismatches for the runner's own platform (linux), but not for darwin. For projects that need stronger cross-platform validation, add a matrix build to `nix.yml` that runs `nix build .#default` on `macos-26` (ARM) and `macos-26-intel` (Intel) in addition to `ubuntu-latest`. This catches hash mismatches and Darwin-specific build failures that `--all-systems --no-build` and nix-update's `--build` cannot see.
+**CI blind spot — cross-platform hash validation:** `nix flake check --all-systems --no-build` evaluates every system's outputs without realising fetchurl derivations, so a fetch-hash mismatch is invisible at evaluation time. `nix build .#default` only runs on the runner's own system (typically `ubuntu-latest`), so it cannot catch a hash mismatch on `x86_64-darwin` or `aarch64-darwin`. The reverse-check guard in the hash automation script is the primary defense against omitted platforms. For projects that need stronger cross-platform validation, add a matrix build to `nix.yml` that runs `nix build .#default` on `macos-13` (Intel) and `macos-14` (ARM) in addition to `ubuntu-latest`. This catches hash mismatches and Darwin-specific build failures that `--all-systems --no-build` cannot see.
 
-**How it addresses maintainer objections:** the maintainer cuts a release exactly as they do today; nix-update-action opens a PR with the bumped `flake.nix`. Reviewing a small diff (version + hashes) needs no Nix knowledge. Merge -> `nix run github:<owner>/<repo>` serves the new release. The scheduled variant (Template A) adds no PAT, no release-pipeline edits, and no per-release manual step of any kind.
+**How it addresses maintainer objections:** the maintainer cuts a release exactly as they do today; the workflow opens a PR with the bumped `flake.nix`. Reviewing a 5-line diff (version + 4 hashes) needs no Nix knowledge. Merge -> `nix run github:<owner>/<repo>` serves the new release. The scheduled variant (Template A) adds no PAT, no release-pipeline edits, and no per-release manual step of any kind.
 
 **Verification (do this before opening the PR):** the automation workflow itself is not exercised by the PR's CI (it mutates `main` post-publish and runs on a schedule, not on push). Confirm it evaluates by triggering it manually on the PR branch:
 
@@ -1023,243 +1197,13 @@ gh workflow run "Update Nix flake" --ref <pr-branch-name>
 gh run watch
 ```
 
-A clean "up to date, nothing to do" run proves the workflow's Nix install, nix-update-action invocation, and GitHub API access all work. The actual hash-rewrite path is only exercised when a real new release outpaces the flake, but the manual run catches config/parse errors before merge. (This is the "can't be exercised by this PR's CI" gap that led nubjs/nub#169 to defer automation — the manual `workflow_dispatch` run closes it.)
+A clean "up to date, nothing to do" run proves the workflow's Nix install, GitHub API call, version comparison, and `ASSET_MAP` parsing all work. The actual hash-rewrite path is only exercised when a real new release outpaces the flake, but the manual run catches config/parse errors before merge. (This is the "can't be exercised by this PR's CI" gap that led nubjs/nub#169 to defer automation — the manual `workflow_dispatch` run closes it.)
 
 **Skip if:** the project does not publish release tarballs (use a source-build flake instead), or already automates flake updates via another mechanism (e.g. `update-flake-lock` action).
 
 ---
 
-## Self-Pruning on Runner Decommission
-
-When GitHub Actions decommissions the Intel macOS runner (`macos-26-intel`, estimated ~Nov 2028 per
-[actions/runner-images#13739](https://github.com/actions/runner-images/issues/13739)), the
-`validate-x86-darwin` job in `nix.yml` fails with "no runner available." The `self-prune` job
-detects this failure and opens a PR to handle the transition — either updating to a newer runner
-label (if GitHub ships one) or commenting out the dead job and swapping `x86_64-darwin` source-build
-FOD hashes to `lib.fakeHash`.
-
-### Design
-
-The `self-prune` job runs on `ubuntu-latest`, triggered by `validate-x86-darwin` failure. It does
-NOT use a date gate — it fires purely on runner-failure detection, so it works correctly regardless
-of when GitHub actually decommissions the runner (the estimated Nov 2028 date may shift).
-
-**Decision flow:**
-
-1. Query the GitHub API for `actions/runner-images` directory listing under `images/macos/`.
-2. Filter directory names matching `macos-*-intel`.
-3. Compare the newest matching label against the current label (`macos-26-intel`).
-4. **If a newer label exists** (e.g. `macos-27-intel`): open a PR that updates `runs-on: macos-26-intel`
-   to the newer label in `nix.yml`. PR body explains: "macos-26-intel was decommissioned; updated to
-   macos-27-intel (the current Intel macOS runner label). No other changes needed."
-5. **If no newer label exists**: open a PR that (a) comments out the `validate-x86-darwin` job with
-   re-enablement instructions, (b) adds a warning job that emits a `::warning::` annotation, and
-   (c) swaps `x86_64-darwin` source-build FOD hashes to `lib.fakeHash` in `flake.nix`. PR body
-   explains the decommission + re-enablement path + links to the GitHub announcement.
-
-### Template: self-prune job (add to `.github/workflows/nix.yml`)
-
-```yaml
-  self-prune:
-    name: Self-prune dead Intel macOS runner
-    runs-on: ubuntu-latest
-    if: always() && needs.validate-x86-darwin.result == 'failure'
-    needs: [validate-x86-darwin]
-    permissions:
-      contents: write
-      pull-requests: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Check for newer Intel macOS runner label
-        id: check-label
-        run: |
-          set -euo pipefail
-          CURRENT="macos-26-intel"
-          # Query the actions/runner-images repo for available macOS runner directories.
-          # The directory structure is the closest public signal for runner label availability.
-          LABELS=$(curl -fsSL \
-            "https://api.github.com/repos/actions/runner-images/contents/images/macos" \
-            | python3 -c '
-          import json, sys
-          entries = json.load(sys.stdin)
-          intel = [e["name"] for e in entries
-                   if e["type"] == "dir" and e["name"].endswith("-intel")]
-          print("\n".join(sorted(intel)))
-          ')
-          NEWEST=$(echo "$LABELS" | tail -1)
-          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-          echo "newest=$NEWEST" >> "$GITHUB_OUTPUT"
-          if [ -n "$NEWEST" ] && [ "$NEWEST" != "$CURRENT" ]; then
-            echo "newer=true" >> "$GITHUB_OUTPUT"
-            echo "Found newer Intel macOS runner label: $NEWEST (current: $CURRENT)"
-          else
-            echo "newer=false" >> "$GITHUB_OUTPUT"
-            echo "No newer Intel macOS runner label available (current: $CURRENT)"
-          fi
-
-      - name: Open PR to update runner label
-        if: steps.check-label.outputs.newer == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "chore(ci): update Intel macOS runner from ${{{ steps.check-label.outputs.current }}} to ${{{ steps.check-label.outputs.newest }}}"
-          title: "chore(ci): update Intel macOS runner label"
-          branch: chore/ci-update-intel-runner
-          body: |
-            The `macos-26-intel` GitHub Actions runner was decommissioned and the
-            `validate-x86-darwin` job failed with "no runner available."
-
-            A newer Intel macOS runner label is available:
-            `${{{{ steps.check-label.outputs.newest }}}}`.
-
-            This PR updates `runs-on:` in the `validate-x86-darwin` job to the
-            newer label. No other changes are needed.
-
-            Source: https://github.com/actions/runner-images/issues/13739
-
-      - name: Open PR to comment out dead job + swap to fakeHash
-        if: steps.check-label.outputs.newer == 'false'
-        run: |
-          # Comment out the validate-x86-darwin job in nix.yml and add a warning
-          # job + swap x86_64-darwin FOD hashes to lib.fakeHash in flake.nix.
-          # This is a text transformation — see the commented-out job block below
-          # for the exact replacement text.
-          python3 <<'PYEOF'
-          import re
-          # 1. Comment out validate-x86-darwin job in .github/workflows/nix.yml
-          wf = open(".github/workflows/nix.yml").read()
-          # The job block is replaced with a commented-out version + warning job.
-          # See the template below for the exact replacement.
-          # 2. Swap x86_64-darwin FOD hashes to lib.fakeHash in flake.nix
-          flake = open("flake.nix").read()
-          # Replace real SRI hashes for x86_64-darwin with lib.fakeHash
-          # Pattern: "x86_64-darwin" = { ... sha256 = "sha256-..."; ... }
-          flake = re.sub(
-              r'("x86_64-darwin" = \{[^}]*sha256 = ")[^"]*(";)',
-              r'\1lib.fakeHash\2',
-              flake, flags=re.S)
-          open("flake.nix", "w").write(flake)
-          print("Swapped x86_64-darwin FOD hashes to lib.fakeHash")
-          PYEOF
-
-      - name: Open PR for fakeHash swap
-        if: steps.check-label.outputs.newer == 'false'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "chore(ci): decommission macos-26-intel — comment out validate-x86-darwin, swap to lib.fakeHash"
-          title: "chore(ci): handle macos-26-intel decommission"
-          branch: chore/ci-decommission-intel-runner
-          body: |
-            The `macos-26-intel` GitHub Actions runner was decommissioned and the
-            `validate-x86-darwin` job failed with "no runner available." No newer
-            Intel macOS runner label is currently available.
-
-            This PR:
-            1. Comments out the `validate-x86-darwin` job with re-enablement
-               instructions (see the commented block in `.github/workflows/nix.yml`)
-            2. Adds a warning job that emits a `::warning::` annotation on every
-               CI run so the gap is visible, not buried in git history
-            3. Swaps `x86_64-darwin` source-build FOD hashes to `lib.fakeHash`
-               in `flake.nix` — an honest "unverified" signal
-
-            To re-enable x86_64-darwin validation in the future:
-            1. Check for a newer Intel macOS runner label:
-               https://github.com/actions/runner-images/tree/main/images/macos
-               (look for any `macos-*-intel` directory newer than `macos-26-intel`)
-            2. If a newer label exists, uncomment `validate-x86-darwin` and update
-               `runs-on:` to the new label
-            3. If using a self-hosted Intel Mac runner, uncomment and set
-               `runs-on:` to your self-hosted label
-               (https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-github-actions)
-            4. After re-enabling, run `nix build .#source --system x86_64-darwin`
-               to compute the real FOD hash, replace `lib.fakeHash`, and open a PR
-
-            Source: https://github.com/actions/runner-images/issues/13739
-```
-
-### Commented-out job block (what the self-prune PR produces)
-
-When the self-prune PR comments out `validate-x86-darwin`, it replaces the job with this block so
-the re-enablement path is visible in the file itself:
-
-```yaml
-# DECOMMISSIONED: macos-26-intel was scheduled for decommission by GitHub
-# Actions (~Nov 2028 per https://github.com/actions/runner-images/issues/13739).
-# This job is commented out to prevent CI failures from "no runner available."
-#
-# To re-enable:
-# 1. Check for a newer Intel macOS runner label:
-#    https://github.com/actions/runner-images/tree/main/images/macos
-#    (look for any macos-*-intel directory newer than macos-26-intel)
-# 2. If a newer label exists, uncomment this job and update runs-on below
-# 3. If using a self-hosted Intel Mac runner, uncomment and set runs-on to
-#    your self-hosted label
-# 4. If no Intel macOS runner is available, x86_64-darwin source-build FOD
-#    hashes are set to lib.fakeHash in flake.nix — a community user with an
-#    Intel Mac can compute the real hash via `nix build .#source` and open a PR
-# validate-x86-darwin:
-#   runs-on: macos-26-intel  # ← update to newer label if available
-#   needs: detect-platforms
-#   steps:
-#     - uses: actions/checkout@v6
-#     - uses: cachix/install-nix-action@v31
-#     - uses: DeterminateSystems/magic-nix-cache-action@v13
-#     - run: nix build .#source --system x86_64-darwin
-#     - run: nix run .#default --system x86_64-darwin -- --version
-
-validate-x86-darwin-warning:
-  runs-on: ubuntu-latest
-  if: ${{ false }}  # re-enable when an Intel macOS runner is available
-  # NOTE: This job replaces validate-x86-darwin after macos-26-intel was
-  # decommissioned. It emits a warning so the gap is visible in every CI
-  # run, not buried in git history. Uncomment validate-x86-darwin above
-  # and delete this job when an Intel macOS runner is available again.
-  steps:
-    - name: x86_64-darwin validation unavailable
-      run: |
-        echo "::warning::x86_64-darwin validation is disabled — macos-26-intel runner was decommissioned by GitHub Actions. x86_64-darwin source-build FOD hashes are set to lib.fakeHash. See commented validate-x86-darwin job above for re-enablement instructions."
-```
-
-### Honest limitations
-
-- **The API check looks at the runner-images repo's directory structure**, not GitHub's actual runner availability. There can be a lag between a directory appearing and the label being usable in workflows. The PR body includes the direct link so a human can verify before uncommenting.
-- **The `self-prune` job fires on any `validate-x86-darwin` failure**, not just runner decommission. A transient outage or a real build failure would also trigger it. The PR body makes the assumption explicit ("failed with 'no runner available'") — a human reviewing the PR can distinguish "runner gone" from "build broke" and close the PR if it's the latter. This is a deliberate tradeoff: a date gate would prevent false positives but would also delay the self-prune if GitHub decommissions the runner earlier than estimated.
-- **The `lib.fakeHash` swap is a regex replacement** that targets the `assets = { "x86_64-darwin" = { ... sha256 = "..."; ... }; }` shape from the Prebuilt Tarball Flake template. For other flake shapes (source-build with per-platform FOD hashes), adapt the regex in the Python script.
-
-### Context-aware error messages
-
-The flake itself provides context-aware error messages so users in different situations see the right message:
-
-| Context | What happens | Error message |
-|----------|-------------|---------------|
-| CI: Intel macOS runner decommissioned | `validate-x86-darwin` fails with "no runner available" | Self-prune PR explains the runner retirement + what was changed |
-| User: tries `nix build` on unsupported platform (e.g. Linux user, Mac-only project) | Nix error from `meta.platforms` | "This project is Mac-only (uses macOS UI frameworks). It doesn't expose Linux targets. To build from source on macOS, see <link>." |
-| User: tries `nix build .#source` on x86_64-darwin after runner death (hash is `lib.fakeHash`) | Nix error from fakehash mismatch | "The x86_64-darwin source-build hash is unverified (set to lib.fakeHash after GitHub's Intel macOS runner was decommissioned). Run `nix build .#source` on an Intel Mac to compute the real hash, then open a PR with the updated hash." |
-
-These three errors never overlap — each context gets exactly one message. The error messages are
-implemented via a shared snippet in `references/snippets/unsupported-platform-throw.md` that all
-flake templates include. See that file for the Nix `throw` implementation.
-
----
-
 ## Cachix Integration (Binary Caching)
-
-**When to use Cachix vs Magic Nix Cache:**
-
-| Need | Use |
-|------|-----|
-| Speed up repeated CI runs in one repo (free, zero-config) | `DeterminateSystems/magic-nix-cache-action@v13` (already in the `nix.yml` template above) |
-| Share Nix build outputs across machines, teammates, or multiple repos | Cachix (this section) |
-| Both | Add Magic Nix Cache to the workflow for per-run caching, and Cachix for the shared cache that users outside CI can also pull from |
-
-Magic Nix Cache is free and zero-config but its cache is scoped to a single workflow in a single
-repository — a developer running `nix build` on their laptop cannot pull from it. Cachix provides a
-proper Nix binary cache that any Nix user can configure as a substituter, including developers
-outside CI. The two are complementary, not mutually exclusive.
 
 1. **Create a Cachix cache:** Visit https://cachix.org and create a new cache.
 
@@ -1289,11 +1233,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@<checkout-sha> # v<N>
+      - uses: cachix/install-nix-action@<install-nix-sha> # v<N>
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - uses: cachix/cachix-action@v12
+      - uses: cachix/cachix-action@<cachix-action-sha> # v<N>
         with:
           name: <your-cache-name>
           authToken: '${{{ "{{" }}} secrets.CACHIX_AUTH_TOKEN {{{ "}}" }}}'

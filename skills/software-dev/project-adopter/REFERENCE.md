@@ -394,6 +394,9 @@ project-name/
 │   ├── workflows/
 │   │   └── ci.yml          # GitHub Actions
 │   └── dependabot.yml      # Dependency updates
+├── scripts/
+│   └── hooks/
+│       └── pre-commit      # Submodule-integrity hook (installed by install-pre-commit-hooks.sh)
 └── src/                     # Source code
 ```
 
@@ -479,6 +482,7 @@ monorepo/
 - [ ] Dependencies are properly declared
 - [ ] CI/CD is configured
 - [ ] License file exists
+- [ ] Pre-commit hook installed (`scripts/hooks/pre-commit` exists, `core.hooksPath=scripts/hooks` set) — submodule-integrity protection via `scripts/install-pre-commit-hooks.sh`
 
 ### Validation Commands
 ```bash

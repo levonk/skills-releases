@@ -139,16 +139,6 @@ wrapper_prefix() {
 	# NOT the disabled one — but in practice, if devbox.json exists and devbox
 	# is disabled, the other wrappers are not relevant for this repo.
 	if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]]; then
-		# When both devbox and rtk are disabled (e.g. test environment with
-		# WRAPPER_DEVBOX_DISABLED=1 and RTK_SKIP=1), skip ALL wrapper detection
-		# — the caller is explicitly opting out of wrapping. This avoids the
-		# ~1s cli-tool-discovery.sh probe per invocation.
-		if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
-			WRAPPER_PREFIX_CACHE=""
-			WRAPPER_PREFIX_CACHE_DISABLED="${WRAPPER_DEVBOX_DISABLED:-0}"
-			printf ''
-			return
-		fi
 		# Still check for non-devbox wrappers via cli-tool-discovery, but only
 		# if there's no devbox.json up the tree (if there IS one, devbox was
 		# the intended wrapper and it's broken — don't waste 15s re-probing).
@@ -208,9 +198,10 @@ wrapper_prefix() {
 # This is the simple wrapper — it does NOT probe. Call probe_devbox first if
 # you want hang-safety. wrapper_prefix() honors WRAPPER_DEVBOX_DISABLED.
 devbox_run() {
-	wrapper_prefix >/dev/null
-	if [[ -n "${WRAPPER_PREFIX_CACHE:-}" ]]; then
-		$WRAPPER_PREFIX_CACHE "$@"
+	local wrapper
+	wrapper="$(wrapper_prefix)"
+	if [[ -n "$wrapper" ]]; then
+		$wrapper "$@"
 	else
 		"$@"
 	fi
@@ -247,84 +238,47 @@ run_command() {
 
 # Resolve rtk via cli-tool-discovery.sh (finds it even in non-standard locations).
 # Prints "rtk" if available, empty otherwise.
-#
-# CACHING: The result is cached in RTK_AVAILABLE_CACHE for the lifetime of the
-# script. cli-tool-discovery.sh can take up to 15s per call (devbox probe
-# timeout), and rtk_available() is called on every rtk_prefix() — without
-# caching, a script that makes 20 git_cmd() calls would spawn 20
-# cli-tool-discovery subprocesses, each potentially paying the 15s devbox
-# probe. The cache collapses this to a single probe.
-#
-# WRAPPER_DEVBOX_DISABLED: When devbox is known broken (set by probe_devbox),
-# skips cli-tool-discovery.sh entirely — it would re-probe devbox (15s timeout)
-# on every call. Falls back to `command -v rtk` (PATH check only, no devbox
-# probe). This is the critical fix for the parallel-session hang: under 10
-# concurrent agent sessions, each cli-tool-discovery invocation contends for
-# the nix store lock and the devbox probe serializes at 15s per call.
 rtk_available() {
 	if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
 		printf ''
 		return
 	fi
-	if [[ -n "${RTK_AVAILABLE_CACHE+x}" ]]; then
-		printf '%s' "$RTK_AVAILABLE_CACHE"
+	if [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
+		command -v rtk >/dev/null 2>&1 && printf 'rtk'
 		return
 	fi
-	local result=""
-	if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 1 ]] || [[ ! -f "${CLI_TOOL_DISCOVERY:-}" ]]; then
-		# Devbox known broken or cli-tool-discovery missing — skip the
-		# expensive devbox probe and fall back to PATH check only.
-		command -v rtk >/dev/null 2>&1 && result="rtk"
-	else
-		local disc
-		disc="$(bash "$CLI_TOOL_DISCOVERY" rtk 2>/dev/null || true)"
-		case "$disc" in
-		FOUND:* | WRAPPER:*) result="rtk" ;;
-		esac
-	fi
-	RTK_AVAILABLE_CACHE="$result"
-	printf '%s' "$result"
+	local result
+	result="$(bash "$CLI_TOOL_DISCOVERY" rtk 2>/dev/null || true)"
+	case "$result" in
+	FOUND:* | WRAPPER:*)
+		printf 'rtk'
+		;;
+	*)
+		printf ''
+		;;
+	esac
 }
 
 # Check if rtk supports a command by probing `rtk rewrite`.
 # Exit codes from rtk rewrite: 0=allow, 1=not supported, 2=deny, 3=ask.
 # 0 and 3 both mean "rtk supports this command".
 # Prints "rtk" if the command should be wrapped, empty otherwise.
-#
-# CACHING: The result is cached per-tool (cache key: RTK_PREFIX_CACHE__<tool>)
-# for the lifetime of the script. rtk's coverage for a given tool is stable —
-# the `rtk rewrite` config does not change mid-run. The subcommand-level
-# granularity of `rtk rewrite` is collapsed to a per-tool answer: if rtk
-# supports `git status`, it supports all common `git` subcommands. The edge
-# case (supports some subcommands but denies others) over-wraps the denied
-# subcommands, but rtk passes denied commands through unchanged — the only
-# cost is a no-op rtk spawn, not incorrect behavior. Set RTK_PREFIX_REFRESH=1
-# to force a re-probe.
 rtk_prefix() {
 	if [[ "${RTK_SKIP:-0}" -eq 1 ]]; then
 		printf ''
 		return
 	fi
-	local tool="$1"
-	local safe_tool="${tool//[^a-zA-Z0-9]/_}"
-	local cache_var="RTK_PREFIX_CACHE__${safe_tool}"
-	if [[ -n "${!cache_var+x}" && "${RTK_PREFIX_REFRESH:-0}" -eq 0 ]]; then
-		printf '%s' "${!cache_var}"
+	if [[ -z "$(rtk_available)" ]]; then
+		printf ''
 		return
 	fi
-	local result=""
-	rtk_available >/dev/null
-	if [[ -n "${RTK_AVAILABLE_CACHE:-}" ]]; then
-		# Probe with the full command — rtk rewrite needs the subcommand to
-		# determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
-		rtk rewrite -- "$@" >/dev/null 2>&1
-		local rc=$?
-		if [[ $rc -eq 0 || $rc -eq 3 ]]; then
-			result="rtk"
-		fi
+	# Probe with the full command — rtk rewrite needs the subcommand to
+	# determine coverage (e.g. `git` alone is rc=1, but `git status` is rc=3).
+	rtk rewrite -- "$@" >/dev/null 2>&1
+	local rc=$?
+	if [[ $rc -eq 0 || $rc -eq 3 ]]; then
+		printf 'rtk'
 	fi
-	printf -v "$cache_var" '%s' "$result"
-	printf '%s' "$result"
 }
 
 # Wrap a command with rtk if supported, run through environment wrapper if present.
@@ -334,19 +288,19 @@ rtk_prefix() {
 rtk_wrap_command() {
 	local tool="$1"
 	shift
-	local safe_tool="${tool//[^a-zA-Z0-9]/_}"
-	local cache_var="RTK_PREFIX_CACHE__${safe_tool}"
-	rtk_prefix "$tool" "$@" >/dev/null 2>&1
-	wrapper_prefix >/dev/null
-	if [[ -n "${!cache_var:-}" ]]; then
-		if [[ -n "${WRAPPER_PREFIX_CACHE:-}" ]]; then
-			$WRAPPER_PREFIX_CACHE rtk "$tool" "$@"
+	local rtk_prefix_val
+	rtk_prefix_val="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+	local wrapper
+	wrapper="$(wrapper_prefix)"
+	if [[ -n "$rtk_prefix_val" ]]; then
+		if [[ -n "$wrapper" ]]; then
+			$wrapper rtk "$tool" "$@"
 		else
 			rtk "$tool" "$@"
 		fi
 	else
-		if [[ -n "${WRAPPER_PREFIX_CACHE:-}" ]]; then
-			$WRAPPER_PREFIX_CACHE "$tool" "$@"
+		if [[ -n "$wrapper" ]]; then
+			$wrapper "$tool" "$@"
 		else
 			"$tool" "$@"
 		fi
@@ -358,8 +312,9 @@ rtk_wrap_command() {
 # This is the canonical git command wrapper — all git-repository-management
 # scripts use this instead of redefining their own git_cmd().
 git_cmd() {
-	rtk_prefix git "$@" >/dev/null 2>&1
-	if [[ -n "${RTK_PREFIX_CACHE__git:-}" ]]; then
+	local rtk_p
+	rtk_p="$(rtk_prefix git "$@" 2>/dev/null || true)"
+	if [[ -n "$rtk_p" ]]; then
 		devbox_run rtk git "$@"
 	else
 		devbox_run git "$@"
@@ -373,15 +328,111 @@ git_cmd() {
 rtk_wrap() {
 	local tool="$1"
 	shift
-	local safe_tool="${tool//[^a-zA-Z0-9]/_}"
-	local cache_var="RTK_PREFIX_CACHE__${safe_tool}"
-	rtk_prefix "$tool" "$@" >/dev/null 2>&1
-	if [[ -n "${!cache_var:-}" ]]; then
+	local rtk_p
+	rtk_p="$(rtk_prefix "$tool" "$@" 2>/dev/null || true)"
+	if [[ -n "$rtk_p" ]]; then
 		devbox_run rtk "$tool" "$@"
 	else
 		devbox_run "$tool" "$@"
 	fi
 }
+
+
+# Include shared nice-relaunch (low-priority relaunch for long-running scripts).
+# nice-relaunch.sh — relaunch the current script at lower CPU priority
+#
+# For long-running, low-priority scripts (validate, lint, typecheck, build,
+# test, detection, mining). Uses `exec nice -n <delta>` to replace the
+# current process in-place with a nice'd copy — no subshell, no extra shell
+# layer, the exit code propagates directly to the calling shell.
+#
+# The relaunch is skipped when:
+#   - NICE_RELAUNCHED=1 is set (already relaunch-ed — prevents recursion)
+#   - NICE_RELAUNCH=0 is set (explicit disable)
+#   - stdout is a TTY (interactive session — don't nice interactive runs)
+#   - `nice` is not available on the system
+#   - $0 is not a readable file (e.g. bash -c "..." or piped input)
+#
+# Configuration:
+#   NICE_RELAUNCH_DELTA — nice priority delta (default: 10, range 1-19)
+#     Higher = lower priority. 10 is a moderate delta that yields to
+#     interactive work without starving the script.
+#   NICE_RELAUNCH=0 — disable the relaunch entirely (escape hatch)
+#
+# Usage (at the TOP of a consuming script, before any other work):
+#   source "$SCRIPT_DIR/nice-relaunch.sh"
+#
+# Or when inlined via {{ include "includes/nice-relaunch.sh" . }}:
+#   The function is defined and called automatically — no extra call needed.
+#
+# The relaunch is performed inside a function so that `return` works correctly
+# in both contexts (sourced files and inlined code). If the relaunch fires,
+# `exec` replaces the process and the function never returns. If it skips,
+# the function returns and execution continues normally.
+#
+# Materialization: each consuming skill has a
+# `scripts/nice-relaunch.sh.tmpl` file containing a single include
+# directive that pulls in this file. The templater inlines this file at build
+# time. Scripts then `source` the materialized copy from the same `scripts/`
+# directory.
+#
+# Consumers:
+#   - code-quality-validation/scripts/quality-validator.sh
+#   - project-detection/scripts/detect-build-systems.sh
+#   - project-detection/scripts/detect-ci-cd-systems.sh
+#   - project-detection/scripts/detect-all-systems.sh
+#   - nixify/scripts/test-with-act.sh
+#   - nixify/scripts/detect-garnix-scope.sh
+#   - regression-test-mining/scripts/mine-bug-fixes.sh.tmpl
+#   - git-repository-management/scripts/git-collect.sh.tmpl
+#   - git-repository-management/scripts/git-archive.sh.tmpl
+#   - git-repository-management/scripts/git-push.sh.tmpl
+#   - execution/execute-upsert/scripts/land-on-env-dev.sh.tmpl
+
+nice_relaunch() {
+	# Guard against double-calling (prevents recursion if sourced twice)
+	if [[ -n "${_NICE_RELAUNCH_SOURCED:-}" ]]; then
+		return 0
+	fi
+	_NICE_RELAUNCH_SOURCED=1
+
+	# Skip if already relaunch-ed (prevents infinite recursion)
+	if [[ "${NICE_RELAUNCHED:-0}" -eq 1 ]]; then
+		return 0
+	fi
+
+	# Skip if explicitly disabled
+	if [[ "${NICE_RELAUNCH:-1}" -eq 0 ]]; then
+		return 0
+	fi
+
+	# Skip if stdout is a TTY (interactive session)
+	if [[ -t 1 ]]; then
+		return 0
+	fi
+
+	# Skip if nice is not available
+	if ! command -v nice >/dev/null 2>&1; then
+		return 0
+	fi
+
+	# Skip if $0 is not a readable file (e.g. bash -c, piped input, PATH lookup
+	# that resolved to a function). Without a real file to re-exec, the relaunch
+	# would fail.
+	if [[ ! -r "$0" ]]; then
+		return 0
+	fi
+
+	# Relaunch: replace the current process with a nice'd copy of itself.
+	# exec replaces the process in-place — no subshell, no extra layer.
+	# The exit code of the nice'd process propagates directly to the caller.
+	local _nice_delta="${NICE_RELAUNCH_DELTA:-10}"
+	exec nice -n "$_nice_delta" env NICE_RELAUNCHED=1 bash "$0" "$@"
+}
+
+# Execute the relaunch check immediately. If the relaunch fires, exec replaces
+# the process and this line never returns. If it skips, execution continues.
+nice_relaunch
 
 
 # Set RTK_AVAILABLE for the AVAILABLE_TOOLS output.
@@ -396,11 +447,6 @@ fi
 # This sets WRAPPER_DEVBOX_DISABLED=1 if devbox hangs, which wrapper_prefix()
 # and devbox_run() honor for the rest of the script.
 probe_devbox || true
-
-# Warm caches in the parent shell so $(git_cmd ...) subshells inherit them.
-# Without this, each $(git_cmd ...) call re-probes wrapper_prefix() (~1s each).
-wrapper_prefix >/dev/null
-rtk_prefix git >/dev/null 2>&1 || true
 
 # Set DEVBOX_AVAILABLE for the AVAILABLE_TOOLS output based on probe result.
 if [[ "${WRAPPER_DEVBOX_DISABLED:-0}" -eq 0 ]] && command -v devbox >/dev/null 2>&1; then
@@ -530,10 +576,17 @@ main() {
 	qc_tests=$(detect_tests)
 	qc_just=$(detect_just)
 
+	# Submodule status — detect submodules and report which have changes.
+	# The AI must process submodules FIRST (collect → commit → push per
+	# submodule) before committing the main repo, so the main repo's
+	# submodule pointer updates land after the submodule content is pushed.
+	local submodules
+	submodules=$(detect_submodules)
+
 	if [[ "$json_mode" -eq 1 ]]; then
 		emit_json "$repo_root" "$branch" "$upstream" "$recent_log" \
 			"$staged" "$unstaged" "$untracked" "$diff_stats" "$full_diff" \
-			"$qc_eslint" "$qc_prettier" "$qc_tests" "$qc_just"
+			"$qc_eslint" "$qc_prettier" "$qc_tests" "$qc_just" "$submodules"
 		return
 	fi
 
@@ -576,6 +629,11 @@ main() {
 	printf '%s\n' "$qc_tests"
 	if [[ -n "$qc_just" ]]; then
 		printf '%s\n' "$qc_just"
+	fi
+
+	if [[ -n "$submodules" ]]; then
+		echo "SUBMODULES:"
+		printf '%s\n' "$submodules"
 	fi
 
 	echo "=== COLLECTION_END ==="
@@ -748,6 +806,77 @@ detect_just() {
 	fi
 }
 
+# Detect git submodules and report which have uncommitted changes.
+# Emits one SUBMODULE line per submodule with changes, plus a summary.
+# The AI must process dirty submodules FIRST (run the full collect →
+# commit-batch → push workflow on each) before committing the main repo.
+#
+# Output format (text mode):
+#   SUBMODULE_COUNT:N
+#   SUBMODULE:<path>|<status-char>|<sha>|<description>
+#   ...
+#   SUBMODULES_WITH_CHANGES:M
+#
+# Status chars (from `git submodule status`):
+#   space  = no changes (clean, initialized)
+#   -      = not initialized
+#   +      = checked out SHA differs from .gitmodules
+#   U      = merge conflict
+#
+# Only submodules with changes (status != space) are reported as
+# SUBMODULE: lines. Clean submodules are counted but not listed.
+# Returns empty string (no output) when there are no submodules at all.
+detect_submodules() {
+	[[ -f ".gitmodules" ]] || return 0
+
+	local status_raw
+	status_raw=$(git_cmd submodule status 2>/dev/null || true)
+	[[ -z "$status_raw" ]] && return 0
+
+	local total=0 with_changes=0
+	local out=""
+	while IFS= read -r line; do
+		[[ -z "$line" ]] && continue
+		total=$((total + 1))
+		# Parse: <status-char><sha> <path> [(<description>)]
+		# The first character is the status indicator.
+		local status_char="${line:0:1}"
+		local rest="${line:1}"
+		# Extract SHA (first token after trimming leading space)
+		rest="${rest#"${rest%%[![:space:]]*}"}"
+		local sha="${rest%% *}"
+		local remainder="${rest#* }"
+		# Path is the next token; description (if any) is in parens
+		local sm_path desc=""
+		if [[ "$remainder" == *"("* ]]; then
+			sm_path="${remainder%% (*}"
+			desc="${remainder#*(}"
+			desc="${desc%)*}"
+		else
+			sm_path="$remainder"
+		fi
+		# Trim trailing whitespace from path
+		sm_path="${sm_path%"${sm_path##*[![:space:]]}"}"
+
+		if [[ "$status_char" != " " ]]; then
+			with_changes=$((with_changes + 1))
+			out+="SUBMODULE:${sm_path}|${status_char}|${sha}|${desc}"$'\n'
+		fi
+	done <<<"$status_raw"
+
+	if [[ "$total" -eq 0 ]]; then
+		return 0
+	fi
+
+	# Strip trailing newline from out
+	out="${out%$'\n'}"
+	printf 'SUBMODULE_COUNT:%d\n' "$total"
+	if [[ -n "$out" ]]; then
+		printf '%s\n' "$out"
+	fi
+	printf 'SUBMODULES_WITH_CHANGES:%d' "$with_changes"
+}
+
 # Escape a string for JSON output. Reads from stdin, writes escaped JSON
 # string to stdout (without surrounding quotes).
 #
@@ -788,7 +917,7 @@ emit_json() {
 	local repo_root="$1" branch="$2" upstream="$3" recent_log="$4" \
 		staged="$5" unstaged="$6" untracked="$7" diff_stats="$8" \
 		full_diff="$9" qc_eslint="${10}" qc_prettier="${11}" \
-		qc_tests="${12}" qc_just="${13}"
+		qc_tests="${12}" qc_just="${13}" submodules="${14}"
 
 	# Helper: emit a JSON array from a newline-delimited string.
 	# Uses jq for the whole array at once when available (1 process instead
@@ -869,6 +998,40 @@ emit_json() {
 	printf ',"tests":"%s"' "$tests_status"
 	printf ',"just":%s' "$just_arr"
 	printf '}'
+
+	# Submodules — parse the text format from detect_submodules into JSON.
+	# Text format: SUBMODULE_COUNT:N\nSUBMODULE:<path>|<status>|<sha>|<desc>\n...\nSUBMODULES_WITH_CHANGES:M
+	# JSON: {"count":N,"with_changes":M,"submodules":[{"path":"...","status":"...","sha":"...","description":"..."}]}
+	if [[ -n "$submodules" ]]; then
+		local sm_count=0 sm_with_changes=0
+		local sm_items=""
+		local sm_first=1
+		while IFS= read -r line; do
+			[[ -z "$line" ]] && continue
+			if [[ "$line" =~ ^SUBMODULE_COUNT:([0-9]+)$ ]]; then
+				sm_count="${BASH_REMATCH[1]}"
+			elif [[ "$line" =~ ^SUBMODULES_WITH_CHANGES:([0-9]+)$ ]]; then
+				sm_with_changes="${BASH_REMATCH[1]}"
+			elif [[ "$line" =~ ^SUBMODULE:(.*)$ ]]; then
+				local sm_raw="${BASH_REMATCH[1]}"
+				local sm_path sm_status sm_sha sm_desc
+				IFS='|' read -r sm_path sm_status sm_sha sm_desc <<<"$sm_raw"
+				if [[ "$sm_first" -eq 0 ]]; then sm_items+=","; fi
+				sm_first=0
+				sm_items+="{"
+				sm_items+="\"path\":\"$(printf '%s' "$sm_path" | json_escape)\""
+				sm_items+=",\"status\":\"$(printf '%s' "$sm_status" | json_escape)\""
+				sm_items+=",\"sha\":\"$(printf '%s' "$sm_sha" | json_escape)\""
+				sm_items+=",\"description\":\"$(printf '%s' "$sm_desc" | json_escape)\""
+				sm_items+="}"
+			fi
+		done <<<"$submodules"
+		printf ',"submodules":{"count":%d,"with_changes":%d,"submodules":[%s]}' \
+			"$sm_count" "$sm_with_changes" "$sm_items"
+	else
+		printf ',"submodules":{"count":0,"with_changes":0,"submodules":[]}'
+	fi
+
 	printf '}\n'
 }
 

@@ -1147,7 +1147,7 @@ generate_devbox_json() {
 
 	# Add language-specific packages based on detection
 	if echo "$DETECTED_BUILD_SYSTEMS" | grep -q "pnpm\|npm\|yarn\|bun"; then
-		language_packages='"nodejs_24", "pnpm", "typescript", "eslint", "prettier", "jest"'
+		language_packages='"nodejs_22", "pnpm", "typescript", "eslint", "prettier", "jest"'
 
 		# Add web-specific tooling for web applications
 		if [[ "$DETECTED_APP_TYPE" == "web" ]] || [[ "$DETECTED_PROJECT_TYPE" == *"frontend-web"* ]] || [[ "$DETECTED_PROJECT_TYPE" == *"fullstack-web"* ]]; then
@@ -1696,6 +1696,26 @@ adopt_project() {
 
 	# Create configuration files
 	create_config_files "$detected_characteristics"
+
+	# Install pre-commit hooks (submodule-integrity protection)
+	# Creates scripts/hooks/pre-commit in the target project and sets
+	# core.hooksPath=scripts/hooks. Idempotent — safe to re-run. The hook
+	# itself skips silently at runtime if .gitmodules doesn't exist or is
+	# empty, so it is safe to install unconditionally. Run after git init
+	# (if the repo is already initialized) so core.hooksPath gets set; if
+	# not a git repo yet, the hook file is still placed and the script
+	# advises re-running after git init. See INSTRUCTIONS.md step 18a.
+	local install_hooks_script="$SCRIPT_DIR/install-pre-commit-hooks.sh"
+	if [[ -x "$install_hooks_script" ]]; then
+		log_step "Installing pre-commit hooks (submodule-integrity protection)..."
+		if "$install_hooks_script" "$PROJECT_PATH"; then
+			log_info "✓ Pre-commit hooks installed"
+		else
+			log_warn "Pre-commit hook installation failed — continuing (not fatal)"
+		fi
+	else
+		log_warn "install-pre-commit-hooks.sh not found at: $install_hooks_script — skipping"
+	fi
 
 	# Run post-adoption health review
 	log_step "Running post-adoption repository health review"

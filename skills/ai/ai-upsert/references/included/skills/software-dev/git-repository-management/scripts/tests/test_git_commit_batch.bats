@@ -10,6 +10,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BATS_TEST_FILENAME:-$BASH_SOURCE[0]}")" && pwd)"
 BATCH="$SCRIPT_DIR/../git-commit-batch.sh"
 TEST_BASE="/tmp/skill-test/git-commit-batch"
 
+# Disable worktree isolation guard for tests — test repos are not linked
+# worktrees. The guard is also skipped in --dry-run mode, but non-dry-run
+# tests need this override to commit in the test repo.
+export SKILL_ALLOW_MAIN_WRITE=1
+export NICE_RELAUNCH=0
+
 assert_contains() {
     local needle="$1" haystack="$2"
     [[ "$haystack" == *"$needle"* ]] || {

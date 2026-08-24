@@ -26,4 +26,4 @@ Build container images for mixed-architecture fleets (x86_64 + aarch64). Three b
 
 - **Full skill**: [`skills/software-dev/container-image-build/SKILL.md`](skills/software-dev/container-image-build/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-21T01:09:20Z
+- **Generated**: 2026-08-24T11:16:15Z

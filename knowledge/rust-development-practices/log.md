@@ -1,5 +1,20 @@
 # Directory Update Log
 
+## 2026-08-20
+
+* **Update**: Updated [security-auditing.md](security-auditing.md) with
+  cargo-outdated drift detection, shared devbox package provisioning
+  (`cargo-audit` + `cargo-outdated` via `_shared/partials/devbox-partials/
+  devbox-packages-rust.jinja`), and the 6-step validation pipeline
+  (fmt → clippy → test → doc → audit → outdated).
+* **Update**: Updated [quality-gates.md](quality-gates.md) with the full
+  `just validate` pipeline, shared CI workflow (5 jobs: test, lint, build,
+  security, outdated-check), and weekly dependency update workflow
+  (cargo update + audit + build + test → PR via peter-evans/create-pull-request).
+* **Source**: Added cargo-audit-wiring feature PRD
+  (`internal-docs/feature/todo/cargo-audit-wiring/feat-202608201814-cargo-audit-wiring.md`)
+  as a source on security-auditing and quality-gates.
+
 ## 2026-08-05
 
 * **Ingest**: Authored 7 new concept pages sourced from the project-lint

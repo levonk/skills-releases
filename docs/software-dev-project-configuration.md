@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status: ready · Version: 2.0.0
+> Category: **software-dev** · Status: ready · Version: 2.1.0
 
 Configure existing projects with compatible preferences without overwriting established workflows. Use when adding missing tooling to existing projects, making open source projects compatible with your environment, or enhancing projects non-disruptively. Triggers on 'configure project', 'add linting', 'add CI', 'add devbox', 'compatible config', or 'non-destructive setup'.
 
@@ -13,7 +13,7 @@ Configure existing projects with compatible preferences without overwriting esta
 |-------|-------|
 | Name | `project-configuration` |
 | Category | `software-dev` |
-| Version | `2.0.0` |
+| Version | `2.1.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -36,4 +36,4 @@ Configure existing projects with compatible preferences without overwriting esta
 
 - **Full skill**: [`skills/software-dev/project-configuration/SKILL.md`](skills/software-dev/project-configuration/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-21T01:09:20Z
+- **Generated**: 2026-08-24T11:16:15Z

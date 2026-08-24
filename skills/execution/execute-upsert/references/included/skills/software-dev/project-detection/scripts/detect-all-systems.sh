@@ -30,6 +30,8 @@ log_step() {
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+source "$SCRIPT_DIR/nice-relaunch.sh"
+
 # Source detection scripts
 source "$SCRIPT_DIR/detect-build-systems.sh"
 source "$SCRIPT_DIR/detect-ci-cd-systems.sh"

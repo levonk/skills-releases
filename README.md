@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `c12e96573a50ef1f0abf2fcb3113ad3a1146e009` · Branch: `main` · Generated: 2026-08-21T01:09:20Z
+> Commit: `44dbb19108b86c550d6dc4db40f2c750cd1bfbd5` · Branch: `main` · Generated: 2026-08-24T11:16:15Z
 
 ## Overview
 
@@ -55,6 +55,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | diagram-upsert | Create and embed diagrams in technical documentation (ADR, design docs, README, knowledge bundles... | [Synopsis](content-diagram-upsert.md) |
+| founder-content-system | Set up and operate a complete founder content system for a single founder or executive — resear... | [Synopsis](content-founder-content-system.md) |
 | youtube-content-analysis | Extract and analyze YouTube video transcripts and metadata. Use when needing to fetch video trans... | [Synopsis](content-youtube.md) |
 
 ### execution

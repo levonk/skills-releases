@@ -3,9 +3,9 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **commerce** · Status: ready · Version: 1.1.0
+> Category: **commerce** · Status: ready · Version: 1.2.0
 
-Execute the final purchase of a product or hiring of a service after research is complete. Use when the user knows what to buy/hire and at what price, and needs help with: (1) negotiation on behalf of the user for products or services that require it (luxury watches, cars, used goods, bulk purchases, contractors, service providers) — always disclosing agent status, (2) stock monitoring and rare-opportunity alerts for out-of-stock or scarce items, (3) auto-purchase execution when the user has pre-authorized conditions using their payment methods (credit cards and gift cards), (4) purchase notification with exact instructions when auto-buy is not enabled, (5) service provider booking with scope-of-work verification, deposit negotiation, and payment protection, (6) in-person handoff verification for used lockable devices (phones, computers, tablets, watches) — erase-and-reset test, Activation Lock/MDM/ firmware/BitLocker/carrier blacklist checks, and original-receipt retention for lock removal, with do-with-seller vs do-later steps. This skill acts as the final execution layer of the personal shopper pipeline.
+Execute the final purchase of a product or hiring of a service after research is complete. Use when the user knows what to buy/hire and at what price, and needs help with: (1) negotiation on behalf of the user for products or services that require it (luxury watches, cars, used goods, bulk purchases, contractors, service providers) — always disclosing agent status, (2) stock monitoring and rare-opportunity alerts for out-of-stock or scarce items, (3) auto-purchase execution when the user has pre-authorized conditions using their payment methods (credit cards and gift cards), (4) purchase notification with exact instructions when auto-buy is not enabled, (5) service provider booking with scope-of-work verification, deposit negotiation, and payment protection, (6) in-person handoff verification for used lockable devices (phones, computers, tablets, watches) — erase-and-reset test, Activation Lock/MDM/ firmware/BitLocker/carrier blacklist checks, and original-receipt retention for lock removal, with do-with-seller vs do-later steps. (7) URL verification and tracking — every purchase notification and stock alert must include a verified direct URL (re-verified immediately before sending, since listings expire and prices change), and the tracking page under `${XDG_DATA_HOME:-$HOME/.local/share}/shopping/` is updated with final status (purchased / abandoned / monitoring) so the user has a permanent record of the outcome. This skill acts as the final execution layer of the personal shopper pipeline.
 
 ## Metadata
 
@@ -13,7 +13,7 @@ Execute the final purchase of a product or hiring of a service after research is
 |-------|-------|
 | Name | `shopping-acquisition` |
 | Category | `commerce` |
-| Version | `1.1.0` |
+| Version | `1.2.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -34,4 +34,4 @@ Execute the final purchase of a product or hiring of a service after research is
 
 - **Full skill**: [`skills/commerce/acquisition/SKILL.md`](skills/commerce/acquisition/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-21T01:09:20Z
+- **Generated**: 2026-08-24T11:16:15Z

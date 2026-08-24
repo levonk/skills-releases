@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status: ready · Version: 2.3.0
+> Category: **software-dev** · Status: ready · Version: 2.5.0
 
 Adopt and establish best practices for projects by overwriting existing preferences with standardized developer UX flow. Use when onboarding a new project to standard tooling, setting up devbox/just/direnv, establishing CI/CD, or applying ADR-compliant project structure. Triggers on 'adopt project', 'set up dev environment', 'standardize project', 'apply best practices', or 'project adoption'.
 
@@ -13,7 +13,7 @@ Adopt and establish best practices for projects by overwriting existing preferen
 |-------|-------|
 | Name | `project-adopter` |
 | Category | `software-dev` |
-| Version | `2.3.0` |
+| Version | `2.5.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -44,4 +44,4 @@ Adopt and establish best practices for projects by overwriting existing preferen
 
 - **Full skill**: [`skills/software-dev/project-adopter/SKILL.md`](skills/software-dev/project-adopter/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-21T01:09:20Z
+- **Generated**: 2026-08-24T11:16:15Z

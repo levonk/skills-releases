@@ -1,5 +1,125 @@
 # Directory Update Log
 
+## 2026-08-23
+
+* **Update**: Updated
+  [volume-ownership-init.md](volume-ownership-init.md) to reflect the
+  implemented `localnet-volume-init` utility container and reusable Ansible
+  role. The "Future Enhancement: Parameterized Utility Container" section
+  was rewritten as "Implemented: Parameterized Utility Container + Reusable
+  Ansible Role" — documenting the actual image (alpine:3.20 + findutils +
+  tar, ENTRYPOINT `init-volume`, standalone `verify-volume` entrypoint for
+  Phase 2), the exit code contract (0=ok, 1=param, 2=chown, 3=persistence,
+  4=in-container), the `DATA_DIR` env var for custom mount paths, and the
+  reusable Ansible role (`include_role: name: localnet-volume-init` with a
+  `volume_init_volumes` list of `{name, mount, uid, gid, mode}` specs and
+  intelligent defaults: `/data`, `1000`, `1000`, `755`). Added a
+  "Preferred form" callout to the "Ansible task pair (standard form)"
+  section directing agents to use `include_role` when the utility container
+  is available, keeping the inline `alpine sh -c` form as the mandated
+  baseline. Added a "Reusable role (preferred when available)" subsection
+  to the Implementation Checklist. Added a "When to use the utility
+  container vs the inline alpine pattern" decision table. Updated
+  frontmatter `description` and [index.md](index.md) entry to mention the
+  implemented container and role. The `search-hister` role in the `infrahub`
+  repo was refactored from hand-stitched inline tasks to `include_role` as
+  the validation case.
+
+## 2026-08-23 (earlier)
+
+* **Ingest**: Created a new concept page
+  [volume-ownership-init.md](volume-ownership-init.md) covering the
+  three-phase Docker volume ownership initialization pattern for non-root
+  containers, sourced from
+  [ADR-20260822001](https://github.com/levonk/infrahub/blob/main/shared/active/08-docs/adr/adr-20260822001-volume-ownership-init-pattern.md)
+  (Docker Volume Ownership Init Pattern for Non-Root Containers, accepted
+  2026-08-22). The page documents practices not previously in the bundle:
+  1. **Three-phase volume init** — chown + in-container verify (Phase 1),
+     then fresh-container verify (Phase 2), then service container starts
+     (Phase 3). The two verification layers catch different failure classes:
+     in-container verify catches overlay/filesystem issues where `chown`
+     exits 0 but the VFS layer does not reflect the change; fresh-container
+     verify catches Docker Desktop WSL2 volume driver persistence failures
+     where the chown took effect inside the Phase 1 container's mount
+     namespace but did not persist to the volume's backing store.
+  2. **Diagnostic matrix** — a four-row table mapping (Phase 1 chown rc,
+     Phase 1 in-container verify, Phase 2 fresh-container verify) to
+     diagnosis and action. Without the in-container verify, the persistence
+     failure is indistinguishable from "chown ran but we don't know if it
+     worked" — the blind spot that caused the Hister crash loop documented
+     in the ADR.
+  3. **Why alpine for the throwaway init container** — size (~7 MB, cached
+     on every host), speed (<1 s start), universality (multi-arch per the
+     fleet mandate), sufficiency (`sh`/`chown`/`chmod`/`stat`/`test`), and
+     no registry dependency (avoids chicken-and-egg with a local registry
+     that might itself have a volume ownership problem).
+  4. **Standard Ansible task pair** — the canonical two-task form with
+     `delegate_to: localhost` + `DOCKER_HOST` via SSH for Windows Docker
+     Desktop hosts (where `community.docker` modules cannot run because they
+     import `grp`, Unix-only), `changed_when: false` for idempotency, and
+     `failed_when: <register>.rc != 0` on the Phase 2 verify.
+  5. **Signal to upstream image authors** — if Phase 1 in-container verify
+     passes but Phase 2 fresh-container verify fails and the service
+     crash-loops, the image should be fixed upstream to start as root,
+     `chown` the data directory in its entrypoint, then drop to the non-root
+     user via `gosu`/`su-exec` (the Postgres/MySQL/Redis pattern), rather
+     than relying on infrastructure to pre-fix the volume.
+  6. **Recovery procedures** — separate recovery paths for Phase 1 failure
+     (overlay/fs issue: check read-only mount, storage driver, NFS) vs
+     Phase 2 failure (persistence: stop crash-looping containers, verbose
+     chown, recreate volume, tar-based backup/restore for non-disposable
+     data).
+  7. **What does NOT work** — five approaches that fail: `ansible.builtin
+     file` with owner/group (no direct filesystem access on Docker Desktop
+     for Windows), `docker volume create --opt` (no ownership option),
+     running as root (violates non-root policy), `userns-remap` (not
+     supported on Docker Desktop for Windows; on Linux maps UID 1000 to
+     100000+ so the volume is still not owned by the mapped UID), and
+     entrypoint self-fix scripts (only work if the image starts as root).
+  8. **Future enhancement: parameterized utility container** — a proposed
+     `localnet-volume-init` image built from a local base that adds
+     parameter validation, explicit exit codes (1=param, 2=chown, 3=
+     persistence, 4=in-container), logging, and a standalone verify
+     entrypoint. Documented as a future enhancement, not the baseline —
+     the `alpine` + inline script pattern is the mandated baseline until a
+     third role needs volume init.
+  9. **Alternative pattern: entrypoint wrapper image** — a thin wrapper
+     image that `FROM`s the upstream image, installs `su-exec` (Alpine) or
+     `gosu` (Debian), overrides only `ENTRYPOINT` (inheriting `CMD` from
+     upstream so auto-start and `docker restart` work), and injects an
+     entrypoint script that chowns the data directory, verifies the chown
+     in-container, then drops to the non-root user via `su-exec` and execs
+     the original entrypoint. This makes the container self-healing — it
+     fixes its own volume on every start, not just when Ansible runs. The
+     three-phase init remains the mandatory baseline; the wrapper is an
+     addition for services that may be restarted without Ansible, have
+     multiple volumes, or are deployed to hosts where Ansible doesn't run
+     frequently. Includes: a decision table (wrapper vs init), the
+     ENTRYPOINT-vs-CMD-vs-runtime-override analysis (only ENTRYPOINT
+     override preserves auto-start), the wrapper script with in-container
+     verify before privilege drop, security analysis of the transient root
+     context (scoped to chown only, ~0.1s duration, still uses
+     no-new-privileges and cap-drop ALL), and when NOT to use the wrapper
+     (upstream already does chown-then-drop, no volumes, runs as root by
+     design, non-Alpine without gosu).
+  Added 3 sources: the ADR itself, Docker Storage Volumes docs (default
+  root ownership, driver semantics), and Docker Engine userns-remap docs
+  (why userns-remap does not solve volume ownership). Cross-linked to
+  [container-runtime-hardening](container-runtime-hardening.md) (non-root
+  execution is WHY this is needed),
+  [container-runtime-essentials](container-runtime-essentials.md) (sidecar
+  shared volumes need ownership
+  init; multi-arch mandate ensures alpine is available),
+  [compose-service-dependency-ordering](compose-service-dependency-ordering.md)
+  (init-container pattern with `condition: service_completed_successfully`),
+  [nx-monorepo-docker-patterns](nx-monorepo-docker-patterns.md) (shared
+  pnpm-store and nx-cache volumes need ownership init when sidecars run as
+  non-root cuser), and [base-image-selection](base-image-selection.md)
+  (why alpine is right for infra throwaway containers but wrong for app
+  Dockerfiles). Updated [overview.md](overview.md.tmpl) lifecycle table,
+  scope, description, and tags, and [index.md](index.md) with the new
+  entry.
+
 ## 2026-08-02
 
 * **Ingest**: Created a new concept page
@@ -37,7 +157,7 @@
      breaks reproducibility, multi-arch builds, Docker build contexts, CI
      shallow clones, GitOps workflows, and cross-platform consistency. Notes
      that Git has no built-in keyword identifiers (the `ident` attribute
-     expands `$Id: fe1e702656057f214822e4dc2e67596dcd0836d8 $` to the blob SHA-1, not commit/tag/semver).
+     expands `$Id: 53efe2ec27cb36c555a9250ca8d0387f7dea85fa $` to the blob SHA-1, not commit/tag/semver).
   Added 4 sources: the Copilot share, gitattributes smudge/clean docs, OCI
   image-spec annotations, and docker buildx multi-platform docs. Cross-linked
   to [pin-image-digests](pin-image-digests.md) (input pinning vs output

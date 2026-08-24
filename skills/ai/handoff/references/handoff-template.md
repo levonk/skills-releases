@@ -6,6 +6,18 @@ Handoff documents use a two-stage lifecycle (todo → archive) per the shared
 `work-lifecycle` include. The include supports **audience variants** (agent
 vs human) — see its "Audience Variants" section for routing criteria.
 
+> **Branch policy: handoffs commit to `main`, not feature branches.** Handoff
+> documents are operational instructions (control flow) that tell the next
+> agent to invoke execute-upsert, which creates feature branches for the work.
+> They must be on the default branch (`main`) so the next agent checking out
+> `main` can find them. Do NOT create a feature branch for the handoff document
+> itself — the work described BY the handoff goes through execute-upsert onto
+> feature branches; the handoff document itself does not. This applies to both
+> the capture commit (creating the handoff) and the archive commit (`git mv`
+> todo/ → archive/). Putting a handoff on a feature branch is a chicken-and-egg
+> failure: the handoff tells you to invoke execute-upsert to create branches,
+> but the handoff itself must already be on `main` to be found.
+
 ### Agent Handoffs (default)
 
 | Stage | Path | When |
@@ -109,22 +121,6 @@ any path you touch.
 > progressive-disclosure root to read — proceed without project-level agent
 > conventions."
 
-## Skill Contract
-
-If this work was started under a skill (e.g. `execute-upsert`, `ai-upsert`),
-the receiving session MUST follow that skill's `INSTRUCTIONS.md` — including
-its phase workflow, commit steps, and Definition of Done checklist. The skill
-name and phase pin the binding contract; the summary does not reproduce it.
-
-**Skill**: {skill-name}, Phase {N} ({phase name}) — story: "{story title}"
-**Binding**: Read `~/.agents/skills/{skill-name}/INSTRUCTIONS.md` before
-declaring work done. Follow its phase workflow and DoD checklist. Do not
-invent constraints that conflict with the skill's contract.
-
-If no skill was active, replace this section with: "No skill contract — this
-work was not started under a skill. Apply the project's AGENTS.md and standard
-development conventions."
-
 ## Project Overview
 
 ### Objective
@@ -177,23 +173,19 @@ works. Each line is one task; do not collapse multiple tasks into one line.
    working tree, no running process, no recent edit), demote it back to `[ ]`.
    A stale `[~]` is worse than an unstarted `[ ]` because it hides available
    work from the next agent.
-2. **Start the next available task.** Pick the first `[ ]` task in priority
-   order. Mark it `[~]` immediately before starting work on it.
-3. **Prefer subagents for parallel work.** When two or more `[ ]` tasks are
-   independent (no shared file writes, no ordering dependency), launch them as
-   parallel `run_subagent` calls rather than working them sequentially — this
-   is the expected mode of operation, not an optional optimization. Mark each
-   `[~]` before launching so concurrent agents see them as claimed. Do not
-   parallelize tasks that touch the same files or depend on each other's
-   output — run those sequentially.
-4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the task's
+2. **Defer to execute-upsert for execution.** Invoke execute-upsert with the
+   Execution Plan — it handles worktree creation, subagent dispatch, code
+   review, and PR landing. Do not hand-roll commits, branches, PRs, or test
+   runs outside execute-upsert — that bypasses the worktree-per-story
+   discipline and the binding contract.
+3. **Mark done only when verified.** Flip `[~]` → `[x]` only after the task's
    Definition of Done checks pass (see below). Never mark `[x]` on intent
    alone.
-5. **Record blockers inline.** When a task cannot proceed, mark it `[!]` and
+4. **Record blockers inline.** When a task cannot proceed, mark it `[!]` and
    append the blocker in parentheses on the same line, e.g.
    `- [!] {task blocked (waiting on upstream API access)}`. Move on to the
    next `[ ]` task — do not stall the whole list on one blocker.
-6. **Update the list as work reveals new tasks.** Append newly discovered
+5. **Update the list as work reveals new tasks.** Append newly discovered
    tasks as `[ ]` lines in priority order. Do not silently delete tasks; if a
    task is no longer relevant, mark it `[x]` with a note
    (`- [x] {task} (obsolete: reason)`).
@@ -231,6 +223,35 @@ If any of these are true, the work is NOT complete:
 - `just test` passes but the deliverable doesn't match the handoff's
   described outcome → the wrong thing was built
 
+## Execution Plan
+
+Every task below is executed via the `execute-upsert` skill, which enforces
+worktree-per-story, checkpoint commits, story branches, PRs, and clean-tree-
+before-stop uniformly. The receiving session invokes execute-upsert with this
+plan; it does not hand-roll the execution discipline.
+
+**Story type** (`trivial` | `standard` | `research`): a forward-compatible tag.
+Today execute-upsert treats all three identically — same worktree, branch, PR,
+clean-tree discipline. The type is stored as metadata. If divergence becomes
+necessary later, the behavior change is one `case` statement in
+`execution-gate.sh` — no handoff documents need re-editing.
+
+| Story slug | Type | Base SHA | DoD |
+|------------|------|----------|-----|
+| {story-slug-1} | {type} | {base-sha} | {per-story DoD checklist} |
+| {story-slug-2} | {type} | {base-sha} | {per-story DoD checklist} |
+
+**Columns:**
+- **Story slug**: kebab-case, unique within this handoff. execute-upsert uses
+  it as the worktree directory name and story branch name suffix.
+- **Type**: one of `trivial` (1-line fix, doc typo), `standard` (feature,
+  bugfix, refactor), or `research` (ADR, spike, investigation memo). All
+  treated identically today — the tag is for future divergence.
+- **Base SHA**: the commit SHA the story branches from. Usually the handoff's
+  Git State commit SHA. For sequential stories, re-derive after each lands.
+- **DoD**: the per-story Definition of Done checklist, verbatim. This is what
+  execute-upsert evaluates against — not a global DoD.
+
 ## Open Questions/Blockers
 - [Question 1] - [Impact if unresolved]
 - [Question 2] - [Impact if unresolved]
@@ -239,8 +260,10 @@ If any of these are true, the work is NOT complete:
 - [Things to avoid or approaches rejected]
 
 ## Suggested Skills
-- [skill-name] - [why this skill should be invoked]
-- [skill-name] - [why this skill should be invoked]
+- execute-upsert - Always invoked to execute the handoff's Execution Plan.
+  Enforces worktree-per-story, checkpoint commits, story branches, PRs, and
+  clean-tree-before-stop uniformly across all task types.
+- [skill-name] - [additional skill if needed for specific task]
 
 ## Additional Context
 [Any other information crucial for continuation]
@@ -249,9 +272,8 @@ If any of these are true, the work is NOT complete:
 ## Human Handoff Template
 
 Use this template when a task is blocked on human-only action (API keys,
-access, decisions, approvals). The document is **self-contained** — a human
-should be able to read just this file (or the GitHub issue created from it)
-and understand the full picture without reading the agent handoff. See the
+access, decisions, approvals). The reader is a person, not a session-
+restoration target — keep it short and action-oriented. See the
 `work-lifecycle` include's "Audience Variants" section for routing criteria.
 
 ```markdown
@@ -260,23 +282,9 @@ date:
   created: "YYYY-MM-DD"
   completed: ""
   last-activity: "YYYY-MM-DD"
-github_issue: 42
 ---
 
 # {Action needed — one line, e.g., "Provide OpenAI API key for eval runner"}
-
-**Project Context:**
-- Project: {project name}
-- What it is: {1-2 sentence description of the project}
-
-**Feature Context:**
-- Feature: {what feature or work was being attempted}
-- Why it matters: {the goal — why this work is being done}
-
-**Current State:**
-- Done: {completed items, or "none yet"}
-- In progress: {in-progress items}
-- Blocked: {where this blocker sits in the overall work}
 
 **What I need from you:**
 1. {specific action step}
@@ -291,52 +299,19 @@ what is missing and why the agent cannot generate or obtain it}
 
 **Context:**
 - Agent handoff: `.agents/handoffs/todo/{filename}.md`
-- Run log: `.agents/log/{filename}.md` (if applicable)
 - Relevant files: {paths}
+- Run log: `.agents/log/{filename}.md` (if applicable)
 
 **How to unblock me:** {what to do after the action is taken — e.g.,
 "re-run the ai-upsert skill" or "tell me the API key is in `.env`"}
 ```
 
-**GitHub issue creation:** after writing the file, if `gh` is available and
-the repo has a GitHub remote, create a GitHub issue from the file content.
-The issue is the visibility layer — it shows up in the issue list and stays
-open until the human resolves the blocker. The file is always created first
-(crash safety); the issue is conditional.
-
-```bash
-# Create the label if it doesn't exist
-gh label create "human-handoff" \
-  --description "Action item requiring human input (API keys, access, decisions, approvals)" \
-  --color "BFD4F2" 2>/dev/null || true
-
-# Create the issue from the file content (use --body-file, never --body)
-gh issue create \
-  --title "{action needed — one line}" \
-  --body-file ".agents/handoffs/human/todo/{TIMESTAMP}-{SLUG}.md" \
-  --label "human-handoff"
-```
-
-Record the issue number in the file's frontmatter (`github_issue: 42`). If
-`gh` is unavailable or no remote exists, skip issue creation — the file
-alone is durable. See the `gh-posting-guard` include for why `--body-file`
-is mandatory.
-
-**Human handoff DoD** (two items):
+**Human handoff DoD** (single item):
 - [ ] The blocker was resolved and the requesting task in the agent handoff
   is marked `[x]`
-- [ ] The GitHub issue (if created) is closed
 
 **Human handoff archive:** when the DoD is met, `git mv` from
 `human/todo/` to `human/archive/YYYY/MM/` per the `work-lifecycle` include.
-If a GitHub issue was created, verify it is closed before archiving.
-
-**Archive trigger — reconciliation:** the AI does not poll for issue closure.
-The next ai-upsert run reconciles human handoffs in Phase 0: it scans
-`human/todo/` for files with `github_issue` frontmatter, checks each issue's
-state via `gh issue view {number} --json state`, and archives any whose
-issues are `CLOSED`. This piggybacks on the existing run lifecycle — no
-separate process needed.
 
 ## Extended Example: Complex Project Handoff
 
@@ -397,22 +372,6 @@ any path you touch.
 > progressive-disclosure root to read — proceed without project-level agent
 > conventions."
 
-## Skill Contract
-
-If this work was started under a skill (e.g. `execute-upsert`, `ai-upsert`),
-the receiving session MUST follow that skill's `INSTRUCTIONS.md` — including
-its phase workflow, commit steps, and Definition of Done checklist. The skill
-name and phase pin the binding contract; the summary does not reproduce it.
-
-**Skill**: {skill-name}, Phase {N} ({phase name}) — story: "{story title}"
-**Binding**: Read `~/.agents/skills/{skill-name}/INSTRUCTIONS.md` before
-declaring work done. Follow its phase workflow and DoD checklist. Do not
-invent constraints that conflict with the skill's contract.
-
-If no skill was active, replace this section with: "No skill contract — this
-work was not started under a skill. Apply the project's AGENTS.md and standard
-development conventions."
-
 ## Target Architecture
 
 [Architecture diagram or description]
@@ -455,18 +414,15 @@ works. Each line is one task; do not collapse multiple tasks into one line.
 1. **Verify in-progress marks.** Re-check every `[~]` task. If work is not
    actually underway, demote it back to `[ ]`. A stale `[~]` hides available
    work from the next agent.
-2. **Start the next available task.** Pick the first `[ ]` task in priority
-   order. Mark it `[~]` before starting.
-3. **Prefer subagents for parallel work.** Launch independent `[ ]` tasks as
-   parallel `run_subagent` calls rather than working them sequentially — this
-   is the expected mode of operation, not an optional optimization. Mark each
-   `[~]` before launching. Do not parallelize tasks that share files or
-   depend on each other's output.
-4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the
+2. **Defer to execute-upsert for execution.** Invoke execute-upsert with the
+   Execution Plan — it handles worktree creation, subagent dispatch, code
+   review, and PR landing. Do not hand-roll commits, branches, PRs, or test
+   runs outside execute-upsert.
+3. **Mark done only when verified.** Flip `[~]` → `[x]` only after the
    Definition of Done checks pass (see below).
-5. **Record blockers inline.** Mark blocked tasks `[!]` with the blocker in
+4. **Record blockers inline.** Mark blocked tasks `[!]` with the blocker in
    parentheses. Move on to the next `[ ]` task.
-6. **Update the list as work reveals new tasks.** Append new tasks as `[ ]` in
+5. **Update the list as work reveals new tasks.** Append new tasks as `[ ]` in
    priority order. Mark obsolete tasks `[x]` with a note rather than deleting.
 
 ## Definition of Done
@@ -498,6 +454,18 @@ If any of these are true, the work is NOT complete:
 - Items marked `[x]` without verification → re-verify each `[x]` item
 - `just test` passes but the deliverable doesn't match the handoff's
   described outcome → the wrong thing was built
+
+## Execution Plan
+
+Every task below is executed via the `execute-upsert` skill, which enforces
+worktree-per-story, checkpoint commits, story branches, PRs, and clean-tree-
+before-stop uniformly. The receiving session invokes execute-upsert with this
+plan; it does not hand-roll the execution discipline.
+
+| Story slug | Type | Base SHA | DoD |
+|------------|------|----------|-----|
+| {story-slug-1} | {type} | {base-sha} | {per-story DoD checklist} |
+| {story-slug-2} | {type} | {base-sha} | {per-story DoD checklist} |
 
 ## Files Modified This Session
 

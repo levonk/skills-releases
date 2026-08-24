@@ -4,6 +4,7 @@
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/nice-relaunch.sh"
 source "$SCRIPT_DIR/arg-parse-helpers.sh"
 
 # Build system detection patterns

@@ -35,9 +35,6 @@ just validate
 ✅ **DO**: Add "Do NOT trigger on..." clause to descriptions
 ✅ **DO**: Wire in `trigger-guard` for pushy descriptions
 ✅ **DO**: Use `git mv` when moving skill directories
-✅ **DO**: Bundle shell scripts from the dotfiles submodule via
-  `{{{ includeChezmoi "vendor/dotfiles/path/to/file" . }}}` in a `.tmpl`
-  wrapper — never copy submodule files into the source tree manually
 ✅ **DO**: Materialize shared scripts and knowledge bundles a skill depends on
   at build time — `scripts/resolve-reference.sh.tmpl` containing
   `{{{ include "includes/resolve-reference.sh" . }}}` and

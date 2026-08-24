@@ -9,6 +9,7 @@ set -euo pipefail
 SCRIPT_NAME="$(basename "$0")"
 # shellcheck disable=SC2034 # Redefined in git hook section below
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/nice-relaunch.sh"
 source "$SCRIPT_DIR/arg-parse-helpers.sh"
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
 

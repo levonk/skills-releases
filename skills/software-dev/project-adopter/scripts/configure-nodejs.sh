@@ -119,7 +119,7 @@ catalog:
   "@testing-library/react": ^16.0.1
   "@testing-library/jest-dom": ^6.6.3
   "@testing-library/user-event": ^14.5.2
-  "@types/node": ^24.0.0
+  "@types/node": ^22.9.0
   "@types/react": ^18.3.12
   "@types/react-dom": ^18.3.1
   autoprefixer: ^10.4.20
@@ -582,17 +582,16 @@ add_standardize_package_json_deps() {
 			;;
 		esac
 
-		# Add engines configuration (from boilerplate). Pin pnpm to 10+ for
-		# build-script blocking (pnpm 10+ blocks lifecycle scripts by default);
-		# node to an active LTS major. "*" is forbidden — it
+		# Add engines configuration (from boilerplate). Pin pnpm to 9.5+ for
+		# catalog: support; node to an active LTS major. "*" is forbidden — it
 		# resolves to the latest registry release, not "inherit from root".
 		yq eval '.devEngines.runtime.name = "node"' "$project_path/package.json" -i
-		yq eval '.devEngines.runtime.version = ">=24.0.0"' "$project_path/package.json" -i
+		yq eval '.devEngines.runtime.version = ">=20.0.0"' "$project_path/package.json" -i
 		yq eval '.devEngines.packageManager.name = "pnpm"' "$project_path/package.json" -i
-		yq eval '.devEngines.packageManager.version = ">=10.0.0"' "$project_path/package.json" -i
-		yq eval '.engines.node = ">=24.0.0"' "$project_path/package.json" -i
-		yq eval '.engines.pnpm = ">=10.0.0"' "$project_path/package.json" -i
-		yq eval '.packageManager = "pnpm@11.21.0"' "$project_path/package.json" -i
+		yq eval '.devEngines.packageManager.version = ">=9.5.0"' "$project_path/package.json" -i
+		yq eval '.engines.node = ">=20.0.0"' "$project_path/package.json" -i
+		yq eval '.engines.pnpm = ">=9.5.0"' "$project_path/package.json" -i
+		yq eval '.packageManager = "pnpm@9.15.0"' "$project_path/package.json" -i
 		yq eval '.modeline = "/* vim: set ft=json: */"' "$project_path/package.json" -i
 
 		log_info "✓ Added standardize dependencies to package.json"
@@ -689,18 +688,18 @@ create_package_json() {
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": ">=24.0.0"
+      "version": ">=20.0.0"
     },
     "packageManager": {
       "name": "pnpm",
-      "version": ">=10.0.0"
+      "version": ">=9.5.0"
     }
   },
   "engines": {
-    "node": ">=24.0.0",
-    "pnpm": ">=10.0.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.5.0"
   },
-  "packageManager": "pnpm@11.21.0",
+  "packageManager": "pnpm@9.15.0",
   "modeline": "/* vim: set ft=json: */"
 }
 EOF

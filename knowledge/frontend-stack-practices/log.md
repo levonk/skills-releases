@@ -1,5 +1,37 @@
 # Directory Update Log
 
+## 2026-08-21
+
+* **Ingest**: Added three new concept pages covering cross-platform client
+  image loading libraries, researched via parallel subagents against the
+  Medium article
+  "Android Image Loading Libraries: Glide, Picasso, Fresco, and Coil" (April
+  2024) and verified against 2026 GitHub/repository state.
+  - [android-image-loading.md](android-image-loading.md) — Coil 3.5.0 as the
+    default for Kotlin/Compose, Glide 5.0.9 for legacy/image-heavy, Fresco 3.7.0
+    for memory-intensive feeds, Picasso deprecated by Square. Covers Compose
+    Multiplatform options (Landscapist, Sketch) and a performance comparison
+    table.
+  - [ios-image-loading.md](ios-image-loading.md) — Kingfisher 8.10.0 as the
+    default for Swift/SwiftUI, Nuke for performance-critical/memory-constrained
+    apps, SDWebImage 5.21.7 for legacy ObjC or broad platform support.
+  - [cross-platform-image-loading.md](cross-platform-image-loading.md) — Web
+    (native `loading="lazy"` + `next/image` + sharp), Flutter
+    (`cached_network_image_ce` replacing unmaintained original), React Native
+    (`expo-image` replacing `react-native-fast-image`), Desktop (egui_extras,
+    tauri-plugin-redb-cache, Electron custom pattern).
+  - Updated [index.md](index.md) to list the three new concepts and broaden the
+    bundle description to include cross-platform client image loading.
+  - Updated [overview.md.tmpl](overview.md.tmpl): added an `Images` phase to the
+    stack pipeline and phase table (three rows), broadened the scope statement
+    and description to include image loading, added new sources to frontmatter,
+    and updated `knowledge-basis` and `last-used` to 2026-08-21.
+  - Added six rows to the canonical
+    [tech-stack-table.md.tmpl](https://github.com/levonk/skills-releases/blob/main/includes/tech-stack-table.md.tmpl) for
+    image loading choices (Android, iOS, Flutter, React Native, Web, Tauri)
+    and three "considered and rejected" entries (Picasso, cached_network_image
+    original, react-native-fast-image).
+
 ## 2026-08-04
 
 * **Update**: Rewrote the Next.js/Turbopack section of

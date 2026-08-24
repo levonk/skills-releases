@@ -10,6 +10,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BATS_TEST_FILENAME}")" && pwd)"
 GIT_COLLECT="$SCRIPT_DIR/../git-collect.sh"
 TEST_BASE="/tmp/skill-test/git-collect"
 
+# Disable nice-relaunch and worktree isolation guard for tests — test repos
+# are not linked worktrees and tests need normal priority for reliable timing.
+export NICE_RELAUNCH=0
+export SKILL_ALLOW_MAIN_WRITE=1
+
 assert_contains() {
     local needle="$1" haystack="$2"
     [[ "$haystack" == *"$needle"* ]] || {
@@ -58,24 +63,11 @@ run_collect() {
     local extra_path="${2:-}"
     # GIT_CONFIG_GLOBAL=/dev/null disables the user's global git config
     # (which may include broken external diff drivers like difftastic).
-    # WRAPPER_DEVBOX_DISABLED=1 and RTK_SKIP=1 bypass the devbox/rtk probes
-    # so tests don't hang on the 15s devbox probe in temp dirs without
-    # devbox.json. Tests that explicitly test devbox/rtk detection use
-    # run_collect_with_probe() instead.
     # Optional second arg prepends a dir to PATH (used by jj fallback test
     # to inject a fake broken jj binary).
     local path_env="PATH=$extra_path:$PATH"
     [[ -z "$extra_path" ]] && path_env=""
-    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null WRAPPER_DEVBOX_DISABLED=1 RTK_SKIP=1 $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
-}
-
-# Variant that keeps devbox/rtk probes enabled — used by detection tests.
-run_collect_with_probe() {
-    local dir="$1"
-    local extra_path="${2:-}"
-    local path_env="PATH=$extra_path:$PATH"
-    [[ -z "$extra_path" ]] && path_env=""
-    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null PROBE_DEVBOX_TIMEOUT_SECS=3 $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
+    ( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null $path_env bash "$GIT_COLLECT" "$dir" 2>&1 ) || true
 }
 
 # --- basic collection tests ---
@@ -128,7 +120,7 @@ run_collect_with_probe() {
 @test "rtk detection" {
     command -v rtk >/dev/null 2>&1 || skip "RTK not installed"
     local dir; dir="$(setup_repo rtk-detect README.md)"
-    local out; out="$(run_collect_with_probe "$dir")"
+    local out; out="$(run_collect "$dir")"
     assert_contains "RTK:1" "$out"
 }
 
@@ -138,7 +130,7 @@ run_collect_with_probe() {
     # test shell's PATH, so this test is best-effort.
     command -v rtk >/dev/null 2>&1 && skip "rtk is installed"
     local dir; dir="$(setup_repo no-rtk README.md)"
-    local out; out="$(run_collect_with_probe "$dir")"
+    local out; out="$(run_collect "$dir")"
     # RTK may still be detected via devbox shims inside the script. Accept
     # either RTK:0 or RTK:1 — the test only asserts the flag is present.
     assert_contains "RTK:" "$out"
@@ -162,7 +154,7 @@ EOF
     echo "content" > "$dir/README.md"
     git -C "$dir" add -A
     git -C "$dir" commit -q -m "initial"
-    local out; out="$(run_collect_with_probe "$dir")"
+    local out; out="$(run_collect "$dir")"
     # DEVBOX may be 1 (probe succeeded) or 0 (probe failed and fell back to
     # direct execution). Both are valid outcomes — the script degrades
     # gracefully. We only assert that the DEVBOX line is present.
@@ -172,7 +164,7 @@ EOF
 @test "devbox not available" {
     command -v devbox >/dev/null 2>&1 && skip "devbox is installed"
     local dir; dir="$(setup_repo no-devbox README.md)"
-    local out; out="$(run_collect_with_probe "$dir")"
+    local out; out="$(run_collect "$dir")"
     assert_contains "DEVBOX:0" "$out"
 }
 
@@ -653,58 +645,87 @@ EOF
     }
 }
 
-# --- rtk_available caching regression test ---
-# git-collect.sh hung for 30+ minutes under 10 parallel agent sessions
-# because rtk_available() was called on every git_cmd() / rtk_wrap()
-# invocation, each spawning cli-tool-discovery.sh which re-probes devbox
-# (15s timeout). The fix caches rtk_available() and makes it honor
-# WRAPPER_DEVBOX_DISABLED (skip cli-tool-discovery, PATH check only).
-# This test verifies the WRAPPER_DEVBOX_DISABLED fast path: when devbox
-# is known broken, rtk_available must NOT spawn cli-tool-discovery.sh.
+# --- submodule detection tests ---
 
-@test "rtk_available skips cli-tool-discovery when WRAPPER_DEVBOX_DISABLED=1" {
-    command -v rtk >/dev/null 2>&1 || skip "rtk not installed"
-    local dir
-    dir="$TEST_BASE/rtk-cache-disabled"
-    rm -rf "$dir"; mkdir -p "$dir"
-    git init -q "$dir"
-    git -C "$dir" config user.email "test@test.com"
-    git -C "$dir" config user.name "Test"
-    cat > "$dir/devbox.json" <<'EOF'
-{
-  "packages": [],
-  "shell": { "init_hook": "" }
+# Create a temp git repo with a submodule. Echoes the parent repo dir.
+# The submodule is a separate repo that gets added as a submodule.
+setup_repo_with_submodule() {
+    local scenario="$1"
+    local parent="$TEST_BASE/$scenario"
+    local sub="$TEST_BASE/$scenario-submodule"
+    rm -rf "$parent" "$sub"
+    mkdir -p "$parent" "$sub"
+
+    # Create the submodule repo first
+    git init -q "$sub"
+    git -C "$sub" config user.email "test@test.com"
+    git -C "$sub" config user.name "Test"
+    echo "submodule content" > "$sub/README.md"
+    git -C "$sub" add -A
+    git -C "$sub" commit -q -m "submodule initial"
+
+    # Create the parent repo
+    git init -q "$parent"
+    git -C "$parent" config user.email "test@test.com"
+    git -C "$parent" config user.name "Test"
+    echo "parent content" > "$parent/README.md"
+    git -C "$parent" add -A
+    git -C "$parent" commit -q -m "parent initial"
+
+    # Add the submodule — redirect ALL output to /dev/null so it doesn't
+    # pollute the stdout that this function echoes (the path only).
+    # Use file:// protocol to avoid SSH prompts on some git versions.
+    git -C "$parent" submodule add -q "file://$sub" "vendor/sub" >/dev/null 2>&1
+    git -C "$parent" commit -q -m "add submodule" >/dev/null 2>&1 || true
+    # Ensure the submodule is initialized and checked out
+    git -C "$parent" submodule update --init >/dev/null 2>&1 || true
+    echo "$parent"
 }
-EOF
-    echo "content" > "$dir/README.md"
-    git -C "$dir" add -A
-    git -C "$dir" commit -q -m "initial"
-    echo "modified" > "$dir/README.md"
-    # Create a fake cli-tool-discovery.sh that writes a marker file if
-    # called. With the WRAPPER_DEVBOX_DISABLED fast path, rtk_available()
-    # must NOT spawn cli-tool-discovery.sh at all — it falls back to
-    # `command -v rtk` (PATH check only). If the marker file exists after
-    # the run, the fix is broken.
-    local fake_bin="$TEST_BASE/fake-cli-bin"
-    local marker="$TEST_BASE/cli-discovery-called.marker"
-    rm -f "$marker"
-    mkdir -p "$fake_bin"
-    cat > "$fake_bin/cli-tool-discovery.sh" <<EOF
-#!/usr/bin/env bash
-touch "$marker"
-echo "FOUND:rtk"
-EOF
-    chmod +x "$fake_bin/cli-tool-discovery.sh"
-    ( cd "$dir" && \
-      env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL \
-      GIT_CONFIG_GLOBAL=/dev/null \
-      WRAPPER_DEVBOX_DISABLED=1 \
-      CLI_TOOL_DISCOVERY="$fake_bin/cli-tool-discovery.sh" \
-      bash "$GIT_COLLECT" "$dir" >/dev/null 2>&1 ) || true
-    [[ ! -f "$marker" ]] || {
-        echo "rtk_available() called cli-tool-discovery.sh despite WRAPPER_DEVBOX_DISABLED=1" >&3
-        echo "the fast path should skip cli-tool-discovery and use command -v rtk only" >&3
-        rm -f "$marker"
-        return 1
-    }
+
+@test "no submodule section when repo has no submodules" {
+    local dir; dir="$(setup_repo no-submodules README.md)"
+    local out; out="$(run_collect "$dir")"
+    assert_not_contains "SUBMODULES:" "$out"
+    assert_not_contains "SUBMODULE_COUNT:" "$out"
+}
+
+@test "clean submodule is counted but not listed" {
+    local dir; dir="$(setup_repo_with_submodule clean-submodule)"
+    local out; out="$(run_collect "$dir")"
+    assert_contains "SUBMODULE_COUNT:1" "$out"
+    assert_contains "SUBMODULES_WITH_CHANGES:0" "$out"
+    # Clean submodules should NOT produce SUBMODULE: detail lines
+    assert_not_contains "SUBMODULE:vendor/sub" "$out"
+}
+
+@test "dirty submodule is detected and listed" {
+    local dir; dir="$(setup_repo_with_submodule dirty-submodule)"
+    # Make a change inside the submodule
+    echo "new file in submodule" > "$dir/vendor/sub/newfile.txt"
+    git -C "$dir/vendor/sub" add -A
+    git -C "$dir/vendor/sub" commit -q -m "submodule change" 2>/dev/null
+    local out; out="$(run_collect "$dir")"
+    assert_contains "SUBMODULE_COUNT:1" "$out"
+    assert_contains "SUBMODULES_WITH_CHANGES:1" "$out"
+    assert_contains "SUBMODULE:vendor/sub" "$out"
+}
+
+@test "submodule status in JSON output" {
+    local dir; dir="$(setup_repo_with_submodule json-submodule)"
+    # Make a change inside the submodule
+    echo "json test file" > "$dir/vendor/sub/jsonfile.txt"
+    git -C "$dir/vendor/sub" add -A
+    git -C "$dir/vendor/sub" commit -q -m "submodule json change" 2>/dev/null
+    local out
+    out="$( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$GIT_COLLECT" --json "$dir" 2>&1 )"
+    assert_contains '"submodules"' "$out"
+    assert_contains '"with_changes":1' "$out"
+    assert_contains '"path":"vendor/sub"' "$out"
+}
+
+@test "JSON output has empty submodules array when no submodules" {
+    local dir; dir="$(setup_repo no-submodules-json README.md)"
+    local out
+    out="$( cd "$dir" && env -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL GIT_CONFIG_GLOBAL=/dev/null bash "$GIT_COLLECT" --json "$dir" 2>&1 )"
+    assert_contains '"submodules":{"count":0,"with_changes":0,"submodules":[]}' "$out"
 }

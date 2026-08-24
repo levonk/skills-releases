@@ -134,20 +134,61 @@ context. See the `subagent-delegation` include for the general
 front-load-context / review-results / choose-serialization-vs-parallelization
 guidance; this subsection is the batch-message-drafting specialization.
 
-### CRITICAL: Git Submodule Handling
+### CRITICAL: Git Submodule Handling — Submodules First
 
-**NEVER** convert git submodules to regular directories. This destroys the intended architecture and can expose sensitive information.
+**NEVER** convert git submodules to regular directories. This destroys the
+intended architecture and can expose sensitive information.
 
-**When the repository contains git submodules:**
+**Core principle: submodules are processed FIRST, before the main repo.** The
+same collect → analyze → commit → push workflow that applies to the main repo
+applies to each submodule with changes. The main repo's submodule pointer
+update is committed LAST, after all submodule content is committed and pushed.
 
-1. **DETECT SUBMODULES**: Check for `.gitmodules` file and submodule directories
-2. **NEVER DELETE SUBMODULES**: If a directory is a git submodule, NEVER delete it and replace with regular files
-3. **PROPER SUBMODULE WORKFLOW**:
-   - Enter submodule directory to make changes: `cd submodule-name`
-   - Commit changes within the submodule: `git add . && git commit -m "message"`
-   - Push submodule changes: `git push origin master`
-   - Return to parent repo: `cd ..`
-   - Update submodule reference: `git add submodule-name && git commit -m "Update submodule"`
+**When `git-collect.sh` reports `SUBMODULES_WITH_CHANGES:N` (N > 0):**
+
+1. **PROCESS EACH DIRTY SUBMODULE FIRST** — for each `SUBMODULE:<path>|...`
+   line in the collect output, run the full workflow on the submodule:
+   ```bash
+   # 1. Collect data from the submodule (pass the submodule path)
+   ./scripts/git-collect.sh [path/to/submodule]
+
+   # 2. AI analyzes the submodule's changes and groups them into commits
+   #    (same vertical grouping, mandatory body, #tag array rules)
+
+   # 3. Execute commits in the submodule
+   cat <<'BATCH' | ./scripts/git-commit-batch.sh --slug submodule-<name>
+   COMMIT:<subject>
+
+   <body>
+
+   #project-<slug> #module-<slug> #type-<type> #skill-grm-created
+   FILES:<files>
+   BATCH
+
+   # 4. Push the submodule
+   ./scripts/git-push.sh [remote] [branch] [path/to/submodule] --slug submodule-<name>
+   ```
+
+2. **THEN PROCESS THE MAIN REPO** — after all submodules are committed and
+   pushed, the main repo will show the submodule directories as modified
+   (the submodule pointer has moved). Commit and push the main repo normally:
+   ```bash
+   # The submodule pointer changes appear as staged changes in the main repo
+   # Commit them with a message referencing the submodule update
+   cat <<'BATCH' | ./scripts/git-commit-batch.sh --slug main-<slug>
+   COMMIT:Update <submodule-name> submodule reference
+
+   - Bump <submodule-name> to <new-sha> after <description of submodule changes>
+
+   #project-<slug> #module-submodule #type-chore #skill-grm-created
+   FILES:<submodule-path>
+   BATCH
+
+   ./scripts/git-push.sh --slug main-<slug>
+   ```
+
+3. **NEVER DELETE SUBMODULES**: If a directory is a git submodule, NEVER
+   delete it and replace with regular files.
 
 4. **WARNING SIGNS** of incorrect submodule handling:
    - Submodule directory contains `.gitignore` file (shouldn't exist in submodule)
@@ -161,7 +202,15 @@ guidance; this subsection is the batch-message-drafting specialization.
    - Commit the fix immediately
    - Review for any exposed sensitive information
 
-**SUBMODULE-SECURITY AWARENESS**: Client submodules often contain private client-specific information. Converting them to regular directories can expose secrets and break security isolation.
+**SUBMODULE-SECURITY AWARENESS**: Client submodules often contain private
+client-specific information. Converting them to regular directories can expose
+secrets and break security isolation.
+
+**Why submodules first**: If you commit the main repo's submodule pointer
+before the submodule content is pushed, the main repo points to a commit that
+doesn't exist on the remote. Anyone cloning or updating the submodule will
+fail. Processing submodules first ensures the referenced commits exist on the
+remote before the main repo references them.
 
 ### Phase 4: Execution (Single Script Call)
 - **Step 8**: **Create pre-run tag** (see Automatic Run Tagging below)
@@ -184,7 +233,7 @@ guidance; this subsection is the batch-message-drafting specialization.
   - **Divergence is not a decision point**: If the branch has diverged from
     remote (local has commits remote doesn't, remote has commits local
     doesn't), just run `git-push.sh`. The script fetches, creates a backup
-    branch, rebases with `-X auto` (auto-resolves trivial conflicts), and only
+    branch, rebases with `-X=auto` (auto-resolves trivial conflicts), and only
     escalates to the AI if there are real conflicts needing manual resolution.
     See [Tagging and Pushing](tagging-and-pushing.md) for the full conflict
     escalation flow.

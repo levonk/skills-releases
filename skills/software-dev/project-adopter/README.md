@@ -35,7 +35,7 @@ config), and a single `project-adoption` commit on a rollback-safe tag.
 ## What It Sets Up
 
 1. **Detect** stack via `project-detection` (50+ build systems / CI platforms)
-2. **devbox.json** with language-appropriate packages (`nodejs_24`, `rustc`,
+2. **devbox.json** with language-appropriate packages (`nodejs_22`, `rustc`,
    `python3`, `go`, etc.)
 3. **justfile** with auto-detecting targets: `just build` →
    `_devbox build_impl` → (in devbox) `just build_impl` → `[build tool]`
@@ -119,7 +119,7 @@ uv run --script scripts/install-knowledge-bundles.py . --private --bundles secre
   `ignorefile-manager`, `readme-upsert` (required); `repository-health-review`,
   `ai-development-loop` (optional)
 - **Templates**: `boilerplates` —
-  https://github.com/lrepo52/job-aide/tree/main/boilerplate
+  https://github.com/levonk/levonk-base-boilerplate
 - **Tools**: `devbox`, `just`, `direnv`
 
 ## References

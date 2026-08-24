@@ -22,6 +22,10 @@ export DEVBOX_PROBE_TIMEOUT_SECS=2
 export CLTOOL_PROBE_TIMEOUT_SECS=2
 export CLTOOL_INSTALL_DISABLED=1
 
+# Disable nice-relaunch for tests — test scripts should run at normal priority
+# and the relaunch's exec can interfere with bats process management.
+export NICE_RELAUNCH=0
+
 assert_contains() {
     local needle="$1" haystack="$2"
     [[ "$haystack" == *"$needle"* ]] || {

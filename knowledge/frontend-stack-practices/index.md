@@ -5,11 +5,12 @@ okf_version: "0.2"
 # Frontend Stack Practices
 
 A compounding knowledge base documenting practices for the TypeScript/React
-frontend stack — file extensions, path aliases, ESLint composition, testing with
-Vitest, code style conventions, CSS fundamentals, Tailwind v4 features,
-Node.js frontend setup, and HTMX hypermedia-first interaction design. Each
-concept captures specific standards sourced from real project ADRs and rule
-files.
+frontend stack and cross-platform client image loading — file extensions, path
+aliases, ESLint composition, testing with Vitest, code style conventions, CSS
+fundamentals, Tailwind v4 features, Node.js frontend setup, HTMX hypermedia-first
+interaction design, and image loading libraries for Android, iOS, Web, Flutter,
+React Native, and Desktop. Each concept captures specific standards sourced from
+real project ADRs, rule files, and verified 2026 research.
 
 ## Concepts
 
@@ -23,3 +24,6 @@ files.
 * [tailwind-v4-features](tailwind-v4-features.md) - Tailwind v4 guidance: Oxide engine, @theme directive, container queries, 3D transforms, arbitrary values, data attributes
 * [nodejs-frontend-setup](nodejs-frontend-setup.md) - Node.js frontend setup with mise toolchain, webpack, ESLint, Prettier, testing, building, and deployment
 * [htmx-hypermedia-first](htmx-hypermedia-first.md) - Prefer HTMX server-rendered hypermedia over client-side JS; reach for a JS/React SPA only when an interaction exceeds hypermedia's expressiveness
+* [android-image-loading](android-image-loading.md) - Coil for Kotlin/Compose, Glide for legacy/image-heavy, Fresco for memory-intensive feeds, Picasso deprecated
+* [ios-image-loading](ios-image-loading.md) - Kingfisher for Swift/SwiftUI, Nuke for performance-critical, SDWebImage for legacy ObjC or broad platform support
+* [cross-platform-image-loading](cross-platform-image-loading.md) - Web (native lazy loading + next/image + sharp), Flutter (cached_network_image_ce), React Native (expo-image), Desktop (egui_extras, tauri-plugin-redb-cache)

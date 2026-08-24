@@ -1,32 +1,5 @@
 # Directory Update Log
 
-## 2026-08-19
-
-* **Update**: Standardized the supported auth method set in
-  [auth-provider-selection.md](auth-provider-selection.md) to passkey,
-  Google, Apple, magic link, and username/password (+2FA recommended).
-  Added magic link (better-auth magic-link plugin) as a new supported
-  method. Split Google/Apple OAuth into separate tiers (Apple listed
-  separately because Apple Sign In requires its own configuration and is
-  mandatory for App Store apps offering third-party sign-in). Dropped the
-  "local password only (no 2FA)" last-resort tier — 2FA is now recommended,
-  not optional, on the password tier. New preference ordering:
-  passkey-first > passkey > Google > Apple > magic link > username/password
-  + 2FA. Magic link ranks below IdP-backed OAuth because email account
-  takeover equals app account takeover, while OAuth providers add their own
-  2FA / device trust. Updated the "Email is always collected" section to
-  note magic link users prove email ownership per sign-in but the email
-  must still be stored locally for recovery if magic-link delivery is later
-  disabled.
-* **Sync**: Updated the canonical tech-stack table
-  ([includes/tech-stack-table.md.tmpl](https://github.com/levonk/skills-releases/blob/main/includes/tech-stack-table.md.tmpl))
-  auth row — added magic-link plugin to the better-auth plugins list and
-  rewrote the Exceptions column to list the supported methods and the new
-  preference ordering. Updated [overview.md](overview.md) Hard Constraints
-  bullet and [index.md](index.md) concept description to match.
-* **Source**: User directive to standardize on better-auth supporting
-  username/password, magic link, passkey, Google, and Apple.
-
 ## 2026-07-26
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.

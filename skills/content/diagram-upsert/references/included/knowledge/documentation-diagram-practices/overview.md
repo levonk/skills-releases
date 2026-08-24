@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Documentation Diagram Practices Overview
-description: Synthesis of documentation diagram practices — tool selection across Mermaid, PlantUML, and Excalidraw, plus the syntax conventions that keep diagrams rendering across markdown pre-processors.
-tags: [documentation, diagrams, mermaid, plantuml, excalidraw, overview, synthesis]
+description: Synthesis of documentation diagram practices — tool selection across Mermaid, PlantUML, Excalidraw, and editorial HTML/SVG, plus the syntax and design conventions that keep diagrams rendering and reading well across markdown pre-processors and standalone deliverables.
+tags: [documentation, diagrams, mermaid, plantuml, excalidraw, editorial, html-svg, overview, synthesis]
 date:
   created: "2026-07-19"
-  knowledge-basis: "2026-07-18"
-  last-used: "2026-07-18"
+  knowledge-basis: "2026-08-21"
+  last-used: "2026-08-21"
 ---
 
 ---
@@ -105,41 +105,52 @@ If any answer is "no," revise before publishing.
 
 # Documentation Diagram Practices Overview
 
-This bundle documents practices for embedding diagrams in technical
-documentation. Each concept captures a specific diagram concern — tool
-selection, syntax that survives markdown pre-processing, rendering pipelines —
-and the practice that addresses it.
+This bundle documents practices for diagrams in technical documentation — both
+markdown-embedded diagrams (Mermaid, PlantUML, Excalidraw) and standalone
+editorial deliverables (self-contained HTML/SVG files). Each concept captures a
+specific diagram concern — tool selection, syntax that survives markdown
+pre-processing, editorial layout conventions, rendering pipelines — and the
+practice that addresses it.
 
 ## The Diagram Tool Landscape
 
 ```
 tool-selection → mermaid (inline, render-portability) → plantuml (precise, server-rendered)
-                                ↓
-              excalidraw (hand-drawn, whiteboard, .excalidraw JSON)
+                                ↓                                          ↓
+              excalidraw (hand-drawn, whiteboard, .excalidraw JSON)   editorial html/svg
+                                                                        (standalone deliverable,
+                                                                         4px grid, design system)
 ```
 
 | Concern | Practice | Prevents |
 |---------|----------|----------|
-| Selection | [Diagram Tool Selection](diagram-tool-selection.md) | Picking a tool that doesn't render in your target environment, version-control friction, unreachable rendering servers |
+| Selection | [Diagram Tool Selection](diagram-tool-selection.md) | Picking a tool that doesn't render in your target environment, version-control friction, unreachable rendering servers, using markdown-embed tools for standalone deliverables |
 | Mermaid | [Mermaid Practices](mermaidjs.md) | Parse errors from unquoted labels, `<br/>` stripped by pre-processors, broken decision nodes |
 | PlantUML | [PlantUML Practices](plantuml.md) | Missing `@startuml`/`@enduml`, server-only rendering, layout sprawl, unreadable sequence diagrams |
 | Excalidraw | [Excalidraw Practices](excalidraw.md) | Binary blob in git, lost sketch history, hand-drawn diagrams where precision is required |
+| Editorial HTML/SVG | [Editorial HTML/SVG Diagram Practices](editorial-html-svg-diagrams.md) | AI-slop schematics (diagonal slants, labels on arrows, identical boxes, accent spray), off-grid layouts, unbranded default skins shipped into branded projects, inaccessible SVG |
 | Contrast | [Color Contrast Practices](color-contrast.md) | Light text on pastel fills, sub-WCAG contrast ratios, labels that vanish on dim screens and in print |
 | Rust Docs | [Rust Doc Comment Patterns](rust-doc-comment-patterns.md) | Missing Examples/Errors/Panics sections, broken intra-doc links, stale doc tests |
 | Cargo Doc | [Cargo Doc Generation](cargo-doc-generation.md) | No CI doc checks, missing hosted docs, broken cross-crate links, undocumented feature flags |
 
 ## Scope
 
-This bundle covers **diagram authoring and embedding practices** for technical
-documentation — the tool selection, syntax conventions, and rendering
-considerations that keep diagrams working across markdown renderers (GitHub,
-Obsidian, VS Code, static site generators). It does **not** cover:
+This bundle covers **diagram authoring, embedding, and editorial design
+practices** for technical documentation — the tool selection, syntax
+conventions, rendering considerations, and editorial layout systems that keep
+diagrams working across markdown renderers (GitHub, Obsidian, VS Code, static
+site generators) and as standalone HTML/SVG deliverables (blog posts, slides,
+OG cards, print figures). It does **not** cover:
 
 - General technical writing — see a dedicated writing bundle.
-- Diagram design aesthetics (palette selection, visual hierarchy, brand color
-  choices) — out of scope. **Color contrast for readability is in scope** as an
-  accessibility concern; see
-  [Color Contrast Practices](color-contrast.md).
+- Diagram design aesthetics beyond the editorial HTML/SVG design system
+  (palette selection for non-editorial contexts, visual hierarchy for marketing
+  graphics, brand color choices for non-diagram assets) — out of scope. **Color
+  contrast for readability is in scope** as an accessibility concern; see
+  [Color Contrast Practices](color-contrast.md). **The editorial HTML/SVG
+  design system (4px grid, connector rules, semantic roles, complexity budget)
+  is in scope** for standalone deliverables; see
+  [Editorial HTML/SVG Diagram Practices](editorial-html-svg-diagrams.md).
 - Rendering tool installation — see
   [dev-environment-practices](../dev-environment-practices/overview.md).
 - Build system integration for diagram pipelines — see
@@ -167,3 +178,8 @@ to `log.md` when adding.
 - ADR-20260520001 v3.0.0 — `ADR-20260520001 v3.0.0 (job-aide internal-docs)`
   (two Mermaid flowcharts that broke from unquoted decision node labels; fix
   documented in [mermaidjs.md](mermaidjs.md)).
+- [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design)
+  (MIT-licensed) — the upstream skill that sources the editorial HTML/SVG
+  practices in [editorial-html-svg-diagrams.md](editorial-html-svg-diagrams.md).
+  Ships 39 visual types, semantic patterns, a skinnable style guide,
+  brand-onboarding flows, and geometry verification scripts.

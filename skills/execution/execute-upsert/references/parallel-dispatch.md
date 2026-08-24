@@ -1,17 +1,9 @@
 # Parallel Dispatch — When Multiple Stories Are Dependency-Ready
 
-When Phase 6 finds multiple `[ ] Todo` stories whose dependencies are all
+When Phase 4 finds multiple `[ ] Todo` stories whose dependencies are all
 `[x] Done`, dispatch them as parallel background subagents — one per story,
 each in its own git worktree — instead of running them sequentially. This
 dramatically reduces wall-clock time for phases with parallel-safe stories.
-
-**Note on worktree usage:** Every story runs in its own git worktree —
-sequential and parallel alike. The "Worktree Setup" section below defines
-the worktree creation protocol used by BOTH the sequential execution loop
-(in SKILL.md Phase 6) and the parallel dispatch mode described here. The
-difference is only concurrency: sequential dispatches one worktree at a
-time and merges immediately after verification; parallel dispatches up to
-5 worktrees at once and merges all after they complete.
 
 ## When to Parallel-Dispatch
 

@@ -1,5 +1,224 @@
 # Directory Update Log
 
+## 2026-08-21 (eleventh revision — Founder Content System concept page)
+
+* **Addition**: Created [founder-content-system.md](founder-content-system.md)
+  — The complete methodology for ghostwriting founder social content across
+  X, LinkedIn, Instagram, TikTok, YouTube, Facebook, and a blog. Generalized
+  from a live founder-ghostwriting engagement (the
+  `founder-ghostwriter-setup` skill in `/Users/micro/Downloads/Founder Content
+  System/`). Covers: the one-sentence method (facts from verified sources,
+  voice from verbatim writing, style by countable checks, corrections
+  compound in a ledger), the five-phase pipeline (Phase 0 intake inventory
+  with 13 optional inputs, Phase 1 facts layer with context docs + primary
+  sources + anchor bank, Phase 2 voice layer with verbatim corpus +
+  per-client calibrations, Phase 3 rules layer with persona constraints +
+  banned patterns + humanizer, Phase 4 drafting workflow with seven gates
+  including isolated drafting and cold adversarial review, Phase 5 feedback
+  loop with the ledger), the day-of reactive track for news pegs, the
+  universal banned-pattern list (slop lint — core style rules and learned
+  universals), platform coverage and per-platform register differences, the
+  subagent dependency (isolated drafting and cold adversarial review both
+  require parallel agents), and four meta-lessons for why voice guides fail
+  and this system works. Cross-references Personal Brand, LinkedIn Profile
+  Optimization, Safe Pair of Hands Positioning, Metrics and Quantification,
+  Fluff and Buzzword Elimination, and the Minto Pyramid Principle.
+* **Inspiration**: Generalized from the `founder-ghostwriter-setup` skill
+  (a Claude skill from a live founder-ghostwriting engagement, provided by
+  the user at `/Users/micro/Downloads/Founder Content System/`). The
+  methodology was codified into this knowledge bundle concept page, and the
+  execution layer was built as the `founder-content-system` skill in
+  `src/current/skills/content/founder-content-system/`. The skill references
+  this bundle page via `includeTree` materialization; the bundle page is the
+  single source of truth for the why and what, the skill is the how.
+  Additional skills discovered via `pnpm dlx skills find` with keywords
+  (post, x, instagram, linkedin, youtube, facebook, tiktok, blog, social,
+  media, content, ghostwriter, founder content) informed the platform
+  coverage and the per-platform register defaults. Notable finds:
+  `samber/cc-skills@linkedin-ghostwriting`, `samber/cc-skills@substack-
+  ghostwriting`, `shawnpang/startup-founder-skills@founder-thought-
+  leadership`, `aidevgtm/gtm-cofounder@founder-led-content`,
+  `langchain-ai/deepagents@social-media`, `anthropics/knowledge-work-
+  plugins@content-creation`, `kostja94/marketing-skills@linkedin-posts`,
+  `kostja94/marketing-skills@twitter-x-posts`,
+  `kostja94/marketing-skills@tiktok-captions`,
+  `bradautomates/head-of-content@instagram-research`,
+  `bradautomates/head-of-content@tiktok-research`. None replaced the
+  engagement-derived methodology — the live engagement's five-phase pipeline
+  with isolated drafting and cold adversarial review is the differentiator.
+* **Update**: Added the new concept page in a new "Founder Content System"
+  section in [index.md](index.md) and [overview.md](overview.md).
+* **Bundle total**: Now 51 concept pages covering the full candidate-side
+  hiring pipeline plus the founder content execution layer.
+
+## 2026-08-21 (tenth revision — Consulting Problem-Solving Frameworks concept page)
+
+* **Addition**: Created
+  [consulting-problem-solving-frameworks.md](consulting-problem-solving-frameworks.md)
+  — the McKinsey-style problem-solving toolkit that complements the Minto
+  Pyramid Principle's communication layer. Synthesized from established
+  consulting methodology and ten open-source AI skill implementations (six
+  from `pnpm dlx skills find mckinsey`, `pnpm dlx skills find
+  hypothesis-driven`, `pnpm dlx skills find issue-tree`, and `pnpm dlx
+  skills find mece`, four from GitHub search). Covers: the 7-step
+  problem-solving process (define, disaggregate, prioritize, workplan,
+  analyze, synthesize, communicate), hypothesis-driven problem solving with
+  Day 1 Answers and falsifiable hypotheses (If X then Y because Z,
+  confirming/disconfirming signals, kill thresholds, anti-patterns),
+  issue trees (driver, process, option, hypothesis) with starter formulas,
+  branch design rules (same abstraction level, nouns not verbs, validate
+  exclusivity, depth proportional to urgency, 2–3 level practical limit),
+  issue tree vs hypothesis tree comparison, MECE validation gates (mutual
+  exclusivity, collective exhaustiveness, level integrity, clarity,
+  usefulness), common MECE structures table, MECE failure patterns, the
+  80/20 prioritization scoring model (Impact × Confidence / Effort × Speed
+  with optional weighting), testing rules (test top first, parallel only
+  when independent, kill criteria before testing, document kills),
+  strategic analysis frameworks with accurate attribution (Porter's Five
+  Forces — Porter/HBS 1979, not McKinsey; McKinsey 7S — Peters & Waterman
+  1980s, McKinsey-originated; SWOT — Humphrey/SRI 1960s, not McKinsey; BCG
+  Growth-Share Matrix — BCG 1970s, not McKinsey; VRIO — Barney 1991, not
+  McKinsey), second-order thinking (1st/2nd/3rd order consequence chains
+  with mitigation), structured thinking principles (purpose determines
+  structure, planar cuts, structured vs systems thinking, boundary
+  conditions), the complete integrated workflow, applications to case
+  interviews, behavioral interviews, strategy/PM roles, and presentations,
+  and a common failure modes table. Cross-references the Minto Pyramid
+  Principle, Case Interviews, Behavioral Interview Framework, Presentation
+  and Demo Interviews, Strategic Abstraction, and Interview Strategy
+  concept pages.
+* **Inspiration**: Synthesized from established consulting methodology and
+  ten open-source AI skill repositories, each contributing unique gems:
+  - [fleurytian/awesome-claude-skills](https://github.com/fleurytian/awesome-claude-skills)
+    (mckinsey-consultant) — staged problem-solving workflow, problem
+    boundary definition, issue tree construction, hypothesis formation,
+    dummy page design, page dependency types
+  - [santos-sanz/lifeskills](https://github.com/santos-sanz/lifeskills)
+    (consulting-hypothesis-driven-80-20) — falsifiable hypothesis format
+    (If X then Y because Z), confirming/disconfirming signals, kill
+    thresholds, 80/20 scoring model (Impact × Confidence / Effort ×
+    Speed), optional weighting, parallel testing rules, kill documentation
+  - [santos-sanz/lifeskills](https://github.com/santos-sanz/lifeskills)
+    (consulting-issue-tree-mece) — tree type selection
+    (driver/process/option/hypothesis), starter formulas, branch design
+    rules, MECE validation gates (5 gates), failure patterns
+  - [uxderrick/mece-skill](https://github.com/uxderrick/mece-skill) — MECE
+    validation and decomposition modes, numeric scoring model, self-test
+    before presenting, domain-aware validation, boundary definition,
+    decomposition depth limits
+  - [kangarooking/cognitive-dividend-skill](https://github.com/kangarooking/cognitive-dividend-skill)
+    (structured-thinking) — purpose determines structure, planar cuts,
+    two-way/three-way splits, structured thinking vs systems thinking,
+    boundary conditions, failure modes
+  - [yoichiojima-2/consultant](https://github.com/yoichiojima-2/consultant)
+    — MECE common structures table, issue tree examples, hypothesis tree
+    vs issue tree comparison, McKinsey 7-step problem solving process, Day
+    1 Answer, Porter's Five Forces, McKinsey 7S, SWOT, BCG Matrix
+  - [ericgandrade/claude-superskills](https://github.com/ericgandrade/claude-superskills)
+    (mckinsey-strategist) — parallel framework analysis (SWOT, VRIO, 7S,
+    second-order thinking, impact vs effort), executive synthesis,
+    second-order consequence chains
+  - [Abdullah4AI/mckinsey-research](https://github.com/Abdullah4AI/mckinsey-research)
+    — 12-prompt parallel research workflow, adaptive stage logic
+    (idea/startup/growth/mature), diamond gates, batch dependency
+    management
+  - [fzfclee/consulting-skills](https://github.com/fzfclee/consulting-skills)
+    (issue-tree) — decision-relevant core question, evidence plan
+    template, priority analysis with decision impact, quality gate with
+    disconfirming checks
+  - [asgard-ai-platform/skills](https://github.com/asgard-ai-platform/skills)
+    (meta-structured-problem) — IRON LAW (MECE or it's not structured),
+    hypothesis-driven approach steps, 80/20 rule application, gotchas
+    (good enough MECE, hypothesis ≠ confirmation bias, structured ≠ slow,
+    know when to stop)
+* **Update**: Added the new concept page to the "Interview & Hiring Process"
+  section in [index.md](index.md) and [overview.md](overview.md), placed
+  after the Minto Pyramid Principle entry to reflect the complementary
+  relationship (Minto = communication layer, this page = problem-solving
+  layer).
+
+## 2026-08-21 (ninth revision — Minto Pyramid Principle concept page, expanded)
+
+* **Addition**: Created [minto-pyramid-principle.md](minto-pyramid-principle.md)
+  — Barbara Minto's Pyramid Principle for structured communication, synthesized
+  from the original framework and eleven open-source AI skill implementations
+  (six from GitHub search, five from `pnpm dlx skills find minto` and
+  `pnpm dlx skills find pyramid`).
+  Covers: the Gate (when NOT to use pyramid), BLUF vs Minto distinction, one
+  pyramid per document, the brutal Level 1 test, three logic rules, MECE with
+  the duplication test, SCQA with audience dosing, anti-patterns, SCR + Minto
+  combined, burying the ask, evidence taxonomy (stat/named example/named
+  person/concrete anecdote) and strength classification (STRONG/WEAK/MISSING),
+  numbers over adjectives, evidence + implication + risk triple, the
+  mechanics-vs-reasons test, ask-before-drafting, problem definition (R1/R2),
+  seven common reader positions, common question shapes, diagnostic frameworks,
+  logic trees, issue analysis (yes-or-no questions), the 7-step build process,
+  multiple pyramid configuration with bridge questions, structural constraints
+  (max 4 levels/4 children), don't-force-pyramid-onto-bad-reasoning, restructure
+  don't summarise, validation with scoring rubric (5 axes, 0–10), the 9-failure
+  catalogue, epistemic discipline and the confidence contract
+  (High/Medium/Low/Unverified), tiered renderers (Tier A/B/C with the Tier C
+  override), depth levels (Compact/Standard/Deep), named operations (buried-lede
+  test, reason audit, so-what pass, email version), the "invent nothing" rule,
+  the closing contract (decision/owner/date/next action), one governing question,
+  action ideas must state end products, news is not thinking, risks/next-steps
+  as closing section, hedging dissolves the claim, red flags in a draft, and
+  applications to interview answers, presentations, case interviews, written
+  communication, and salary negotiation throughout the hiring pipeline.
+  Cross-references the Behavioral Interview Framework, Case Interviews,
+  Presentation and Demo Interviews, Strategic Abstraction, Bullet Autonomy
+  Principle, Metrics and Quantification, Safe Pair of Hands Positioning,
+  Recruiter Outreach, Conciseness and Length, Fluff and Buzzword Elimination,
+  and Technical Interview Preparation concept pages.
+* **Inspiration**: Synthesized from Barbara Minto's *The Pyramid Principle*
+  (2009 revised edition) and eleven open-source AI skill repositories, each
+  contributing unique gems:
+  - [smplx-c/minto-skill](https://github.com/smplx-c/minto-skill) — three
+    logic rules, 7-step build, validation checks, epistemic discipline, tiered
+    renderers (Tier A/B/C), depth levels, "never fabricate to fill a structure"
+  - [welltraum/minto](https://github.com/welltraum/minto) — dose-the-Situation
+    by audience, kind-comes-first table, mechanics-vs-reasons test, duplication
+    test, 9-failure catalogue, scoring rubric, SCQA anti-patterns, chaining
+    protocol
+  - [millwright-labs/minto-pyramid-skill](https://github.com/millwright-labs/minto-pyramid-skill)
+    — the Gate (when NOT to use pyramid), offer-rather-than-act, do-not-force-
+    three, invent-nothing rule, when-not-to-use-it, red flags in a draft,
+    hedging dissolves the claim, risks/next-steps as closing section
+  - [damianof/minto-skill](https://github.com/damianof/minto-skill) — brutal
+    Level 1 test (contestable, not a topic), 4-type evidence taxonomy, evidence
+    strength classification (STRONG/WEAK/MISSING), principle piece vs case
+    study piece, the subject test for openers
+  - [ProfEullerBarros/minto-pyramid-principle](https://github.com/ProfEullerBarros/minto-pyramid-principle)
+    — problem definition framework (R1/R2), diagnostic frameworks, logic trees,
+    visual reflection, deduction vs induction choice at the Key Line
+  - [tyroneross/pyramid-principle](https://github.com/tyroneross/pyramid-principle)
+    — source-integrity layer, confidence contract (High/Medium/Low/Unverified),
+    carry key terms parent→child, given-to-new information flow, grammatical
+    parallelism, direct writing contract (specific actor + active verb +
+    specific outcome)
+  - [patrick204nqh/skills](https://github.com/patrick204nqh/skills) — BLUF vs
+    Minto distinction ("BLUF is the lede; Minto is the whole pyramid"), one
+    pyramid per doc, numbers over adjectives, restructure don't summarise,
+    don't force pyramid onto bad reasoning, present options under a recommended
+    one
+  - [geb-algebra/writer-skill](https://github.com/geb-algebra/writer-skill) —
+    multiple pyramid configuration with bridge questions, max 4 levels/4
+    children constraints, don't use body-defined terms in introduction,
+    final-draft information density
+  - [that-in-rust/agent-room-of-requirements](https://github.com/that-in-rust/agent-room-of-requirements)
+    — action ideas must state end products, seven common reader positions,
+    issue analysis (yes-or-no questions), storyboarding workflow, common
+    question shapes, news is not thinking, distinguish levels of action
+  - [refoundai/lenny-skills](https://github.com/refoundai/lenny-skills) —
+    SCR + Minto combined (SCR wraps, Minto structures the Resolution),
+    burying the ask, ignoring the Situation, shared non-controversial facts
+  - [santos-sanz/lifeskills](https://github.com/santos-sanz/lifeskills) —
+    evidence + implication + risk triple, closing contract
+    (decision/owner/date/next action), one governing question / reject
+    multi-question drift, ask-before-drafting questions, output contract
+* **Update**: Added the new concept page to the "Interview & Hiring Process"
+  section in [index.md](index.md) and [overview.md](overview.md).
+
 ## 2026-08-02 (eighth revision — comprehensive gap fill: 27 new concept pages)
 
 * **Audit**: Conducted a systematic gap audit of the bundle against the full

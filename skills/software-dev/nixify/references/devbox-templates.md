@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [Rust (Cargo)](#rust-cargo)
+- [Tauri (Rust + JS frontend + optional Bun sidecar)](#tauri-rust--js-frontend--optional-bun-sidecar)
 - [Node.js (npm/pnpm/yarn/bun)](#nodejs-npmpnpyarnbun)
 - [Go](#go)
 - [Python](#python)
@@ -91,6 +92,113 @@ them. Example with a detected runtime dependency:
 The same detection applies to the devShell in `flake.nix` — add detected
 runtime packages to `devShells.default.buildInputs` as well. See
 `references/flake-templates/source-build/rust.md` for the devShell pattern.
+
+---
+
+## Tauri (Rust + JS frontend + optional Bun sidecar)
+
+Use when Step 5's `detect-multi-toolchain.sh` reported `framework=tauri`.
+Tauri projects need all three toolchains (Rust + Node/pnpm + optional Bun)
+plus platform system libraries for the webview.
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.12.0/.schema/devbox.schema.json",
+  "packages": [
+    "rustc",
+    "cargo",
+    "rust-analyzer",
+    "clippy",
+    "rustfmt",
+    "pkg-config",
+    "openssl",
+    "nodejs_20",
+    "pnpm",
+    "act"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to the Devbox environment!'"
+    ],
+    "scripts": {
+      "build": "pnpm build",
+      "test": "pnpm test",
+      "run": "pnpm tauri dev",
+      "tauri:build": "pnpm tauri build",
+      "tauri:dev": "pnpm tauri dev"
+    }
+  }
+}
+```
+
+**Add Bun if the project requires it** (detected by `detect-multi-toolchain.sh`
+reporting `bun` in the `toolchains` array, or the subagent confirming bun is a
+hard requirement for sidecar building):
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.12.0/.schema/devbox.schema.json",
+  "packages": [
+    "rustc",
+    "cargo",
+    "rust-analyzer",
+    "clippy",
+    "rustfmt",
+    "pkg-config",
+    "openssl",
+    "nodejs_20",
+    "pnpm",
+    "bun",
+    "act"
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to the Devbox environment!'"
+    ],
+    "scripts": {
+      "build": "pnpm build",
+      "test": "pnpm test",
+      "run": "pnpm tauri dev",
+      "tauri:build": "pnpm tauri build",
+      "tauri:dev": "pnpm tauri dev",
+      "sidecar:build": "cd <ext-builder-dir> && bun install && bun run build:js"
+    }
+  }
+}
+```
+
+**Linux platform libraries**: On Linux, Tauri needs WebKitGTK 4.1 and related
+system libraries. Add these to the `packages` array on Linux only (devbox
+handles platform conditionals via `packages` with platform-specific entries):
+
+```json
+    "webkitgtk_4_1",
+    "gtk3",
+    "glib-networking",
+    "libayatana-appindicator",
+    "librsvg",
+    "xdg-utils"
+```
+
+**macOS**: No extra packages needed — the Xcode Command Line Tools (required
+by devbox's Rust toolchain on macOS) provide the frameworks. The
+`darwin.apple_sdk.frameworks.*` packages are only needed in the flake's
+`buildInputs`, not in devbox (devbox shells have access to system frameworks
+on macOS).
+
+**Detecting runtime service dependencies**: Run
+`scripts/detect-runtime-deps.sh <project-dir>` as with the Rust template —
+Tauri apps may have runtime service deps (databases, etc.) detected from
+`Cargo.toml` or `package.json`. Add detected packages to the `packages` array.
+
+**Version pinning**: Pin Node and pnpm to match the project's CI and
+`engines` declarations. If `package.json#engines.node` says `>=20`, use
+`nodejs_20`. If `package.json#packageManager` says `pnpm@10.26.0`, ensure the
+devbox pnpm matches that major version. See the Version Pinning section above.
+
+The same packages apply to the devShell in `flake.nix` — see
+`references/flake-templates/source-build/tauri.md` for the devShell pattern
+with platform-conditional `buildInputs`.
 
 ---
 
