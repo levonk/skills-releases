@@ -2227,12 +2227,22 @@ violations at the tool-call level — the agent cannot rationalize past them.
 The full `INSTRUCTIONS.md` is reference material. **This contract is the active
 law.**
 
-1. **Every subagent dispatch MUST go through the execution gate first.**
-   Run `bash .devin/scripts/execution-gate.sh <story-slug> [base-sha]` before
-   any `run_subagent` call. This creates a per-story git worktree at
+1. **Every write-capable subagent dispatch MUST go through the execution
+   gate first.** Run `bash .devin/scripts/execution-gate.sh <story-slug>
+   [base-sha]` before any `run_subagent` call that uses a write-capable
+   profile (`subagent_general` or a custom profile with write/exec access).
+   This creates a per-story git worktree at
    `/tmp/<project>-worktrees/<story-slug>` and writes a gate-pass file. The
    PreToolUse hook on `run_subagent` **blocks** dispatch if no gate-pass file
    exists — a hard machine gate, not a text instruction.
+
+   **Read-only exemption:** `subagent_explore` subagents are exempt from the
+   gate. They have profile-enforced read-only tool access (grep, glob, read,
+   web_search — no edit/write/exec), so they cannot mutate the working
+   directory and the worktree protection rationale does not apply. The
+   exemption is safe because the profile is enforced at the tool layer, not
+   the prompt layer — an agent cannot escalate a `subagent_explore`
+   dispatch to write capability by prompt content alone.
 
 2. **The subagent MUST work ONLY in the worktree path** returned by the gate
    script. Pass the worktree path in the dispatch prompt. The subagent must
@@ -2262,22 +2272,38 @@ law.**
    `git -C <worktree> reset --hard <checkpoint-sha>`. Never attempt to patch
    a failed subagent's partial work in-place — reset and re-dispatch.
 
+9. **Never circumvent the gate by abandoning subagent dispatch.** The gate
+   is a floor for subagent dispatch, not a ceiling on when subagents may be
+   used. If the gate blocks a dispatch, the response is to run
+   `execution-gate.sh` and re-dispatch — NOT to drop the subagent and do
+   the work inline with parent-session tools. Abandoning subagents to dodge
+   the gate is circumvention, not compliance. This applies to write-capable
+   dispatches (which need the gate) and to read-only dispatches (which are
+   exempt and have no excuse to abandon). If a task genuinely does not need
+   a subagent, that decision is made on its own merits — never as a
+   workaround for a gate block.
+
 #### How the Machine Enforcement Works
 
 The `install-hooks.sh` script (run by `refresh.sh` after skill update) writes
 three hooks into the consumer project's `.devin/` directory:
 
 - **PreToolUse hook** (`check-subagent-gate.sh`) — intercepts every
-  `run_subagent` call, checks for the gate-pass file, returns
-  `{"decision": "block"}` if missing. The dispatch cannot proceed.
+  `run_subagent` call, extracts the `profile` from `tool_input`, and:
+  - **Allows** `subagent_explore` (read-only) dispatches unconditionally —
+    they cannot mutate the working directory.
+  - **Blocks** write-capable dispatches (`subagent_general`, custom
+    write-capable profiles, or missing profile) if no gate-pass file exists,
+    returning `{"decision": "block"}`.
 - **UserPromptSubmit hook** (`inject-binding-contract.sh`) — injects this
   contract into context when the user's prompt mentions execution keywords.
   Keeps the non-negotiable rules in active attention.
 - **Stop hook** (`check-uncommitted-stop.sh`) — blocks stopping with
   uncommitted changes on main/master. Loop-guarded (fires once per session).
 
-The gate only fires when `run_subagent` is called. If the session is reading
-the skill or doing non-execution work, no subagent is dispatched, no gate is
+The gate only fires when a write-capable `run_subagent` is called. Read-only
+research subagents pass through without a gate. If the session is reading the
+skill or doing non-execution work, no subagent is dispatched, no gate is
 checked, no worktree is created. The enforcement is at the dispatch action,
 not the session level.
 
@@ -2541,6 +2567,181 @@ references/included/skills/software-dev/code-review-guidance/
 
 references/included/skills/content/diagram-upsert/
 
+---
+description: Shared PR body template for planned enhancement PRs — feature, story (and task if appropriate), and current story status counts. Used by workflows that create PRs for structured enhancement work (skill-src-upsert, execute-upsert, etc.). Not for unrelated or ad-hoc changes
+---
+
+### Planned Enhancement PR Body Template
+
+When a workflow creates a pull request for a **planned enhancement** (work
+driven by a PRD, feature document, or task story index), the PR body must
+follow this template. The PR serves as a **GitHub-side record** of the work —
+the markdown tracking files (PRD, task index, per-story files) remain the
+single source of truth for detailed tracking, but the PR gives a browsable,
+human-readable summary with a link to the work artifacts.
+
+#### When to Use This Template
+
+- The PR contains work from a **structured execution pipeline** (execute-upsert
+  story branch, skill-src-upsert enhancement branch, etc.)
+- The work is tracked in markdown files (feature PRD, task index, per-story
+  files) under `internal-docs/feature/` or `.agents/`
+- The work addresses a **feature**, **story**, and (if appropriate) **task**
+
+Do NOT use this template for:
+- Ad-hoc bug fixes with no PRD or task tracking
+- Direct commits to main with no story branch
+- Upstream contributions (use the `upstream-contribution-practices` knowledge
+  bundle's comprehensive 12-section template instead)
+
+#### Template
+
+Fill in the placeholders below. Substitute by **text replacement** (not shell
+expansion) and write the final body to a file before posting with
+`gh pr create --body-file` (see `gh-posting-guard.md` for the posting protocol).
+
+```markdown
+## Planned Enhancement: <FEATURE_NAME>
+
+**Feature**: <feature name or slug>
+**Story**: <story ID> — <story title> (from `<PRD-NAME>`)
+**Task**: <task ID or "N/A"> — <task title, or omit this line if not applicable>
+
+### Summary
+
+<2-3 paragraph summary of what was done. Reference the PRD and task index
+file paths so a reviewer can find the tracking documents.>
+
+### Story Status
+
+Current status of all stories in this feature:
+
+| Status | Count |
+|--------|-------|
+| `[x] Done` | <N> |
+| `[~] In-Progress` | <N> |
+| `[!] Blocked` | <N> |
+| `[ ] Todo` | <N> |
+| **Total** | <N> |
+
+### Changes
+
+<Bullet list of the key changes in this PR — files added/modified, skills
+updated, includes created, etc. Group by functional area.>
+
+### Verification
+
+<What was done to verify the work: tests run, build status, validation
+results. Reference the per-story verification subagent verdict if applicable.>
+
+### Tracking Files
+
+- PRD: `<path to PRD file>`
+- Task index: `<path to task index file>`
+- Story file: `<path to per-story file>`
+
+### Blocked Stories (if any)
+
+<If any stories are [!] Blocked, list them here with a one-line reason and
+a pointer to the ## Blocker section in the story file. Omit this section if
+no stories are blocked.>
+```
+
+#### Status Terminology
+
+The status counts use the canonical terminology from the shared
+`definition-of-done.md` and `work-lifecycle.md` includes:
+
+- `[ ] Todo` — not yet started
+- `[~] In-Progress` — actively being worked
+- `[x] Done` — completed and verified
+- `[!] Blocked` — cannot proceed; blocker noted inline
+
+These are the only valid status values. Do not invent new ones.
+
+#### Auto-Merge Policy
+
+When the workflow that creates this PR is running in **autonomous mode**
+(the default), the PR is auto-merged after creation unless:
+
+1. The user explicitly says "do not auto-merge" or "wait for my review"
+2. The user has configured `skill-config.toml` with `[pr] auto-merge = false`
+3. The PR contains destructive changes that require explicit per-action
+   approval per the project's `AGENTS.md`
+
+Auto-merge uses:
+
+```bash
+gh pr merge <PR-NUMBER> --squash --delete-branch
+```
+
+Squash-merge keeps the commit history clean (one commit per PR on main) while
+preserving the story branch's individual commits in the PR's GitHub record.
+`--delete-branch` cleans up the story branch after merge.
+
+If the repo has branch protection rules that block direct merges, fall back to:
+
+```bash
+gh pr merge <PR-NUMBER> --squash --delete-branch --admin
+```
+
+The `--admin` flag bypasses branch protection for repository admins. If the
+token lacks admin permissions, the merge fails — present the PR URL to the
+user for manual merge.
+
+#### Posting Protocol
+
+---
+description: Reusable guard for posting GitHub issue and PR bodies via gh CLI — prevents the two corruption modes (literal \n and stripped backticks) that have shipped broken posts in the wild
+---
+
+## CRITICAL — How to post these bodies to GitHub (read before any `gh` call)
+
+The template below contains markdown backticks (`` ` `` and triple-fence ``` ``` ```), shell-style `$VARS` (`$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`), and real newlines. If you pass it to `gh` the wrong way, GitHub stores garbage. Two failure modes have shipped broken PRs/issues in the wild:
+
+1. **Literal `\n` in the body** — happens when you reconstruct the body as a single-line string with `\n` escape sequences (e.g. an LLM-emitted string literal) and pass it to `gh --body "..."`. The `\n` is stored verbatim as two characters, not a newline. The whole post becomes one unreadable line.
+2. **Stripped code spans + empty variables** — happens when you feed the body through an unquoted shell heredoc (`cat <<EOF` instead of `cat <<'EOF'`) or `echo "..."`. Backticks get command-substituted (`` `flake.nix` `` runs as a command → empty), and `$UPSTREAM_OWNER` is expanded by the shell to empty.
+
+**Always do this, no exceptions:**
+
+1. Substitute the placeholders by **text replacement** (not shell expansion): `$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`, and any `<issue-number>` / `<platform>` / `<project-name>` / `<feature-name>` placeholders. Use `sed -i`/`perl -pi -e` or edit the file in your editor tool — never let bash expand `$UPSTREAM_OWNER`.
+2. Write the final body to a **file** (e.g. `/tmp/pr-body.md` or `/tmp/issue-body.md`).
+3. Post with `--body-file`, never `--body`:
+   ```bash
+   gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" --title "..." --body-file /tmp/pr-body.md
+   gh issue create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" --title "..." --body-file /tmp/issue-body.md
+   ```
+4. Before posting, sanity-check the file: `grep -c '\\n' /tmp/pr-body.md` must return `0` (no literal backslash-n), and `grep -n '`'` must show the backtick code spans intact.
+
+**Never** use `gh ... --body "$BODY"` with an inline string. **Never** use an unquoted heredoc to build the body. The `--body-file` path is the only one that survives multi-line markdown with backticks and `$` intact.
+
+
+
+---
+description: Reusable guard for posting GitHub issue and PR bodies via gh CLI — prevents the two corruption modes (literal \n and stripped backticks) that have shipped broken posts in the wild
+---
+
+## CRITICAL — How to post these bodies to GitHub (read before any `gh` call)
+
+The template below contains markdown backticks (`` ` `` and triple-fence ``` ``` ```), shell-style `$VARS` (`$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`), and real newlines. If you pass it to `gh` the wrong way, GitHub stores garbage. Two failure modes have shipped broken PRs/issues in the wild:
+
+1. **Literal `\n` in the body** — happens when you reconstruct the body as a single-line string with `\n` escape sequences (e.g. an LLM-emitted string literal) and pass it to `gh --body "..."`. The `\n` is stored verbatim as two characters, not a newline. The whole post becomes one unreadable line.
+2. **Stripped code spans + empty variables** — happens when you feed the body through an unquoted shell heredoc (`cat <<EOF` instead of `cat <<'EOF'`) or `echo "..."`. Backticks get command-substituted (`` `flake.nix` `` runs as a command → empty), and `$UPSTREAM_OWNER` is expanded by the shell to empty.
+
+**Always do this, no exceptions:**
+
+1. Substitute the placeholders by **text replacement** (not shell expansion): `$UPSTREAM_OWNER`, `$UPSTREAM_REPO`, `$CURRENT_USER`, and any `<issue-number>` / `<platform>` / `<project-name>` / `<feature-name>` placeholders. Use `sed -i`/`perl -pi -e` or edit the file in your editor tool — never let bash expand `$UPSTREAM_OWNER`.
+2. Write the final body to a **file** (e.g. `/tmp/pr-body.md` or `/tmp/issue-body.md`).
+3. Post with `--body-file`, never `--body`:
+   ```bash
+   gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" --title "..." --body-file /tmp/pr-body.md
+   gh issue create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" --title "..." --body-file /tmp/issue-body.md
+   ```
+4. Before posting, sanity-check the file: `grep -c '\\n' /tmp/pr-body.md` must return `0` (no literal backslash-n), and `grep -n '`'` must show the backtick code spans intact.
+
+**Never** use `gh ... --body "$BODY"` with an inline string. **Never** use an unquoted heredoc to build the body. The `--body-file` path is the only one that survives multi-line markdown with backticks and `$` intact.
+
+
 # Execute Upsert — Project Execution Controller
 
 A controller skill that drives feature implementation from request to
@@ -2644,6 +2845,11 @@ Phase 8: Document ───── update PRD, task files, project docs
     │                     ┌── all stories [x] Done? ──→ Archive feature
     │                     │   (git mv todo/ → archive/YYYY/MM/)
     ▼                     ▼
+Phase 9: Ship ────────── quality gate (lock + build/validate/test) →
+    │                     push branch → create PR → verify body →
+    │                     auto-merge → return to main → clean up worktree
+    │                     (deterministic: quality-gate.sh + ship-pr.sh)
+    ▼
 Done
 ```
 
@@ -2651,7 +2857,7 @@ Done
 state where there are no more tasks you can do but there are more tasks to
 do (any story is `[ ] Todo`, `[~] In-Progress`, or `[!] Blocked`), invoke
 the `handoff` skill to capture context before terminating. Clean
-completions (all `[x] Done`) skip the handoff — Phase 8 is the final step.
+completions (all `[x] Done`) skip the handoff — Phase 9 is the final step.
 
 ## Execution Mode: Autonomous
 
@@ -2666,7 +2872,7 @@ Do not insert confirmation prompts between stories. Do not ask "should I
 proceed to the next phase?" after a story completes. Do not stop the
 pipeline on the first blocker. The only valid stop conditions are:
 
-1. All stories are `[x] Done` — proceed to Phase 8.
+1. All stories are `[x] Done` — proceed to Phase 8, then Phase 9.
 2. All remaining stories are transitively blocked — present Phase 7, then
    invoke `handoff`.
 3. Disruption (context limit, user pause, unrecoverable failure) — invoke
@@ -2690,10 +2896,63 @@ tool-call level — the agent cannot rationalize past them.
 ### The Three Hooks
 
 1. **PreToolUse hook** (`check-subagent-gate.sh`) — intercepts every
-   `run_subagent` call. Checks for a gate-pass file at
-   `/tmp/devin-execution-gates/current-gate-pass`. If missing, returns
-   `{"decision": "block"}` — the dispatch cannot proceed. This is the
-   hard gate that enforces worktree-per-story.
+   `run_subagent` call, extracts the `profile` from `tool_input`, and:
+   - **Allows** `subagent_explore` (read-only) dispatches unconditionally —
+     they cannot mutate the working directory (profile-enforced tool access).
+   - **Blocks** write-capable dispatches (`subagent_general`, custom
+     write-capable profiles, or missing profile) if no gate-pass file exists
+     at `/tmp/devin-execution-gates/current-gate-pass`, returning
+     `{"decision": "block"}` — the dispatch cannot proceed. This is the
+     hard gate that enforces worktree-per-story for mutating work.
+
+   # Worktree Enforcement Bypass Table
+
+The worktree-per-feature workflow is enforced by two machine gates. Both
+have bypass mechanisms designed to be **asymmetric** — the user can
+bypass but the agent can't:
+
+| Gate | Bypass | How user bypasses | Why agent can't |
+|------|--------|-------------------|-----------------|
+| Pre-commit hook | `SKILL_ALLOW_MAIN_WRITE=1` | Set in your shell: `SKILL_ALLOW_MAIN_WRITE=1 git commit ...` | Visible in the exec tool call output — you see it |
+| PreToolUse hook | `SKILL_BYPASS_GATE=1` | Set at session launch: `SKILL_BYPASS_GATE=1 devin` | Hook inherits session env, not command env — agent can't set session-level vars mid-session |
+| Both | `git commit --no-verify` | Type it in your shell | Agent would have to pass `--no-verify` in its exec command — visible |
+| Config file | `.agents/config/script-guards.toml` | Create with `[worktree-isolation] allow_main_write = true` | Agent can write files, but the change is visible in git diff and the file is version-controlled |
+
+## Read-Only Profile Exemption (not a bypass — a correct non-application)
+
+The PreToolUse hook inspects the `profile` field in the `run_subagent`
+`tool_input`. `subagent_explore` dispatches are **allowed without a
+gate-pass** — this is not a bypass, it is a correct non-application of the
+gate. The gate exists to prevent mutation of the main working directory;
+`subagent_explore` has profile-enforced read-only tool access (grep, glob,
+read, web_search — no edit/write/exec) and cannot mutate anything. The
+exemption is enforced at the tool layer, so an agent cannot escalate a
+read-only dispatch to write capability by prompt content alone.
+
+| Profile | Gate required? | Why |
+|---------|----------------|-----|
+| `subagent_explore` | No | Read-only tool access — cannot mutate the working directory |
+| `subagent_general` | Yes | Full tool access (foreground) — can edit/write/exec |
+| Custom write-capable | Yes | Has edit/write/exec access |
+| Custom read-only | No | If the profile restricts tools to read-only set |
+| Missing/empty profile | Yes | Fail-closed — treat as write-capable |
+
+**Do not abandon subagent dispatch to avoid the gate.** If a write-capable
+dispatch is blocked, run `execution-gate.sh` and re-dispatch. Dropping the
+subagent to do the work inline is circumvention, not compliance (binding
+contract rule 9).
+
+The config file bypass is also available for repos that don't use the
+worktree-per-feature workflow (e.g., single-maintainer repos where
+worktrees add overhead without benefit):
+
+```toml
+# .agents/config/script-guards.toml
+[worktree-isolation]
+allow_main_write = true
+protected_branches = ["main", "master"]  # optional override
+```
+
 
 2. **UserPromptSubmit hook** (`inject-binding-contract.sh`) — injects the
    ~30-line binding contract into context when the user's prompt mentions
@@ -2747,10 +3006,11 @@ to `standard` if the caller doesn't specify.
 
 ### No-Work Concern
 
-The gate only fires when `run_subagent` is called. If the session is
-reading the skill or doing non-execution work, no subagent is dispatched,
-no gate is checked, no worktree is created. The enforcement is at the
-dispatch action, not the session level.
+The gate only fires when a write-capable `run_subagent` is called.
+`subagent_explore` (read-only) dispatches pass through without a gate. If
+the session is reading the skill or doing non-execution work, no subagent is
+dispatched, no gate is checked, no worktree is created. The enforcement is
+at the dispatch action, not the session level.
 
 ## Phase 1: Self-Update
 
@@ -2810,6 +3070,30 @@ If the request is small (fails the heuristic), confirm with the user:
 
 If the user chooses direct execution, implement the change without the
 pipeline. Otherwise, proceed to Phase 3.
+
+### Worktree Creation (always, for both paths)
+
+Regardless of whether the request is large (full pipeline) or small
+(direct execution), create a treehouse-managed worktree on a feature
+branch before doing any work. Treehouse makes worktrees cheap — reusable,
+cache-warmed, pool-managed — so there is no reason to work directly on
+`main` even for small changes.
+
+For **direct execution** (small changes), call `execution-gate.sh` with
+`--story-type standalone`:
+
+```bash
+SLUG="{feature-slug}"
+WORKTREE_PATH=$(bash .devin/scripts/execution-gate.sh "$SLUG" \
+  --story-type standalone)
+cd "$WORKTREE_PATH"
+```
+
+For **full pipeline** (large changes), Phase 6's execution loop calls
+`execution-gate.sh` per story with `--story-type standard`. The gate
+handles treehouse acquire, story branch creation, checkpoint commit, and
+gate-pass file writing. The pre-commit worktree isolation hook blocks
+commits to `main` outside a worktree, so this step is not optional.
 
 If the request is large, briefly summarize your assessment and proceed to
 Phase 3.
@@ -3243,11 +3527,14 @@ For each task story that isn't completed yet:
    greppable story boundaries, not a functional requirement — the
    commit history itself is the audit trail.
 
-   **Machine-enforced gate (mandatory).** Before dispatching the
-   subagent, run the execution gate script. This creates the per-story
-   git worktree and writes the gate-pass file that the PreToolUse hook
-   on `run_subagent` checks. Without the gate-pass file, the hook
-   **blocks** the dispatch — the subagent cannot be launched.
+   **Machine-enforced gate (mandatory for write-capable subagents).**
+   Before dispatching a write-capable subagent (`subagent_general` or a
+   custom write-capable profile), run the execution gate script. This
+   creates the per-story git worktree and writes the gate-pass file that the
+   PreToolUse hook on `run_subagent` checks. Without the gate-pass file, the
+   hook **blocks** the dispatch — the subagent cannot be launched.
+   Read-only research subagents (`subagent_explore`) are exempt and do not
+   require the gate — they cannot mutate the working directory.
 
    ```bash
    # Run the gate — creates worktree + gate-pass file
@@ -3648,6 +3935,168 @@ archive the feature per the shared `work-lifecycle` include above
 This keeps `internal-docs/feature/todo/` clean — only active features show up
 there. Completed features are browsable by month under `archive/`.
 
+## Phase 9: Ship
+
+After Phase 8 (Document + Archive) is complete and the tree is clean, run
+the quality gate, then ship the work to the remote via a pull request.
+This phase is deterministic — the AI writes the PR body (creative work),
+then scripts handle the quality gate, push, PR creation, body verification,
+auto-merge, and worktree cleanup.
+
+### Quality Gate
+
+Before shipping, run the project's quality commands under a concurrency
+lock to prevent overlapping test/lint runs from corrupting build output.
+The lock is scoped per-repo+feature — two runs targeting the same repo
+and the same feature cannot overlap in the quality gate; runs targeting
+different features proceed concurrently.
+
+Run the quality gate script with the commands detected in Phase 3
+(Establish Technologies):
+
+```bash
+./scripts/quality-gate.sh \
+  --repo "$(git rev-parse --show-toplevel)" \
+  --scope "$FEATURE_SLUG" \
+  --slug "$RUN_SLUG" \
+  --command "devbox run -- just build" \
+  --command "devbox run -- just validate" \
+  --command "devbox run -- just test" \
+  --command "devbox run -- just bats" \
+  --command "devbox run -- just catalog"
+```
+
+The script:
+1. Acquires a concurrency lock (per-repo+scope)
+2. Runs each command in order (all must pass; first failure stops the gate)
+3. Releases the lock (always, even on failure)
+4. Emits a JSON summary with pass/fail status per command
+
+**Exit codes:**
+- `0` — all commands passed. Proceed to write the PR body and ship.
+- `2` — lock is active (another run holds it). Skip the quality gate.
+  Pass `--quality-gate-skipped` to `ship-pr.sh`. The PR is not verified —
+  present the URL and note that tests were deferred.
+- `3` — one or more commands failed. Do NOT ship. Return to Phase 6 to
+  fix the failures, then re-run the quality gate.
+
+**Build output reuse:** the build from Phase 6 story work is reused — do
+not rebuild unless the source tree changed after Phase 6. If it did,
+rebuild before running the quality gate.
+
+### When to Ship
+
+- **All stories `[x] Done` and quality gate passed**: ship automatically.
+  Documentation is updated in Phase 8, the feature is archived, the
+  quality gate is green. Ship without asking.
+- **Stories `[!] Blocked` (deferred)**: ship if the user did not say "wait
+  for my review." The PR will contain the completed work; blocked stories
+  are noted as deferred in the PRD. Use `--no-merge` if the user wants to
+  review before merging.
+- **User said "do not auto-merge" or "wait for my review"**: create the PR
+  with `--no-merge`. Present the PR URL and stop.
+- **Quality gate was skipped** (lock active, exit 2): create the PR with
+  `--quality-gate-skipped`. The PR is not verified — present the URL and
+  stop. A later run can check out the story branch, acquire the lock, run
+  the quality gate, and merge.
+
+### Write the PR Body
+
+Read the planned-enhancement PR template (inlined above in this skill's
+body) and fill in the placeholders:
+
+- **Feature**: the feature slug
+- **Story**: the story ID and title if this work is part of a structured
+  pipeline. If standalone, use "N/A — standalone upsert"
+- **Task**: the task ID if broken into sub-tasks. Omit if not applicable
+- **Story Status**: count stories by status. If standalone, use a
+  single-row table: `[x] Done: 1`
+- **Changes**: bullet list of files added/modified, grouped by functional
+  area
+- **Verification**: test results from Phase 6, review verdict from Phase 6
+  code review
+- **Tracking Files**: paths to any PRD, task index, or story files (omit
+  if standalone)
+
+Write the filled-in body to a file (e.g., `/tmp/pr-body.md`). Follow the
+gh-posting-guard protocol (inlined above in this skill's body) — substitute
+placeholders by text replacement, never shell expansion. Use `cat <<'EOF'`
+(quoted heredoc) or the editor tool — never an unquoted heredoc.
+
+Before posting, sanity-check the file:
+```bash
+grep -c '\\n' /tmp/pr-body.md   # must return 0 (no literal backslash-n)
+grep -n '`' /tmp/pr-body.md     # backtick code spans must be intact
+```
+
+### Run the Ship Script
+
+Call `ship-pr.sh` with the feature branch, base branch, PR title, body
+file, and project/feature slugs:
+
+```bash
+./scripts/ship-pr.sh \
+  --feature-branch "$FEATURE_BRANCH" \
+  --base-branch "$BASE_BRANCH" \
+  --pr-title "enhancement: $FEATURE_SLUG — one-line summary" \
+  --pr-body-file /tmp/pr-body.md \
+  --project-slug "$PROJECT_SLUG" \
+  --feature-slug "$FEATURE_SLUG" \
+  [--no-merge] \
+  [--admin] \
+  [--quality-gate-skipped] \
+  [--wait-for-ci]
+```
+
+The script handles:
+1. Pre-condition checks (commits exist, body file exists, gh available)
+2. Auto-merge opt-out evaluation (flags + `skill-config.toml`)
+3. Push the feature branch to the remote
+4. Create the PR with `--body-file` (gh-posting-guard compliant)
+5. Verify the posted body matches the file (re-post with `gh pr edit` if
+   corrupted)
+6. Wait for CI checks (if `--wait-for-ci` was passed)
+7. Squash-merge and delete the remote branch (if auto-merge enabled)
+8. Clean up the worktree (return treehouse lease or remove manual worktree)
+
+The script **never touches the main checkout**. The merge happens on the
+remote via `gh pr merge`. The script prints a reminder to pull the local
+main checkout, but the user does that — not the skill.
+
+The script prints a JSON summary on stdout (last line). Parse it to report
+the result to the user.
+
+### Exit Codes
+
+| Code | Meaning | AI Action |
+|------|---------|-----------|
+| 0 | PR created and merged, base branch updated | Report success |
+| 1 | Pre-condition failure | Fix the issue and retry |
+| 2 | PR creation failed | Check gh output, fix and retry |
+| 3 | PR body verification failed | Check body file, fix and retry |
+| 4 | Merge failed (branch protection, permissions) | Retry with `--admin`, or present PR URL for manual merge |
+| 5 | Unexpected error | Present the error to the user |
+| 6 | PR created but NOT merged (auto-merge disabled) | Present the PR URL and stop |
+| 7 | CI checks failed (`--wait-for-ci` only) | Present the PR URL, do NOT merge |
+
+### After Ship
+
+If the script exited 0 (merged): the PR is merged on the remote, the
+worktree is cleaned up, and the feature is complete. Report the PR URL,
+merge status, and the reminder to pull their local main checkout to the
+user. The script does NOT update the local main checkout — the user does
+that.
+
+If the script exited 6 (PR created, not merged): present the PR URL to the
+user. The feature is not complete until the PR is merged. A later run can
+merge it via `gh pr merge <PR-NUMBER> --squash --delete-branch` (the user
+pulls their local main afterward).
+
+If the script exited non-zero (failure): present the error and the PR URL
+(if created). Do not infer completion from a successful build or todo
+status — PR lifecycle state must come from the script's JSON summary or an
+authoritative `gh pr view` result.
+
 ## Task List
 
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
@@ -3663,6 +4112,9 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Phase 7: present the consolidated blocker report when no more runnable stories remain
 - [ ] Phase 8: update the PRD, task files, and project documentation
 - [ ] Phase 8: archive completed feature (git mv todo/ → archive/YYYY/MM/) when all stories [x] Done
+- [ ] Phase 9: run quality-gate.sh (lock + build/validate/test/catalog + unlock)
+- [ ] Phase 9: write PR body to file (planned-enhancement template, gh-posting-guard compliant)
+- [ ] Phase 9: run ship-pr.sh (push, create PR, verify body, auto-merge, return to main, clean up worktree)
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -3728,6 +4180,19 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** If all stories are `[x] Done`: the feature was archived via `git mv` from `todo/` to `archive/YYYY/MM/`, `date.completed` was set, and the archive commit was made (Phase 8 — Archive Completed Feature)
 - [ ] **[manual]** If any stories are `[!] Blocked` (deferred): the feature was left in `todo/` with deferred items noted in the PRD — NOT archived (Phase 8 — Archive Completed Feature)
 
+### Phase 9: Ship
+
+- [ ] **[script]** `quality-gate.sh` was run and exited 0 (all commands passed) or 2 (lock active, quality gate skipped) (Phase 9 — Quality Gate)
+- [ ] **[manual]** If quality gate exited 3 (command failed): the pipeline returned to Phase 6 to fix the failure — did NOT ship with a red gate (Phase 9 — Quality Gate)
+- [ ] **[manual]** PR body was written to a file using the planned-enhancement template with all placeholders substituted (Phase 9 — Write the PR Body)
+- [ ] **[script]** `grep -c '\\n' /tmp/pr-body.md` returns 0 — no literal backslash-n in the body file (Phase 9 — Write the PR Body)
+- [ ] **[script]** `ship-pr.sh` was run and exited 0 (merged) or 6 (PR created, auto-merge disabled) (Phase 9 — Run the Ship Script)
+- [ ] **[script]** If exit 0: the script's JSON summary has `"merged":true` and `"status":"merged"` (Phase 9 — After Ship)
+- [ ] **[manual]** If exit 6: the PR URL was presented to the user and the pipeline stopped (Phase 9 — After Ship)
+- [ ] **[manual]** PR lifecycle state was confirmed from the script's JSON summary or `gh pr view` — not inferred from todo status or build success (Phase 9 — After Ship)
+- [ ] **[manual]** If merged: the user was told to pull their local main checkout (the script does NOT touch main) (Phase 9 — Run the Ship Script)
+- [ ] **[manual]** If merged: the worktree was cleaned up (treehouse lease returned or manual worktree removed) (Phase 9 — Run the Ship Script)
+
 ### Disruption Handoff
 
 - [ ] **[manual]** If the pipeline stopped with work remaining: the `handoff` skill was invoked with execution state and the user was told the handoff path + resume command (Disruption Handoff)
@@ -3744,6 +4209,11 @@ If any of these are true, the run is NOT complete:
 - The PRD has no Architecture Diagram → the PRD template's diagram requirement was not met (Phase 4)
 - All stories are `[x] Done` but the feature is still in `todo/` → the archive step was skipped (Phase 8 — Archive Completed Feature)
 - The feature was archived to `archive/YYYY/MM/` but `date.completed` was not set in the PRD frontmatter → the lifecycle frontmatter is incomplete (Phase 8)
+- `ship-pr.sh` was not run → the PR was not created (Phase 9)
+- `ship-pr.sh` exited non-zero but the AI reported completion → the PR lifecycle state was inferred, not verified (Phase 9)
+- The PR was created but the posted body contains literal `\n` or stripped backticks → the body was corrupted during posting (Phase 9)
+- The PR was merged but the user was not told to pull their local main → the user's local main is behind origin without their knowledge (Phase 9)
+- The PR was merged but the worktree was not cleaned up → stale worktree remains (Phase 9)
 
 
 ## Context Declaration
@@ -6082,6 +6552,11 @@ When working with task lists, the AI must:
 - **PRD output**: `internal-docs/feature/todo/{slug}/feat-YYYYMMDDHHmm-{slug}.md`
 - **Task output**: `internal-docs/feature/todo/{slug}/tasks/`
 - **Feature archive**: `internal-docs/feature/archive/YYYY/MM/{slug}/` (moved here via `git mv` when all stories `[x] Done`)
+- **Ship script**: `scripts/ship-pr.sh` — Phase 9 deterministic push/create-PR/verify/merge/return-to-main/cleanup script
+- **Quality gate script**: `scripts/quality-gate.sh` — Phase 9 deterministic lock/build/validate/test/catalog/unlock script
+- **Lock scripts**: `scripts/lock/acquire-lock.sh`, `scripts/lock/release-lock.sh`, `scripts/lock/check-lock.sh` — shared concurrency lock primitives (materialized from `includes/lock/`)
+- **PR body template**: inlined from `includes/planned-enhancement-pr-template.md` — used in Phase 9 to write the PR body
+- **gh-posting-guard protocol**: inlined from `includes/gh-posting-guard.md` — used in Phase 9 for safe PR body posting
 
 ### Reference Files
 
@@ -6094,6 +6569,8 @@ When working with task lists, the AI must:
 - `references/included/skills/software-dev/project-detection/SKILL.md` — Bundled project-detection skill (tech stack detection)
 - `references/included/skills/software-dev/code-review-guidance/SKILL.md` — Bundled code-review-guidance skill (per-story code review checklist)
 - `references/included/skills/content/diagram-upsert/SKILL.md` — Bundled diagram-upsert skill (Mermaid/PlantUML/Excalidraw authoring and validation for PRD diagrams)
+- `includes/planned-enhancement-pr-template.md` — Inlined PR body template for planned enhancement PRs (Phase 9)
+- `includes/gh-posting-guard.md` — Inlined gh-posting-guard protocol for safe PR body posting (Phase 9)
 
 ### Project Info
 

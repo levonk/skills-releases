@@ -26,4 +26,4 @@ Thinking-method library and light multi-advisor council for pressure-testing dec
 
 - **Full skill**: [`skills/general/think-assist/SKILL.md`](skills/general/think-assist/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-24T20:08:44Z
+- **Generated**: 2026-08-26T09:57:55Z

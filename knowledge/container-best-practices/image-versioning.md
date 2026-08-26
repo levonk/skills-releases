@@ -46,7 +46,7 @@ multi-arch builds, shallow clones, and Docker build contexts.
 - A "reproducible" rebuild produces a different image because the version
   string changed and a downstream consumer pinned the tag.
 - Git smudge filters silently fail in CI (filters disabled in ephemeral
-  runners, shallow clones lack the tag history) and the baked `$Id: 888e14fc3beb0c6177ad6685a6477db8188279aa $` stays
+  runners, shallow clones lack the tag history) and the baked `$Id$` stays
   unexpanded inside the image.
 
 ## Practice
@@ -256,7 +256,7 @@ env:
 
 Git's smudge/clean filter mechanism (`.gitattributes` + `filter.expand.smudge`
 / `filter.expand.clean`) is the only built-in way to expand placeholders like
-`$Id: 888e14fc3beb0c6177ad6685a6477db8188279aa $` at checkout. **Do not use it for image versioning.** It breaks:
+`$Id$` at checkout. **Do not use it for image versioning.** It breaks:
 
 - **Reproducibility** — expanded text mutates file contents, breaking content
   hashing.
@@ -268,7 +268,7 @@ Git's smudge/clean filter mechanism (`.gitattributes` + `filter.expand.smudge`
 - **Cross-platform consistency** — filter behavior differs across Git builds.
 
 Git has **no built-in keyword identifiers** the way CVS/Subversion did. The
-`ident` attribute expands `$Id: 888e14fc3beb0c6177ad6685a6477db8188279aa $` to the blob SHA-1, not the commit hash or
+`ident` attribute expands `$Id$` to the blob SHA-1, not the commit hash or
 semver — it is useless for versioning. Everything must be wired through
 user-defined filters, and the resulting fragility is not worth it. The
 `.version` file approach is deterministic and portable.

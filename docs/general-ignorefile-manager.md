@@ -28,4 +28,4 @@ Generate, reconcile, and audit ignore files (.gitignore, .codeiumignore, .cursor
 
 - **Full skill**: [`skills/general/ignorefile-manager/SKILL.md`](skills/general/ignorefile-manager/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-24T20:08:44Z
+- **Generated**: 2026-08-26T09:57:55Z

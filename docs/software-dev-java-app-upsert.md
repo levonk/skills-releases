@@ -30,4 +30,4 @@ Create new Java applications, update and improve existing Java projects, and con
 
 - **Full skill**: [`skills/software-dev/java-app-upsert/SKILL.md`](skills/software-dev/java-app-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-24T20:08:44Z
+- **Generated**: 2026-08-26T09:57:55Z

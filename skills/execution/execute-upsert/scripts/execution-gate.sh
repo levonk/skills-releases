@@ -67,6 +67,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Consumers:
 #   - execution/execute-upsert/scripts/execution-gate.sh.tmpl
 #   - execution/execute-upsert/scripts/land-on-env-dev.sh.tmpl
+#   - execution/execute-upsert/scripts/ship-pr.sh.tmpl
 
 # Guard against double-sourcing
 _TREEHOUSE_HELPERS_SOURCED="${_TREEHOUSE_HELPERS_SOURCED:-}"
@@ -334,37 +335,46 @@ if git -C "$PROJECT_DIR" worktree list | grep -q "$WORKTREE_PATH"; then
 fi
 
 # --- Acquire worktree ---
-# Strategy: use treehouse when available (pool-managed, reusable, cache-warmed).
-# Fall back to manual `git worktree add` when treehouse is not installed.
+# Treehouse is required (not optional). Treehouse makes worktrees cheap —
+# reusable, cache-warmed, pool-managed. The manual `git worktree add`
+# fallback was removed because it created a two-path maintenance burden and
+# the manual path lacked lease tracking, cache warming, and pool reuse.
+# If treehouse is not installed, the gate fails with a clear install
+# instruction rather than silently degrading.
 TREEHOUSE_USED=0
 
-if [[ "$(treehouse_available)" == "1" ]]; then
-  echo "[gate] Acquiring worktree via treehouse pool..." >&2
-  TREEHOUSE_LEASE_HOLDER="execute-upsert/${STORY_SLUG}"
-  ACQUIRED_PATH="$(treehouse_acquire "execute-upsert/${STORY_SLUG}" 2>&1)" || {
-    echo "[gate] Treehouse acquire failed, falling back to manual worktree" >&2
-    ACQUIRED_PATH=""
-  }
-  if [[ -n "$ACQUIRED_PATH" ]]; then
-    WORKTREE_PATH="$ACQUIRED_PATH"
-    TREEHOUSE_USED=1
-    echo "[gate] Treehouse worktree leased: $WORKTREE_PATH" >&2
-    echo "[gate] Lease ID: ${TREEHOUSE_LEASE_ID:-unknown}" >&2
+if [[ "$(treehouse_available)" != "1" ]]; then
+  echo "BLOCK: treehouse is not installed but is required for worktree isolation." >&2
+  echo "Treehouse makes worktrees cheap (reusable, cache-warmed, pool-managed)." >&2
+  echo "Install: https://github.com/kunchenguid/treehouse" >&2
+  echo "Or: brew install treehouse (if available on tap)" >&2
+  echo "Or: cargo install treehouse (if Rust toolchain is available)" >&2
+  exit 2
+fi
 
-    # Record the lease info for later return
-    cat > "$GATE_DIR/lease-${STORY_SLUG}" <<EOF
+echo "[gate] Acquiring worktree via treehouse pool..." >&2
+TREEHOUSE_LEASE_HOLDER="execute-upsert/${STORY_SLUG}"
+ACQUIRED_PATH="$(treehouse_acquire "execute-upsert/${STORY_SLUG}" 2>&1)" || {
+  echo "[gate] Treehouse acquire failed" >&2
+  echo "$ACQUIRED_PATH" >&2
+  exit 2
+}
+
+if [[ -n "$ACQUIRED_PATH" ]]; then
+  WORKTREE_PATH="$ACQUIRED_PATH"
+  TREEHOUSE_USED=1
+  echo "[gate] Treehouse worktree leased: $WORKTREE_PATH" >&2
+  echo "[gate] Lease ID: ${TREEHOUSE_LEASE_ID:-unknown}" >&2
+
+  # Record the lease info for later return
+  cat > "$GATE_DIR/lease-${STORY_SLUG}" <<EOF
 ${TREEHOUSE_LEASE_ID:-}
 ${TREEHOUSE_LEASE_HOLDER:-}
 ${WORKTREE_PATH}
 EOF
-  fi
-fi
-
-if [[ "$TREEHOUSE_USED" -eq 0 ]]; then
-  # --- Fallback: manual git worktree ---
-  echo "[gate] Creating worktree via git worktree add..." >&2
-  mkdir -p "$WORKTREE_BASE"
-  git -C "$PROJECT_DIR" worktree add -b "$STORY_BRANCH" "$WORKTREE_PATH" "$BASE_SHA" 2>&1 | sed 's/^/[gate] /' >&2
+else
+  echo "BLOCK: treehouse acquire returned empty path" >&2
+  exit 2
 fi
 
 # --- Create named story branch inside the worktree ---

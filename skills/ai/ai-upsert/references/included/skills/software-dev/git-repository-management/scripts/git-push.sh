@@ -383,6 +383,7 @@ rtk_wrap() {
 #   - git-repository-management/scripts/git-push.sh.tmpl
 #   - git-repository-management/scripts/git-archive.sh.tmpl
 #   - execution/execute-upsert/scripts/land-on-env-dev.sh.tmpl (with opt-out)
+#   - execution/execute-upsert/scripts/ship-pr.sh.tmpl (with opt-out)
 #
 # Treehouse awareness: when treehouse (https://github.com/kunchenguid/treehouse)
 # is used for worktree management, worktrees are still regular git linked

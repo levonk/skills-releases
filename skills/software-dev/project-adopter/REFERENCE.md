@@ -482,7 +482,7 @@ monorepo/
 - [ ] Dependencies are properly declared
 - [ ] CI/CD is configured
 - [ ] License file exists
-- [ ] Pre-commit hook installed (`scripts/hooks/pre-commit` exists, `core.hooksPath=scripts/hooks` set) — submodule-integrity protection via `scripts/install-pre-commit-hooks.sh`
+- [ ] Pre-commit hooks installed (`scripts/hooks/pre-commit` composite entry point exists, `core.hooksPath=scripts/hooks` set) — worktree isolation + submodule-integrity protection via `scripts/install-pre-commit-hooks.sh`
 
 ### Validation Commands
 ```bash

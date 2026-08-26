@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
 #
-# install-pre-commit-hooks.sh — install the submodule-integrity pre-commit hook
+# install-pre-commit-hooks.sh — install pre-commit hooks for adopted projects
 #
-# Creates scripts/hooks/pre-commit in the target project and sets
-# git config core.hooksPath scripts/hooks. The hook detects the class of bug
-# where a git submodule (mode 160000 commit) is accidentally converted to a
-# regular directory (mode 040000 tree) in the parent repo's index.
+# Creates scripts/hooks/ in the target project with:
+#   - pre-commit (composite entry point that calls all checks)
+#   - pre-commit-submodule-integrity.sh (submodule-as-tree protection)
+#   - pre-commit-worktree-isolation.sh (block commits to main outside worktree)
 #
-# Idempotent: safe to re-run. Overwrites the hook file and re-sets core.hooksPath.
+# Sets git config core.hooksPath scripts/hooks.
+#
+# Also scans .gitmodules for file:// submodule URLs and prints an advisory
+# warning if found (CVE-2022-39253 awareness — per-repo opt-in may be needed
+# if the environment denies file:// transport globally). Detect-and-inform
+# only; never auto-applies the override.
+#
+# Idempotent: safe to re-run. Overwrites hook files and re-sets core.hooksPath.
 #
 # Usage:
 #   ./install-pre-commit-hooks.sh [project_path]
 #
 # If project_path is omitted, defaults to the current directory.
 #
-# The hook itself skips silently at runtime if .gitmodules doesn't exist or
-# is empty — so it is safe to install unconditionally.
+# The submodule hook skips silently at runtime if .gitmodules doesn't exist
+# or is empty — so it is safe to install unconditionally.
+#
+# The worktree isolation hook blocks commits to main/master outside a linked
+# worktree. Bypass: SKILL_ALLOW_MAIN_WRITE=1 env var, or
+# .agents/config/script-guards.toml [worktree-isolation] allow_main_write=true.
 
 set -euo pipefail
 
@@ -190,16 +201,116 @@ exit 0
 PRECOMMIT_EOF
 
 # ---------------------------------------------------------------------------
-# Install the hook
+# Install the hooks
 # ---------------------------------------------------------------------------
 
 mkdir -p "$HOOKS_DIR"
 
-# Write the hook file (overwrite if it exists — idempotent)
-printf '%s\n' "$HOOK_CONTENT" > "$HOOK_FILE"
-chmod +x "$HOOK_FILE"
+# Write the submodule-integrity hook as a separate file
+SUBMODULE_HOOK="$HOOKS_DIR/pre-commit-submodule-integrity.sh"
+printf '%s\n' "$HOOK_CONTENT" > "$SUBMODULE_HOOK"
+chmod +x "$SUBMODULE_HOOK"
+log_info "Installed submodule-integrity hook at: $SUBMODULE_HOOK"
 
-log_info "Installed pre-commit hook at: $HOOK_FILE"
+# Write the worktree-isolation hook as a separate file
+WORKTREE_HOOK="$HOOKS_DIR/pre-commit-worktree-isolation.sh"
+cat > "$WORKTREE_HOOK" <<'WORKTREE_EOF'
+#!/usr/bin/env bash
+# pre-commit-worktree-isolation.sh — block commits to protected branches outside a worktree
+#
+# Bypass layers (in order):
+#   1. SKILL_ALLOW_MAIN_WRITE=1 environment variable (user sets in shell)
+#   2. .agents/config/script-guards.toml [worktree-isolation] allow_main_write=true
+#   3. git commit --no-verify (emergency bypass, skips all hooks)
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || echo "")"
+if [[ -z "$repo_root" ]]; then
+  exit 0
+fi
+
+if [[ "${SKILL_ALLOW_MAIN_WRITE:-0}" == "1" ]]; then
+  exit 0
+fi
+
+cfg="$repo_root/.agents/config/script-guards.toml"
+cfg_bypass=0
+if [[ -f "$cfg" ]]; then
+  section="$(awk '/^\[worktree-isolation\]/{f=1;next} /^\[/{f=0} f' "$cfg" 2>/dev/null || true)"
+  if printf '%s' "$section" | grep -Eq 'allow_main_write[[:space:]]*=[[:space:]]*true'; then
+    cfg_bypass=1
+  fi
+fi
+
+if [[ "$cfg_bypass" -eq 1 ]]; then
+  exit 0
+fi
+
+current_branch="$(git -C "$repo_root" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+
+protected_branches=("main" "master")
+if [[ -f "$cfg" ]]; then
+  section="$(awk '/^\[worktree-isolation\]/{f=1;next} /^\[/{f=0} f' "$cfg" 2>/dev/null || true)"
+  pb_line="$(printf '%s' "$section" | grep -E 'protected_branches[[:space:]]*=' || true)"
+  if [[ -n "$pb_line" ]]; then
+    pb_values="$(printf '%s' "$pb_line" | sed 's/.*=\s*//; s/^\[//; s/\]$//; s/"//g; s/,/\n/g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' || true)"
+    if [[ -n "$pb_values" ]]; then
+      # shellcheck disable=SC2206
+      protected_branches=($pb_values)
+    fi
+  fi
+fi
+
+on_protected=0
+for pb in "${protected_branches[@]}"; do
+  if [[ "$current_branch" == "$pb" ]]; then
+    on_protected=1
+    break
+  fi
+done
+
+if [[ "$on_protected" -eq 0 ]]; then
+  exit 0
+fi
+
+abs_git_dir="$(git rev-parse --absolute-git-dir 2>/dev/null || echo "")"
+if [[ "$abs_git_dir" == *"/.git/worktrees/"* ]]; then
+  exit 0
+fi
+
+echo "" >&2
+echo "PRE-COMMIT REJECTED: committing to '$current_branch' outside a worktree." >&2
+echo "  Feature work must happen in a worktree on a feature branch." >&2
+echo "  Use treehouse: devbox run -- treehouse get --lease" >&2
+echo "  Or manual: git worktree add ../<name> -b feature/<scope>/<slug>" >&2
+echo "  Bypass: SKILL_ALLOW_MAIN_WRITE=1 git commit ..." >&2
+echo "  Bypass (emergency): git commit --no-verify" >&2
+echo "" >&2
+exit 1
+WORKTREE_EOF
+chmod +x "$WORKTREE_HOOK"
+log_info "Installed worktree-isolation hook at: $WORKTREE_HOOK"
+
+# Write the composite pre-commit entry point that calls all hooks in order
+cat > "$HOOK_FILE" <<'COMPOSITE_EOF'
+#!/usr/bin/env bash
+# pre-commit (composite) — calls all pre-commit checks in order
+#
+# This file is generated by install-pre-commit-hooks.sh. To add a new
+# check, create a pre-commit-<name>.sh script in this directory and
+# add a call to it below.
+set -euo pipefail
+
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 1. Worktree isolation — block commits to main/master outside a worktree
+bash "$HOOKS_DIR/pre-commit-worktree-isolation.sh" || exit 1
+
+# 2. Submodule integrity — prevent submodules from being tracked as trees
+bash "$HOOKS_DIR/pre-commit-submodule-integrity.sh" || exit 1
+COMPOSITE_EOF
+chmod +x "$HOOK_FILE"
+log_info "Installed composite pre-commit at: $HOOK_FILE"
 
 # Set core.hooksPath if inside a git repo. If not a git repo yet, the hook
 # file is still in place and will be committed later; re-run this script
@@ -210,6 +321,33 @@ if git -C "$PROJECT_PATH" rev-parse --git-dir >/dev/null 2>&1; then
 else
     log_warn "Not a git repo yet — hook file installed but core.hooksPath not set."
     log_warn "Re-run this script after 'git init' to configure core.hooksPath."
+fi
+
+# ---------------------------------------------------------------------------
+# file:// submodule URL advisory (CVE-2022-39253 awareness)
+# ---------------------------------------------------------------------------
+# Git 2.38.1 changed protocol.file.allow default from 'always' to 'user' to
+# close CVE-2022-39253 (submodule-initiated file:// exfiltration). Many
+# environments set protocol.file.allow=never globally for defense-in-depth.
+# Repos with file:// submodule URLs will hit:
+#   fatal: transport 'file' not allowed
+# until a per-repo override is applied. This is a deliberate opt-in — we
+# detect and inform, never auto-apply, because auto-applying would defeat
+# the deny-by-default stance.
+if [[ -s "$PROJECT_PATH/.gitmodules" ]]; then
+    file_urls=""
+    while IFS= read -r url; do
+        [[ -n "$url" ]] && file_urls+="  $url"$'\n'
+    done < <(git config -f "$PROJECT_PATH/.gitmodules" --get-regexp '\.url$' 2>/dev/null | awk '{print $2}' | grep -E '^file://' || true)
+    if [[ -n "$file_urls" ]]; then
+        log_warn "This repo has file:// submodule URLs in .gitmodules:"
+        printf '%s' "$file_urls" >&2
+        log_warn "Git operations (clone --recurse-submodules, submodule update) may fail with:"
+        log_warn "  fatal: transport 'file' not allowed"
+        log_warn "This is a security default (CVE-2022-39253). If you trust this repo, apply a per-repo override:"
+        log_warn "  git -C \"$PROJECT_PATH\" config protocol.file.allow always"
+        log_warn "Do NOT set this in ~/.gitconfig or /etc/gitconfig — per-repo only."
+    fi
 fi
 
 log_info "Pre-commit hook installation complete (idempotent — safe to re-run)."

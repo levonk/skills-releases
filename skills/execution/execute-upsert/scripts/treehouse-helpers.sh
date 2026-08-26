@@ -30,6 +30,7 @@
 # Consumers:
 #   - execution/execute-upsert/scripts/execution-gate.sh.tmpl
 #   - execution/execute-upsert/scripts/land-on-env-dev.sh.tmpl
+#   - execution/execute-upsert/scripts/ship-pr.sh.tmpl
 
 # Guard against double-sourcing
 _TREEHOUSE_HELPERS_SOURCED="${_TREEHOUSE_HELPERS_SOURCED:-}"

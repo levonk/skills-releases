@@ -121,6 +121,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #   - git-repository-management/scripts/git-push.sh.tmpl
 #   - git-repository-management/scripts/git-archive.sh.tmpl
 #   - execution/execute-upsert/scripts/land-on-env-dev.sh.tmpl (with opt-out)
+#   - execution/execute-upsert/scripts/ship-pr.sh.tmpl (with opt-out)
 #
 # Treehouse awareness: when treehouse (https://github.com/kunchenguid/treehouse)
 # is used for worktree management, worktrees are still regular git linked
@@ -393,6 +394,7 @@ nice_relaunch
 # Consumers:
 #   - execution/execute-upsert/scripts/execution-gate.sh.tmpl
 #   - execution/execute-upsert/scripts/land-on-env-dev.sh.tmpl
+#   - execution/execute-upsert/scripts/ship-pr.sh.tmpl
 
 # Guard against double-sourcing
 _TREEHOUSE_HELPERS_SOURCED="${_TREEHOUSE_HELPERS_SOURCED:-}"
