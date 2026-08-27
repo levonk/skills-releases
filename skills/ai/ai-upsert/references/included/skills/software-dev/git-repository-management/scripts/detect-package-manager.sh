@@ -172,6 +172,9 @@ if [[ -n "$nearest_pkg" ]]; then
 		if [[ -f "$nearest_dir/pnpm-lock.yaml" ]]; then
 			manager="pnpm"
 			source="lockfile"
+		elif [[ -f "$nearest_dir/pnpm-workspace.yaml" ]]; then
+			manager="pnpm"
+			source="pnpm-workspace.yaml"
 		elif [[ -f "$nearest_dir/yarn.lock" ]]; then
 			manager="yarn"
 			source="lockfile"

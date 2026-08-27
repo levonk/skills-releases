@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `00ea9ad17c1d70efda32fc93e65a77d649f86e8f` · Branch: `main` · Generated: 2026-08-26T09:57:55Z
+> Commit: `7aa32bc7fe622f35ca54a18ab871697274da7b2c` · Branch: `main` · Generated: 2026-08-27T02:17:25Z
 
 ## Overview
 

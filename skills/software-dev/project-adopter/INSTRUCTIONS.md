@@ -1775,6 +1775,18 @@ When adopting best practices for a project (per ADR 20260131001 Standard Develop
     - `README.md` exists and contains an "AI Agent Documentation" section (readme-upsert ran)
     - No banned commands (`npx`, `npm `, `yarn `) in kept files (`.windsurf/`, `docs/`, etc.) — scan and flag for review
 
+## Delegated Steps (AI Agent Must Run)
+
+Steps 10, 13, and 14 are NOT executed by `adopt-project.sh`. The AI agent must run them by reading the bundled SKILL.md files BEFORE calling `post-adoption-check.sh`.
+
+| Step | What | How | Read |
+|------|------|-----|------|
+| 10 | Create/update AGENTS.md | Read and follow the bundled SKILL.md | `references/included/skills/ai/agent-file-upsert/SKILL.md` |
+| 13 | Create/update README.md | Read and follow the bundled SKILL.md (run AFTER step 10) | `references/included/skills/ai/readme-upsert/SKILL.md` |
+| 14 | Install knowledge bundles | `uv run --script scripts/install-knowledge-bundles.py .` | — |
+
+`post-adoption-check.sh` will FAIL if these steps are not completed first.
+
 ## Integration with Other Skills
 
 This skill integrates with project-detection, ai-development-loop, project-configuration, surgical-config, repository-health-review, quality scripts, testing framework, and CI/CD. For detailed integration descriptions, usage examples, health review reports, and loop prevention details, see [Skill Integrations](references/skill-integrations.md).

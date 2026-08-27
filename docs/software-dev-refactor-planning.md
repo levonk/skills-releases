@@ -26,4 +26,4 @@ Plan and execute systematic evolutionary refactors based on Michael Feathers' 'W
 
 - **Full skill**: [`skills/software-dev/refactor-planning/SKILL.md`](skills/software-dev/refactor-planning/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-26T09:57:55Z
+- **Generated**: 2026-08-27T02:17:25Z

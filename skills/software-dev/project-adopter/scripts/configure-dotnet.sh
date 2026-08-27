@@ -22,7 +22,7 @@ configure_dotnet_project() {
 	log_info "Configuring .NET project (mode: $mode, app_type: $app_type)"
 
 	# Handle .csproj files
-	if [[ -f "$project_path/*.csproj" ]]; then
+	if ls "$project_path"/*.csproj >/dev/null 2>&1; then
 		configure_csproj_files "$project_path" "$mode" "$app_type" "$project_type"
 	elif [[ "$mode" == "standardize" ]]; then
 		create_dotnet_project "$project_path" "$mode" "$app_type" "$project_type"

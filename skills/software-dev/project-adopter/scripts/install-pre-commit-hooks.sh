@@ -30,10 +30,10 @@
 
 set -euo pipefail
 
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m'
+[[ -z "${RED:-}" ]] && readonly RED='\033[0;31m' || true
+[[ -z "${GREEN:-}" ]] && readonly GREEN='\033[0;32m' || true
+[[ -z "${YELLOW:-}" ]] && readonly YELLOW='\033[1;33m' || true
+[[ -z "${NC:-}" ]] && readonly NC='\033[0m' || true
 
 log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }

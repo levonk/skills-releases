@@ -1,13 +1,13 @@
 ---
 name: project-adopter
 description: Adopt and establish best practices for projects by overwriting existing preferences with standardized developer UX flow. Use when onboarding a new project to standard tooling, setting up devbox/just/direnv, establishing CI/CD, or applying ADR-compliant project structure. Triggers on 'adopt project', 'set up dev environment', 'standardize project', 'apply best practices', or 'project adoption'.
-version: 2.6.0
+version: 2.7.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-02-01"
-  knowledge-basis: "2026-08-21"
-  last-used: "2026-08-25"
+  knowledge-basis: "2026-08-26"
+  last-used: "2026-08-26"
 tags: ["ai/skill", "software-development", "project-management", "best-practices", "development-experience", "project-adoption", "preference-overwrite"]
 see-also:
   - skill: project-configuration
