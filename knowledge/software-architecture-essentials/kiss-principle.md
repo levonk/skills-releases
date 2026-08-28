@@ -5,8 +5,8 @@ description: Prefer straightforward control flow over clever meta-programming; f
 tags: [architecture, kiss, simplicity, control-flow, readability, maintainability]
 date:
   created: "2026-08-10"
-  knowledge-basis: "2026-08-10"
-  last-used: "2026-08-10"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 ---
 
 # KISS — Keep It Simple, Stupid
@@ -94,6 +94,13 @@ The goal is the fewest concepts per unit of code, not the fewest characters.
   (`needless_collect`, `manual_map`, `option_map_unit_fn`) — not because they
   are wrong, but because the simpler form is easier to read. The linter
   encodes KISS as a mechanical check.
+- **Rob Pike's 5 Rules of Programming (Rules 3-4).** "Fancy algorithms are
+  slow when n is small, and n is usually small. Fancy algorithms have big
+  constants. ... Fancy algorithms are buggier than simple ones, and they're
+  much harder to implement." Ken Thompson rephrased this as "When in doubt,
+  use brute force." The simple algorithm is the KISS choice until measurement
+  proves n is big and the simple path is the bottleneck — see
+  [Measure Before Optimizing](measure-before-optimizing.md).
 
 ## See Also
 
@@ -105,3 +112,9 @@ The goal is the fewest concepts per unit of code, not the fewest characters.
   structural expression of simplicity.
 - [Root-Cause First](root-cause-first.md) — a workaround stack is often a
   KISS violation in disguise; the simple path is usually the root-cause fix.
+- [Measure Before Optimizing](measure-before-optimizing.md) — the simple
+  algorithm is the KISS choice until a measurement proves the simple path is
+  the bottleneck; Pike's rules 3-4 are KISS applied to algorithm choice.
+- [Data Structures First](data-structures-first.md) — smart structures and
+  stupid code is the KISS-compatible form; the complexity lives in the data,
+  not the control flow.

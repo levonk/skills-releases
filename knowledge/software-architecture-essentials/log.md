@@ -1,5 +1,37 @@
 # Directory Update Log
 
+## 2026-08-27
+
+* **Ingest**: Added Rob Pike's "Notes on Programming in C" (the 5 Rules of
+  Programming) and Fred Brooks' *The Mythical Man-Month* to the discipline
+  axis of the bundle. Rules 3-4 (fancy algorithms are slow when n is small
+  and buggier than simple ones; Ken Thompson's "when in doubt, use brute
+  force") were already covered by
+  [kiss-principle.md](kiss-principle.md) and are now cited there as a
+  Concrete Instance with a See Also link to the new measure page. The two
+  gaps the source filled:
+  - [measure-before-optimizing.md](measure-before-optimizing.md) — Pike
+    rules 1-2 / Hoare's "premature optimization is the root of all evil":
+    profiler-first discipline, do not tune until measurement proves the
+    bottleneck and one part overwhelms the rest. Distinct from
+    scalability-fundamentals.md (back-of-envelope capacity math is the
+    estimate step; this is the measure step that confirms it) and from
+    kiss-principle.md (which only had a brief KISS-vs-performance note).
+  - [data-structures-first.md](data-structures-first.md) — Pike rule 5 /
+    Brooks' "show me your tables": data structures, not algorithms, are
+    central; write stupid code that uses smart objects; make illegal states
+    unrepresentable. Not previously captured anywhere in the bundle.
+* **Update**: [kiss-principle.md](kiss-principle.md) — added a Concrete
+  Instance citing Pike rules 3-4 and Thompson's "brute force" rephrasing,
+  plus See Also links to measure-before-optimizing and data-structures-first.
+* **Update**: [overview.md](overview.md) — extended the discipline axis of
+  the architecture landscape with `measure-before-optimizing` and
+  `data-structures-first` between root-cause-first and tech-decision-risk;
+  added Profiling and Data Model rows to the concern table; added Pike and
+  Brooks to Sources. Updated knowledge-basis and last-used to 2026-08-27.
+* **Update**: [index.md](index.md) — registered both new concept pages on
+  the discipline axis after root-cause-first.
+
 ## 2026-08-09
 
 * **Update**: Added "Setup via dev-env-upsert" section to [indexed-ast-tools.md](indexed-ast-tools.md) — documents the dev-env-upsert delegation pattern for indexed AST tool setup (file-type-aware detection, folds into prime_impl, staleness check inside prime_impl, not blanket install). Added See Also links to async-prime-internal.md and index-staleness-check.md.

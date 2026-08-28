@@ -15,6 +15,8 @@ specific architectural concern with the practice that addresses it.
 
 * [Overview](overview.md) - Synthesis of the architecture practice set and how the pieces fit together
 * [Root-Cause First](root-cause-first.md) - Diagnose before fixing; workarounds are last resort; when changing a standard, update every document that restates the old one
+* [Measure Before Optimizing](measure-before-optimizing.md) - Do not tune for speed until a measurement proves where the bottleneck is, and even then only when one part overwhelms the rest (Hoare/Pike rules 1-2)
+* [Data Structures First](data-structures-first.md) - Choose the right data structures and the algorithms become self-evident; data dominates; write stupid code that uses smart objects (Brooks/Pike rule 5)
 * [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) - Ordered risk hierarchy for evaluating technology decisions (novel work > end-user impact > ... > new constant); dependency-update and functional-style axes
 * [Technology Selection Pattern](technology-selection-pattern.md) - Convention for authoring technology-selection concept pages — state the requirement, list candidates, apply the risk hierarchy, recommend one, document why-not, state when to reconsider
 * [AI + Human Timeline Estimates](ai-human-timeline-estimates.md) - Estimate as human review + AI execution pairs on four axes; pre-AI "human days" are no longer valid units

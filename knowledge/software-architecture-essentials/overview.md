@@ -5,8 +5,8 @@ description: Synthesis of software architecture practices — philosophy, projec
 tags: [architecture, overview, synthesis, modular, separation-of-concerns]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-29"
-  last-used: "2026-07-29"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 ---
 
 ---
@@ -122,7 +122,7 @@ addresses it, with decision checklists for choosing among alternatives.
 ```
 philosophy → project-structure → data-access → configuration → distribution
                                 ↓
-       root-cause-first → tech-decision-risk → ai-human-timelines → technology-selection-pattern
+       root-cause-first → measure-before-optimizing → data-structures-first → tech-decision-risk → ai-human-timelines → technology-selection-pattern
                                 ↓
                   theme → terminal-state → tool-detection → adding-tools → indexed-ast-tools → auth-env
                                 ↓
@@ -136,6 +136,8 @@ philosophy → project-structure → data-access → configuration → distribut
 | Concern | Practice | Prevents |
 |---------|----------|----------|
 | Discipline | [Root-Cause First](root-cause-first.md) | Workaround stacks, contradictory documents, silent guards, band-aids that outlive the bug |
+| Profiling | [Measure Before Optimizing](measure-before-optimizing.md) | Hunch-driven speed hacks, optimizing the wrong level, caching without measuring, speculative fast paths for hypothetical large n |
+| Data Model | [Data Structures First](data-structures-first.md) | Clever algorithms over mis-shaped structures, smart code over dumb data, parallel indexes, representable illegal states |
 | Decisions | [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) | Gut-feel choices, single-axis arguments, treating a new constant and a new public API as equally scary |
 | Selection | [Technology Selection Pattern](technology-selection-pattern.md) | Undocumented "we chose X" decisions, cargo-cult inheritance, re-litigation, stale decisions, missing why-not |
 | Estimates | [AI + Human Timeline Estimates](ai-human-timeline-estimates.md) | Pre-AI "human days" estimates that overstate AI-cheap work and understate unbounded tail risk |
@@ -211,6 +213,11 @@ concerns, scaling thresholds — should be filed as new concept pages. Append to
 - `src/current/rules/software-dev/general/architecture/*.md` — 10 architecture rule files migrated 2026-07-18.
 - [The System Design Primer](https://github.com/donnemartin/system-design-primer) —
   ingested 2026-07-24 for system-level architecture concepts.
+- Rob Pike, "Notes on Programming in C" (1989) — the 5 Rules of Programming,
+  ingested 2026-08-27 for measure-before-optimizing (rules 1-2),
+  data-structures-first (rule 5), and the KISS cross-reference (rules 3-4).
+- Fred Brooks, *The Mythical Man-Month* (1975) — "Show me your tables...",
+  ingested 2026-08-27 for data-structures-first.
 
 ---
 

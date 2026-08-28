@@ -156,6 +156,17 @@ for action in "${ACTIONS[@]}"; do
     continue
   fi
 
+  # Final guard: the SHA must be exactly 40 hex chars before we emit it as ok.
+  # A truncated SHA (e.g. 39 chars from a partial API response or copy error)
+  # breaks CI — GitHub Actions cannot resolve it and zizmor flags it as
+  # unpinned. This catches that class of bug before it reaches the workflow.
+  if ! echo "$sha" | grep -qE '^[0-9a-f]{40}$'; then
+    echo "ERROR: resolved SHA for ${action}@${tag} is not a valid 40-char hex SHA (got '${sha}')" >&2
+    first_error="${first_error}${action},"
+    output="${output}\"${action}\": {\"sha\": \"\", \"tag\": \"${tag}\", \"source\": \"error\"},"
+    continue
+  fi
+
   echo "ok: ${action}@${sha} # ${tag} (source: ${source})"
   output="${output}\"${action}\": {\"sha\": \"${sha}\", \"tag\": \"${tag}\", \"source\": \"${source}\"},"
 done

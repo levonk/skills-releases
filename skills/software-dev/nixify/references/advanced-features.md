@@ -917,6 +917,7 @@ jobs:
 
       - name: Check for lag and rewrite flake.nix
         env:
+          GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}
           # system|asset-substring — one per line. The substring must uniquely
           # match the release asset filename for that system (including the
           # .tar.gz suffix so it does not match the sibling .sha256 files).
@@ -927,28 +928,35 @@ jobs:
             aarch64-darwin|aarch64-apple-darwin
         run: |
           set -euo pipefail
-          tag=$(curl -fsSL -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" \
-            | python3 -c 'import json,sys; print(json.load(sys.stdin)["tag_name"])')
-          latest="${tag#v}"
-          current=$(python3 -c 'import re; s=open("flake.nix").read(); m=re.search(r"version = \"([^\"]*)\";", s); print(m.group(1))')
-          echo "flake.nix version: $current  |  latest release: $latest (tag $tag)"
-          if [ "$current" = "$latest" ]; then
-            echo "flake.nix is up to date; nothing to do."
-            echo "LAGGING=no" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          echo "LAGGING=yes" >> "$GITHUB_ENV"
-          echo "VERSION=$latest" >> "$GITHUB_ENV"
-          export TAG="$tag"
           python3 <<'PYEOF'
           import json, os, re, subprocess, urllib.request
-          tag = os.environ["TAG"]
-          version = tag.lstrip("v")
           repo = os.environ["GITHUB_REPOSITORY"]
-          with urllib.request.urlopen(
-              f"https://api.github.com/repos/{repo}/releases/latest") as r:
+          token = os.environ["GH_TOKEN"]
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{repo}/releases/latest",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              })
+          with urllib.request.urlopen(req) as r:
               release = json.load(r)
+          tag = release["tag_name"]
+          version = tag.lstrip("v")
+          src = open("flake.nix").read()
+          m = re.search(r'version = "([^"]*)";', src)
+          if not m:
+              raise SystemExit('could not find version = "..." in flake.nix')
+          current = m.group(1)
+          print(f"flake.nix version: {current}  |  latest release: {version} (tag {tag})")
+          if current == version:
+              print("flake.nix is up to date; nothing to do.")
+              with open(os.environ["GITHUB_ENV"], "a") as f:
+                  f.write("LAGGING=no\n")
+              raise SystemExit(0)
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write("LAGGING=yes\n")
+              f.write(f"VERSION={version}\n")
           # Drop sibling checksum files (.sha256) so a tarball substring does
           # not also match its "<tarball>.sha256" companion (cargo-dist etc.).
           names = {a["name"] for a in release["assets"]
@@ -960,42 +968,30 @@ jobs:
                   continue
               sys_, sub = line.split("|", 1)
               asset_map[sys_.strip()] = sub.strip()
-          # Reverse-check guard: detect release assets that look like platform
-          # binaries but are NOT in ASSET_MAP. If a project ships for 4 platforms
+          # Reverse-check guard: flag any .tar.gz/.zip release asset that no
+          # ASSET_MAP substring matches. If a project ships for 4 platforms
           # but ASSET_MAP only lists 3, the omitted platform's hash goes stale
           # while its URL still gets the version bump — users on that platform
           # get a hash mismatch. This catches the omission class of bug that
           # CI cannot see (nix flake check --all-systems --no-build evaluates
           # without realising fetchurl derivations, and nix build only runs on
-          # the runner's own system). See Archon PR #2131 feedback.
-          known_platforms = {"x86_64-linux", "aarch64-linux",
-                             "x86_64-darwin", "aarch64-darwin"}
+          # the runner's own system). See Archon PR #2131 feedback and the
+          # CodeRabbit review on pnpm PR #14255.
+          # Nix does not support native Windows (only WSL), so Windows
+          # .zip assets are always intentionally excluded from the flake.
+          IGNORED = ("musl", "pnpr-", "-source", "source-code", "win32", "win-x64", "win-arm64")
           matched_subs = set(asset_map.values())
-          unmatched = []
-          for name in names:
-              # Skip non-binary assets (checksums, source tarballs, .deb, .rpm, etc.)
-              if not (name.endswith(".tar.gz") or name.endswith(".zip")):
-                  continue
-              if any(sub in name for sub in matched_subs):
-                  continue
-              # Check if the asset name contains a platform identifier
-              for plat in known_platforms:
-                  # Match common platform naming patterns in asset filenames
-                  plat_patterns = {
-                      "x86_64-linux": ["x86_64-linux", "x86_64-unknown-linux", "linux-x64", "linux-x86_64", "x64-linux"],
-                      "aarch64-linux": ["aarch64-linux", "aarch64-unknown-linux", "linux-arm64", "linux-aarch64", "arm64-linux"],
-                      "x86_64-darwin": ["x86_64-darwin", "x86_64-apple-darwin", "darwin-x64", "darwin-x86_64", "macos-x64", "x64-darwin", "x64-macos"],
-                      "aarch64-darwin": ["aarch64-darwin", "aarch64-apple-darwin", "darwin-arm64", "darwin-aarch64", "macos-arm64", "arm64-darwin", "arm64-macos"],
-                  }
-                  if any(p in name.lower() for p in plat_patterns[plat]):
-                      if plat not in asset_map:
-                          unmatched.append((plat, name))
-                      break
+          unmatched = [
+              name for name in sorted(names)
+              if name.endswith((".tar.gz", ".zip"))
+              and not any(sub in name for sub in matched_subs)
+              and not any(ign in name.lower() for ign in IGNORED)
+          ]
           if unmatched:
-              plats = ", ".join(f"{p} ({n})" for p, n in unmatched)
+              plats = ", ".join(unmatched)
               raise SystemExit(
                   f"RELEASE ASSET COMPLETENESS CHECK FAILED: release {tag} has "
-                  f"binary assets for platforms not in ASSET_MAP: {plats}. "
+                  f"platform archives not covered by ASSET_MAP: {plats}. "
                   f"Add them to ASSET_MAP or the hash for those platforms will "
                   f"go stale while the URL gets the version bump — users on the "
                   f"omitted platform get a hash mismatch. ASSET_MAP currently "
@@ -1009,8 +1005,23 @@ jobs:
               if not match:
                   raise SystemExit(f"no asset for {sys_} ({sub}) in {tag}; have: {sorted(names)}")
               url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
+              # Cross-check against the published .sha256 sibling asset before
+              # pinning the hash. Without this, a corrupted or replaced release
+              # artifact would be pinned silently — the workflow would prefetch
+              # whatever bytes are at the URL and write that hash to flake.nix.
+              # Fetching the published .sha256 and converting it to SRI format
+              # gives an independent expected hash; nix store prefetch-file
+              # verifies the download against it and fails on mismatch. See the
+              # CodeRabbit review on pnpm PR #14255.
+              expected = None
+              if f"{match}.sha256" in {a["name"] for a in release["assets"]}:
+                  with urllib.request.urlopen(f"{url}.sha256") as r:
+                      hexd = r.read().decode().split()[0]
+                  expected = "sha256:" + hexd
               out = json.loads(subprocess.check_output(
-                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url]))
+                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256"]
+                  + (["--expected-hash", expected] if expected else [])
+                  + [url]))
               sri = out["hash"]
               pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
               def repl(m):
@@ -1088,7 +1099,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           echo "VERSION=$version" >> "$GITHUB_ENV"
           python3 <<'PYEOF'
-          import json, os, re, subprocess
+          import json, os, re, subprocess, urllib.request
           tag = os.environ["GITHUB_REF_NAME"]
           version = tag.lstrip("v")
           event = json.load(open(os.environ["GITHUB_EVENT_PATH"]))
@@ -1101,33 +1112,23 @@ jobs:
               asset_map[sys_.strip()] = sub.strip()
           names = {a["name"] for a in event["release"]["assets"]
                    if not a["name"].endswith(".sha256")}
-          # Reverse-check guard: detect release assets that look like platform
-          # binaries but are NOT in ASSET_MAP. See Template A for full rationale.
-          known_platforms = {"x86_64-linux", "aarch64-linux",
-                             "x86_64-darwin", "aarch64-darwin"}
+          # Reverse-check guard: flag any .tar.gz/.zip release asset that no
+          # ASSET_MAP substring matches. See Template A for full rationale.
+          # Nix does not support native Windows (only WSL), so Windows
+          # .zip assets are always intentionally excluded from the flake.
+          IGNORED = ("musl", "pnpr-", "-source", "source-code", "win32", "win-x64", "win-arm64")
           matched_subs = set(asset_map.values())
-          unmatched = []
-          for name in names:
-              if not (name.endswith(".tar.gz") or name.endswith(".zip")):
-                  continue
-              if any(sub in name for sub in matched_subs):
-                  continue
-              for plat in known_platforms:
-                  plat_patterns = {
-                      "x86_64-linux": ["x86_64-linux", "x86_64-unknown-linux", "linux-x64", "linux-x86_64", "x64-linux"],
-                      "aarch64-linux": ["aarch64-linux", "aarch64-unknown-linux", "linux-arm64", "linux-aarch64", "arm64-linux"],
-                      "x86_64-darwin": ["x86_64-darwin", "x86_64-apple-darwin", "darwin-x64", "darwin-x86_64", "macos-x64", "x64-darwin", "x64-macos"],
-                      "aarch64-darwin": ["aarch64-darwin", "aarch64-apple-darwin", "darwin-arm64", "darwin-aarch64", "macos-arm64", "arm64-darwin", "arm64-macos"],
-                  }
-                  if any(p in name.lower() for p in plat_patterns[plat]):
-                      if plat not in asset_map:
-                          unmatched.append((plat, name))
-                      break
+          unmatched = [
+              name for name in sorted(names)
+              if name.endswith((".tar.gz", ".zip"))
+              and not any(sub in name for sub in matched_subs)
+              and not any(ign in name.lower() for ign in IGNORED)
+          ]
           if unmatched:
-              plats = ", ".join(f"{p} ({n})" for p, n in unmatched)
+              plats = ", ".join(unmatched)
               raise SystemExit(
                   f"RELEASE ASSET COMPLETENESS CHECK FAILED: release {tag} has "
-                  f"binary assets for platforms not in ASSET_MAP: {plats}. "
+                  f"platform archives not covered by ASSET_MAP: {plats}. "
                   f"Add them to ASSET_MAP or the hash for those platforms will "
                   f"go stale while the URL gets the version bump. ASSET_MAP "
                   f"currently covers: {sorted(asset_map.keys())}")
@@ -1141,8 +1142,17 @@ jobs:
               if not match:
                   raise SystemExit(f"no asset for {sys_} ({sub}) in {tag}; have: {sorted(names)}")
               url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
+              # Cross-check against the published .sha256 sibling asset before
+              # pinning the hash. See Template A for full rationale.
+              expected = None
+              if f"{match}.sha256" in {a["name"] for a in event["release"]["assets"]}:
+                  with urllib.request.urlopen(f"{url}.sha256") as r:
+                      hexd = r.read().decode().split()[0]
+                  expected = "sha256:" + hexd
               out = json.loads(subprocess.check_output(
-                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", url]))
+                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256"]
+                  + (["--expected-hash", expected] if expected else [])
+                  + [url]))
               sri = out["hash"]
               pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
               def repl(m):
@@ -1171,7 +1181,8 @@ jobs:
 ```
 
 **Customization notes (both templates):**
-- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects binary assets (`.tar.gz`/`.zip`) for a platform not in ASSET_MAP — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch).
+- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects platform archives (`.tar.gz`/`.zip`) not covered by any ASSET_MAP substring — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch). The guard has an explicit ignore list (`musl`, `pnpr-`, `-source`, `source-code`) for non-platform archives that should not trigger the check.
+- **`.sha256` cross-check**: Both templates fetch the published `<asset>.sha256` sibling file (when present), convert the hex digest to SRI format (`sha256:` + hex), and pass it as `--expected-hash` to `nix store prefetch-file`. This fails the workflow if the downloaded artifact's hash does not match the published checksum — catching corrupted or replaced release artifacts before the hash is pinned to `flake.nix`.
 - `base: master`: change to `main` if the project's default branch is `main`.
 - `if: github.repository == '<owner>/<repo>'` (Template A): prevents the scheduled job from running on forks. Replace with the upstream owner/repo.
 - The script targets the `assets = { "<system>" = { file = ...; sha256 = ...; }; }` shape from the Prebuilt Tarball Flake template. For other flake shapes, adapt the regex.

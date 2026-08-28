@@ -48,17 +48,7 @@ The flake tracks the default branch and is auto-bumped to the latest release by 
 
 ## Why
 
-For users who already have Nix installed, a flake provides:
-
-- **One-command install / run** — `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` with no clone or manual build steps.
-- **Pure / Hermetic builds** — every input (the prebuilt binary, glibc/libiconv) is pinned in `flake.lock`. If it builds today, it builds in ten years.
-- **Reproducible** — the exact same derivation always produces the exact same output bit-for-bit. No "works on my machine."
-- **Idempotent installs** — running `nix profile add` twice is a no-op.
-- **Rollback-able** — `nix profile rollback` restores the previous profile generation instantly.
-- **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific linking.
-- **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
-- **Clean uninstall** — `nix profile remove` leaves no residue.
-- **NixOS / home-manager compatible** — `npm install -g` doesn't work on NixOS's read-only store; a flake with `packages.default` lets NixOS users install declaratively via `home.packages` in home-manager.
+Enables `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` and `nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO` for users who already have Nix installed. The flake wraps the prebuilt release binary directly (no nixpkgs build toolchain in the path) and includes a from-source build option for reproducibility/auditability.
 
 <!-- BEGIN conditional: Relationship to nixpkgs -->
 <!-- INCLUDE this section ONLY when check-nixpkgs.sh (Step 10) reported project_in_nixpkgs: true. -->

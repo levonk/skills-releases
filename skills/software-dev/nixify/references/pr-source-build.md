@@ -53,19 +53,7 @@ devbox run build
 
 ## Why
 
-The project currently requires users to clone the repository and build from source. For users who already have Nix installed, a flake provides:
-
-- **Pure / Hermetic builds** — every input (compiler, libraries, system dependencies) is pinned in `flake.lock`. If it builds today, it builds in ten years.
-- **Reproducible** — the exact same derivation always produces the exact same output bit-for-bit. No "works on my machine."
-- **Idempotent installs** — running `nix profile add` twice is a no-op. The system reaches the declared state and stays there.
-- **Rollback-able** — `nix profile rollback` restores the previous profile generation instantly. Broken update? One command back.
-- **Declarative** — the entire build is a single expression (`flake.nix`). No imperative `apt install`, `brew install`, `make` dance.
-- **One-command install / run** — `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` with no clone or manual build steps.
-- **Binary cache eligibility** — Nix can pull pre-built artifacts from cache.nixos.org or flakehub when the project is packaged.
-- **Cross-platform** — same invocation on macOS (Apple Silicon & Intel) and Linux. The flake handles platform-specific dependencies.
-- **Atomic upgrades / downgrades** — profiles are switched atomically. No half-upgraded state.
-- **Clean uninstall** — `nix profile remove` leaves no residue. No orphaned global packages.
-- **NixOS / home-manager compatible** — `npm install -g` doesn't work on NixOS's read-only store; a flake with `packages.default` lets NixOS users install declaratively via `home.packages` in home-manager.
+Enables `nix run github:$UPSTREAM_OWNER/$UPSTREAM_REPO` and `nix profile add github:$UPSTREAM_OWNER/$UPSTREAM_REPO` for users who already have Nix installed. The flake builds from source with all inputs pinned in `flake.lock`, and the `devbox.json` provides a reproducible development environment pinned to the project's own toolchain.
 
 <!-- BEGIN conditional: Relationship to nixpkgs -->
 <!-- INCLUDE this section ONLY when check-nixpkgs.sh (Step 10) reported project_in_nixpkgs: true. -->

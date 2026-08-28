@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `7aa32bc7fe622f35ca54a18ab871697274da7b2c` · Branch: `main` · Generated: 2026-08-27T02:17:25Z
+> Commit: `82bab6ca09fcf41b527cb9a45500176fc7060e95` · Branch: `main` · Generated: 2026-08-28T08:41:18Z
 
 ## Overview
 
@@ -111,6 +111,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | surgical-config | Deterministic, non-destructive configuration file modifications using a tiered tool hierarchy. Us... | [Synopsis](software-dev-surgical-config.md) |
 | ui-ux-test-upsert | Create or update UI/UX tests for web and mobile applications using a two-tier testing model: dete... | [Synopsis](software-dev-ui-ux-test-upsert.md) |
 | unit-test-writing | Write unit tests in the style of Roy Osherove's 'The Art of Unit Testing' — readable, maintaina... | [Synopsis](software-dev-unit-test-writing.md) |
+| usage-audit | Diagnose coding-agent token usage — find out where tokens actually went, which projects and mod... | [Synopsis](software-dev-usage-audit.md) |
 
 ### tech-maturity
 
