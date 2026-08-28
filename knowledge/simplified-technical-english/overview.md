@@ -5,12 +5,21 @@ description: Synthesis of STE100-inspired Simplified Technical English practices
 tags: [technical-writing, ste100, simplified-technical-english, documentation, overview, synthesis]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-07-26"
-  last-used: "2026-07-26"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
     title: "ASD-STE100 Simplified Technical English specification"
+  - id: proxmox-twsg
+    resource: "https://pve.proxmox.com/wiki/Technical_Writing_Style_Guide"
+    title: "Proxmox VE Technical Writing Style Guide"
+  - id: writing-for-developers
+    resource: "https://github.com/scynthiadunlop/WritingForDevelopersBook"
+    title: "Writing For Developers: Blogs That Get Read by Piotr Sarna and Cynthia Dunlop"
+  - id: writethat-blog
+    resource: "https://writethatblog.substack.com/"
+    title: "Write That Blog — newsletter with writing tips from expert bloggers"
   - id: ste100-include
     resource: "../../includes/ste100-simplified-technical-english.md.tmpl"
     title: "Build-time include (gist) inlined into skills and bundles"
@@ -143,10 +152,25 @@ the bundle is the canonical source.
 
 ## Concepts
 
+### STE100-Inspired Clarity and Mechanics
+
 | Concept | Purpose |
 |---------|---------|
 | [Simplified Technical English](simplified-technical-english.md) | The core 8 principles + quick self-check. The same content as the build-time include, with OKF frontmatter and sources. |
 | [Detailed Guide](detailed-guide.md) | The full 10 writing rules, approved-words guidance, 3 before/after examples, and the 10-step self-check protocol. |
+| [Punctuation](punctuation.md) | Oxford commas, comma placement, semicolons for independent clauses, hyphens for compound modifiers, em dashes, slashes. |
+| [Capitalization and Articles](capitalization.md) | Title-style vs sentence-style headlines, basic capitalization rules, a/an by vowel sound. |
+| [Procedures and Lists](procedures-and-lists.md) | Front-loading important information, procedure structure (intro sentence, single-step, sub-step numbering), list formatting, transitions. |
+| [Word Choice and Consistency](word-choice.md) | Slang/jargon/idioms, contractions, abbreviations, e.g./i.e., acronym nuances, US/UK English, gender-neutral pronouns, tested examples. |
+
+### Engineering Blog Writing
+
+| Concept | Purpose |
+|---------|---------|
+| [Engineering Blog Fundamentals](engineering-blog-fundamentals.md) | Why write engineering blogs, topic selection, and the characteristics of compelling posts. |
+| [Blog Writing Process](blog-writing-process.md) | The full lifecycle from idea to published post: capture, draft, optimize, feedback, ship. |
+| [Engineering Blog Patterns](engineering-blog-patterns.md) | The seven canonical patterns (Bug Hunt, Rewrote It in X, How We Built It, Lessons Learned, Thoughts on Trends, Non-Markety Product, Benchmarks) with dos, don'ts, and real-world examples. |
+| [Blog Promotion and Expansion](blog-promotion-and-expansion.md) | Promoting posts, squeezing more value from each post, turning a post into a conference talk, and considerations for book writing. |
 
 ## Scope
 
@@ -157,6 +181,8 @@ These guidelines apply to:
 - Reference documentation and concept pages
 - Checklists and review guidance
 - Synthesis and overview prose in knowledge bundles
+- Engineering blog posts — topic selection, writing process, patterns, and
+  promotion (see the Engineering Blog Writing concept pages above)
 
 These guidelines do **not** apply to:
 

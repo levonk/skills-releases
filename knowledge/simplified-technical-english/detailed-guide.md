@@ -5,12 +5,18 @@ description: Full writing rules (10 rules), approved-words guidance, 3 before/af
 tags: [technical-writing, ste100, simplified-technical-english, documentation, writing-rules, self-check, examples]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-07-26"
-  last-used: "2026-07-26"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
     title: "ASD-STE100 Simplified Technical English specification"
+  - id: proxmox-twsg
+    resource: "https://pve.proxmox.com/wiki/Technical_Writing_Style_Guide"
+    title: "Proxmox VE Technical Writing Style Guide"
+  - id: writing-for-developers
+    resource: "https://github.com/scynthiadunlop/WritingForDevelopersBook"
+    title: "Writing For Developers: Blogs That Get Read by Piotr Sarna and Cynthia Dunlop"
   - id: core-guidelines
     resource: "simplified-technical-english.md"
     title: "Simplified Technical English core guidelines (sibling concept page)"
@@ -56,6 +62,15 @@ Three terms ("image", "container image", "docker image") name the same thing.
 
 Pick "image" once, use it everywhere. Define it on first use if the audience
 needs it.
+
+**Introduce synonyms on first use.** If readers might search for a different
+term, add it in parentheses on first use. After that, use only the canonical
+term.
+
+> A USB flash drive (USB stick) is the recommended installation medium.
+
+See [Word Choice and Consistency](word-choice.md) for the full synonym and
+word-choice guidance.
 
 ### Rule 2: Short Sentences
 
@@ -141,6 +156,16 @@ Write the full term, then the acronym in parentheses. Use the acronym after.
 > Configure Continuous Integration (CI) to run the tests. Continuous Deployment
 > (CD) deploys after CI passes.
 
+**Do not define an acronym you use only once.** If the acronym appears once in
+the document, write the full term and skip the acronym. Defining a one-use
+acronym adds noise.
+
+**Commonly known acronyms** (USB, HTML, URL, FAQ) do not need definition. Use
+judgment based on the audience — when in doubt, define the acronym.
+
+See [Word Choice and Consistency](word-choice.md) for the full acronym and
+abbreviation guidance.
+
 ### Rule 9: Articles Before Nouns
 
 Use "the" for a specific noun, "a" for one of several. Do not drop articles in
@@ -162,6 +187,18 @@ When steps must run in order, use a numbered list. One action per step.
 > 3. Push the image.
 
 When steps can run in any order, use a bulleted list.
+
+**Single-step procedures** use a bullet, not a numbered list. **Sub-steps** in
+a numbered procedure use lowercase letters. **Sub-sub-steps** use lowercase
+Roman numerals. **Combine related actions** (like pressing Enter) into one
+step — do not split a single interaction across two steps.
+
+Keep list style consistent. Either all items are full sentences with end
+punctuation, or all items are fragments without end punctuation. Do not mix
+the two styles in one list. For term-and-definition lists, bold the term.
+
+See [Procedures and Lists](procedures-and-lists.md) for the full procedure
+structure, list formatting, and transitions guidance.
 
 ## Approved-Words Guidance
 
@@ -266,6 +303,14 @@ precisely. Relax them when:
 ## Cross-References
 
 - Core guidelines: [Simplified Technical English](simplified-technical-english.md) (sibling concept page in this bundle)
+- Punctuation: [Punctuation](punctuation.md) — commas, semicolons, hyphens, em dashes, slashes
+- Capitalization and articles: [Capitalization and Articles](capitalization.md) — title-style vs sentence-style, a/an by vowel sound
+- Procedures and lists: [Procedures and Lists](procedures-and-lists.md) — front-loading, procedure structure, list formatting, transitions
+- Word choice and consistency: [Word Choice and Consistency](word-choice.md) — slang/jargon, contractions, abbreviations, e.g./i.e., gender-neutral pronouns, tested examples
+- Engineering blog fundamentals: [Engineering Blog Fundamentals](engineering-blog-fundamentals.md) — why write, topic selection, characteristics of compelling posts
+- Blog writing process: [Blog Writing Process](blog-writing-process.md) — capture, draft, optimize, feedback, ship
+- Engineering blog patterns: [Engineering Blog Patterns](engineering-blog-patterns.md) — the seven canonical patterns with dos, don'ts, and examples
+- Blog promotion and expansion: [Blog Promotion and Expansion](blog-promotion-and-expansion.md) — promotion, conference talks, book writing
 - Build-time include (gist): `includes/ste100-simplified-technical-english.md.tmpl` (inlined into skills and other bundles at build time)
 - Bundle index: [index.md](index.md)
 - Upstream standard: ASD-STE100 Simplified Technical English,

@@ -38,4 +38,4 @@ Research pricing, sourcing channels, and optimal purchase timing for products an
 
 - **Full skill**: [`skills/commerce/deal-intelligence/SKILL.md`](skills/commerce/deal-intelligence/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-28T08:41:18Z
+- **Generated**: 2026-08-28T23:22:25Z

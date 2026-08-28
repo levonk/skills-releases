@@ -73,4 +73,4 @@ uv run --script scripts/dev_env_upsert.py validate --target .
 
 - **Full skill**: [`skills/software-dev/dev-env-upsert/SKILL.md`](skills/software-dev/dev-env-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-28T08:41:18Z
+- **Generated**: 2026-08-28T23:22:25Z

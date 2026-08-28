@@ -5,12 +5,18 @@ description: STE100-inspired guidelines for technical prose output — active vo
 tags: [technical-writing, ste100, simplified-technical-english, documentation, active-voice, imperative-mood]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-07-26"
-  last-used: "2026-07-26"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
     title: "ASD-STE100 Simplified Technical English specification"
+  - id: proxmox-twsg
+    resource: "https://pve.proxmox.com/wiki/Technical_Writing_Style_Guide"
+    title: "Proxmox VE Technical Writing Style Guide"
+  - id: writing-for-developers
+    resource: "https://github.com/scynthiadunlop/WritingForDevelopersBook"
+    title: "Writing For Developers: Blogs That Get Read by Piotr Sarna and Cynthia Dunlop"
 ---
 
 # Simplified Technical English (STE100-Inspired)
@@ -98,6 +104,44 @@ restriction. Domain terms (Dockerfile, pnpm, devbox, Nx, Ansible, Kubernetes,
 Helm, Terraform) are permitted when they are the correct technical term —
 STE100's 1000-word approved vocabulary is too narrow for this domain. The goal
 is the *clarity discipline* of STE100, not its word list.
+
+## Beyond Clarity: Style and Mechanics
+
+The 8 core principles above cover the *clarity discipline* of STE100 — active
+voice, short sentences, one-word-one-meaning, imperative mood. Technical
+documentation also needs *style and mechanics* guidance: punctuation,
+capitalization, procedure structure, and word choice. The companion concept
+pages cover these topics:
+
+- [Punctuation](punctuation.md) — Oxford commas, comma placement, semicolons,
+  hyphens, em dashes, slashes
+- [Capitalization and Articles](capitalization.md) — title-style vs
+  sentence-style headlines, basic capitalization, a/an by vowel sound
+- [Procedures and Lists](procedures-and-lists.md) — front-loading important
+  information, procedure structure, list formatting, transitions
+- [Word Choice and Consistency](word-choice.md) — slang/jargon/idioms,
+  contractions, abbreviations, e.g./i.e., acronym nuances, gender-neutral
+  pronouns, tested examples
+
+## Beyond Mechanics: Engineering Blog Writing
+
+The clarity and mechanics pages cover technical prose at the sentence and
+paragraph level. Engineering blog writing applies these rules to a specific
+medium — the blog post — with its own patterns, process, and promotion
+practices. The companion concept pages cover this domain:
+
+- [Engineering Blog Fundamentals](engineering-blog-fundamentals.md) — why
+  write engineering blogs, topic selection, and characteristics of compelling
+  posts
+- [Blog Writing Process](blog-writing-process.md) — the full lifecycle from
+  idea to published post: capture, draft, optimize, feedback, ship
+- [Engineering Blog Patterns](engineering-blog-patterns.md) — the seven
+  canonical patterns (Bug Hunt, Rewrote It in X, How We Built It, Lessons
+  Learned, Thoughts on Trends, Non-Markety Product, Benchmarks) with dos,
+  don'ts, and real-world examples
+- [Blog Promotion and Expansion](blog-promotion-and-expansion.md) — promoting
+  posts, squeezing more value from each post, turning a post into a conference
+  talk, and considerations for book writing
 
 For the full writing rules, approved-words guidance, and before/after examples,
 see the [Detailed Guide](detailed-guide.md).

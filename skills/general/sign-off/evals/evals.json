@@ -1,0 +1,40 @@
+{
+  "skill_name": "sign-off",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm done for the day. Can you sign off?",
+      "expected_output": "Runs the full sign-off workflow: git global sweep, stale branch detection, AI session review, AI coach review (if due), daily summary, ticket updates, scrum update, calendar review, next-day planning, long-running work identification, and writes a sign-off document to .agents/handoffs/human/summary/",
+      "files": [],
+      "assertions": [
+        "Runs scripts/git-global-sweep.sh",
+        "Runs scripts/stale-branches.sh",
+        "Produces a daily summary with concrete accomplishments from git log",
+        "Crafts a scrum update with did/next/blockers",
+        "Writes a sign-off document to .agents/handoffs/human/summary/YYYY/MM/YYYYMMDDHHmm-signoff-{slug}.md",
+        "Does not auto-push or auto-launch overnight work"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "good night, wrap things up",
+      "expected_output": "Triggers the sign-off skill and runs the full end-of-day workflow",
+      "files": [],
+      "assertions": [
+        "Triggers the sign-off skill (not a generic response)",
+        "Runs the git global sweep",
+        "Produces a next-day plan"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can you commit these changes?",
+      "expected_output": "Does NOT trigger sign-off — this is a single-repo commit request, not an end-of-day routine. Should trigger git-repository-management instead.",
+      "files": [],
+      "assertions": [
+        "Does not trigger sign-off",
+        "Suggests git-repository-management or handles the commit directly"
+      ]
+    }
+  ]
+}
