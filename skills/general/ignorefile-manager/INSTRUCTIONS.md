@@ -1601,7 +1601,10 @@ uv run --script scripts/generate_ignores.py reconcile --target /path/to/project 
 ```
 
 The script scans `.gitignore`, `.codeiumignore`, `.cursorignore`,
-`.dockerignore`, `.npmignore`, `.code-workspace`, and `.vscode/settings.json`
+`.dockerignore`, `.npmignore`, `.code-workspace`, `.vscode/settings.json`,
+and MCP config files (`.mcp.json`, `.claude/settings.json`,
+`.claude/settings.local.json`, `.cursor/mcp.json`, `.vscode/mcp.json`,
+`.zed/settings.json`, `.devin/config.json`, `.devin/config.local.json`)
 for patterns not in any concern. It suggests a concern for each orphan
 using heuristic matching.
 

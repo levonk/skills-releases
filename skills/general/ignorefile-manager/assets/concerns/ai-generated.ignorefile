@@ -26,5 +26,17 @@ cline_docs/
 ## Archon (workflow data)
 .archon/
 
+## MCP server config files (non-.local — committed when token-free)
+# These are AI tool config files that declare MCP servers. The .local
+# variants (which carry tokens) are in dev-local.ignorefile. The non-.local
+# variants are committed when they contain no secrets — they're shared AI
+# guidance config, not per-developer state. AI indexing tools should still
+# ignore them to avoid indexing config boilerplate.
+.mcp.json
+.cursor/mcp.json
+.vscode/mcp.json
+.zed/settings.json
+.devin/config.json
+
 ## Generic AI output
 /generated-code/

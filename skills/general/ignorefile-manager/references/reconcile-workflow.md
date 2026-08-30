@@ -17,7 +17,11 @@ otherwise be silently overwritten on the next generation.
    `assets/concerns/*.ignorefile` files into a set
 2. **Scan deployed output files** — read `.gitignore`, `.codeiumignore`,
    `.cursorignore`, `.dockerignore`, `.npmignore`, `.chezmoiignore`,
-   `.code-workspace`, `.vscode/settings.json` from the target directory
+   `.code-workspace`, `.vscode/settings.json`, and MCP config files
+   (`.mcp.json`, `.claude/settings.json`, `.claude/settings.local.json`,
+   `.cursor/mcp.json`, `.vscode/mcp.json`, `.zed/settings.json`,
+   `.devin/config.json`, `.devin/config.local.json`) from the target
+   directory
 3. **Extract patterns** from each deployed file (handling both gitignore
    and JSON glob syntax)
 4. **Compare** — any pattern in a deployed file that's not in the concern
@@ -38,8 +42,8 @@ The script uses substring matching to suggest concerns:
 | `.DS_Store`, `Thumbs.db`, `._*` | os-files |
 | `.idea/`, `*.swp`, `.vscode` | editor-files |
 | `node_modules/`, `.venv`, `venv/` | dependencies |
-| `.claude`, `.cursor`, `.codegraph`, `.archon` | ai-generated |
-| `*.local.`, `.devbox`, `.direnv` | dev-local |
+| `.claude`, `.cursor`, `.codegraph`, `.archon`, `.mcp.json` | ai-generated |
+| `*.local.`, `.devbox`, `.direnv`, `settings.local.json` | dev-local |
 | `.git/`, `.svn`, `.hg/` | vcs-meta |
 | `*.log`, `logs/` | logs |
 | `*.exe`, `*.dll`, `*.zip`, `*.png` | binaries |

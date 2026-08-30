@@ -469,6 +469,41 @@ jobs:
       - run: just test
       - run: just lint
       - run: just typecheck
+
+  # Dedicated workflow-security job — runs zizmor + actionlint on all
+  # .github/workflows/*.yml. Independent of the test job so security
+  # findings are visible even when tests fail. This is the standard CI
+  # security baseline for every adopted project.
+  workflow-security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run zizmor (workflow security analyzer)
+        run: |
+          # zizmor catches: unpinned actions, excessive permissions,
+          # OIDC token misuse, secret injection via pull_request_target.
+          # Available via nix (no install) or uvx (pip).
+          if command -v nix >/dev/null 2>&1; then
+            nix run nixpkgs#zizmor -- .github/workflows/
+          else
+            uvx zizmor .github/workflows/
+          fi
+      - name: Run actionlint (workflow syntax/schema linter)
+        run: |
+          # actionlint catches: syntax errors, schema violations,
+          # deprecated syntax, undefined secrets, invalid expressions.
+          # Available via nix (no install) or cargo binstall.
+          if command -v nix >/dev/null 2>&1; then
+            nix run nixpkgs#actionlint -- .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null || \
+            nix run nixpkgs#actionlint -- .github/workflows/*.yml
+          else
+            # Install via cargo binstall if not on PATH
+            command -v actionlint >/dev/null 2>&1 || cargo binstall -y actionlint
+            actionlint .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null || \
+            actionlint .github/workflows/*.yml
+          fi
 ```
 
 Create `.github/dependabot.yml`:
@@ -554,7 +589,7 @@ devbox add rustc cargo just
 - [ ] Docker configuration (if needed)
 - [ ] LICENSE.md (Proprietary)
 - [ ] Dependencies configured correctly
-- [ ] GitHub workflows set up
+- [ ] GitHub workflows set up — including the dedicated `workflow-security` job with zizmor + actionlint
 - [ ] Ignore files generated via ignorefile-manager (reconcile → audit → generate; covers .gitignore, .dockerignore, .codeiumignore, .cursorignore, .aiexclude, .npmignore, VS Code excludes, ripgrep config)
 - [ ] Git repo initialized (if needed) via git-repository-management `git-repo-init.bash`
 - [ ] Adoption changeset committed via git-repository-management `git-commit-batch.sh --slug project-adoption` (with pre/post auto-tags for rollback safety)

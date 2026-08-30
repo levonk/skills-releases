@@ -1,5 +1,17 @@
 # Directory Update Log
 
+## 2026-08-27
+
+* **Update**: Updated [pre-commit-ci-parity.md](pre-commit-ci-parity.md) to
+  include workflow security linting (zizmor + actionlint) as a standard CI
+  parity check. Added a dedicated `workflow-security` job to the CI parity
+  model — runs zizmor (workflow security analyzer) and actionlint (workflow
+  syntax/schema linter) on all `.github/workflows/*.yml`, independent of the
+  test job. Added cross-reference to
+  [dependency-supply-chain.md](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/dependency-supply-chain.md)
+  in the devsecops-codeguard bundle. Updated frontmatter with zizmor and
+  actionlint sources.
+
 ## 2026-08-08
 
 * **Ingest**: Authored 2 new UI/UX testing concept pages extending the

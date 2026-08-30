@@ -665,6 +665,8 @@ RECONCILE_HEURISTICS: dict[str, str] = {
     ".codegraph": "ai-generated",
     ".archon": "ai-generated",
     "generated-code": "ai-generated",
+    ".mcp.json": "ai-generated",
+    ".devin/config": "ai-generated",
     "*.local.": "dev-local",
     ".devbox": "dev-local",
     ".direnv": "dev-local",
@@ -1261,6 +1263,15 @@ def reconcile(
         ".chezmoiignore",
         ".vscode/settings.json",
         ".code-workspace",
+        # MCP config files (may contain ignore-worthy patterns or tokens)
+        ".mcp.json",
+        ".claude/settings.json",
+        ".claude/settings.local.json",
+        ".cursor/mcp.json",
+        ".vscode/mcp.json",
+        ".zed/settings.json",
+        ".devin/config.json",
+        ".devin/config.local.json",
     ]
 
     orphans: dict[str, list[str]] = {}  # pattern -> list of files found in

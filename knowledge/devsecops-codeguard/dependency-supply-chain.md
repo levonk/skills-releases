@@ -1,17 +1,23 @@
 ---
 type: Practice
 title: Dependency Supply Chain — Lockfile Pinning, Integrity Verification, and Provenance
-description: Pin dependencies with Cargo.lock for binaries, verify integrity with cargo-deny and cargo-audit, configure private registries with authentication, verify SLSA provenance, and review dependencies in CI at PR time.
-tags: [security, devsecops, rust, cargo, supply-chain, cargo-deny, cargo-audit, slsa, dependencies]
+description: Pin dependencies with Cargo.lock for binaries, verify integrity with cargo-deny and cargo-audit, configure private registries with authentication, verify SLSA provenance, review dependencies in CI at PR time, and lint GitHub Actions workflows with zizmor + actionlint for workflow-level supply-chain security.
+tags: [security, devsecops, rust, cargo, supply-chain, cargo-deny, cargo-audit, slsa, dependencies, zizmor, actionlint, github-actions]
 date:
   created: "2026-08-05"
-  knowledge-basis: "2026-08-05"
-  last-used: "2026-08-05"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 
 sources:
   - id: project-lint-audit
     resource: "project-lint/Cargo.toml"
     title: "project-lint"
+  - id: zizmor
+    resource: "https://github.com/woodruffw/zizmor"
+    title: "zizmor — GitHub Actions workflow security analyzer"
+  - id: actionlint
+    resource: "https://github.com/rhysd/actionlint"
+    title: "actionlint — GitHub Actions workflow syntax linter"
 ---
 
 # Dependency Supply Chain
@@ -113,8 +119,49 @@ dependency diff in the PR check output.
   run: cargo generate-lockfile --locked && git diff --exit-code Cargo.lock
 ```
 
+### Workflow Supply Chain (zizmor + actionlint)
+
+GitHub Actions workflows are themselves a dependency surface — every `uses:`
+line pulls third-party code into the CI pipeline. A compromised maintainer
+account or a mutable `@vN` ref can execute arbitrary code with the workflow's
+permissions (including `id-token: write` for OIDC). Lint workflows with the
+same rigor as source dependencies.
+
+- **zizmor** — static security analyzer for GitHub Actions workflows. Catches
+  unpinned actions (mutable `@vN` or `@main` refs), excessive permissions,
+  OIDC token misuse, secret injection via `pull_request_target`, and untrusted
+  checkout patterns. A zizmor failure on a workflow will get the PR blocked.
+- **actionlint** — syntax and schema linter for GitHub Actions workflows.
+  Catches syntax errors, schema violations, deprecated syntax, undefined
+  secrets, invalid expressions, and job dependency cycles before they reach
+  GitHub CI.
+
+Both run in a dedicated `workflow-security` CI job (independent of the test
+job) on every push and PR. Available via `nix run nixpkgs#zizmor` and
+`nix run nixpkgs#actionlint` (no installation needed if Nix is available).
+Fallbacks: `uvx zizmor` (pip) and `cargo binstall actionlint` (Rust).
+
+```yaml
+# .github/workflows/ci.yml — dedicated workflow-security job
+workflow-security:
+  runs-on: ubuntu-latest
+  permissions:
+    contents: read
+  steps:
+    - uses: actions/checkout@v4
+    - name: Run zizmor
+      run: nix run nixpkgs#zizmor -- .github/workflows/
+    - name: Run actionlint
+      run: nix run nixpkgs#actionlint -- .github/workflows/*.yml
+```
+
+This is the standard CI security baseline for every adopted project — see
+[Pre-Commit CI Parity](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/pre-commit-ci-parity.md) for
+the full parity model.
+
 ## Related Concepts
 
 - [Security Audit Playbook](security-audit-playbook.md) — final validation that dependency checks ran and passed before deployment.
 - [tree-sitter-grammar-supply-chain](https://github.com/levonk/skills-releases/blob/main/knowledge/secrets-egress-security/tree-sitter-grammar-supply-chain.md) — supply-chain controls specific to vendored tree-sitter grammars.
 - [Security-Aware Static Analysis](security-aware-static-analysis.md) — auditing the analysis tool's own dependencies with these practices.
+- [Pre-Commit CI Parity](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/pre-commit-ci-parity.md) — the `workflow-security` CI job that runs zizmor + actionlint as part of the standard CI parity model.

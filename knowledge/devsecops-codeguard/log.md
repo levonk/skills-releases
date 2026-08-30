@@ -1,5 +1,17 @@
 # Directory Update Log
 
+## 2026-08-27
+
+* **Update**: Updated [dependency-supply-chain.md](dependency-supply-chain.md)
+  to add a "Workflow Supply Chain (zizmor + actionlint)" section documenting
+  GitHub Actions workflows as a dependency surface. Covers zizmor (unpinned
+  actions, excessive permissions, OIDC misuse) and actionlint (syntax, schema,
+  deprecated syntax) as the standard workflow security linting tools. Added
+  cross-reference to
+  [pre-commit-ci-parity.md](https://github.com/levonk/skills-releases/blob/main/knowledge/cicd-testing-practices/pre-commit-ci-parity.md)
+  in the cicd-testing-practices bundle. Updated frontmatter with zizmor and
+  actionlint sources.
+
 ## 2026-08-05
 
 * **Ingest**: Authored 3 new concept pages sourced from the project-lint

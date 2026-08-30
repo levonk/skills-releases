@@ -1,13 +1,13 @@
 ---
 name: project-adopter
 description: Adopt and establish best practices for projects by overwriting existing preferences with standardized developer UX flow. Use when onboarding a new project to standard tooling, setting up devbox/just/direnv, establishing CI/CD, or applying ADR-compliant project structure. Triggers on 'adopt project', 'set up dev environment', 'standardize project', 'apply best practices', or 'project adoption'.
-version: 2.7.0
+version: 2.8.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2025-02-01"
-  knowledge-basis: "2026-08-26"
-  last-used: "2026-08-26"
+  knowledge-basis: "2026-08-27"
+  last-used: "2026-08-27"
 tags: ["ai/skill", "software-development", "project-management", "best-practices", "development-experience", "project-adoption", "preference-overwrite"]
 see-also:
   - skill: project-configuration
@@ -87,6 +87,14 @@ dependencies:
   - type: node
     name: direnv
     url: https://direnv.net/
+  - type: nix
+    name: zizmor
+    url: https://github.com/woodruffw/zizmor
+    reason: "Workflow security analyzer — catches unpinned actions, excessive permissions, OIDC token misuse. Run in the dedicated workflow-security CI job via nix run nixpkgs#zizmor."
+  - type: nix
+    name: actionlint
+    url: https://github.com/rhysd/actionlint
+    reason: "Workflow syntax/schema linter — catches syntax errors, schema violations, deprecated syntax. Run in the dedicated workflow-security CI job via nix run nixpkgs#actionlint."
 
 ---
 

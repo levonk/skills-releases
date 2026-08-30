@@ -16,6 +16,7 @@
 *.local.js
 *.local.json
 *.local.jsonc
+*.local.jsonl
 *.local.jsx
 *.local.kdl
 *.local.md
@@ -39,6 +40,8 @@
 *.local.yaml
 *.local.yml
 *.local.zsh
+*.local.cfg
+*.local.conf
 *.override.local.yaml
 *.override.local.yml
 
@@ -46,6 +49,15 @@
 .devbox/
 .direnv/
 .local/
+
+## MCP config local overrides (gitignored — keep tokens out of committed config)
+# These are the .local variants of MCP server config files. They typically
+# contain API tokens or OAuth credentials for MCP servers and must not be
+# committed. The non-.local variants (.mcp.json, .devin/config.json, etc.)
+# are in ai-generated.ignorefile — they're committed when they have no
+# secrets, while the .local variants always carry per-developer credentials.
+.claude/settings.local.json
+.devin/config.local.json
 
 ## Cloudflare Wrangler (local state)
 .cflare/

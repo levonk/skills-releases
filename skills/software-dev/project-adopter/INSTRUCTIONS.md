@@ -1734,7 +1734,7 @@ When adopting best practices for a project (per ADR 20260131001 Standard Develop
 6. **Set up** technology-specific build tools (cargo, nx, pytest, etc. per ADR 20260131001). For TypeScript/Node.js projects, follow the `build-tool-selection` knowledge concept: `tsc --noEmit` for type-checking (always in CI), **tsup** for library bundling, **Rolldown** for app/CLI bundling — never use `tsc` for bundling, never use a bundler for type-checking. `configure-nodejs.sh` wires tsup automatically for `library` app_type.
 7. **Add** shared quality scripts (per ADR 20251218002)
 8. **Configure** testing framework (Vitest for TypeScript per ADR 20251106002)
-9. **Set up** GitHub Actions CI/CD (per ADR 20251106014)
+9. **Set up** GitHub Actions CI/CD (per ADR 20251106014) — including a dedicated `workflow-security` job that runs **zizmor** (workflow security analyzer) and **actionlint** (workflow syntax/schema linter) on all `.github/workflows/*.yml`. Both are available via `nix run nixpkgs#zizmor` and `nix run nixpkgs#actionlint` (no installation needed if Nix is available; otherwise install via `cargo binstall actionlint` and `uvx zizmor`). The security job runs on every push and PR, independent of the test job, so security findings are visible even when tests fail. See [Developer UX Flow](references/developer-ux-flow.md) → GitHub Configuration for the workflow template with the `workflow-security` job. This is the standard CI security baseline — every adopted project gets it.
 10. **Set up** AGENTS.md for AI workflow — **read and follow the bundled agent-file-upsert SKILL.md** at `references/included/skills/ai/agent-file-upsert/SKILL.md`. Do NOT call `init-agents-md.py` directly from project-adopter — read the bundled SKILL.md and let it drive its own workflow (Phase 1: repo analysis → Phase 2: scaffold via `scripts/init-agents-md.py` + fill in content → Phase 3: sub-folder AGENTS.md → Phase 4/5: special considerations + out-of-scope). The bundled SKILL.md creates the progressive-disclosure structure: root `AGENTS.md` (user-facing index), `.agents/knowledge/developer.md` (developer guide), `internal-docs/oos/`, `internal-docs/improvements/INDEX.md`, `internal-docs/anti-patterns/INDEX.md`. Do NOT hand-write AGENTS.md via heredocs in `adopt-project.sh` / `configure-*.sh` — that bypasses the template, audience separation, and consistency checks. README generation in step 13 requires AGENTS.md to exist first so the README can link to it and the consistency checker can verify name/section agreement.
 11. **Add** docker-compose.yml if needed
 12. **Create** LICENSE.md (Proprietary)
@@ -1886,7 +1886,7 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Configure .envrc via dev-env-upsert `update-envrc` — not hand-written (Step 5)
 - [ ] Set up technology-specific build tools per ADR 20260131001 (Step 6)
 - [ ] Add shared quality scripts and configure the testing framework (Steps 7-8)
-- [ ] Set up GitHub Actions CI/CD per ADR 20251106014 (Step 9)
+- [ ] Set up GitHub Actions CI/CD per ADR 20251106014 — including the dedicated `workflow-security` job with zizmor + actionlint (Step 9)
 - [ ] Create AGENTS.md by reading and following the bundled agent-file-upsert SKILL.md — do NOT call `init-agents-md.py` directly (Step 10)
 - [ ] Add docker-compose.yml if needed and create LICENSE.md (Steps 11-12)
 - [ ] Generate or update README.md by reading and following the bundled readme-upsert SKILL.md — do NOT call `verify_consistency.py` directly (Step 13)
@@ -1921,7 +1921,7 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** .envrc was configured via dev-env-upsert `update-envrc` — not hand-written (Step 5)
 - [ ] **[manual]** Technology-specific build tools were set up per ADR 20260131001 (Step 6)
 - [ ] **[manual]** Testing framework was configured (Vitest for TypeScript per ADR 20251106002) (Step 8)
-- [ ] **[manual]** GitHub Actions CI/CD was set up per ADR 20251106014 (Step 9)
+- [ ] **[manual]** GitHub Actions CI/CD was set up per ADR 20251106014 — including the dedicated `workflow-security` job with zizmor + actionlint that runs on all `.github/workflows/*.yml` (Step 9)
 
 ### Script-Driven Configuration
 
@@ -1967,6 +1967,7 @@ If any of these are true, the run is NOT complete:
 - `adopt-project.sh` called `init-agents-md.py` or `verify_consistency.py` directly → the bundled SKILL.md workflows were bypassed (Steps 10, 13)
 - Knowledge bundles were installed but `.agents/knowledge/bundles/` is empty → `install-knowledge-bundles.py` failed silently (Step 14)
 - `post-adoption-check.sh` exits non-zero but the run was declared complete → the progressive-disclosure structure is incomplete (Step 22)
+- CI workflow has no `workflow-security` job → zizmor + actionlint are not running, workflow security issues (unpinned actions, excessive permissions, schema errors) will reach GitHub CI undetected (Step 9)
 
 ## Context Declaration
 

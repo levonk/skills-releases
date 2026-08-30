@@ -3,24 +3,24 @@ name: ignorefile-manager
 description: >-
   Generate, reconcile, and audit ignore files (.gitignore, .codeiumignore,
   .cursorignore, .dockerignore, .npmignore, VS Code exclude settings, ripgrep
-  config) from modular concern sources. Use when users want to create or update
-  ignore files across multiple tools, find patterns that have diverged between
-  .gitignore and .codeiumignore, harvest missing patterns from deployed
-  files into the source-of-truth concerns, add a new ignore pattern to all
-  relevant outputs at once, set up ignore files for a new project, update
-  *.code-workspace files with proper exclude settings across a directory tree,
-  or update ripgrep config to keep search results clean. Also use when the
-  git-repository-management skill needs to update .gitignore as part of a
-  commit workflow. Do NOT trigger on general git questions, single-file edits
-  to one .gitignore (just edit it directly), or questions about what a specific
-  ignore pattern does.
-version: "1.0.0"
+  config, MCP config files) from modular concern sources. Use when users want
+  to create or update ignore files across multiple tools, find patterns that
+  have diverged between .gitignore and .codeiumignore, harvest missing patterns
+  from deployed files into the source-of-truth concerns, add a new ignore
+  pattern to all relevant outputs at once, set up ignore files for a new
+  project, update *.code-workspace files with proper exclude settings across a
+  directory tree, or update ripgrep config to keep search results clean. Also
+  use when the git-repository-management skill needs to update .gitignore as
+  part of a commit workflow. Do NOT trigger on general git questions,
+  single-file edits to one .gitignore (just edit it directly), or questions
+  about what a specific ignore pattern does.
+version: "1.1.0"
 user-invocable: true
 disable-model-invocation: false
 date:
   created: "2026-07-15"
-  knowledge-basis: "2026-07-15"
-  last-used: "2026-07-15"
+  knowledge-basis: "2026-08-28"
+  last-used: "2026-08-28"
 tags:
   - "ai/skill"
   - "ignorefiles"
