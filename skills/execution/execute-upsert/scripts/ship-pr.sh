@@ -3,17 +3,21 @@
 #
 # Deterministic git + gh operations for execute-upsert Phase 9 (Ship).
 # The AI writes the PR body to a file (creative work) and calls this
-# script with the path. The script handles everything else: push, PR
-# creation, body verification, auto-merge (with opt-out conditions),
-# and worktree cleanup.
+# script with the path. The script handles everything else: sync with
+# base, push, PR creation, body verification, auto-merge (with opt-out
+# conditions), and worktree cleanup.
 #
-# This script NEVER touches the main checkout. The merge happens on the
-# remote via `gh pr merge`. The user updates their local main checkout
-# when they want to — the script prints a reminder but does not do it.
+# This script NEVER touches the main checkout. The sync step merges
+# origin/$BASE_BRANCH into the feature branch (inside the worktree),
+# not the other way around. The remote merge happens via `gh pr merge`.
+# The user updates their local main checkout when they want to — the
+# script prints a reminder (with fast-forward detection) but does not do it.
 #
 # What this script does (in order):
 #   1. Verify pre-conditions (feature branch has commits, body file exists)
 #   2. Check auto-merge opt-out conditions (flags, config file)
+#   2.5. Sync feature branch with origin/$BASE_BRANCH (imerge if available,
+#        plain merge fallback; skip with --no-sync; exit 8 on conflict)
 #   3. Push the feature branch to the remote
 #   4. Create the PR with --body-file (gh-posting-guard compliant)
 #   5. Verify the posted PR body matches the file (no corruption)
@@ -24,6 +28,7 @@
 # What this script does NOT do:
 #   - Write the PR body (the AI does that — this is creative work)
 #   - Decide the PR title (the AI passes it via --pr-title)
+#   - Resolve sync conflicts automatically (the AI presents a blocker, exit 8)
 #   - Resolve merge conflicts on GitHub (the AI presents a blocker)
 #   - Force-push (never)
 #   - Touch the main checkout (never — the user pulls their own main)
@@ -37,6 +42,8 @@
 #   5  — unexpected error
 #   6  — PR created but NOT merged (auto-merge disabled) — present URL to user
 #   7  — CI checks failed (--wait-for-ci mode only; PR was NOT merged)
+#   8  — sync conflict: origin/$BASE_BRANCH cannot merge cleanly into the
+#        feature branch — resolve conflicts manually, commit, and re-run
 #
 # Usage:
 #   ./scripts/ship-pr.sh \
@@ -47,6 +54,7 @@
 #     --project-slug "my-project" \
 #     --feature-slug "my-feature" \
 #     [--no-merge]                # skip auto-merge (user said "do not auto-merge")
+#     [--no-sync]                 # skip base-branch sync (user said "don't sync")
 #     [--admin]                   # use --admin flag for branch protection
 #     [--quality-gate-skipped]    # quality gate did not run — don't auto-merge
 #     [--wait-for-ci]             # wait for CI checks to pass before merging
@@ -475,6 +483,7 @@ PR_BODY_FILE=""
 PROJECT_SLUG=""
 FEATURE_SLUG=""
 NO_MERGE=0
+NO_SYNC=0
 ADMIN_FLAG=0
 QUALITY_GATE_SKIPPED=0
 WAIT_FOR_CI=0
@@ -495,6 +504,8 @@ while [[ $# -gt 0 ]]; do
       FEATURE_SLUG="$2"; shift 2 ;;
     --no-merge)
       NO_MERGE=1; shift ;;
+    --no-sync)
+      NO_SYNC=1; shift ;;
     --admin)
       ADMIN_FLAG=1; shift ;;
     --quality-gate-skipped)
@@ -652,12 +663,90 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────
+# Step 2.5: Sync feature branch with origin/$BASE_BRANCH
+# ─────────────────────────────────────────────────────────────────────
+#
+# Before pushing, merge origin/$BASE_BRANCH into the feature branch so
+# the local quality gate ran against the same base the PR will merge
+# into, and the remote squash-merge is less likely to hit conflicts.
+#
+# Uses git-imerge (incremental, resumable, localizes conflicts per
+# commit) when available — it is already in skills-src's devbox. Falls
+# back to plain `git merge` on projects without git-imerge.
+#
+# On conflict: aborts the merge, restores the feature branch to its
+# pre-sync state, and exits 8 so the AI can surface a blocker. The
+# script never leaves the worktree in a half-merged state.
+#
+# Skip with --no-sync (e.g., the user explicitly said "don't sync" or
+# the project has no remote base branch to sync from).
+
+if [[ "$NO_SYNC" -eq 1 ]]; then
+  log "Step 2.5: SKIPPED (--no-sync)"
+else
+  log "Step 2.5: syncing $FEATURE_BRANCH with origin/$BASE_BRANCH"
+
+  # Ensure we're on the feature branch before merging into it
+  git checkout "$FEATURE_BRANCH" 2>/dev/null || {
+    log "ERROR: cannot checkout $FEATURE_BRANCH"
+    exit 5
+  }
+
+  # Record pre-sync HEAD so we can restore on conflict
+  PRE_SYNC_HEAD="$(git rev-parse HEAD)"
+
+  # Fetch the latest base branch from the remote
+  if ! git fetch origin "$BASE_BRANCH" 2>&1; then
+    log "WARNING: could not fetch origin/$BASE_BRANCH — skipping sync"
+  else
+    BASE_SHA="$(git rev-parse "origin/$BASE_BRANCH" 2>/dev/null || echo "")"
+    if [[ -z "$BASE_SHA" ]]; then
+      log "WARNING: cannot resolve origin/$BASE_BRANCH — skipping sync"
+    elif git merge-base --is-ancestor "$BASE_SHA" "$FEATURE_BRANCH" 2>/dev/null; then
+      log "Feature branch is up to date with origin/$BASE_BRANCH — no sync needed"
+    else
+      log "Feature branch is behind origin/$BASE_BRANCH — merging base into feature"
+      SYNC_OK=0
+
+      # Prefer git-imerge for incremental, conflict-localized merging
+      if git imerge --help >/dev/null 2>&1; then
+        log "Using git-imerge for incremental merge"
+        if git imerge merge "origin/$BASE_BRANCH" --goal=merge 2>&1; then
+          SYNC_OK=1
+        else
+          log "git-imerge reported conflicts — cleaning up imerge state"
+          git imerge remove 2>/dev/null || true
+          git reset --hard "$PRE_SYNC_HEAD" 2>/dev/null || true
+        fi
+      else
+        log "git-imerge not available — using plain merge"
+        if git merge "origin/$BASE_BRANCH" --no-edit 2>&1; then
+          SYNC_OK=1
+        else
+          log "Plain merge reported conflicts — aborting merge"
+          git merge --abort 2>/dev/null || true
+          git reset --hard "$PRE_SYNC_HEAD" 2>/dev/null || true
+        fi
+      fi
+
+      if [[ "$SYNC_OK" -ne 1 ]]; then
+        log "SYNC CONFLICT: cannot merge origin/$BASE_BRANCH into $FEATURE_BRANCH cleanly"
+        log "Manual resolution required. Resolve conflicts, commit, and re-run ship-pr.sh"
+        emit_summary "sync-conflict" "0" "" "false" "false"
+        exit 8
+      fi
+      log "Sync complete — feature branch is up to date with origin/$BASE_BRANCH"
+    fi
+  fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────
 # Step 3: Push the feature branch
 # ─────────────────────────────────────────────────────────────────────
 
 log "Step 3: pushing feature branch $FEATURE_BRANCH"
 
-# Ensure we're on the feature branch
+# Ensure we're on the feature branch (may have been checked out in 2.5)
 git checkout "$FEATURE_BRANCH" 2>/dev/null || {
   log "ERROR: cannot checkout $FEATURE_BRANCH"
   exit 5
@@ -817,16 +906,26 @@ if in_linked_worktree; then
     treehouse_return "$CURRENT_WD" 2>&1 | sed 's/^/[ship-pr] /' >&2 || true
     WORKTREE_CLEANED="true"
   else
-    # Manual worktree removal
-    log "Removing manual worktree at $CURRENT_WD"
-    MAIN_REPO_FOR_CLEANUP="$(git rev-parse --git-common-dir 2>/dev/null)/.."
-    MAIN_REPO_FOR_CLEANUP="$(cd "$MAIN_REPO_FOR_CLEANUP" && pwd)"
-    if git -C "$MAIN_REPO_FOR_CLEANUP" worktree remove "$CURRENT_WD" --force 2>&1; then
-      log "Worktree removed"
-      WORKTREE_CLEANED="true"
+    # Manual worktree removal — verify landed work first (binding contract
+    # hard rule 3: never tear down unlanded work)
+    UNCOMMITTED=$(git -C "$CURRENT_WD" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "$UNCOMMITTED" -gt 0 ]]; then
+      log "BLOCK: $UNCOMMITTED uncommitted changes in worktree — refusing to tear down unlanded work (binding contract hard rule 3)"
+      log "Commit the changes before removing the worktree, or get explicit user authorization for --force removal"
+      log "Manual step: commit the work, then re-run ship-pr.sh — or explicitly authorize --force removal"
+      WORKTREE_CLEANED="false"
     else
-      log "WARNING: could not remove worktree at $CURRENT_WD"
-      log "Manual step: git worktree remove \"$CURRENT_WD\" --force"
+      # Manual worktree removal
+      log "Removing manual worktree at $CURRENT_WD (all work landed)"
+      MAIN_REPO_FOR_CLEANUP="$(git rev-parse --git-common-dir 2>/dev/null)/.."
+      MAIN_REPO_FOR_CLEANUP="$(cd "$MAIN_REPO_FOR_CLEANUP" && pwd)"
+      if git -C "$MAIN_REPO_FOR_CLEANUP" worktree remove "$CURRENT_WD" --force 2>&1; then
+        log "Worktree removed"
+        WORKTREE_CLEANED="true"
+      else
+        log "WARNING: could not remove worktree at $CURRENT_WD"
+        log "Manual step: git worktree remove \"$CURRENT_WD\" --force"
+      fi
     fi
   fi
 else
@@ -839,7 +938,22 @@ fi
 # ─────────────────────────────────────────────────────────────────────
 
 log "Phase 9 complete: PR #$PR_NUMBER merged on remote"
-log "Your local $BASE_BRANCH checkout is now behind origin — run: git pull origin $BASE_BRANCH"
+
+# Detect whether local main can fast-forward or has diverged, so the
+# reminder gives the user actionable guidance instead of a bare "pull".
+# We read refs/heads/$BASE_BRANCH (the main checkout's branch) from this
+# worktree — shared git dir, no checkout needed.
+LOCAL_BASE_SHA="$(git rev-parse "refs/heads/$BASE_BRANCH" 2>/dev/null || echo "")"
+REMOTE_BASE_SHA="$(git rev-parse "origin/$BASE_BRANCH" 2>/dev/null || echo "")"
+if [[ -n "$LOCAL_BASE_SHA" ]] && [[ -n "$REMOTE_BASE_SHA" ]]; then
+  if git merge-base --is-ancestor "$LOCAL_BASE_SHA" "$REMOTE_BASE_SHA" 2>/dev/null; then
+    log "Your local $BASE_BRANCH can be fast-forwarded — run: git pull origin $BASE_BRANCH"
+  else
+    log "Your local $BASE_BRANCH has diverged from origin — you decide how to update (merge, rebase, or reset)"
+  fi
+else
+  log "Your local $BASE_BRANCH checkout is now behind origin — run: git pull origin $BASE_BRANCH"
+fi
 emit_summary "merged" "$PR_NUMBER" "$PR_URL" "true" "$WORKTREE_CLEANED"
 
 exit 0

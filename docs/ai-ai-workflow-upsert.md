@@ -22,9 +22,10 @@ Create new workflows, modify and improve existing workflows, and convert between
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **ai-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a workflow, or when converting a workflow into a skill (the reverse of this skill's Mode B).
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating workflows to ensure generated workflows do not contradict project constraints
 
 ---
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

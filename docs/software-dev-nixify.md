@@ -3,7 +3,7 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status:  · Version: 2.21.0
+> Category: **software-dev** · Status:  · Version: 2.22.0
 
 Add Nix flake support to a project so it can be installed via nix run github:... or nix profile add github:.... Use when the user wants to make a project installable via Nix flakes from a remote GitHub repository, add devbox.json for reproducible development environments, or package a project for Nix profile installation. Covers forking, cloning, architecture analysis, flake template selection, documentation updates, CI setup, PR creation, nixpkgs superset detection (expose #nixpkgs output when nixpkgs packaging is more complete), and nixpkgs upstream contribution (submit package.nix to NixOS/nixpkgs when the project is not yet packaged). Do NOT trigger on general Nix questions, NixOS configuration, or non-flake Nix usage.
 
@@ -13,7 +13,7 @@ Add Nix flake support to a project so it can be installed via nix run github:...
 |-------|-------|
 | Name | `nixify` |
 | Category | `software-dev` |
-| Version | `2.21.0` |
+| Version | `2.22.0` |
 | Status | `` |
 | Owner |  |
 
@@ -25,4 +25,4 @@ Add Nix flake support to a project so it can be installed via nix run github:...
 
 - **Full skill**: [`skills/software-dev/nixify/SKILL.md`](skills/software-dev/nixify/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

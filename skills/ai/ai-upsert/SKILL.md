@@ -119,6 +119,9 @@ see-also:
   - skill: "execute-upsert"
     relationship: "pattern-reference"
     description: "Sibling execution skill whose phased pipeline (Self-Update, Establish Technologies, per-story review, commit) ai-upsert 3.3.0 adopts for its own lifecycle"
+  - skill: requirements-upsert
+    relationship: "consult"
+    description: "Consult the requirements ledger when creating or updating skills, knowledge bundles, and agents to ensure generated artifacts do not contradict project constraints"
 
 ---
 

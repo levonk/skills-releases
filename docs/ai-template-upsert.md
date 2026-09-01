@@ -24,9 +24,10 @@ Create new reusable templates, modify and improve existing templates, and audit 
 - **ai-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a template.
 - **ai-workflow-upsert** (skill, sibling) — Full lifecycle management for workflows (create/update/convert). Use when the target is a workflow, not a template.
 - **agent-file-upsert** (skill, sibling) — Full lifecycle management for agent files (create/update/audit). Use when the target is an agent definition.
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating templates to ensure generated templates do not contradict project constraints
 
 ---
 
 - **Full skill**: [`skills/ai/template-upsert/SKILL.md`](skills/ai/template-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

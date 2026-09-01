@@ -31,9 +31,10 @@ Generate a project's README.md from scratch (greenfield) or update an existing o
 - **ai-guidance-improver** (skill, complement) — Quality analysis and improvement of existing AI guidance files
 - **project-adopter** (skill, caller) — project-adopter delegates README.md generation to this skill for both greenfield (create-next-app, copier scaffolds, etc.) and brownfield adoptions; see its 'Repository & Ignore File Management' section for the contract
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when generating README.md so the README reflects the project's durable constraints
 
 ---
 
 - **Full skill**: [`skills/software-dev/readme-upsert/SKILL.md`](skills/software-dev/readme-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

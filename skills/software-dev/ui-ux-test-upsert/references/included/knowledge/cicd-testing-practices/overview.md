@@ -124,7 +124,7 @@ test runners across all projects.
 ## The Testing Stack
 
 ```
-vitest-runner → playwright-stagehand → quality-scripts → pre-commit-parity → a11y-testing → ui-coverage → ux-usability
+vitest-runner → playwright-stagehand → quality-scripts → pre-commit-parity → a11y-testing → ui-coverage → ux-usability → fast-feedback
 ```
 
 | Phase | Practice | Prevents |
@@ -136,6 +136,7 @@ vitest-runner → playwright-stagehand → quality-scripts → pre-commit-parity
 | A11y | [Accessibility Testing](accessibility-testing.md) | WCAG violations, missing a11y in CI |
 | UI Coverage | [UI Requirements Coverage](ui-requirements-coverage.md) | Missing UI elements, unreachable flows, undocumented state changes |
 | UX Usability | [UX Usability Testing](ux-usability-testing.md) | Unusable UIs — elements present but users cannot figure out how to accomplish tasks |
+| Speed | [Fast Test Feedback](fast-test-feedback.md) | Slow suites that get weakened (tests disabled/optional) instead of fixed; every change running the full suite |
 | Rust CI | [Rust CI Tooling](rust-ci-tooling.md) | No Rust CI content — missing cargo-deny, cargo-audit, cargo-nextest, cross-compilation |
 | Snapshots | [Snapshot Testing (Rust)](snapshot-testing-rust.md) | Brittle assertions for complex output, no snapshot review workflow |
 | Coverage | [Coverage Tooling (Rust)](coverage-tooling-rust.md) | No coverage thresholds, missing HTML reports, no CI integration |

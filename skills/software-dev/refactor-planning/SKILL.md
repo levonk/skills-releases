@@ -24,6 +24,9 @@ see-also:
   - knowledge: software-architecture-essentials
     relationship: "reference"
     description: "Architectural patterns and design principles to apply during refactoring"
+  - knowledge: cicd-testing-practices
+    relationship: "reference"
+    description: "Fast Test Feedback — keep per-step verification fast via selective test running; never weaken the gate to work around a slow suite"
 
 ---
 

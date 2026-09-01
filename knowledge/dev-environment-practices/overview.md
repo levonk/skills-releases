@@ -146,6 +146,7 @@ Each phase has practices that prevent specific failure modes:
 | Rust Toolchain | [Devbox Rust Versions](devbox-rust-versions.md) | Unpinned Rust toolchain, drift across developers, missing components |
 | Rust direnv | [Direnv Rustup Toolchains](direnv-rustup-toolchains.md) | Manual toolchain switching, stale CARGO_HOME, slow direnv loading |
 | Multi-Language | [Multi-Language Devbox](multi-language-devbox.md) | PATH conflicts between Rust/Node/Python, missing tree-sitter grammar support |
+| Diff Tooling | [Diff Tooling Stack](diff-tooling-stack.md) | `git apply` failure from gitattributes-configured external diff drivers; losing structural diff by disabling difftastic globally |
 
 ## Scope
 

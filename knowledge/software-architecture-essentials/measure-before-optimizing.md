@@ -5,8 +5,8 @@ description: Do not tune for speed until a measurement has proven where the bott
 tags: [architecture, performance, profiling, optimization, measurement, premature-optimization]
 date:
   created: "2026-08-27"
-  knowledge-basis: "2026-08-27"
-  last-used: "2026-08-27"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 ---
 
 # Measure Before Optimizing
@@ -129,6 +129,14 @@ expected value.
   performance book's first instruction is "measure before optimizing," and
   `clippy` warns against micro-optimizations that obscure intent without a
   measured justification.
+- **Wirewiki autocomplete — the stopping rule in practice.** The API answers
+  in ~2 ms at p50; the author stopped optimizing it there because the
+  network round-trip (Browser → Cloudflare → origin) dominates the
+  end-to-end latency. Shaving the API from 2 ms to 1 ms would be invisible
+  behind a 60 ms CDN hop — the textbook case of optimizing a part that no
+  longer overwhelms the rest. See
+  [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) for
+  the full case study.
 
 ## See Also
 
@@ -144,9 +152,16 @@ expected value.
   step that confirms or refutes the estimate before optimizing.
 - [Root-Cause First](root-cause-first.md) — a "slow" symptom often has its
   root cause elsewhere; profile to find the cause, do not patch the symptom.
+- [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) —
+  once the backend fits the perception budget with headroom, the network
+  becomes the dominant part; this page is the stopping rule that tells you
+  when to shift effort.
 
 ## Sources
 
 - Rob Pike, "Notes on Programming in C" (1989) — Rules 1 and 2.
 - C.A.R. Hoare, quoted by Donald Knuth, "Structured Programming with go to
   Statements" (1974) — "premature optimization is the root of all evil."
+- [p99 0 ms* autocomplete for 240 million domain names](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  — Ruurtjan Pul, 2026-06-22. The stopping rule in practice: the API was
+  2 ms and the network was 60 ms, so further API tuning stopped.

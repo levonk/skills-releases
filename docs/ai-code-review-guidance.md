@@ -34,9 +34,10 @@ Systematic code review checklist covering infrastructure, schemas, integrations,
 - **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides shell-scripting-best-practices.md (shellcheck, shfmt, strict mode, PATH guards) used in the Cross-Cutting Concerns / Testing category to validate generated shell scripts
 - **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides standalone-scripts.md (PEP 723, uv run --script) and pytest-testing-baseline.md used in the Cross-Cutting Concerns / Testing category to validate generated Python scripts and test suites
 - **** (, bundled-dependency) — Bundled via includeTree for offline availability. Provides rustfmt-clippy-config.md, quality-gates.md, testing-strategy.md, error-handling.md, and security-auditing.md used in the Cross-Cutting Concerns / Testing category to validate generated Rust code
+- **** (, dependency) — Provides the multi-model-adversarial-review concept page that the optional multi-model review output format (Agreement Map, consensus tiers, lead judgment categorization) is based on. The review skill degrades gracefully to single-model when only one model is available
 
 ---
 
 - **Full skill**: [`skills/ai/code-review-guidance/SKILL.md`](skills/ai/code-review-guidance/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

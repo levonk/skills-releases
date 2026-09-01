@@ -2227,7 +2227,41 @@ violations at the tool-call level — the agent cannot rationalize past them.
 The full `INSTRUCTIONS.md` is reference material. **This contract is the active
 law.**
 
-1. **Every write-capable subagent dispatch MUST go through the execution
+The rules are prioritized. The first three are **hard rules** — they
+cannot be overridden by advisory rules, context, or judgment calls.
+The remaining rules are **advisory** — they are enforced where
+possible but may be overridden by a hard rule or explicit user
+instruction.
+
+#### Hard Rules (Cannot Be Overridden)
+
+1. **Never write to main with dirty state.** Never commit directly on
+   main/master with uncommitted changes from a prior session. The Stop
+   hook blocks stopping with a dirty main branch (loop-guarded — fires
+   once per session). This is the highest-priority rule — a dirty main
+   is the most common source of lost work and corrupted state.
+
+2. **Never merge without explicit approval.** Do not merge a story
+   branch into main, or merge a PR, without explicit approval — either
+   from the user, from the project mode (`+yolo` grants standing merge
+   autonomy), or from the quality gate passing in `no-mistakes` mode.
+   "The work looks done" is not approval. "The tests pass" is not
+   approval. Approval is an explicit signal, not an inference.
+
+3. **Never tear down unlanded work.** Uncommitted changes are never
+   landed — they exist only in the worktree and are lost when the
+   worktree is removed. The teardown script (worktree removal) owns
+   the complete landed-work test: it verifies that all story work has
+   been committed and merged before allowing the worktree to be
+   removed. Never bypass a refusal from the teardown script. Never
+   use `--force` on worktree removal unless explicitly authorized by
+   the user. If the teardown script refuses because work is unlanded,
+   the response is to commit and merge the work — not to force the
+   removal.
+
+#### Advisory Rules (Enforced Where Possible)
+
+4. **Every write-capable subagent dispatch MUST go through the execution
    gate first.** Run `bash .devin/scripts/execution-gate.sh <story-slug>
    [base-sha]` before any `run_subagent` call that uses a write-capable
    profile (`subagent_general` or a custom profile with write/exec access).
@@ -2244,35 +2278,31 @@ law.**
    the prompt layer — an agent cannot escalate a `subagent_explore`
    dispatch to write capability by prompt content alone.
 
-2. **The subagent MUST work ONLY in the worktree path** returned by the gate
+5. **The subagent MUST work ONLY in the worktree path** returned by the gate
    script. Pass the worktree path in the dispatch prompt. The subagent must
    not modify files outside the worktree.
 
-3. **Before dispatching: create a checkpoint commit** on the current branch.
+6. **Before dispatching: create a checkpoint commit** on the current branch.
    Record the SHA for rollback. The gate script records the checkpoint SHA in
    `/tmp/devin-execution-gates/checkpoint-<story-slug>`.
 
-4. **After each story completes: commit the story's work** on the story branch,
+7. **After each story completes: commit the story's work** on the story branch,
    merge back with `--no-ff`, remove the worktree. Do not leave orphan
    worktrees.
 
-5. **Never commit directly on main/master with uncommitted changes** from a
-   prior session. The Stop hook blocks stopping with a dirty main branch
-   (loop-guarded — fires once per session).
-
-6. **Never work on stories directly in the main checkout.** Every story gets
+8. **Never work on stories directly in the main checkout.** Every story gets
    its own worktree — sequential AND parallel. The gate enforces this by
    creating the worktree before the dispatch is allowed.
 
-7. **Max 5 simultaneous subagents** (API rate-limit safety). See
+9. **Max 5 simultaneous subagents** (API rate-limit safety). See
    `references/parallel-dispatch.md` for the concurrency cap and queue
    management.
 
-8. **If a subagent fails, roll back to the checkpoint:**
+10. **If a subagent fails, roll back to the checkpoint:**
    `git -C <worktree> reset --hard <checkpoint-sha>`. Never attempt to patch
    a failed subagent's partial work in-place — reset and re-dispatch.
 
-9. **Never circumvent the gate by abandoning subagent dispatch.** The gate
+11. **Never circumvent the gate by abandoning subagent dispatch.** The gate
    is a floor for subagent dispatch, not a ceiling on when subagents may be
    used. If the gate blocks a dispatch, the response is to run
    `execution-gate.sh` and re-dispatch — NOT to drop the subagent and do
@@ -2306,6 +2336,78 @@ research subagents pass through without a gate. If the session is reading the
 skill or doing non-execution work, no subagent is dispatched, no gate is
 checked, no worktree is created. The enforcement is at the dispatch action,
 not the session level.
+
+## Project Modes — Configurable Delivery Posture
+
+The delivery posture (how Phase 9 ships the work) is configurable per
+project and per story. The project mode is read from project-local
+config at the start of Phase 9 and determines which steps run.
+
+### Modes
+
+| Mode | Behavior | When to use |
+|------|----------|-------------|
+| `no-mistakes` | Full validation pipeline (build, test, lint, review) before push. This is the default. | Production code, shared repos, any work where a broken push has a cost. |
+| `direct-PR` | Push and create PR without the no-mistakes validation gate. | Trusted work that has already been validated by other means, or experimental branches where speed matters more than verification. |
+| `local-only` | Merge locally, no PR. The work lands on the local branch but is not pushed. | Personal projects, local experiments, work that is not ready for review. |
+| `+yolo` | Auto-merge flag. Standing merge autonomy — the PR is auto-merged after creation without waiting for human review. | Pre-authorized work where the user has explicitly granted merge autonomy. Never the default. |
+
+### Detection
+
+Read the project mode from (in priority order):
+
+1. **Story-level override** — `internal-docs/feature/todo/{slug}/project-mode.txt`
+   (a single line with the mode name). This overrides the project-level
+   setting for one story.
+2. **Project config** — `.execute-upsert/config.toml` with a
+   `[delivery] mode = "<mode>"` key. This is the project-level default.
+3. **Default** — `no-mistakes` if no config is found.
+
+### Mode Combinations
+
+The modes are not mutually exclusive in all combinations:
+
+- `no-mistakes` + `+yolo` — run the full validation pipeline, then
+  auto-merge. The validation gate still runs; the auto-merge just
+  removes the human review wait.
+- `direct-PR` + `+yolo` — push, create PR, auto-merge without
+  validation or human review. This is the fastest path and the most
+  risky. Use only for pre-authorized, low-risk work.
+- `local-only` + `+yolo` — not meaningful (local-only does not create
+  a PR, so there is nothing to auto-merge). Treat `+yolo` as ignored
+  in this combination.
+
+### Phase 9 Branching
+
+Phase 9 (Ship) reads the project mode and branches:
+
+- **`no-mistakes`** (default): run the full validation pipeline (build,
+  test, lint, review) before push. If any step fails, return to Phase 6
+  to fix. After validation passes, push and create PR. Do not auto-merge
+  unless `+yolo` is also set.
+- **`direct-PR`**: skip the validation gate. Push and create PR
+  immediately. Do not auto-merge unless `+yolo` is also set.
+- **`local-only`**: merge the feature branch into the local target
+  branch (usually `main`). Do not push. Do not create a PR.
+- **`+yolo`** (combined with any of the above): after the PR is created
+  (or the local merge is done), auto-merge without waiting for human
+  review. For `no-mistakes` + `+yolo`, the validation gate still runs
+  before the auto-merge.
+
+### Safety
+
+- `+yolo` is never the default. It must be explicitly set in config or
+  the story-level override.
+- `direct-PR` skips validation. The work is pushed without build/test/
+  lint/review. Use only when the work has been validated by other means
+  or when speed is explicitly prioritized over verification.
+- `local-only` does not push. The work exists only on the local branch.
+  If the local branch is lost (disk failure, accidental deletion), the
+  work is lost. Push to a remote before relying on `local-only` for
+  anything important.
+- The project mode does not override the binding contract. The
+  worktree-per-story, commit-before-dispatch, and commit-after-story
+  rules apply regardless of mode.
 
 
 #!/usr/bin/env bash
@@ -2567,6 +2669,8 @@ references/included/skills/software-dev/code-review-guidance/
 
 references/included/skills/content/diagram-upsert/
 
+references/included/skills/software-dev/requirements-upsert/
+
 ---
 description: Shared PR body template for planned enhancement PRs — feature, story (and task if appropriate), and current story status counts. Used by workflows that create PRs for structured enhancement work (skill-src-upsert, execute-upsert, etc.). Not for unrelated or ad-hoc changes
 ---
@@ -2742,6 +2846,315 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
 **Never** use `gh ... --body "$BODY"` with an inline string. **Never** use an unquoted heredoc to build the body. The `--body-file` path is the only one that survives multi-line markdown with backticks and `$` intact.
 
 
+---
+description: Shared holistic feature review template — a fresh-context review of the complete feature against the PRD, checking cross-story integration and emergent behavior that per-story reviews miss. Used by any multi-story pipeline (execute-upsert, ai-development-loop, etc.) after all stories are [x] Done and before shipping. Distinct from per-story code review (which checks one story in isolation) and from the build/test quality gate (which checks compilation and test pass-fail, not feature coherence). Complements the retrospective-summary-template (which covers process reflection, not feature coherence)
+---
+
+### Holistic Feature Review Template
+
+After all stories are `[x] Done` and before shipping (or before
+auto-merge if auto-merge is enabled), run a **holistic feature review**
+in a fresh context. This review checks the *complete feature* as a
+whole — something per-story reviews cannot do because they see each
+story in isolation.
+
+#### When to Use This Template
+
+- A multi-story pipeline has completed all stories (`[x] Done`)
+- The work is tracked in a PRD with goals and acceptance criteria
+- Per-story code reviews have already run (this is not a replacement
+  for per-story review — it is the integration review that follows)
+
+Do NOT use this template for:
+
+- Single-story features (the per-story review already covers the whole
+  feature when there is only one story)
+- Ad-hoc changes with no PRD or task tracking
+- Build/test quality gate output (that is pass-fail, not a review)
+
+#### What Per-Story Reviews Miss
+
+Per-story reviews verify that *one story* is correct, complete, and
+meets its acceptance criteria. They cannot catch:
+
+- **Cross-story integration** — do the stories actually work together?
+  Story A's output may be story B's input; if the contract between them
+  drifted during implementation, no per-story review sees it.
+- **PRD goal alignment** — does the complete feature meet the PRD's
+  goals, or did individual stories each deliver their slice while the
+  whole fell short? Per-story reviews check story acceptance criteria,
+  not feature-level goals.
+- **Emergent behavior** — combining N correct stories can produce
+  incorrect emergent behavior (performance cliffs, state machine dead
+  ends, UX flow gaps) that no individual story introduces.
+- **Coverage gaps** — stories A and B may each test their own slice but
+  leave the integration surface untested. The holistic review checks
+  whether integration tests exist for the cross-story seams.
+
+#### Template
+
+Run this review in a fresh subagent context (not the orchestrator's
+context — the orchestrator has seen every story and has curse-of-knowledge
+bias about how they fit together). Give the subagent the PRD, the task
+index, and the complete diff (all stories combined). Ask it to answer:
+
+```markdown
+## Holistic Feature Review: <FEATURE_NAME>
+
+**Reviewer**: fresh-context subagent (not the orchestrator)
+**PRD**: <path to PRD file>
+**Task index**: <path to task index file>
+**Diff scope**: all story branches merged into the feature branch
+
+### 1. PRD Goal Alignment
+
+For each goal in the PRD's "Goals" section:
+
+| Goal | Met? | Evidence |
+|------|------|----------|
+| <goal 1> | Yes / No / Partial | <file:line or test name that proves or disproves it> |
+| <goal 2> | Yes / No / Partial | <file:line or test name> |
+
+**Unmet goals**: <list any No/Partial goals with a one-line explanation
+of what is missing>
+
+### 2. Cross-Story Integration
+
+For each pair of stories that share a seam (one story's output is
+another's input, or they modify the same module):
+
+| Story A | Story B | Seam | Integration verified? |
+|---------|---------|------|-----------------------|
+| <story-id> | <story-id> | <what connects them> | Yes (test: <name>) / No (gap) |
+
+**Integration gaps**: <list any unverified seams with a one-line
+description of the risk>
+
+### 3. Emergent Behavior
+
+- **Performance**: does the combined feature meet the PRD's
+  non-functional requirements (response time, memory, throughput)?
+  <evidence or gap>
+- **State consistency**: do the stories' state transitions compose
+  correctly? <evidence or gap>
+- **UX flow** (graphical apps only): does the complete user journey
+  work end-to-end? <evidence or gap>
+
+**Emergent issues**: <list any emergent behavior issues found>
+
+### 4. Test Coverage at the Seams
+
+- Integration tests exist for: <list the cross-story seams that have
+  dedicated integration tests>
+- Integration tests missing for: <list the seams that have no
+  integration test — these are gaps>
+
+### 5. Verdict
+
+- **Ship?** Yes / No / Fix-then-ship
+- **Blocking issues** (if No or Fix-then-ship): <list the issues that
+  must be fixed before shipping, with the story-id responsible for each>
+- **Non-blocking observations**: <list issues that are worth noting but
+  do not block the ship>
+```
+
+#### Verdict Handling
+
+- **Yes**: proceed to ship (Phase 9 quality gate + PR).
+- **No**: return to Phase 6. The blocking issues list identifies which
+  stories need rework. Fix the blocking issues, re-run the per-story
+  review for the fixed stories, then re-run this holistic review.
+- **Fix-then-ship**: the issues are small enough to fix without a full
+  Phase 6 return. Fix them in the orchestrator context (not a fresh
+  subagent — the fixes are small and the orchestrator has the context),
+  re-run the quality gate, then ship.
+
+#### Relationship to Other Reviews
+
+| Review | Scope | When | Context |
+|--------|-------|------|---------|
+| Per-story code review | One story | Phase 6, after each story | Fresh subagent per story |
+| Doubt-driven review | One story (non-trivial) | Phase 6, before commit | Fresh adversarial subagent |
+| **Holistic feature review** | **All stories combined** | **After all stories [x] Done, before ship** | **Fresh subagent (not orchestrator)** |
+| Build/test quality gate | Whole repo | Phase 9, before ship | Script (pass-fail, not review) |
+| Retrospective | Process (not code) | After ship | Orchestrator (reflection, not review) |
+
+The holistic feature review is the only review that sees the complete
+feature in a fresh context. Per-story reviews are necessary but not
+sufficient for multi-story features.
+
+
+---
+description: Shared retrospective summary template — a structured end-of-cycle reflection covering process, technical, and opportunity dimensions. Used by any execution skill after a cycle completes (execute-upsert after a feature ships, ai-development-loop after a ticket completes, handoff when a session ends with work remaining). Distinct from post-task-reflection (which is a narrow per-guidance-file-edit check) and from holistic-feature-review (which checks feature coherence, not process). The full retrospective that post-task-reflection's three questions are a narrow slice of
+---
+
+### Retrospective Summary Template
+
+After a cycle completes (a feature ships, a ticket closes, a session
+ends), run a structured retrospective. This is the full version of what
+`post-task-reflection` covers narrowly — that include asks three
+questions after a guidance-file edit; this template covers the whole
+cycle across process, technical, and opportunity dimensions.
+
+#### When to Use This Template
+
+- A multi-story feature has shipped (execute-upsert Phase 9 complete)
+- A ticket cycle has completed (ai-development-loop Step 8 or Step 12)
+- A session is ending with work remaining (handoff — capture what was
+  learned before the context is lost)
+- Any execution cycle where the process itself should improve next time
+
+Do NOT use this template for:
+
+- Single-file edits with no process dimension (use `post-task-reflection`
+  instead — it is narrower and faster)
+- Build/test quality gate output (that is pass-fail, not reflection)
+- Holistic feature review (that checks feature coherence, not process —
+  use `holistic-feature-review-template` instead)
+
+#### Template
+
+```markdown
+## Retrospective: <CYCLE_NAME>
+
+**Cycle**: <feature name, ticket ID, or session identifier>
+**Duration**: <wall time or story count>
+**PRD/Ticket**: <path to PRD or ticket reference>
+**Date**: <YYYY-MM-DD>
+
+### 1. Process Reflection
+
+**What went well**:
+- <one line per thing that worked — e.g., "parallel dispatch of 3
+  independent stories saved 40% wall time vs serial">
+
+**What obstacles were encountered**:
+- <one line per obstacle — e.g., "story 3 blocked on story 1's API
+  contract, which drifted during implementation">
+
+**How could the process be improved**:
+- <one line per improvement — e.g., "add an API contract freeze step
+  between Phase 5 (tasks) and Phase 6 (execute) for stories with
+  producer-consumer dependencies">
+
+### 2. Technical Reflection
+
+**Patterns that emerged in the code**:
+- <one line per pattern — e.g., "three stories independently introduced
+  the same retry-with-backoff helper — candidate for a shared utility">
+
+**Refactoring opportunities**:
+- <one line per opportunity — e.g., "stories A and B both modified
+  config.go; the config loader could be extracted to reduce merge
+  conflicts in future features">
+
+**Technical debt discovered**:
+- <one line per debt item — e.g., "story 2 revealed that the test
+  fixtures depend on a hardcoded port that breaks when tests run in
+  parallel">
+
+### 3. Documentation Reflection
+
+**Documentation that needs updating**:
+- <one line per doc — e.g., "AGENTS.md does not mention the new
+  config-loader pattern that three stories now depend on">
+
+**Patterns that should be codified**:
+- <one line per pattern — e.g., "the retry-with-backoff helper should
+  be documented in the developer guide so the next feature does not
+  re-invent it">
+
+**Decisions that need recording**:
+- <one line per decision — e.g., "we chose to defer the config-loader
+  extraction to the next feature — record this as a deferred item in
+  the PRD">
+
+### 4. Tooling Reflection
+
+**Were the right tools available**:
+- <one line per gap — e.g., "no integration test runner for the
+  cross-story seam between stories A and B — had to write a one-off
+  script">
+
+**Missing commands or workflows**:
+- <one line per gap — e.g., "no `just integration-test` target —
+  integration tests had to be run manually">
+
+**Tooling improvements to propose**:
+- <one line per proposal — e.g., "add an `integration-test` target to
+  the Justfile that runs tests tagged with @integration">
+
+### 5. Opportunity Identification
+
+**Boilerplate opportunities** (reusable structures):
+- <one line per opportunity — e.g., "the retry-with-backoff helper
+  appeared in 3 stories — extract to a shared include or utility">
+
+**Refactoring opportunities**:
+- <one line per opportunity — e.g., "config-loader extraction (see
+  Technical Reflection above)">
+
+**Template opportunities** (reusable document structures):
+- <one line per opportunity — e.g., "the API contract freeze step
+  could become a shared include for features with producer-consumer
+  story dependencies">
+
+### 6. Codify (Feed Back)
+
+For each opportunity identified above, decide the action:
+
+| Opportunity | Action | Target | Status |
+|-------------|--------|--------|--------|
+| <opportunity> | Create ticket / Update skill / Update knowledge bundle / Create include | <where it goes> | <todo / done / deferred> |
+
+**Improvement tickets created** (for ticketr-based cycles):
+- <ticket-id>: <one-line description>
+
+**Shared includes proposed** (for guidance-file cycles):
+- <include-name>: <one-line description of what it would contain>
+
+**Knowledge bundle updates proposed**:
+- <bundle-name>: <one-line description of what to add>
+
+### 7. Summary
+
+- <N> process improvements identified
+- <N> technical debts discovered
+- <N> opportunities to codify
+- <N> items deferred (with reasons)
+```
+
+#### Cycle-Shape Variants
+
+The template above is the full version. Different cycle shapes may use
+different slices:
+
+| Cycle shape | When | Which sections | Example skill |
+|-------------|------|----------------|---------------|
+| Per-feature | after a feature ships | all 7 sections | execute-upsert |
+| Per-ticket | after a ticket closes | sections 1-2, 5-6 (skip docs/tooling if trivial) | ai-development-loop |
+| Per-session | when a session ends | sections 1, 5-6 (capture before context lost) | handoff |
+| Per-run | after a single agent run | section 1 only (process) | Machinist (if wired) |
+
+Skip a section only when it is genuinely inapplicable (e.g., a trivial
+ticket may have no documentation reflection). Do not skip the whole
+retrospective just because the cycle was small — small cycles can still
+surface a missing include or a process improvement.
+
+#### Relationship to Other Templates
+
+| Template | Scope | When | Dimension |
+|----------|-------|------|-----------|
+| `post-task-reflection` | One guidance-file edit | After any apply | Narrow (3 questions: what was done, what to promote, is it wired) |
+| **Retrospective summary** | **One cycle** | **After a cycle completes** | **Full (process + technical + docs + tooling + opportunities + codify)** |
+| Holistic feature review | One feature's code | Before ship | Feature coherence (not process) |
+| Planned enhancement PR body | One PR | At ship | Public record (not reflection) |
+
+The retrospective summary is the full-cycle mirror of `post-task-reflection`.
+`post-task-reflection` is the narrow slice that fires after every guidance-file
+edit; this template is the full reflection that fires after a complete cycle.
+
+
 # Execute Upsert — Project Execution Controller
 
 A controller skill that drives feature implementation from request to
@@ -2793,6 +3206,13 @@ skill depends on:
   if diagram-upsert is not separately installed). Used in Phase 4 (PRD) to
   produce Mermaid architecture and UX-flow diagrams that the PRD template
   requires
+- `references/included/skills/software-dev/requirements-upsert/SKILL.md` —
+  requirements ledger management (bundled via includeTree; read this if
+  requirements-upsert is not separately installed). Used in Phase 4 (PRD)
+  to read the current requirements ledger before creating the PRD, and in
+  Phase 8 (Document) to snapshot any requirements that changed during the
+  feature. Provides snapshot-requirement.sh, index-requirements.sh, and
+  validate-ledger.sh scripts
 - `references/doubt-driven-review.md` — adversarial fresh-context pre-commit
   review process for non-trivial stories (inlined at build time from the
   doubt-driven-review workflow). Used in Phase 6 between code review and
@@ -3053,7 +3473,28 @@ to Phase 2.
 
 ## Phase 2: Assess
 
-Determine whether the request is large enough to warrant the full pipeline.
+Determine two things about the request: its **size** (large enough for
+the full pipeline?) and its **shape** (ship or scout?).
+
+### Shape Classification (Ship vs Scout)
+
+Not every task produces code. Classify the request as:
+
+- **Ship** — produces code changes (or config, or behavior-changing
+  docs). Runs the full dev → review → commit → ship pipeline.
+- **Scout** — produces an investigation report at a known path. Skips
+  the dev → review → commit → ship pipeline; instead investigates,
+  writes `report.md`, feeds a decision inventory, and tears down.
+
+See `references/triage-heuristic.md` for the full ship/scout
+classification criteria and the scout task pipeline. See the
+[ship-scout-task-shapes](../../knowledge/agent-orchestration-practices/ship-scout-task-shapes.md)
+knowledge bundle page for the pattern.
+
+Record the shape in the task index as `[ship]` or `[scout]` so the
+execution loop routes each story correctly.
+
+### Size Classification
 
 **Triage heuristic** — the request is "large" if it meets 2 or more of:
 - Touches more than 3 files across different modules
@@ -3221,6 +3662,29 @@ Proceed to Phase 4.
 
 ## Phase 4: PRD
 
+### Consult the Requirements Ledger
+
+Before creating or reviewing the PRD, consult the project's requirements
+ledger (if it exists):
+
+1. Check for `internal-docs/reqs/INDEX.md` in the target project. If it
+   does not exist, skip this step — the project has not adopted the
+   requirements ledger yet.
+2. Read `INDEX.md` for the project/module tree of active requirements.
+3. Read individual requirement files that are in scope for this feature.
+   A requirement is "in scope" if it constrains the technology choices,
+   defines a verification approach the PRD should reference, or applies
+   to the module the feature touches.
+4. If the feature introduces new durable constraints (requirements that
+   will outlive this feature), note them — they will be added to the
+   ledger in Phase 8 (Document).
+5. If the feature changes an existing requirement, note it — the
+   requirement will be snapshot-ed and updated in Phase 8.
+
+The bundled `requirements-upsert` skill at
+`references/included/skills/software-dev/requirements-upsert/` has the
+full ledger protocol, scripts, and templates.
+
 ### If a PRD exists
 
 - Locate the PRD file under `internal-docs/feature/todo/{slug}/` (or
@@ -3304,6 +3768,85 @@ Proceed to Phase 4.
   boundaries, and is implementable by a junior developer.
 - If the PRD is incomplete or off-target, provide feedback and re-dispatch the
   subagent with the feedback.
+
+### Design Exploration Gate
+
+For stories crossing module boundaries or involving non-trivial
+architecture decisions, add a design exploration step before the PRD's
+implementation plan is finalized. This is the "design it twice" rule
+from the
+[design-exploration-parallel-candidates](../../knowledge/agent-orchestration-practices/design-exploration-parallel-candidates.md)
+knowledge bundle page.
+
+**When to apply:**
+
+- The story crosses module boundaries (new module, new interface between
+  existing modules).
+- The story involves a non-trivial architecture decision with no
+  precedent in the codebase (new data flow, new state machine, new
+  interaction model).
+- The reversibility cost is high (data model, public API, module
+  boundary that will be expensive to change later).
+
+**When to skip:**
+
+- The story follows an existing convention (new endpoint following the
+  API pattern, new module following the project structure).
+- The reversibility cost is low (internal implementation detail).
+- The story is trivial (the design space is small).
+
+**Architect sketch (lighter version, for module-level decisions):**
+
+1. Sketch the types, function signatures, and module boundaries with
+   `not implemented` bodies before writing the implementation plan.
+2. Screen the sketch against design red flags:
+   - **Shallow modules** — a module with one function or one type that
+     adds a layer without abstraction.
+   - **Information leakage** — a module that exposes internals another
+     module depends on, coupling them.
+   - **Temporal decomposition** — modules split by execution order
+     rather than by responsibility (the "then" module and the "next"
+     module).
+   - **Pass-through methods** — a module that forwards calls to
+     another without adding behavior.
+3. If the sketch has red flags, redesign before implementing. Document
+   the red flags found and the redesign that resolved them in the PRD.
+
+**Arena pattern (fuller version, for architecture-level decisions):**
+
+1. Build 2+ structurally distinct design candidates in parallel — each
+   in its own worktree or temp directory, each built independently
+   without seeing the others.
+2. Define the rubric criteria **before** building the candidates
+   (prevents retrofitted justification).
+3. A cross-judge (a reviewer that did not build any candidate) scores
+   each candidate against the rubric and recommends a base.
+4. Graft the best parts of losing candidates into the base by hand —
+   adapt the ideas to the base's structure, do not paste
+   implementations.
+5. Document the synthesis decision in the PRD: which candidate was the
+   base, what was grafted from which loser, and why.
+
+**Convergence and divergence signals:**
+
+- **Convergence** (candidates arrive at the same structural shape) —
+  ship signal. The structure is likely right. Proceed.
+- **Wild divergence** (fundamentally incompatible structures) —
+  reframe signal. The problem statement is ambiguous or the
+  constraints are unclear. Do not average; reframe and re-run.
+
+**Scrap trigger:**
+
+During implementation (Phase 6), if the design sketch keeps producing
+friction it cannot absorb — the same workaround appearing in multiple
+places, multiple unrelated edge cases needing special-case branches,
+types needing escape hatches — throw out the sketch and redesign. The
+signal is **repeated friction of the same shape**, not a single
+instance. One bad edge case is normal; the same category of edge case
+appearing three times is a scrap trigger. Document the scrap decision
+in the PRD and re-run the design exploration gate.
+
+Proceed to Phase 5.
 
 ## Phase 5: Tasks
 
@@ -3555,7 +4098,10 @@ For each task story that isn't completed yet:
    bash scripts/install-hooks.sh
    ```
 
-3. **Launch a subagent** to execute the story. The subagent receives:
+3. **Launch a subagent** to execute the story. The dispatch depends on
+   the story's shape (classified in Phase 2):
+
+   **For ship stories** (produces code changes): The subagent receives:
    - **Goal**: Implement the story by following the task-processing protocol
      defined in `references/tasks-processor.md` (the tasks-processor workflow's
      content, inlined at build time).
@@ -3610,7 +4156,46 @@ For each task story that isn't completed yet:
      returns `BLOCKED` with the reason, the question for the user, the
      options, the recommendation, and why.
 
-4. **Review the subagent's work**:
+   **For scout stories** (produces an investigation report): The
+   subagent receives:
+   - **Goal**: Investigate the question and produce a standalone report
+     at `internal-docs/feature/todo/{slug}/report.md`. The worktree is
+     declared scratch — the branch is not a PR candidate; do not push
+     it. Any code or prototypes are evidence for the report, not
+     production code.
+   - **Inputs**: The story file path, the project's `AGENTS.md` path,
+     and the worktree path.
+   - **Report structure**: The report must include:
+     - **Problem statement** — what is being investigated and why.
+     - **Findings** — what was discovered, with evidence (code
+       references, experiment results, prototype output).
+     - **Recommendation** — what should be done next, with reasoning.
+     - **Evidence** — links to code, experiment outputs, or prototypes
+       that support the findings.
+   - **What to return**: The path to the report file and a one-line
+     summary of the recommendation. If the investigation hits a
+     blocker (cannot access needed data, cannot reproduce), return
+     `BLOCKED` with the reason.
+
+   Scout stories skip the code review and doubt-driven review gates
+   (there is no code to review). After the scout subagent returns:
+
+   - Verify the report exists at the expected path and meets the
+     minimum structure (problem statement, findings, recommendation,
+     evidence).
+   - Feed the report into the **decision inventory** — a tracked list
+     of open investigations. Each entry links to the report and
+     records the decision status: pending, accepted, rejected, or
+     superseded.
+   - Mark the story `[x] Done` in the index.
+   - Tear down the worktree (discardable after the report exists and
+     the completion gate passes).
+
+   See the
+   [ship-scout-task-shapes](../../knowledge/agent-orchestration-practices/ship-scout-task-shapes.md)
+   knowledge bundle page for the full pattern.
+
+4. **Review the subagent's work** (ship stories only):
    - If the subagent returned `BLOCKED`: mark the story `[!] Blocked` in the
      index with the `blocked_reason`, write the `## Blocker` section into the
      story file, commit the index + story file update, and **continue to the
@@ -3852,6 +4437,32 @@ After all stories are completed (or when the user pauses execution):
   - **What to return**: A list of documentation files updated with a
     one-line summary of each change.
 
+### Update Requirements Ledger
+
+If the project has a requirements ledger (`internal-docs/reqs/`) and the
+feature introduced or changed durable requirements (as noted in Phase 4):
+
+1. **New requirements**: Create each new requirement file using the
+   bundled `requirements-upsert` skill's template at
+   `references/included/skills/software-dev/requirements-upsert/references/requirement-template.md`.
+   Run `snapshot-requirement.sh` to create the initial history entry,
+   then `index-requirements.sh` to regenerate `INDEX.md`.
+2. **Changed requirements**: For each requirement that changed during
+   the feature, run `snapshot-requirement.sh` first (to preserve the
+   pre-change version in history), then edit the current file in place,
+   update `date.last-revised`, and append a Change Log entry. Run
+   `index-requirements.sh` to regenerate `INDEX.md`.
+3. **Scripts**: The scripts are materialized at
+   `references/included/skills/software-dev/requirements-upsert/scripts/`.
+   Source them from there or run them directly.
+4. Commit the ledger changes as a separate commit:
+   ```
+   docs(reqs): update requirements ledger for [PRD-NAME]
+
+   - Added: {proj}/{module}/{new-slug}
+   - Updated: {proj}/{module}/{changed-slug}
+   ```
+
 ### Final Commit
 
 After all updates are complete (PRD, task files, documentation), commit
@@ -3935,6 +4546,40 @@ archive the feature per the shared `work-lifecycle` include above
 This keeps `internal-docs/feature/todo/` clean — only active features show up
 there. Completed features are browsable by month under `archive/`.
 
+## Phase 8.5: Holistic Feature Review
+
+After Phase 8 (Document + Archive) and before Phase 9 (Ship), run a
+holistic feature review in a fresh subagent context. This review checks
+the *complete feature* as a whole — something per-story reviews (Phase 6)
+cannot do because they see each story in isolation.
+
+Use the holistic feature review template (inlined above from
+`includes/holistic-feature-review-template.md`). Dispatch a fresh
+subagent with the PRD, the task index, and the complete diff (all
+stories merged into the feature branch). The subagent answers:
+
+1. **PRD goal alignment** — does each PRD goal have evidence of being met?
+2. **Cross-story integration** — are the seams between stories verified?
+3. **Emergent behavior** — performance, state consistency, UX flow
+4. **Test coverage at the seams** — are integration tests present?
+5. **Verdict** — ship / no / fix-then-ship
+
+### Verdict Handling
+
+- **Ship**: proceed to Phase 9.
+- **No**: return to Phase 6. The blocking issues list identifies which
+  stories need rework. Fix, re-run per-story review for fixed stories,
+  then re-run this holistic review.
+- **Fix-then-ship**: fix the small issues in the orchestrator context,
+  re-run the quality gate, then proceed to Phase 9.
+
+### When to Skip
+
+- **Single-story features**: the per-story review (Phase 6) already
+  covers the whole feature. Skip this phase.
+- **`direct-PR` mode without quality gate**: the user has opted out of
+  gates. Skip this phase unless the user explicitly requests it.
+
 ## Phase 9: Ship
 
 After Phase 8 (Document + Archive) is complete and the tree is clean, run
@@ -3943,7 +4588,41 @@ This phase is deterministic — the AI writes the PR body (creative work),
 then scripts handle the quality gate, push, PR creation, body verification,
 auto-merge, and worktree cleanup.
 
-### Quality Gate
+### Project Mode Detection
+
+Before running the quality gate, read the project mode (inlined above
+from `includes/project-modes.md`). The mode determines which steps run:
+
+1. **Story-level override** — check
+   `internal-docs/feature/todo/{slug}/project-mode.txt` (single line
+   with the mode name). If present, this overrides the project-level
+   setting for this story.
+2. **Project config** — check `.execute-upsert/config.toml` for a
+   `[delivery] mode = "<mode>"` key.
+3. **Default** — `no-mistakes` if no config is found.
+
+The mode and its combinations (e.g. `+yolo`) determine the branching
+below. See the inlined project-modes include for the full mode table,
+detection priority, and safety notes.
+
+### Mode Branching
+
+- **`no-mistakes`** (default): run the full quality gate (below). If
+  any step fails, return to Phase 6 to fix. After validation passes,
+  proceed to write the PR body and ship. Do not auto-merge unless
+  `+yolo` is also set.
+- **`direct-PR`**: skip the quality gate. Proceed directly to write
+  the PR body and ship. Do not auto-merge unless `+yolo` is also set.
+- **`local-only`**: merge the feature branch into the local target
+  branch (usually `main`). Do not push. Do not create a PR. Run the
+  quality gate first if `no-mistakes` is also set (the combination is
+  `no-mistakes` + `local-only`); skip it if `direct-PR` + `local-only`.
+- **`+yolo`** (combined with any of the above): after the PR is created
+  (or the local merge is done), auto-merge without waiting for human
+  review. For `no-mistakes` + `+yolo`, the quality gate still runs
+  before the auto-merge.
+
+### Quality Gate (no-mistakes mode only)
 
 Before shipping, run the project's quality commands under a concurrency
 lock to prevent overlapping test/lint runs from corrupting build output.
@@ -4043,6 +4722,7 @@ file, and project/feature slugs:
   --project-slug "$PROJECT_SLUG" \
   --feature-slug "$FEATURE_SLUG" \
   [--no-merge] \
+  [--no-sync] \
   [--admin] \
   [--quality-gate-skipped] \
   [--wait-for-ci]
@@ -4051,6 +4731,11 @@ file, and project/feature slugs:
 The script handles:
 1. Pre-condition checks (commits exist, body file exists, gh available)
 2. Auto-merge opt-out evaluation (flags + `skill-config.toml`)
+2.5. Sync the feature branch with `origin/$BASE_BRANCH` — merges the
+   latest base into the feature branch using `git-imerge` (incremental,
+   conflict-localized) when available, falling back to plain `git merge`.
+   On conflict: aborts, restores the branch, and exits 8 so the AI can
+   surface a blocker. Skip with `--no-sync`.
 3. Push the feature branch to the remote
 4. Create the PR with `--body-file` (gh-posting-guard compliant)
 5. Verify the posted body matches the file (re-post with `gh pr edit` if
@@ -4078,6 +4763,7 @@ the result to the user.
 | 5 | Unexpected error | Present the error to the user |
 | 6 | PR created but NOT merged (auto-merge disabled) | Present the PR URL and stop |
 | 7 | CI checks failed (`--wait-for-ci` only) | Present the PR URL, do NOT merge |
+| 8 | Sync conflict — origin/base cannot merge cleanly into the feature branch | Present the blocker: resolve conflicts manually, commit, and re-run `ship-pr.sh` (or re-run with `--no-sync` to skip the sync and let GitHub handle the merge) |
 
 ### After Ship
 
@@ -4085,7 +4771,17 @@ If the script exited 0 (merged): the PR is merged on the remote, the
 worktree is cleaned up, and the feature is complete. Report the PR URL,
 merge status, and the reminder to pull their local main checkout to the
 user. The script does NOT update the local main checkout — the user does
-that.
+that. The reminder detects whether local main can fast-forward (safe
+`git pull`) or has diverged (user decides how to update).
+
+If the script exited 8 (sync conflict): the feature branch could not
+merge `origin/$BASE_BRANCH` cleanly. The script restored the branch to
+its pre-sync state and did not push or create a PR. Present the blocker
+to the user with the question, the options, the recommendation, and why.
+Options: (a) resolve the conflicts manually, commit, and re-run
+`ship-pr.sh`; (b) re-run with `--no-sync` to skip the sync and let
+GitHub handle the merge at squash-merge time (risk: the remote
+squash-merge may still fail with conflicts).
 
 If the script exited 6 (PR created, not merged): present the PR URL to the
 user. The feature is not complete until the PR is merged. A later run can
@@ -4096,6 +4792,55 @@ If the script exited non-zero (failure): present the error and the PR URL
 (if created). Do not infer completion from a successful build or todo
 status — PR lifecycle state must come from the script's JSON summary or an
 authoritative `gh pr view` result.
+
+## Phase 10: Retrospective
+
+After Phase 9 (Ship) is complete and the PR is merged (or created with
+`--no-merge`), run a structured retrospective covering the full feature
+cycle. This is the full version of what `post-task-reflection` covers
+narrowly — that include asks three questions after a guidance-file edit;
+this phase covers the whole feature across process, technical,
+documentation, tooling, and opportunity dimensions.
+
+Use the retrospective summary template (inlined above from
+`includes/retrospective-summary-template.md`). The retrospective has
+seven sections:
+
+1. **Process reflection** — what went well, what obstacles, how to improve
+2. **Technical reflection** — patterns, refactoring opportunities, debt
+3. **Documentation reflection** — docs to update, patterns to codify, decisions to record
+4. **Tooling reflection** — tool gaps, missing commands, improvements to propose
+5. **Opportunity identification** — boilerplate, refactoring, template opportunities
+6. **Codify** — for each opportunity, decide the action (create ticket, update skill, update knowledge bundle, create include)
+7. **Summary** — counts of improvements, debts, opportunities, deferred items
+
+### Where the Retrospective Output Goes
+
+- **Process improvements** → update the project's developer docs
+  (`.agents/knowledge/developer.md` or equivalent) "Known Gotchas" section
+- **Shared include proposals** → propose in the retrospective, then
+  create via the normal include creation process in `skills-src`
+- **Knowledge bundle updates** → propose in the retrospective, then
+  update the relevant bundle in `skills-src/src/current/knowledge/`
+- **Improvement tickets** (if the project uses ticketr) → create via
+  `tkr add` with the retrospective's opportunity list
+
+### When to Skip
+
+- **Trivial single-story features**: the `post-task-reflection` include
+  (inherited via `base-ai-guidance`) already covers the narrow "promote
+  pattern to shared include" slice. Skip the full retrospective.
+- **`direct-PR` mode**: the user has opted out of gates. Skip unless the
+  user explicitly requests it.
+
+### Relationship to post-task-reflection
+
+`post-task-reflection` (inherited via `base-ai-guidance`) fires after
+every guidance-file edit with three questions. This phase fires after
+the complete feature cycle with seven sections. They are complementary:
+`post-task-reflection` catches narrow include-promotion opportunities
+during the cycle; this phase catches full-cycle process and technical
+patterns that only visible after the feature ships.
 
 ## Task List
 
@@ -4112,9 +4857,11 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Phase 7: present the consolidated blocker report when no more runnable stories remain
 - [ ] Phase 8: update the PRD, task files, and project documentation
 - [ ] Phase 8: archive completed feature (git mv todo/ → archive/YYYY/MM/) when all stories [x] Done
+- [ ] Phase 8.5: run holistic feature review (fresh-context subagent, skip if single-story)
 - [ ] Phase 9: run quality-gate.sh (lock + build/validate/test/catalog + unlock)
 - [ ] Phase 9: write PR body to file (planned-enhancement template, gh-posting-guard compliant)
-- [ ] Phase 9: run ship-pr.sh (push, create PR, verify body, auto-merge, return to main, clean up worktree)
+- [ ] Phase 9: run ship-pr.sh (sync with base, push, create PR, verify body, auto-merge, clean up worktree)
+- [ ] Phase 10: run retrospective (7-section template, skip if trivial single-story)
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -4151,6 +4898,7 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** The PRD includes Architecture Diagram and (for graphical apps) UX Flow Mermaid diagrams (Phase 4)
 - [ ] **[script]** PRD diagrams were validated with `scripts/validate-diagram.py` from the bundled diagram-upsert skill before returning (Phase 4)
 - [ ] **[manual]** The PRD was reviewed for scope coverage, clear boundaries, and implementability by a junior developer (Phase 4)
+- [ ] **[manual]** If the story crosses module boundaries or involves a non-trivial architecture decision: the design exploration gate was run (architect sketch or arena pattern), red flags were screened, and the synthesis decision was documented in the PRD (Phase 4 — Design Exploration Gate)
 
 ### Phase 5: Tasks
 
@@ -4180,6 +4928,12 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** If all stories are `[x] Done`: the feature was archived via `git mv` from `todo/` to `archive/YYYY/MM/`, `date.completed` was set, and the archive commit was made (Phase 8 — Archive Completed Feature)
 - [ ] **[manual]** If any stories are `[!] Blocked` (deferred): the feature was left in `todo/` with deferred items noted in the PRD — NOT archived (Phase 8 — Archive Completed Feature)
 
+### Phase 8.5: Holistic Feature Review
+
+- [ ] **[manual]** If multi-story: a holistic feature review was dispatched in a fresh subagent context with the PRD, task index, and complete diff (Phase 8.5)
+- [ ] **[manual]** The review verdict was handled: Ship → proceed to Phase 9; No → return to Phase 6; Fix-then-ship → fix in orchestrator then proceed (Phase 8.5)
+- [ ] **[manual]** If single-story: this phase was skipped (per-story review in Phase 6 covers the whole feature) (Phase 8.5)
+
 ### Phase 9: Ship
 
 - [ ] **[script]** `quality-gate.sh` was run and exited 0 (all commands passed) or 2 (lock active, quality gate skipped) (Phase 9 — Quality Gate)
@@ -4189,9 +4943,17 @@ the agent to check something the scripts cannot verify.
 - [ ] **[script]** `ship-pr.sh` was run and exited 0 (merged) or 6 (PR created, auto-merge disabled) (Phase 9 — Run the Ship Script)
 - [ ] **[script]** If exit 0: the script's JSON summary has `"merged":true` and `"status":"merged"` (Phase 9 — After Ship)
 - [ ] **[manual]** If exit 6: the PR URL was presented to the user and the pipeline stopped (Phase 9 — After Ship)
+- [ ] **[manual]** If exit 8 (sync conflict): the blocker was presented to the user with question, options, recommendation, and why — the pipeline did NOT proceed to push or create a PR (Phase 9 — After Ship)
 - [ ] **[manual]** PR lifecycle state was confirmed from the script's JSON summary or `gh pr view` — not inferred from todo status or build success (Phase 9 — After Ship)
-- [ ] **[manual]** If merged: the user was told to pull their local main checkout (the script does NOT touch main) (Phase 9 — Run the Ship Script)
+- [ ] **[manual]** If merged: the user was told to pull their local main checkout, with fast-forward vs diverged guidance from the script's reminder (the script does NOT touch main) (Phase 9 — Run the Ship Script)
 - [ ] **[manual]** If merged: the worktree was cleaned up (treehouse lease returned or manual worktree removed) (Phase 9 — Run the Ship Script)
+
+### Phase 10: Retrospective
+
+- [ ] **[manual]** If non-trivial multi-story: a retrospective was run using the 7-section template (process, technical, documentation, tooling, opportunities, codify, summary) (Phase 10)
+- [ ] **[manual]** Process improvements were written to the project's developer docs "Known Gotchas" section (Phase 10)
+- [ ] **[manual]** Shared include proposals and knowledge bundle updates were recorded in the retrospective output (Phase 10)
+- [ ] **[manual]** If trivial single-story: this phase was skipped (`post-task-reflection` via `base-ai-guidance` covers the narrow slice) (Phase 10)
 
 ### Disruption Handoff
 
@@ -4211,6 +4973,7 @@ If any of these are true, the run is NOT complete:
 - The feature was archived to `archive/YYYY/MM/` but `date.completed` was not set in the PRD frontmatter → the lifecycle frontmatter is incomplete (Phase 8)
 - `ship-pr.sh` was not run → the PR was not created (Phase 9)
 - `ship-pr.sh` exited non-zero but the AI reported completion → the PR lifecycle state was inferred, not verified (Phase 9)
+- `ship-pr.sh` exited 8 (sync conflict) but the AI proceeded to push or create a PR anyway → the sync conflict was silently bypassed (Phase 9)
 - The PR was created but the posted body contains literal `\n` or stripped backticks → the body was corrupted during posting (Phase 9)
 - The PR was merged but the user was not told to pull their local main → the user's local main is behind origin without their knowledge (Phase 9)
 - The PR was merged but the worktree was not cleaned up → stale worktree remains (Phase 9)
@@ -4504,7 +5267,7 @@ irreversible and ask for the exact option word or letter before proceeding.
 
 
 ---
-description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope)
+description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope, requirements)
 ---
 
 # Date-Embedded Naming Convention
@@ -4548,6 +5311,7 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
   - `adr` - Architecture Decision Records (accepted decisions)
   - `oos` - Out of Scope (rejected features/decisions)
   - `feature` - Features (implemented functionality, two-stage lifecycle)
+  - `reqs` - Requirements (durable constraints, current/history lifecycle)
 
 - **{YYYY}**: Year directory (4-digit year)
   - Example: `2025` for year 2025
@@ -4602,6 +5366,29 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
 - **Structure**: Each feature has its own subdirectory containing the feature document and a `tasks/` subdirectory
 - **Lifecycle**: Follows the shared `work-lifecycle` protocol — see [`work-lifecycle.md.tmpl`](../../current/includes/work-lifecycle.md.tmpl). Features start in `todo/` (flat). When all stories are `[x] Done` and DoD passes, the `{slug}/` directory moves to `archive/YYYY/MM/` via `git mv`. Features with `[!] Blocked` or `[ ] Todo` stories remain in `todo/`. Frontmatter dates: `date.created`, `date.completed`, `date.last-activity`.
 
+### Requirements Documents
+- **Location (current)**: `internal-docs/reqs/current/{proj}/{module}/`
+- **Location (history)**: `internal-docs/reqs/history/YYYY/MM/{proj}/{module}/`
+- **Prefix**: `req` (history snapshots only; current files have no prefix)
+- **Purpose**: Document durable constraints and capabilities that survive
+  across features
+- **Status**: active, superseded, draft
+- **Lifecycle**: Current → history-on-supersession (distinct from the
+  feature todo → archive lifecycle). The current file is the living spec,
+  edited in place. Before each substantive change, a snapshot is copied
+  to `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`. See
+  the `requirements-upsert` skill for the full evolution protocol.
+- **Composite identity joiner**: Current filenames use `_` to join the
+  project, module, and slug components: `{proj}_{module}_{slug}.md`.
+  This is a **deliberate exception** to the kebab-case naming convention
+  — each component is kebab-case internally (may contain `-`), so `_` as
+  the joiner lets you unambiguously split the three components. For
+  example, `skills-src_templater_request-validation` splits on `_` into
+  `skills-src`, `templater`, `request-validation`. History files do not
+  need the `_` joiner because the path (`history/YYYY/MM/{proj}/{module}/`)
+  carries the project and module — the filename only needs `req-` + date
+  + `{slug}`.
+
 ## Directory Structure
 
 ```
@@ -4639,6 +5426,18 @@ internal-docs/
                     ├── feat-202506250915-dark-mode-support.md
                     └── tasks/
                         └── tasks-dark-mode-support-01-001-toggle.md
+└── reqs/                                        # durable requirements (current/history lifecycle)
+    ├── current/                                 # living specs (no date, no prefix)
+    │   └── {proj}/
+    │       └── {module}/
+    │           └── {proj}_{module}_{slug}.md    # _ joiner between kebab-case components
+    ├── history/                                 # snapshots taken before each change
+    │   └── YYYY/
+    │       └── MM/
+    │           └── {proj}/
+    │               └── {module}/
+    │                   └── req-YYYYMMDDHHmm-{slug}.md
+    └── INDEX.md                                 # auto-generated by index-requirements.sh
 ```
 
 ## Timestamp Management
@@ -5095,7 +5894,7 @@ When unsure, ask: "does task B need to read what task A produced?" If yes, seria
 
 
 ---
-description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope)
+description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope, requirements)
 ---
 
 # Date-Embedded Naming Convention
@@ -5139,6 +5938,7 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
   - `adr` - Architecture Decision Records (accepted decisions)
   - `oos` - Out of Scope (rejected features/decisions)
   - `feature` - Features (implemented functionality, two-stage lifecycle)
+  - `reqs` - Requirements (durable constraints, current/history lifecycle)
 
 - **{YYYY}**: Year directory (4-digit year)
   - Example: `2025` for year 2025
@@ -5193,6 +5993,29 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
 - **Structure**: Each feature has its own subdirectory containing the feature document and a `tasks/` subdirectory
 - **Lifecycle**: Follows the shared `work-lifecycle` protocol — see [`work-lifecycle.md.tmpl`](../../current/includes/work-lifecycle.md.tmpl). Features start in `todo/` (flat). When all stories are `[x] Done` and DoD passes, the `{slug}/` directory moves to `archive/YYYY/MM/` via `git mv`. Features with `[!] Blocked` or `[ ] Todo` stories remain in `todo/`. Frontmatter dates: `date.created`, `date.completed`, `date.last-activity`.
 
+### Requirements Documents
+- **Location (current)**: `internal-docs/reqs/current/{proj}/{module}/`
+- **Location (history)**: `internal-docs/reqs/history/YYYY/MM/{proj}/{module}/`
+- **Prefix**: `req` (history snapshots only; current files have no prefix)
+- **Purpose**: Document durable constraints and capabilities that survive
+  across features
+- **Status**: active, superseded, draft
+- **Lifecycle**: Current → history-on-supersession (distinct from the
+  feature todo → archive lifecycle). The current file is the living spec,
+  edited in place. Before each substantive change, a snapshot is copied
+  to `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`. See
+  the `requirements-upsert` skill for the full evolution protocol.
+- **Composite identity joiner**: Current filenames use `_` to join the
+  project, module, and slug components: `{proj}_{module}_{slug}.md`.
+  This is a **deliberate exception** to the kebab-case naming convention
+  — each component is kebab-case internally (may contain `-`), so `_` as
+  the joiner lets you unambiguously split the three components. For
+  example, `skills-src_templater_request-validation` splits on `_` into
+  `skills-src`, `templater`, `request-validation`. History files do not
+  need the `_` joiner because the path (`history/YYYY/MM/{proj}/{module}/`)
+  carries the project and module — the filename only needs `req-` + date
+  + `{slug}`.
+
 ## Directory Structure
 
 ```
@@ -5230,6 +6053,18 @@ internal-docs/
                     ├── feat-202506250915-dark-mode-support.md
                     └── tasks/
                         └── tasks-dark-mode-support-01-001-toggle.md
+└── reqs/                                        # durable requirements (current/history lifecycle)
+    ├── current/                                 # living specs (no date, no prefix)
+    │   └── {proj}/
+    │       └── {module}/
+    │           └── {proj}_{module}_{slug}.md    # _ joiner between kebab-case components
+    ├── history/                                 # snapshots taken before each change
+    │   └── YYYY/
+    │       └── MM/
+    │           └── {proj}/
+    │               └── {module}/
+    │                   └── req-YYYYMMDDHHmm-{slug}.md
+    └── INDEX.md                                 # auto-generated by index-requirements.sh
 ```
 
 ## Timestamp Management
@@ -5332,7 +6167,7 @@ description: Shared task definitions for software-dev task workflows
 ---
 
 ---
-description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope)
+description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope, requirements)
 ---
 
 # Date-Embedded Naming Convention
@@ -5376,6 +6211,7 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
   - `adr` - Architecture Decision Records (accepted decisions)
   - `oos` - Out of Scope (rejected features/decisions)
   - `feature` - Features (implemented functionality, two-stage lifecycle)
+  - `reqs` - Requirements (durable constraints, current/history lifecycle)
 
 - **{YYYY}**: Year directory (4-digit year)
   - Example: `2025` for year 2025
@@ -5430,6 +6266,29 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
 - **Structure**: Each feature has its own subdirectory containing the feature document and a `tasks/` subdirectory
 - **Lifecycle**: Follows the shared `work-lifecycle` protocol — see [`work-lifecycle.md.tmpl`](../../current/includes/work-lifecycle.md.tmpl). Features start in `todo/` (flat). When all stories are `[x] Done` and DoD passes, the `{slug}/` directory moves to `archive/YYYY/MM/` via `git mv`. Features with `[!] Blocked` or `[ ] Todo` stories remain in `todo/`. Frontmatter dates: `date.created`, `date.completed`, `date.last-activity`.
 
+### Requirements Documents
+- **Location (current)**: `internal-docs/reqs/current/{proj}/{module}/`
+- **Location (history)**: `internal-docs/reqs/history/YYYY/MM/{proj}/{module}/`
+- **Prefix**: `req` (history snapshots only; current files have no prefix)
+- **Purpose**: Document durable constraints and capabilities that survive
+  across features
+- **Status**: active, superseded, draft
+- **Lifecycle**: Current → history-on-supersession (distinct from the
+  feature todo → archive lifecycle). The current file is the living spec,
+  edited in place. Before each substantive change, a snapshot is copied
+  to `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`. See
+  the `requirements-upsert` skill for the full evolution protocol.
+- **Composite identity joiner**: Current filenames use `_` to join the
+  project, module, and slug components: `{proj}_{module}_{slug}.md`.
+  This is a **deliberate exception** to the kebab-case naming convention
+  — each component is kebab-case internally (may contain `-`), so `_` as
+  the joiner lets you unambiguously split the three components. For
+  example, `skills-src_templater_request-validation` splits on `_` into
+  `skills-src`, `templater`, `request-validation`. History files do not
+  need the `_` joiner because the path (`history/YYYY/MM/{proj}/{module}/`)
+  carries the project and module — the filename only needs `req-` + date
+  + `{slug}`.
+
 ## Directory Structure
 
 ```
@@ -5467,6 +6326,18 @@ internal-docs/
                     ├── feat-202506250915-dark-mode-support.md
                     └── tasks/
                         └── tasks-dark-mode-support-01-001-toggle.md
+└── reqs/                                        # durable requirements (current/history lifecycle)
+    ├── current/                                 # living specs (no date, no prefix)
+    │   └── {proj}/
+    │       └── {module}/
+    │           └── {proj}_{module}_{slug}.md    # _ joiner between kebab-case components
+    ├── history/                                 # snapshots taken before each change
+    │   └── YYYY/
+    │       └── MM/
+    │           └── {proj}/
+    │               └── {module}/
+    │                   └── req-YYYYMMDDHHmm-{slug}.md
+    └── INDEX.md                                 # auto-generated by index-requirements.sh
 ```
 
 ## Timestamp Management
@@ -5768,6 +6639,16 @@ Status conventions: mark in-progress with `[~]`, done with `[x]`, blocked with `
 - [ ] Criterion 1
 - [ ] Criterion 2
 
+## Examples
+
+For every conditional path or data-transform in this story, provide an input-output pair.
+Use Gherkin for behavioral paths (state transitions, user interactions); use EXAMPLES
+for data-transform paths (parsing, mapping, conversion). Do not duplicate — pick the
+format that matches the path type.
+
+- **Input**: `{input value or state}` → **Output**: `{expected result}`
+- **Input**: `{input value or state}` → **Output**: `{expected result}`
+
 ## Test Plan
 
 - Unit: `bun run jest [optional/path]`
@@ -5855,7 +6736,7 @@ see-also:
 ---
 
 ---
-description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope)
+description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope, requirements)
 ---
 
 # Date-Embedded Naming Convention
@@ -5899,6 +6780,7 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
   - `adr` - Architecture Decision Records (accepted decisions)
   - `oos` - Out of Scope (rejected features/decisions)
   - `feature` - Features (implemented functionality, two-stage lifecycle)
+  - `reqs` - Requirements (durable constraints, current/history lifecycle)
 
 - **{YYYY}**: Year directory (4-digit year)
   - Example: `2025` for year 2025
@@ -5953,6 +6835,29 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
 - **Structure**: Each feature has its own subdirectory containing the feature document and a `tasks/` subdirectory
 - **Lifecycle**: Follows the shared `work-lifecycle` protocol — see [`work-lifecycle.md.tmpl`](../../current/includes/work-lifecycle.md.tmpl). Features start in `todo/` (flat). When all stories are `[x] Done` and DoD passes, the `{slug}/` directory moves to `archive/YYYY/MM/` via `git mv`. Features with `[!] Blocked` or `[ ] Todo` stories remain in `todo/`. Frontmatter dates: `date.created`, `date.completed`, `date.last-activity`.
 
+### Requirements Documents
+- **Location (current)**: `internal-docs/reqs/current/{proj}/{module}/`
+- **Location (history)**: `internal-docs/reqs/history/YYYY/MM/{proj}/{module}/`
+- **Prefix**: `req` (history snapshots only; current files have no prefix)
+- **Purpose**: Document durable constraints and capabilities that survive
+  across features
+- **Status**: active, superseded, draft
+- **Lifecycle**: Current → history-on-supersession (distinct from the
+  feature todo → archive lifecycle). The current file is the living spec,
+  edited in place. Before each substantive change, a snapshot is copied
+  to `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`. See
+  the `requirements-upsert` skill for the full evolution protocol.
+- **Composite identity joiner**: Current filenames use `_` to join the
+  project, module, and slug components: `{proj}_{module}_{slug}.md`.
+  This is a **deliberate exception** to the kebab-case naming convention
+  — each component is kebab-case internally (may contain `-`), so `_` as
+  the joiner lets you unambiguously split the three components. For
+  example, `skills-src_templater_request-validation` splits on `_` into
+  `skills-src`, `templater`, `request-validation`. History files do not
+  need the `_` joiner because the path (`history/YYYY/MM/{proj}/{module}/`)
+  carries the project and module — the filename only needs `req-` + date
+  + `{slug}`.
+
 ## Directory Structure
 
 ```
@@ -5990,6 +6895,18 @@ internal-docs/
                     ├── feat-202506250915-dark-mode-support.md
                     └── tasks/
                         └── tasks-dark-mode-support-01-001-toggle.md
+└── reqs/                                        # durable requirements (current/history lifecycle)
+    ├── current/                                 # living specs (no date, no prefix)
+    │   └── {proj}/
+    │       └── {module}/
+    │           └── {proj}_{module}_{slug}.md    # _ joiner between kebab-case components
+    ├── history/                                 # snapshots taken before each change
+    │   └── YYYY/
+    │       └── MM/
+    │           └── {proj}/
+    │               └── {module}/
+    │                   └── req-YYYYMMDDHHmm-{slug}.md
+    └── INDEX.md                                 # auto-generated by index-requirements.sh
 ```
 
 ## Timestamp Management
@@ -6200,7 +7117,7 @@ description: Shared task definitions for software-dev task workflows
 ---
 
 ---
-description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope)
+description: Date-embedded naming convention for institutional memory documents (ADRs, features, out-of-scope, requirements)
 ---
 
 # Date-Embedded Naming Convention
@@ -6244,6 +7161,7 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
   - `adr` - Architecture Decision Records (accepted decisions)
   - `oos` - Out of Scope (rejected features/decisions)
   - `feature` - Features (implemented functionality, two-stage lifecycle)
+  - `reqs` - Requirements (durable constraints, current/history lifecycle)
 
 - **{YYYY}**: Year directory (4-digit year)
   - Example: `2025` for year 2025
@@ -6298,6 +7216,29 @@ creation timestamp (the `feat-YYYYMMDDHHmm` prefix), not the completion date.
 - **Structure**: Each feature has its own subdirectory containing the feature document and a `tasks/` subdirectory
 - **Lifecycle**: Follows the shared `work-lifecycle` protocol — see [`work-lifecycle.md.tmpl`](../../current/includes/work-lifecycle.md.tmpl). Features start in `todo/` (flat). When all stories are `[x] Done` and DoD passes, the `{slug}/` directory moves to `archive/YYYY/MM/` via `git mv`. Features with `[!] Blocked` or `[ ] Todo` stories remain in `todo/`. Frontmatter dates: `date.created`, `date.completed`, `date.last-activity`.
 
+### Requirements Documents
+- **Location (current)**: `internal-docs/reqs/current/{proj}/{module}/`
+- **Location (history)**: `internal-docs/reqs/history/YYYY/MM/{proj}/{module}/`
+- **Prefix**: `req` (history snapshots only; current files have no prefix)
+- **Purpose**: Document durable constraints and capabilities that survive
+  across features
+- **Status**: active, superseded, draft
+- **Lifecycle**: Current → history-on-supersession (distinct from the
+  feature todo → archive lifecycle). The current file is the living spec,
+  edited in place. Before each substantive change, a snapshot is copied
+  to `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`. See
+  the `requirements-upsert` skill for the full evolution protocol.
+- **Composite identity joiner**: Current filenames use `_` to join the
+  project, module, and slug components: `{proj}_{module}_{slug}.md`.
+  This is a **deliberate exception** to the kebab-case naming convention
+  — each component is kebab-case internally (may contain `-`), so `_` as
+  the joiner lets you unambiguously split the three components. For
+  example, `skills-src_templater_request-validation` splits on `_` into
+  `skills-src`, `templater`, `request-validation`. History files do not
+  need the `_` joiner because the path (`history/YYYY/MM/{proj}/{module}/`)
+  carries the project and module — the filename only needs `req-` + date
+  + `{slug}`.
+
 ## Directory Structure
 
 ```
@@ -6335,6 +7276,18 @@ internal-docs/
                     ├── feat-202506250915-dark-mode-support.md
                     └── tasks/
                         └── tasks-dark-mode-support-01-001-toggle.md
+└── reqs/                                        # durable requirements (current/history lifecycle)
+    ├── current/                                 # living specs (no date, no prefix)
+    │   └── {proj}/
+    │       └── {module}/
+    │           └── {proj}_{module}_{slug}.md    # _ joiner between kebab-case components
+    ├── history/                                 # snapshots taken before each change
+    │   └── YYYY/
+    │       └── MM/
+    │           └── {proj}/
+    │               └── {module}/
+    │                   └── req-YYYYMMDDHHmm-{slug}.md
+    └── INDEX.md                                 # auto-generated by index-requirements.sh
 ```
 
 ## Timestamp Management
@@ -6528,6 +7481,15 @@ Status conventions: mark in-progress with `[~]`, done with `[x]`, blocked with `
 
 - Given `precondition`, When `action`, Then `result`
 - Given ..., When ..., Then ...
+
+## Eval (Optional)
+
+For stories that need automated evaluation (e.g., ML model quality, performance benchmarks,
+fuzzy matching accuracy). Skip for stories with deterministic pass/fail criteria.
+
+- **Grading**: {how the output is scored — e.g., "accuracy >= 0.95", "p95 latency < 100ms"}
+- **Repeat threshold**: {N runs, pass if M/N pass — e.g., "10 runs, pass if 9/10"}
+- **Eval command**: `{command to run the evaluation}`
 ```
 
 ## AI Instructions
@@ -6543,16 +7505,19 @@ When working with task lists, the AI must:
 4. Keep "Relevant Files" accurate and up to date.
 5. Before starting work, check which sub‑task is next.
 6. After implementing a sub‑task, update the file and then pause for user approval.
+7. Validate EXAMPLES (input-output pairs) against the implementation during execution — for each data-transform path, run the example input through the implementation and confirm the output matches.
 `
 - **Source workflow files** (for attribution, not runtime): `src/current/workflows/software-dev/greenfield/greenfield-prd.md.tmpl`, `src/current/workflows/software-dev/tasks/tasks-from-prd.md.tmpl`, `src/current/workflows/software-dev/tasks/tasks-processor.md.tmpl`
 - **Project-detection skill (bundled)**: `references/included/skills/software-dev/project-detection/` — materialized at build time via `references/included/skills/software-dev/project-detection/`. Used in Phase 3 to detect the project's tech stack
 - **Code-review-guidance skill (bundled)**: `references/included/skills/software-dev/code-review-guidance/` — materialized at build time via `references/included/skills/software-dev/code-review-guidance/`. Used in Phase 6 for per-story code review
 - **Diagram-upsert skill (bundled)**: `references/included/skills/content/diagram-upsert/` — materialized at build time via `references/included/skills/content/diagram-upsert/`. Used in Phase 4 (PRD) to produce Mermaid architecture and UX-flow diagrams that the PRD template requires
+- **Requirements-upsert skill (bundled)**: `references/included/skills/software-dev/requirements-upsert/` — materialized at build time via `references/included/skills/software-dev/requirements-upsert/`. Used in Phase 4 (PRD) to read the current requirements ledger before creating the PRD, and in Phase 8 (Document) to snapshot and update requirements that changed during the feature. Provides snapshot-requirement.sh, index-requirements.sh, and validate-ledger.sh scripts
 - **Tech context output**: `internal-docs/feature/todo/{slug}/tech-context.txt` (or PRD frontmatter)
 - **PRD output**: `internal-docs/feature/todo/{slug}/feat-YYYYMMDDHHmm-{slug}.md`
 - **Task output**: `internal-docs/feature/todo/{slug}/tasks/`
 - **Feature archive**: `internal-docs/feature/archive/YYYY/MM/{slug}/` (moved here via `git mv` when all stories `[x] Done`)
-- **Ship script**: `scripts/ship-pr.sh` — Phase 9 deterministic push/create-PR/verify/merge/return-to-main/cleanup script
+- **Requirements ledger**: `internal-docs/reqs/current/{proj}/{module}/{proj}_{module}_{slug}.md` (new or updated durable requirements) and `internal-docs/reqs/history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md` (snapshots of pre-change versions)
+- **Ship script**: `scripts/ship-pr.sh` — Phase 9 deterministic sync-with-base/push/create-PR/verify/merge/cleanup script
 - **Quality gate script**: `scripts/quality-gate.sh` — Phase 9 deterministic lock/build/validate/test/catalog/unlock script
 - **Lock scripts**: `scripts/lock/acquire-lock.sh`, `scripts/lock/release-lock.sh`, `scripts/lock/check-lock.sh` — shared concurrency lock primitives (materialized from `includes/lock/`)
 - **PR body template**: inlined from `includes/planned-enhancement-pr-template.md` — used in Phase 9 to write the PR body

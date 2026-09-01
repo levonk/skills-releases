@@ -155,6 +155,11 @@ Only 3 scripts needed to minimize AI-script handoffs:
 **git-push.sh** - Push commits (fetch-rebase-push with auto-resolution)
 - Creates a backup branch at `scratch/merge/YYYY/MM/YYYYMMDDHHmm-{slug}-pre` before any changes
 - Fetches remote, then tries rebase with `-X=auto` (auto-resolve trivial conflicts)
+- **Brand-new-branch handling**: if the fetch fails because the remote ref
+  doesn't exist yet (first push of a new branch), the script reports
+  `REMOTE_STATUS:NEW_BRANCH`, skips the rebase/merge steps, and pushes with
+  `git push -u --follow-tags` to set upstream tracking. This is the only case
+  where the script uses `-u` — existing branches push without it.
 - If rebase conflicts remain, aborts and tries merge with `-X=auto` as fallback
 - If merge also has conflicts, **leaves the merge in conflicted state** and reports:
   - `CONFLICTED_FILES:` — list of files with conflicts

@@ -1,0 +1,67 @@
+# AgentContract — execute-upsert binding contract
+# Formalized from the static prose block in inject-binding-contract.sh
+# See references/agent-contract.md for the format documentation
+
+version: 1
+contract: execute-upsert-binding
+description: >
+  Non-negotiable rules for execute-upsert subagent dispatch and story execution.
+  Machine-enforced via .devin/hooks.v1.json + execution-gate.sh.
+
+must:
+  - id: gate-before-dispatch
+    clause: "Every subagent dispatch MUST go through execution-gate.sh FIRST"
+    severity: block
+    enforcement: machine
+    check: ".devin/scripts/check-subagent-gate.sh (PreToolUse hook on run_subagent)"
+    fallback: "Read-only subagent_explore dispatches are exempt (profile-enforced read-only tool access)"
+
+  - id: worktree-only-work
+    clause: "The subagent MUST work ONLY in the worktree path returned by the gate"
+    severity: block
+    enforcement: machine
+    check: "worktree-isolation-guard.sh in subagent scripts"
+
+  - id: checkpoint-before-dispatch
+    clause: "BEFORE dispatching: create a checkpoint commit on the current branch"
+    severity: rollback
+    enforcement: machine
+    check: "execution-gate.sh records checkpoint SHA in /tmp/devin-execution-gates/checkpoint-<slug>"
+
+  - id: commit-after-story
+    clause: "AFTER each story completes: commit on story branch, merge back with --no-ff, remove worktree"
+    severity: block
+    enforcement: llm-judged
+    check: "code-review-guidance skill verifies commit exists and includes code + task file updates"
+
+  - id: rollback-on-failure
+    clause: "If a subagent fails, roll back to the checkpoint: git -C <worktree> reset --hard <checkpoint-sha>"
+    severity: rollback
+    enforcement: llm-judged
+    check: "Orchestrator rolls back on subagent failure; code-review-guidance skill confirms rollback was complete"
+
+must not:
+  - id: no-commit-dirty-main
+    clause: "NEVER commit directly on main/master with uncommitted changes from a prior session"
+    severity: block
+    enforcement: machine
+    check: "execution-gate.sh Check 1 (blocks if on main with uncommitted changes); check-uncommitted-stop.sh (Stop hook)"
+
+  - id: no-work-on-main
+    clause: "NEVER work on stories directly in the main checkout — every story gets its own worktree"
+    severity: block
+    enforcement: machine
+    check: "execution-gate.sh creates per-story worktree; check-subagent-gate.sh blocks dispatch without gate-pass"
+
+may:
+  - id: max-parallel-subagents
+    clause: "Up to 5 simultaneous subagents (API rate-limit safety)"
+    severity: warn
+    enforcement: llm-judged
+    check: "Orchestrator tracks active subagent count; warns at 5, blocks above"
+
+  - id: bypass-gate
+    clause: "Gate may be bypassed with SKILL_BYPASS_GATE=1 (user-only, session-level env var)"
+    severity: warn
+    enforcement: machine
+    check: "check-subagent-gate.sh checks SKILL_BYPASS_GATE env var"

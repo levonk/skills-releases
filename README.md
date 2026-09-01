@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `6326c9022e556e9a6058c4adfc15ac7a244f228a` · Branch: `main` · Generated: 2026-08-30T01:15:41Z
+> Commit: `f13593cb2c03f9157c85b05e28f414ae8d4230c9` · Branch: `main` · Generated: 2026-09-01T00:09:13Z
 
 ## Overview
 
@@ -65,6 +65,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | diagram-upsert | Create and embed diagrams in technical documentation (ADR, design docs, README, knowledge bundles... | [Synopsis](execution-diagram-upsert.md) |
 | execute-upsert | Generic project execution controller that drives feature implementation from request to completio... | [Synopsis](execution-execute-upsert.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](execution-project-detection.md) |
+| requirements-upsert | Create, update, and maintain a durable requirements ledger that tracks the evolving statement of ... | [Synopsis](execution-requirements-upsert.md) |
 
 ### general
 
@@ -93,8 +94,8 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | data-pipeline-upsert | Create, update, and convert data pipelines across Apache Airflow (DAG authoring), Apache Spark (j... | [Synopsis](software-dev-data-pipeline-upsert.md) |
 | dev-env-upsert | Manage devbox.json + .envrc + justfile as a coupled trio per the Standard Developer UX Flow (`dir... | [Synopsis](software-dev-dev-env-upsert.md) |
 | git-repository-management | Comprehensive git repository workflow for status analysis, change organization, and commit manage... | [Synopsis](software-dev-git-repository-management.md) |
-| github-issue | File a well-formed GitHub issue against a third-party or upstream repository. Discovers the proje... | [Synopsis](software-dev-github-issue.md) |
-| github-pr | Open a well-formed pull request against a third-party or upstream repository. Requires an issue n... | [Synopsis](software-dev-github-pr.md) |
+| github-issue | File a well-formed GitHub issue against a third-party/upstream repository OR your own repository.... | [Synopsis](software-dev-github-issue.md) |
+| github-pr | Open a well-formed pull request against a third-party/upstream repository OR your own repository.... | [Synopsis](software-dev-github-pr.md) |
 | issue-sentiment-mapper | Fetch all comments on a GitHub issue/PR, classify each as PRO/ANTI/MIXED/NEUTRAL relative to a us... | [Synopsis](software-dev-issue-sentiment-mapper.md) |
 | issue-watcher | Subscribe to a list of GitHub issues/PRs (or discover them by topic keyword), review them, and su... | [Synopsis](software-dev-issue-watcher.md) |
 | java-app-upsert | Create new Java applications, update and improve existing Java projects, and convert between Mave... | [Synopsis](software-dev-java-app-upsert.md) |
@@ -108,6 +109,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | refactor-planning | Plan and execute systematic evolutionary refactors based on Michael Feathers' 'Working Effectivel... | [Synopsis](software-dev-refactor-planning.md) |
 | regression-test-mining | Mine git history for bug-fix commits and generate the regression tests they are missing. Scans `g... | [Synopsis](software-dev-regression-test-mining.md) |
 | repository-health-review | Comprehensive repository health analysis for outdated information, conflicting rules, undocumente... | [Synopsis](software-dev-repository-health-review.md) |
+| requirements-upsert | Create, update, and maintain a durable requirements ledger that tracks the evolving statement of ... | [Synopsis](software-dev-requirements-upsert.md) |
 | shell-wrapper | Wrap bash tool calls with an environment wrapper (devbox, mise, flox, direnv, or nix) and rtk bef... | [Synopsis](software-dev-shell-wrapper.md) |
 | surgical-config | Deterministic, non-destructive configuration file modifications using a tiered tool hierarchy. Us... | [Synopsis](software-dev-surgical-config.md) |
 | ui-ux-test-upsert | Create or update UI/UX tests for web and mobile applications using a two-tier testing model: dete... | [Synopsis](software-dev-ui-ux-test-upsert.md) |

@@ -1,10 +1,75 @@
-# Triage Heuristic — Assessing Request Size
+# Triage Heuristic — Assessing Request Size and Shape
 
-The triage heuristic determines whether a user request is large enough to
-warrant the full PRD → tasks → execute pipeline, or whether it should be
-handled with direct execution.
+The triage heuristic determines two things about a user request:
 
-## Decision Matrix
+1. **Size** — is the request large enough to warrant the full
+   PRD → tasks → execute pipeline, or should it be handled with direct
+   execution?
+2. **Shape** — does the request produce code changes (a **ship** task)
+   or an investigation report (a **scout** task)?
+
+The size determination uses the decision matrix below. The shape
+determination uses the ship/scout classification. Both are made during
+Phase 2 (Assess) and recorded in the task index so the execution loop
+routes each story correctly.
+
+## Ship vs Scout Classification
+
+Not every task produces code. The shape classification determines the
+execution pipeline:
+
+| Shape | Output | Pipeline | Worktree |
+|-------|--------|----------|----------|
+| **Ship** | Code changes (or config, or behavior-changing docs) | Full dev → review → commit → ship cycle | Feature branch, not scratch |
+| **Scout** | Investigation report at a known path | Investigate → write report → completion gate → tear down | Declared scratch |
+
+### How to Classify
+
+Classify as **scout** if the request asks any of:
+
+- "Should we adopt X or Y?" (comparison/evaluation)
+- "Can we migrate from A to B?" (feasibility investigation)
+- "Why is X happening?" (root-cause investigation)
+- "What would it take to..." (effort estimation)
+- "Investigate..." or "Explore..." or "Research..." (explicit
+  investigation language)
+
+Classify as **ship** if the request asks to:
+
+- "Add..." or "Implement..." or "Build..." (new functionality)
+- "Fix..." or "Repair..." (bug fix)
+- "Refactor..." or "Migrate..." (code change)
+- "Update..." or "Change..." (modification)
+
+### Scout Task Pipeline
+
+Scout tasks skip the dev → review → commit → ship cycle. Instead:
+
+1. Work in a worktree **declared scratch** (the branch is not a PR
+   candidate; do not push it).
+2. Investigate — read code, run experiments, build prototypes, gather
+   evidence.
+3. Write `report.md` at a known path (e.g.
+   `internal-docs/feature/todo/{slug}/report.md`).
+4. Feed the report into the **decision inventory** — a tracked list of
+   open investigations and their findings.
+5. Completion gate — verify the report exists and meets a minimum
+   structure (problem statement, findings, recommendation, evidence).
+6. Tear down the worktree (discardable after the report exists and the
+   gate passes).
+
+### Scout-to-Ship Conversion
+
+If a scout task discovers a fix during investigation, the conversion to
+a ship task must be **explicit**: change the task shape from scout to
+ship, create a new worktree on a feature branch, and run the ship
+pipeline. Do not implicitly merge investigation code.
+
+See the
+[ship-scout-task-shapes](../../knowledge/agent-orchestration-practices/ship-scout-task-shapes.md)
+knowledge bundle page for the full pattern.
+
+## Size Decision Matrix
 
 The request is "large" (warrants the full pipeline) if it meets **2 or more**
 of the following criteria:

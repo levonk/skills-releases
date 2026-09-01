@@ -1320,21 +1320,24 @@ If any answer is "no," revise before publishing.
 
 references/included/knowledge/upstream-contribution-practices/
 
-# GitHub Issue: File a Well-Formed Issue Against an Upstream Repository
+# GitHub Issue: File a Well-Formed Issue Against an Upstream or Own Repository
 
 File a GitHub issue that matches the target project's conventions, doesn't
-duplicate existing work, and is posted without corruption.
+duplicate existing work, and is posted without corruption. Supports two repo
+modes: `upstream` (third-party repo, full contribution standards crawl) and
+`own-repo` (your repo, lightweight template-only path).
 
 ## Prerequisites
 
 - `gh` CLI installed and authenticated (`gh auth status`)
-- The target repository accepts external issues (check CONTRIBUTING.md)
+- For `upstream` mode: the target repository accepts external issues (check CONTRIBUTING.md)
+- For `own-repo` mode: you have write access to the target repository (verified by `detect-repo-mode.sh`)
 - Issue content (title + body) from the user or a template
 
 ## Steps
 
 ---
-description: Reusable issue creation procedure — eligibility check, standards discovery, duplicate search, body drafting, human review gate, posting via gh --body-file, validation. Inlined by github-issue (primary) and github-pr (so it can create orientation issues self-containedly)
+description: Reusable issue creation procedure — repo-mode detection, eligibility check (upstream only), standards discovery (full crawl for upstream, templates-only for own-repo), duplicate search, body drafting, human review gate, posting via gh --body-file, validation. Inlined by github-issue (primary) and github-pr (so it can create orientation issues self-containedly)
 ---
 
 ### Issue Creation Procedure
@@ -1344,9 +1347,21 @@ filing) and the `github-pr` skill (creates an orientation issue before opening
 a PR). It is inlined at build time via the standard
 include mechanism so consumers are self-contained.
 
+The procedure supports two repo modes, detected in Step 0:
+
+- **`upstream`** — a repository you do not own. Full contribution standards
+  crawl, eligibility check, CLA awareness, duplicate search. The original
+  flow this procedure was built for.
+- **`own-repo`** — a repository you own or have write access to. Lightweight
+  path: skip the eligibility check and full standards crawl, check only for
+  issue templates locally, still search for duplicates (you may have filed
+  the same issue before and forgotten), still apply the human review gate
+  and `gh --body-file` posting discipline.
+
 #### Inputs
 
 - `$UPSTREAM_OWNER` / `$UPSTREAM_REPO` — the target repository
+- `$REPO_MODE` — `own-repo` or `upstream` (set by Step 0)
 - Issue title and body content (from the user or a template)
 - Search terms for duplicate detection (project-specific)
 - `$RELATED_ISSUES` (optional) — comma-separated issue/PR numbers to
@@ -1357,8 +1372,16 @@ include mechanism so consumers are self-contained.
 
 #### Steps
 
-1. **Check contribution eligibility**: Before investing time, verify the
-   project accepts external contributions. Read `CONTRIBUTING.md` for:
+0. **Detect repo mode**: Run
+   `scripts/detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO"`.
+   The script outputs `own-repo` or `upstream` based on the authenticated
+   user's `viewerPermission` on the target repo (ADMIN/MAINTAIN/WRITE/TRIAGE
+   → `own-repo`; READ/NONE → `upstream`). Record the result in `$REPO_MODE`.
+   All subsequent steps branch on `$REPO_MODE`.
+
+1. **Check contribution eligibility** (`upstream` only; skip for `own-repo`):
+   Before investing time, verify the project accepts external contributions.
+   Read `CONTRIBUTING.md` for:
    - Whether external issues/PRs are accepted at all
    - CLA/DCO requirements
    - Issue reporting conventions (some projects use Discussions, not Issues)
@@ -1368,15 +1391,22 @@ include mechanism so consumers are self-contained.
    file a free-form issue — use one of the configured templates or contact
    links, or present the constraint to the user.
 
-2. **Discover contribution standards**: Run
-   `scripts/discover-contribution-standards.sh <owner> <repo> --skill github-issue`.
-   This crawls the repo's CONTRIBUTING.md, issue/PR templates, CODEOWNERS,
-   changelog format, lint configs, and AI agent rules, caching the result to
-   `${XDG_CACHE_HOME:-~/.cache}/skills/levonk/skills-src/skills/github-issue/<host>/<owner>/<repo>/standards.md`
-   with a 7-day TTL. If the cache is fresh, it returns the cached path
-   without re-crawling. Read the cached standards file before drafting.
+   For `own-repo`: you set the contribution policy, so the eligibility check
+   is moot. Skip directly to template discovery (Step 2b).
 
-   ---
+2. **Discover contribution standards**:
+   - **`upstream`** (full crawl): Run
+     `scripts/discover-contribution-standards.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO" --skill "$SKILL_NAME"`.
+     Set `$SKILL_NAME` to `github-issue` (standalone issue filing) or
+     `github-pr` (orientation issue for a PR) so the cache is namespaced
+     correctly. This crawls the repo's CONTRIBUTING.md, issue/PR templates,
+     CODEOWNERS, changelog format, lint configs, and AI agent rules, caching
+     the result to
+     `${XDG_CACHE_HOME:-~/.cache}/skills/levonk/skills-src/skills/$SKILL_NAME/<host>/<owner>/<repo>/standards.md`
+     with a 7-day TTL. If the cache is fresh, it returns the cached path
+     without re-crawling. Read the cached standards file before drafting.
+
+     ---
 description: Host-aware issue/PR template and contribution-standards directory discovery — which directories to search on each forge (GitHub, GitLab, Forgejo, Gitea, Bitbucket) and in what priority order
 ---
 
@@ -1509,6 +1539,15 @@ rather than using free-form markdown. The `labels` field pre-labels the issue
 — preserve those labels when posting.
 
 
+   - **`own-repo`** (templates only): Skip the full standards crawl — you
+     know your own conventions. Check only for issue templates in the local
+     working tree using the forge template discovery search order above
+     (`.github/ISSUE_TEMPLATE/` → `ISSUE_TEMPLATE/` → `docs/ISSUE_TEMPLATE/`
+     → `.github/ISSUE_TEMPLATE.md` → `issue_template.md` →
+     `docs/ISSUE_TEMPLATE.md`). If a template is found, use it. If not, use
+     the skill's default issue structure (Step 4). Do not cache — the local
+     tree is the source of truth and may change between filings.
+
 3. **Search for existing issues**: Run
    `scripts/search-existing-work.sh <owner> <repo> --verbose <search-terms...>`.
    Use multiple search terms — the existing issue may use different vocabulary.
@@ -1517,6 +1556,10 @@ rather than using free-form markdown. The `labels` field pre-labels the issue
    - Closed issue, rejected → read the rejection reason; if circumstances
      changed, reference it in a new issue; if not, don't re-open
    - Closed issue, resolved → the feature exists; don't duplicate
+
+   For `own-repo`: the duplicate search is still valuable — you may have
+   filed the same issue weeks ago and forgotten, or a collaborator may have
+   opened one. Do not skip it.
 
    **Rate limit awareness**: When running multiple searches in sequence,
    space them by 0.5s (reads) to avoid GitHub's secondary rate limit. See
@@ -1658,6 +1701,10 @@ file's frontmatter). On a cache hit, `date.last-used` is updated. On a cache
 miss or TTL expiry, the standards are re-crawled. Use `--force` to bypass the
 cache and re-crawl immediately.
 
+**`own-repo` mode**: the cache is not used. Issue templates are read from the
+local working tree on each filing — the local tree is the source of truth and
+may change between filings.
+
 ## Knowledge Base
 
 This skill materializes the `upstream-contribution-practices` knowledge bundle
@@ -1688,14 +1735,16 @@ relevant concept pages before filing:
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
 starting, `[x]` when verified done, `[!]` if blocked.
 
-- [ ] Verify prerequisites — `gh` CLI authenticated, target repo accepts external issues (CONTRIBUTING.md checked) (Prerequisites)
-- [ ] Run `discover-contribution-standards.sh` to crawl and cache the target repo's contribution standards (or use cache hit within 7-day TTL) (Steps)
-- [ ] Run `search-existing-work.sh` to confirm no duplicate issue exists (Steps)
-- [ ] Draft the issue title and body matching the target project's conventions (templates, labels, structure from cached standards), referencing the upstream repo not your fork (Steps)
-- [ ] Write the issue body to a file and present the complete content (title + body) to the user for review before posting — no auto-posting (Steps, Human Review Gate)
-- [ ] Post the issue with `gh issue create --body-file` — never `--body` with inline strings (Steps, gh --body-file)
-- [ ] Validate the posted body with `validate-pr-issue.sh <owner>/<repo> issue <number>` — no literal `\n`, no stripped backticks, no corruption (Steps)
-- [ ] (Optional) If `$RELATED_ISSUES` or `$UMBRELLA_ISSUE` provided: post cross-reference comments on related issues (checking lock status first) and/or a differentiation comment on the new issue, with 2s delay between comments (Steps — Post-creation cross-referencing)
+- [ ] Verify prerequisites — `gh` CLI authenticated; for upstream mode, target repo accepts external issues (CONTRIBUTING.md checked); for own-repo mode, write access verified (Prerequisites)
+- [ ] Run `detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO"` to determine `$REPO_MODE` (`own-repo` or `upstream`) (Steps Step 0)
+- [ ] If `upstream`: run `discover-contribution-standards.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO" --skill github-issue` to crawl and cache the target repo's contribution standards (or use cache hit within 7-day TTL); check contribution eligibility (Steps Steps 1-2)
+- [ ] If `own-repo`: check for local issue templates using the forge template discovery search order (no full crawl, no cache) (Steps Step 2)
+- [ ] Run `search-existing-work.sh` to confirm no duplicate issue exists (Steps Step 3)
+- [ ] Draft the issue title and body matching the target project's conventions (templates, labels, structure from cached standards or local templates), referencing the upstream repo not your fork (Steps Step 4)
+- [ ] Write the issue body to a file and present the complete content (title + body) to the user for review before posting — no auto-posting (Steps Step 5, Human Review Gate)
+- [ ] Post the issue with `gh issue create --body-file` — never `--body` with inline strings (Steps Step 6, gh --body-file)
+- [ ] Validate the posted body with `validate-pr-issue.sh <owner>/<repo> issue <number>` — no literal `\n`, no stripped backticks, no corruption (Steps Step 7)
+- [ ] (Optional) If `$RELATED_ISSUES` or `$UMBRELLA_ISSUE` provided: post cross-reference comments on related issues (checking lock status first) and/or a differentiation comment on the new issue, with 2s delay between comments (Steps Step 8 — Post-creation cross-referencing)
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -1712,9 +1761,11 @@ agent to check something the scripts cannot verify.
 
 ### Pre-Filing Research
 
-- [ ] **[script]** `./scripts/discover-contribution-standards.sh` was run and cached the target repo's contribution standards (or a cache hit within 7-day TTL was used) (Steps)
-- [ ] **[script]** `./scripts/search-existing-work.sh` was run and confirmed no duplicate issue exists (Steps)
-- [ ] **[manual]** The target repository accepts external issues — CONTRIBUTING.md was checked and `blank_issues_enabled` is not false (Prerequisites)
+- [ ] **[script]** `./scripts/detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO"` was run and `$REPO_MODE` was recorded (`own-repo` or `upstream`) (Steps Step 0)
+- [ ] **[script]** If `upstream`: `./scripts/discover-contribution-standards.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO" --skill github-issue` was run and cached the target repo's contribution standards (or a cache hit within 7-day TTL was used) (Steps Step 2)
+- [ ] **[manual]** If `own-repo`: local issue templates were checked using the forge template discovery search order (no full crawl, no cache) (Steps Step 2)
+- [ ] **[script]** `./scripts/search-existing-work.sh` was run and confirmed no duplicate issue exists (Steps Step 3)
+- [ ] **[manual]** If `upstream`: the target repository accepts external issues — CONTRIBUTING.md was checked and `blank_issues_enabled` is not false (Prerequisites, Steps Step 1)
 
 ### Issue Content
 
@@ -1747,7 +1798,8 @@ If any of these are true, the run is NOT complete:
 
 ### File Paths
 
-- `scripts/discover-contribution-standards.sh` — crawls and caches contribution standards
+- `scripts/detect-repo-mode.sh` — determines `own-repo` vs `upstream` via `gh repo view --json viewerPermission`
+- `scripts/discover-contribution-standards.sh` — crawls and caches contribution standards (upstream mode only)
 - `scripts/search-existing-work.sh` — searches for duplicate issues/PRs
 - `scripts/validate-pr-issue.sh` — validates posted body for corruption
 - `references/included/knowledge/upstream-contribution-practices/` — materialized knowledge bundle
@@ -1756,6 +1808,7 @@ If any of these are true, the run is NOT complete:
 
 - `$UPSTREAM_OWNER` — target repository owner (e.g. `microsoft`)
 - `$UPSTREAM_REPO` — target repository name (e.g. `vscode`)
+- `$REPO_MODE` — `own-repo` or `upstream` (set by Step 0 via `detect-repo-mode.sh`)
 - `$ISSUE_TITLE` — issue title
 - `$ISSUE_BODY_FILE` — path to the file containing the issue body (e.g. `/tmp/issue-body.md`)
 - `$ISSUE_NUMBER` — returned by `gh issue create`, used in PR `Resolves #N` links

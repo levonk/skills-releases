@@ -5,8 +5,8 @@ description: Synthesis of software architecture practices — philosophy, projec
 tags: [architecture, overview, synthesis, modular, separation-of-concerns]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-08-27"
-  last-used: "2026-08-27"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 ---
 
 ---
@@ -122,7 +122,7 @@ addresses it, with decision checklists for choosing among alternatives.
 ```
 philosophy → project-structure → data-access → configuration → distribution
                                 ↓
-       root-cause-first → measure-before-optimizing → data-structures-first → tech-decision-risk → ai-human-timelines → technology-selection-pattern
+       root-cause-first → measure-before-optimizing → data-structures-first → perceived-latency-driven-design → tech-decision-risk → ai-human-timelines → technology-selection-pattern
                                 ↓
                   theme → terminal-state → tool-detection → adding-tools → indexed-ast-tools → auth-env
                                 ↓
@@ -138,6 +138,7 @@ philosophy → project-structure → data-access → configuration → distribut
 | Discipline | [Root-Cause First](root-cause-first.md) | Workaround stacks, contradictory documents, silent guards, band-aids that outlive the bug |
 | Profiling | [Measure Before Optimizing](measure-before-optimizing.md) | Hunch-driven speed hacks, optimizing the wrong level, caching without measuring, speculative fast paths for hypothetical large n |
 | Data Model | [Data Structures First](data-structures-first.md) | Clever algorithms over mis-shaped structures, smart code over dumb data, parallel indexes, representable illegal states |
+| Latency Target | [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) | Round-number SLOs detached from human perception, request-response without prefetch, optimizing the backend past the perception threshold, reporting p50 instead of p99 |
 | Decisions | [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) | Gut-feel choices, single-axis arguments, treating a new constant and a new public API as equally scary |
 | Selection | [Technology Selection Pattern](technology-selection-pattern.md) | Undocumented "we chose X" decisions, cargo-cult inheritance, re-litigation, stale decisions, missing why-not |
 | Estimates | [AI + Human Timeline Estimates](ai-human-timeline-estimates.md) | Pre-AI "human days" estimates that overstate AI-cheap work and understate unbounded tail risk |
@@ -218,6 +219,18 @@ concerns, scaling thresholds — should be filed as new concept pages. Append to
   data-structures-first (rule 5), and the KISS cross-reference (rules 3-4).
 - Fred Brooks, *The Mythical Man-Month* (1975) — "Show me your tables...",
   ingested 2026-08-27 for data-structures-first.
+- [p99 0 ms* autocomplete for 240 million domain names](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  — Ruurtjan Pul, 2026-06-22. Ingested 2026-08-30 for
+  perceived-latency-driven-design (the new concept: latency budgets derived
+  from measured typing cadence, `keyDown` prefetch + `keyUp` render, bounded
+  alphabet fan-out) and for concrete instances on measure-before-optimizing
+  (the stopping rule), data-structures-first (trie + mmap block index),
+  scalability-fundamentals (budget from perception, not a round number),
+  caching-strategies (client-side prefetch as cache-aside), and cdn-and-dns
+  (edge caching of hot prefix paths).
+- [Nielsen Norman Group — Response Times: The 3 Important Limits](https://www.nngroup.com/articles/response-times-3-important-limits/)
+  — the 0.1 s / 1 s / 10 s perception thresholds that frame the
+  perceived-latency-driven-design budget. Ingested 2026-08-30.
 
 ---
 

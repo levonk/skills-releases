@@ -26,9 +26,10 @@ Create new AI agent rules or audit and update existing rules. Scaffolds new rule
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts before creating or improving
 - **audit-methodology** (template, shared-include) — Shared audit methodology — propose-confirm-apply discipline for updates
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating rules to ensure generated rules do not contradict project constraints
 
 ---
 
 - **Full skill**: [`skills/ai/rule-upsert/SKILL.md`](skills/ai/rule-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

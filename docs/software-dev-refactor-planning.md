@@ -21,9 +21,10 @@ Plan and execute systematic evolutionary refactors based on Michael Feathers' 'W
 - **code-quality-validation** (skill, related) — For comprehensive code quality checks that validate each refactor step
 - **git-repository-management** (skill, related) — For commit organization and rollback-safe checkpoints between refactor steps
 - **** (, reference) — Architectural patterns and design principles to apply during refactoring
+- **** (, reference) — Fast Test Feedback — keep per-step verification fast via selective test running; never weaken the gate to work around a slow suite
 
 ---
 
 - **Full skill**: [`skills/software-dev/refactor-planning/SKILL.md`](skills/software-dev/refactor-planning/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

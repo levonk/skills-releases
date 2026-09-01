@@ -2176,6 +2176,79 @@ Promote in [`references/included/audit-bundle.md#step-9-reflect--promote`]).
   `overview.md`, `concept-*.md`, `log.md`). Each file stays separate.
 
 
+---
+description: Shared consult protocol for the requirements ledger — read current requirements before creating or updating AI guidance artifacts
+---
+
+### Requirements Ledger Consult Protocol
+
+Before creating or updating any AI guidance artifact (AGENTS.md, skills,
+workflows, agents, prompts, templates, rules, handoffs), consult the
+project's requirements ledger to ensure the artifact is consistent with
+the project's durable constraints.
+
+#### What the Ledger Is
+
+The requirements ledger at `internal-docs/reqs/` tracks durable
+constraints and capabilities that survive across features. It has two
+layers:
+
+- **`current/`** — the living spec. One file per requirement, organized
+  as `current/{proj}/{module}/{proj}_{module}_{slug}.md`. Each file has
+  a Statement, Rationale, Constraints, Verification, and Change Log.
+- **`history/`** — snapshots taken before each substantive change,
+  organized as `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`.
+- **`INDEX.md`** — auto-generated project/module tree of active
+  requirements.
+
+`{proj}` defaults to the repo name in single-project repos. `{module}`
+is `_root` if the project has no module subdivision.
+
+#### How to Consult
+
+1. Read `internal-docs/reqs/INDEX.md` if it exists. This gives you the
+   project/module tree of all active requirements with one-line
+   summaries.
+2. Read individual requirement files that are in scope for the artifact
+   you are creating or updating. A requirement is "in scope" if:
+   - It applies to the module or area of the codebase the artifact
+     touches
+   - It constrains the technology choices the artifact might recommend
+   - It defines a verification approach the artifact should reference
+3. If no `internal-docs/reqs/` directory exists, skip this protocol —
+   the project has not adopted the requirements ledger yet. Do not
+   create one unless the user asks.
+
+#### What to Do with What You Find
+
+- **AGENTS.md generation** (`agent-file-upsert`): include a
+  "Requirements" section or reference in the generated AGENTS.md that
+  links to `internal-docs/reqs/INDEX.md` and lists the requirements most
+  relevant to the agent's scope.
+- **Handoff documents** (`handoff`): include applicable requirements in
+  the handoff's context section so the next session knows the
+  constraints.
+- **Skill/workflow/agent/prompt/template/rule creation** (`ai-upsert`,
+  `ai-workflow-upsert`, `agent-upsert`, `prompt-upsert`,
+  `template-upsert`, `rule-upsert`): ensure the created artifact does
+  not contradict any active requirement. If it does, surface the
+  conflict to the user before proceeding.
+- **Guidance improvement** (`ai-guidance-improver`): check existing
+  guidance against the requirements ledger for consistency. Flag
+  contradictions as improvement candidates.
+
+#### What NOT to Do
+
+- Do not create or update requirements using this protocol — that
+  requires the full `requirements-upsert` skill (which has the
+  snapshot, index, and validation scripts). This protocol is read-only.
+- Do not copy requirement content into the artifact — link to the
+  requirement file instead. The ledger is the single source of truth.
+- Do not skip the consult if the ledger exists — ignoring active
+  requirements is how guidance artifacts become inconsistent with the
+  project's actual constraints.
+
+
 # Agent File Upsert
 
 Generate or update a hierarchical AGENTS.md system to help AI agents work efficiently with minimal token usage (JIT context). Context-aware: detects and follows the project's existing agent-file convention (AGENTS.md, CLAUDE.md, AGENT.md, or combinations). When updating, runs delta analysis to surface positive findings, anti-patterns, and improvement candidates from repository changes since the last update.

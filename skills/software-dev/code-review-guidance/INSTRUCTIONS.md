@@ -1328,6 +1328,8 @@ references/included/knowledge/python-services-practices/
 
 references/included/knowledge/rust-development-practices/
 
+references/included/knowledge/agent-orchestration-practices/
+
 references/included/skills/software-dev/code-quality-validation/
 
 # Code Review Guidance
@@ -1626,6 +1628,73 @@ SUMMARY:<one-paragraph summary of the review>
 - `BLOCKED` — one or more blockers that require human input or a design
   decision the dev subagent cannot make. The story should be marked
   `[!] Blocked`.
+
+#### Multi-Model Review Output Format (Optional)
+
+When two or more models are available, the review can be upgraded to a
+**multi-model adversarial review** using the consensus-tier pattern from
+the
+[multi-model-adversarial-review](../../knowledge/agent-orchestration-practices/multi-model-adversarial-review.md)
+knowledge bundle page. Each model reviews the same diff with the same
+checklist; the lead reviewer synthesizes the findings.
+
+The multi-model review returns an **Agreement Map** alongside the
+standard verdict:
+
+```text
+REVIEW_VERDICT:CLEAN|NEEDS_FIXES|BLOCKED
+STORY:<story-id>
+COMMIT:<commit-hash>
+MODE:multi-model
+MODELS:<model-a>,<model-b>[,<model-c>]
+
+AGREEMENT_MAP:
+| Finding                    | model-a | model-b | model-c | Tier |
+|----------------------------|---------|---------|---------|------|
+| Missing null check on L42  | raised  | raised  |    —    | High |
+| N+1 query in user loader   | raised  |    —    | raised  | High |
+| Inconsistent naming        |    —    | raised  |    —    | Lone |
+
+LEAD_JUDGMENT:
+- Act on: Missing null check on L42 (High — 2 models agree, clear fix)
+- Act on: N+1 query in user loader (High — 2 models agree, clear fix)
+- Consider: Inconsistent naming (Lone — plausible, cheap to fix)
+- Noted: (none)
+- Dismissed: (none)
+
+BLOCKERS:<count of Act on findings>
+SUGGESTIONS:<count of Consider findings>
+NITS:<count of Noted findings>
+
+SUMMARY:<one-paragraph summary synthesizing the multi-model review>
+```
+
+**Agreement Map fields:**
+
+- **Finding** — the issue found, described in one line.
+- **Model columns** — `raised` if the model found the issue, `—` if not.
+- **Tier** — `High` (2+ models agree) or `Lone` (single model only).
+
+**Lead judgment categories:**
+
+- **Act on** — must fix before commit. High-confidence findings with
+  clear remediation, or lone-model findings the lead confirms.
+- **Consider** — worth fixing but not blocking. High-confidence findings
+  with tradeoffs, or lone-model findings that are plausible and cheap.
+- **Noted** — acknowledged but no action now. Lone-model findings that
+  are speculative.
+- **Dismissed** — rejected with reasoning. Findings that are factually
+  wrong or out of scope. Document why.
+
+The lead judgment is the reviewer's call, not a vote. The reviewer can
+override consensus (dismiss a high-confidence finding if it is
+factually wrong) or elevate a lone-model finding (act on it if the
+reviewer's own analysis confirms it).
+
+**Graceful degradation:** with N=1 model, the multi-model format
+degrades to the standard single-model review. Every finding is
+lone-model. The Agreement Map has one column. The lead judgment
+categorization still applies.
 
 ### Configuration
 

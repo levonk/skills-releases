@@ -26,9 +26,10 @@ Create new AI prompts, modify and improve existing prompts, and scaffold reusabl
 - **ai-upsert** (skill, sibling) — Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a prompt.
 - **ai-workflow-upsert** (skill, sibling) — Full lifecycle management for workflows. Use when the target is a workflow, not a prompt.
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating prompts to ensure generated prompts do not contradict project constraints
 
 ---
 
 - **Full skill**: [`skills/ai/prompt-upsert/SKILL.md`](skills/ai/prompt-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

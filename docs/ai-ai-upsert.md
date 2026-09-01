@@ -47,9 +47,10 @@ Create and maintain three types of compounding AI artifacts — skills, OKF know
 - **** (, transitive-bundled-dependency) — Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides vault storage and egress firewall patterns for security review in Phase 4
 - **** (, transitive-bundled-dependency) — Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides security patterns (banned C functions, credential detection, crypto governance, cert validation, SSH hardening) for security review in Phase 4
 - **execute-upsert** (skill, pattern-reference) — Sibling execution skill whose phased pipeline (Self-Update, Establish Technologies, per-story review, commit) ai-upsert 3.3.0 adopts for its own lifecycle
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating or updating skills, knowledge bundles, and agents to ensure generated artifacts do not contradict project constraints
 
 ---
 
 - **Full skill**: [`skills/ai/ai-upsert/SKILL.md`](skills/ai/ai-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

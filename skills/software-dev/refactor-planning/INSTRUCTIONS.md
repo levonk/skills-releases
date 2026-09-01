@@ -1398,6 +1398,37 @@ For each task:
 If verification fails, revert the change and re-plan — do not accumulate
 unverified modifications.
 
+#### Keeping Per-Step Verification Fast
+
+The evolutionary workflow runs the full verification gate after every
+task. If the test suite is slow, the temptation is to skip tests between
+steps — **do not**. Skipping tests breaks the evolutionary safety net: a
+silent regression in an intermediate commit is invisible until the final
+verification, and rollback is no longer trivial.
+
+Instead, keep the per-step gate fast by running only the **affected**
+tests, not the whole suite:
+
+- **Git-based change detection**: Use `git diff` against the pre-task
+  commit to identify which files changed, then run only the tests whose
+  code paths are affected.
+- **Built-in test-dependency tooling**: Let the test runner's dependency
+  graph select the affected tests — Vitest `--changed`, Jest
+  `--findRelatedTests`, pytest-testmon, cargo-nextest with crate
+  filters. No manual dependency tracking needed.
+- **Never weaken the gate**: If the suite is slow, fix the speed
+  (parallelize, cache, shard, split slow integration/E2E from fast unit
+  tests). Do not disable tests, mark them optional, or move them out of
+  the blocking path. A slow suite is a bug, not a constraint to work
+  around.
+
+Run the **full** suite at the final verification (Phase 5) to catch
+cross-cutting regressions that selective runs miss. See the
+**cicd-testing-practices** knowledge bundle → *Fast Test Feedback* for
+the full strategy (parallelize, cache, shard, split by speed tier, and
+the same git-based selective-run principle applied to auto-generated
+documentation).
+
 ### Phase 5 — Final Verification
 
 1. **Verify the build**: typecheck, build, lint, unit tests, run — all pass.
@@ -1479,7 +1510,7 @@ require the agent to check something the scripts cannot verify.
 ### Execution (Phase 4)
 
 - [ ] **[manual]** Each task was executed as the smallest viable increment — no batched multi-task commits (Phase 4)
-- [ ] **[manual]** After each task: typecheck, build, lint, unit tests, and run all pass (Phase 4)
+- [ ] **[manual]** After each task: typecheck, build, lint, unit tests, and run all pass (Phase 4) — affected tests may be run selectively between steps for speed, but the gate is never weakened (no skipped/optional tests)
 - [ ] **[manual]** After each task: `git status` shows only the intended change — no stray files (Phase 4)
 - [ ] **[manual]** Each verified change was committed individually (Phase 4)
 - [ ] **[manual]** Any task whose verification failed was reverted and re-planned — no unverified modifications accumulated (Phase 4)
@@ -1495,6 +1526,7 @@ require the agent to check something the scripts cannot verify.
 If any of these are true, the run is NOT complete:
 
 - The build passes at the end but a task was committed without running tests between tasks → a silent regression may be hidden in an intermediate commit
+- Tests were skipped, marked optional, or moved out of the blocking path to work around a slow suite → the gate was weakened; the slow suite should have been fixed (parallelize, cache, shard, selective re-runs) instead
 - The plan lists tasks but a Phase 2 finding (e.g. a security issue) has no corresponding task → the plan is incomplete; the issue will be forgotten
 - A dependent task was executed before its foundational prerequisite → the dependent change may break or need rework
 - `git status` is clean but commits contain multiple unrelated changes → rollback is no longer trivial; the evolutionary guarantee is broken

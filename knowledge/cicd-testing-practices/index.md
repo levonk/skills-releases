@@ -22,3 +22,4 @@ quality scripts, Vitest as unified test runner, and pre-commit/CI parity.
 * [property-based-testing-rust](property-based-testing-rust.md) - proptest, strategy composition, shrinking, testing invariants
 * [ui-requirements-coverage](ui-requirements-coverage.md) - Verify every documented UI requirement is represented in the running app using deterministic accessibility-tree inspection (agent-browser for web, agent-device for mobile)
 * [ux-usability-testing](ux-usability-testing.md) - Test whether users can accomplish tasks without documentation using AI-driven natural-language goals (Stagehand for web, finalrun-agent for mobile)
+* [fast-test-feedback](fast-test-feedback.md) - Keep the suite fast: parallelize, cache, split slow integration/E2E from fast unit tests, shard. Never weaken the gate — use git-based change detection and dependency-aware tooling (Vitest, Jest, pytest-testmon, cargo-nextest) to run only affected tests

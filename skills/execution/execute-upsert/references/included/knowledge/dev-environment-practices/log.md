@@ -1,5 +1,21 @@
 # Directory Update Log
 
+## 2026-08-30
+
+* **Add**: [diff-tooling-stack.md](diff-tooling-stack.md) — the
+  three-layer diff stack (difftastic as AST-based external diff driver
+  via gitattributes, delta as unified-diff pager, context-aware wrapper
+  with human vs agent profiles). Documents when external diff drivers
+  fire, the git-apply compatibility failure mode (no `@@` hunk markers
+  in structural diff output), and the `format-patch` / `--no-ext-diff`
+  / `stash show -p` fixes. Sourced from a real worktree-transfer
+  failure where `git diff > patch && git apply patch` broke because of
+  gitattributes-configured difftastic. Grounded against difftastic
+  0.69.0 and the user's live dotfiles configuration on 2026-08-30.
+* **Update**: Updated [index.md](index.md) with the new concept entry.
+* **Update**: Updated [overview.md.tmpl](overview.md.tmpl) — added
+  "Diff Tooling" row to the phase/practice table.
+
 ## 2026-08-09
 
 * **Add**: [index-staleness-check.md](index-staleness-check.md) — staleness check inside prime_impl that wraps indexed AST tool invocations (reindex when DB missing or >1h old). References async-prime-internal.md for the trigger; does NOT duplicate it.

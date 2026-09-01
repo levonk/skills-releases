@@ -30,3 +30,4 @@ project migrations.
 * [Devbox Rust Versions](devbox-rust-versions.md) - Pinning Rust toolchain in devbox.json, rustup integration, multi-version management, component selection
 * [Direnv Rustup Toolchains](direnv-rustup-toolchains.md) - direnv integration with rustup, automatic toolchain switching, PATH management, loading speed
 * [Multi-Language Devbox](multi-language-devbox.md) - Managing Python + Rust + Node in one devbox, PATH ordering, tree-sitter grammars, disk space
+* [Diff Tooling Stack](diff-tooling-stack.md) - difftastic (AST diff engine via gitattributes) + delta (pager) + context-aware wrapper; agent vs human modes; git-apply compatibility failure and the --no-ext-diff / format-patch fix

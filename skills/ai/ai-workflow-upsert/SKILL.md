@@ -28,6 +28,9 @@ see-also:
   - skill: "ai-upsert"
     relationship: "sibling"
     description: "Full lifecycle management for skills (create/update/convert/eval). Use when the target is a skill, not a workflow, or when converting a workflow into a skill (the reverse of this skill's Mode B)."
+  - skill: requirements-upsert
+    relationship: "consult"
+    description: "Consult the requirements ledger when creating workflows to ensure generated workflows do not contradict project constraints"
 
 ---
 

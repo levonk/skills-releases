@@ -1686,6 +1686,82 @@ at a legacy dated path (`{root}/YYYY/MM/{filename}`). To backfill:
 2. **In-progress documents** — `git mv {root}/YYYY/MM/{filename} {root}/todo/{filename}`. Leave `date.completed` unset.
 3. Commit the backfill with `docs: backfill {type} to todo/archive lifecycle`
 
+
+---
+description: Shared consult protocol for the requirements ledger — read current requirements before creating or updating AI guidance artifacts
+---
+
+### Requirements Ledger Consult Protocol
+
+Before creating or updating any AI guidance artifact (AGENTS.md, skills,
+workflows, agents, prompts, templates, rules, handoffs), consult the
+project's requirements ledger to ensure the artifact is consistent with
+the project's durable constraints.
+
+#### What the Ledger Is
+
+The requirements ledger at `internal-docs/reqs/` tracks durable
+constraints and capabilities that survive across features. It has two
+layers:
+
+- **`current/`** — the living spec. One file per requirement, organized
+  as `current/{proj}/{module}/{proj}_{module}_{slug}.md`. Each file has
+  a Statement, Rationale, Constraints, Verification, and Change Log.
+- **`history/`** — snapshots taken before each substantive change,
+  organized as `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`.
+- **`INDEX.md`** — auto-generated project/module tree of active
+  requirements.
+
+`{proj}` defaults to the repo name in single-project repos. `{module}`
+is `_root` if the project has no module subdivision.
+
+#### How to Consult
+
+1. Read `internal-docs/reqs/INDEX.md` if it exists. This gives you the
+   project/module tree of all active requirements with one-line
+   summaries.
+2. Read individual requirement files that are in scope for the artifact
+   you are creating or updating. A requirement is "in scope" if:
+   - It applies to the module or area of the codebase the artifact
+     touches
+   - It constrains the technology choices the artifact might recommend
+   - It defines a verification approach the artifact should reference
+3. If no `internal-docs/reqs/` directory exists, skip this protocol —
+   the project has not adopted the requirements ledger yet. Do not
+   create one unless the user asks.
+
+#### What to Do with What You Find
+
+- **AGENTS.md generation** (`agent-file-upsert`): include a
+  "Requirements" section or reference in the generated AGENTS.md that
+  links to `internal-docs/reqs/INDEX.md` and lists the requirements most
+  relevant to the agent's scope.
+- **Handoff documents** (`handoff`): include applicable requirements in
+  the handoff's context section so the next session knows the
+  constraints.
+- **Skill/workflow/agent/prompt/template/rule creation** (`ai-upsert`,
+  `ai-workflow-upsert`, `agent-upsert`, `prompt-upsert`,
+  `template-upsert`, `rule-upsert`): ensure the created artifact does
+  not contradict any active requirement. If it does, surface the
+  conflict to the user before proceeding.
+- **Guidance improvement** (`ai-guidance-improver`): check existing
+  guidance against the requirements ledger for consistency. Flag
+  contradictions as improvement candidates.
+
+#### What NOT to Do
+
+- Do not create or update requirements using this protocol — that
+  requires the full `requirements-upsert` skill (which has the
+  snapshot, index, and validation scripts). This protocol is read-only.
+- Do not copy requirement content into the artifact — link to the
+  requirement file instead. The ledger is the single source of truth.
+- Do not skip the consult if the ledger exists — ignoring active
+  requirements is how guidance artifacts become inconsistent with the
+  project's actual constraints.
+
+
+references/included/knowledge/agent-orchestration-practices/
+
 # Handoff
 
 A skill for capturing and restoring AI conversation context for seamless work continuation across sessions.
@@ -1730,6 +1806,87 @@ This section provides handoff-specific guidance that complements the universal c
 3. **Artifact References** - References existing artifacts (PRDs, plans, ADRs, issues, commits, diffs) instead of duplicating content
 4. **Security** - Redacts sensitive information (API keys, passwords, PII)
 5. **Skill Suggestions** - Includes suggested skills for the next session
+
+### Restart-Proof State Principle
+
+The handoff system follows the
+[restart-proof-state](../../knowledge/agent-orchestration-practices/restart-proof-state.md)
+knowledge bundle page. The core principles:
+
+1. **Every state is a file with a defined format and producer.** The
+   handoff file is just another state file — it is not a special
+   artifact. It has a defined format (the handoff template), a defined
+   producer (the handoff skill), and a defined location (the handoffs
+   directory).
+
+2. **State files are append-only event logs, not current-state truth.**
+   The handoff file records what happened (events: decisions made, work
+   completed, blockers hit). It is not a live representation of the
+   current state — the current state is derived by folding the event
+   log. When the handoff is updated, append the new event; do not
+   rewrite the history.
+
+3. **Derive current state by folding the event log.** The receiving
+   session reads the handoff file (the event log) and folds it to
+   derive the current state: what is done, what is in-flight, what is
+   blocked, what is next. The fold is deterministic — two sessions
+   reading the same handoff derive the same current state.
+
+4. **The handoff file is just another state file.** It is not
+   privileged. It follows the same lifecycle (todo → archive) as other
+   work-tracking documents. It can be versioned, branched, and merged
+   like any other file. The only thing that makes it a "handoff" is
+   its format and producer — not its nature.
+
+### Bearings Digest (Optional)
+
+A bearings digest is a compact, four-section summary derived from the
+fleet state (all handoffs, task indexes, and work-tracking documents
+for the project). It is not derived from conversation memory — it is
+derived from the files on disk.
+
+The bearings digest has four sections:
+
+```markdown
+## Bearings
+
+### Completed
+- <what is done — derived from [x] Done stories and archived handoffs>
+
+### In-flight
+- <what is currently being worked on — derived from [~] In-Progress
+  stories and todo/ handoffs>
+
+### Blocked
+- <what is blocked and why — derived from [!] Blocked stories and
+  human/ handoffs>
+
+### Next
+- <what should be done next — derived from [ ] Todo stories with
+  dependencies met>
+```
+
+**When to emit a bearings digest:**
+
+- At the start of a session that is resuming from a handoff (so the
+  receiving session has a compact overview before reading the full
+  handoff).
+- When the user asks "where are we?" or "what's the status?"
+- Before writing a new handoff (so the handoff's current state section
+  is derived from fleet state, not conversation memory).
+
+**How to derive the digest:**
+
+1. Scan the project's handoffs directory (`.agents/handoffs/todo/`)
+   for active handoffs.
+2. Scan the project's task indexes
+   (`internal-docs/feature/todo/*/task-index.md`) for story statuses.
+3. Scan the human handoffs directory (`.agents/handoffs/human/todo/`)
+   for blocked-on-human items.
+4. Fold the results into the four sections.
+
+The digest is a read-only summary — it does not modify any state files.
+It is derived fresh each time from the files on disk.
 
 ### Handoff Storage Location
 

@@ -1,5 +1,22 @@
 # Directory Update Log
 
+## 2026-08-30
+
+* **Ingest**: Authored 1 new concept page covering test-suite speed and
+  selective test execution. The bundle had content on what to test and
+  how to keep tests deterministic, but no guidance on keeping the suite
+  fast or on running only affected tests. This page fills that gap.
+  - [fast-test-feedback.md](fast-test-feedback.md) — parallelize, cache,
+    split slow integration/E2E from fast unit tests, shard. Never weaken
+    the gate to work around a slow suite. Use git-based change detection
+    and built-in test-dependency tooling (Vitest `--changed`, Jest
+    `--findRelatedTests`, pytest-testmon, cargo-nextest) to run only
+    affected tests. Same git-based selective-run principle applies to
+    auto-generated documentation.
+* **Update**: Updated [overview.md](overview.md.tmpl) testing stack
+  diagram and table with a Speed phase.
+* **Update**: Updated [index.md](index.md) with 1 new concept entry.
+
 ## 2026-08-27
 
 * **Update**: Updated [pre-commit-ci-parity.md](pre-commit-ci-parity.md) to

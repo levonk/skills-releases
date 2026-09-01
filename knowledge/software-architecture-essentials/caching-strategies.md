@@ -5,8 +5,8 @@ description: Multi-layer caching (client, CDN, web server, database, application
 tags: [architecture, caching, cache-aside, write-through, write-behind, refresh-ahead, cache-invalidation, redis, memcached]
 date:
   created: "2026-07-24"
-  knowledge-basis: "2026-07-24"
-  last-used: "2026-07-24"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 ---
 
 # Caching Strategies
@@ -64,8 +64,16 @@ The hard problem. Strategies:
 - [Database Scaling](database-scaling.md) — caches sit in front of databases.
 - [CDN and DNS](cdn-and-dns.md) — CDN is the outermost cache.
 - [Data Access Layer](data-access-layer.md) — centralize cache logic.
+- [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) —
+  client-side prefetch is a cache-aside variant that populates the cache
+  ahead of the request, hiding the round-trip behind human motor latency;
+  refresh-ahead is the server-side analog of the same idea.
 
 ## Sources
 
 - [The System Design Primer](https://github.com/donnemartin/system-design-primer)
   — Cache (layers, update strategies, invalidation).
+- [p99 0 ms* autocomplete for 240 million domain names](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  — Ruurtjan Pul, 2026-06-22. Client-side prefetch on `keyDown` populates a
+  per-next-character cache before the `keyUp` render; the bounded 38-character
+  alphabet caps the prefetch payload at ~2.5 kB on the wire.

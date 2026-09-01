@@ -33,6 +33,9 @@ see-also:
   - skill: "agent-file-upsert"
     relationship: "sibling"
     description: "Full lifecycle management for agent files (create/update/audit). Use when the target is an agent definition."
+  - skill: requirements-upsert
+    relationship: "consult"
+    description: "Consult the requirements ledger when creating templates to ensure generated templates do not contradict project constraints"
 
 ---
 

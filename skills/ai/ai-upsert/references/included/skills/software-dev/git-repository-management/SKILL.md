@@ -7,7 +7,7 @@ status: "ready"
 date:
   created: "2026-03-24"
   knowledge-basis: "2026-08-11"
-  last-used: "2026-08-24"
+  last-used: "2026-08-29"
 tags: ["ai/skill", "git", "version-control", "repository-management", "commit-organization", "tagging", "rollback-safety"]
 see-also:
   - skill: project-detection

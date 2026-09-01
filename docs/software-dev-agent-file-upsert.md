@@ -34,9 +34,10 @@ Generate or update hierarchical AGENTS.md documentation for AI agents working in
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **research-phase** (template, shared-include) — Shared research phase — search for existing artifacts and anti-patterns before creating or improving
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when generating AGENTS.md so agent documentation reflects the project's durable constraints
 
 ---
 
 - **Full skill**: [`skills/software-dev/agent-file-upsert/SKILL.md`](skills/software-dev/agent-file-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

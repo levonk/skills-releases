@@ -1212,6 +1212,72 @@ A clean "up to date, nothing to do" run proves the workflow's Nix install, GitHu
 
 **Skip if:** the project does not publish release tarballs (use a source-build flake instead), or already automates flake updates via another mechanism (e.g. `update-flake-lock` action).
 
+### overrideAttrs Variant (for `nixpkgs-override-attrs.md` flakes)
+
+When the flake uses the `nixpkgs-override-attrs.md` template (`flake_type=nixpkgs_override_attrs`), the hash automation workflow targets a different attrset shape. Instead of the `assets = { "<system>" = { file = ...; sha256 = ...; }; }` block from `prebuilt-tarball.md`, the overrideAttrs template uses a `hashes` attrset:
+
+```nix
+hashes = {
+  "x86_64-linux" = "<sha256-x86_64-linux>";
+  "aarch64-linux" = "<sha256-aarch64-linux>";
+  "x86_64-darwin" = "<sha256-x86_64-darwin>";
+  "aarch64-darwin" = "<sha256-aarch64-darwin>";
+};
+```
+
+The workflow script's regex must be adapted to match this shape. Replace the `assets` block regex:
+
+```python
+# prebuilt-tarball.md shape:
+pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
+def repl(m):
+    b = m.group(1)
+    b = re.sub(r'file = "[^"]*";', f'file = "{match}";', b, count=1)
+    b = re.sub(r'sha256 = "[^"]*";', f'sha256 = "{sri}";', b, count=1)
+    return b
+```
+
+with the `hashes` attrset regex:
+
+```python
+# nixpkgs-override-attrs.md shape (quoted keys — Nix requires quotes
+# for attribute names containing hyphens):
+pat = re.compile(r'("' + re.escape(sys_) + r'" = ")[^"]*(";)')
+def repl(m):
+    return m.group(1) + sri + m.group(2)
+src, n = pat.subn(repl, src, count=1)
+if n != 1:
+    raise SystemExit(f"could not find hashes.\"{sys_}\" in flake.nix")
+```
+
+The rest of the workflow (version comparison, ASSET_MAP, reverse-check guard, `.sha256` sibling cross-check, PR opening) is identical to the standard templates. The `ASSET_MAP` still maps each system to its release asset substring — the guard and cross-check work the same way because they operate on release asset names, not on the flake's internal attrset shape.
+
+**The `OutdatedBuildDetector` consideration**: nixpkgs packaging for browsers and some Electron apps includes a build-time check that compares the built version against the expected (nixpkgs-pinned) version. Since `overrideAttrs` intentionally overrides to a newer upstream version, this check is a false positive. The flake's `postPatch` must disable it (see `references/flake-templates/nixpkgs-override-attrs.md`). The hash automation workflow does NOT need to touch `postPatch` — it only bumps `version` and `hashes`, not the patch logic.
+
+### nix-update as an Alternative
+
+[`nixpkgs#nix-update`](https://github.com/Mic92/nix-update) is a community-maintained tool that bumps version and hash in a Nix derivation. For projects that use a nixpkgs-style single-derivation shape (one `src = fetchurl { ... }` with a single hash, not per-platform hashes), it can replace the custom hash automation script:
+
+```bash
+nix run 'nixpkgs#nix-update' -- <project-name> --build \
+  --override-filename package.nix --use-github-releases \
+  --github-releases-limit 50
+```
+
+**When nix-update is sufficient:**
+- The flake uses a single-derivation shape (one `src`, one hash) — not the per-platform `hashes` attrset from `nixpkgs-override-attrs.md` or the `assets` attrset from `prebuilt-tarball.md`
+- The project ships a single universal binary, or the flake only targets one platform
+- The reverse-check guard and `.sha256` cross-check are not needed (single platform, no omission risk)
+- A wrapper step handles PR opening (`nix-update` updates the file in-place but does not open a PR)
+
+**When to prefer the custom script over nix-update:**
+- The flake uses per-platform hashes (the `hashes` attrset or the `assets` attrset) — `nix-update` targets single-derivation `src`, not multi-platform hash attrsets
+- The reverse-check guard is needed (multi-platform releases where omitting a platform from the hash map causes a hash mismatch that CI cannot catch — see the Archon PR #2131 feedback)
+- The `.sha256` sibling cross-check is needed (releases publish checksum files that should be verified before pinning — see the CodeRabbit review on pnpm PR #14255)
+- The workflow needs to open a PR automatically without a wrapper step
+
+For the `prebuilt-tarball.md` and `nixpkgs-override-attrs.md` templates (both use per-platform hashes), the custom script is the recommended approach. `nix-update` is documented here for completeness and for the single-derivation edge case (e.g. a project that ships one universal binary and uses a simple `fetchurl` derivation).
+
 ---
 
 ## Cachix Integration (Binary Caching)

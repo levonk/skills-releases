@@ -34,6 +34,9 @@ see-also:
   - knowledge: rust-development-practices
     relationship: "bundled-dependency"
     description: "Bundled via includeTree for offline availability. Provides rustfmt-clippy-config.md, quality-gates.md, testing-strategy.md, error-handling.md, and security-auditing.md used in the Cross-Cutting Concerns / Testing category to validate generated Rust code"
+  - knowledge: agent-orchestration-practices
+    relationship: "dependency"
+    description: "Provides the multi-model-adversarial-review concept page that the optional multi-model review output format (Agreement Map, consensus tiers, lead judgment categorization) is based on. The review skill degrades gracefully to single-model when only one model is available"
 
 ---
 

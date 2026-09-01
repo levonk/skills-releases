@@ -32,6 +32,9 @@ see-also:
   - knowledge: "documentation-diagram-practices"
     relationship: "complement"
     description: "Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram"
+  - skill: requirements-upsert
+    relationship: "consult"
+    description: "Check existing guidance against the requirements ledger for consistency — flag contradictions as improvement candidates"
 
 ---
 

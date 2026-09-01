@@ -1320,24 +1320,55 @@ If any answer is "no," revise before publishing.
 
 references/included/knowledge/upstream-contribution-practices/
 
-# GitHub PR: Open a Well-Formed Pull Request Against an Upstream Repository
+# GitHub PR: Open a Well-Formed Pull Request Against an Upstream or Own Repository
 
-Contribute a code change to a repository you don't own, with a clean linear
-history, a project-convention-matching PR body, and an orientation issue
-linked via `Resolves #N`.
+Contribute a code change to a repository you own or don't own, with a clean
+linear history, a project-convention-matching PR body, and an orientation
+issue linked via `Resolves #N`. Supports two repo modes: `upstream`
+(third-party repo, fork + CLA gate) and `own-repo` (your repo, push to origin
+directly, skip CLA, lighter issue discipline).
 
 ## Prerequisites
 
 - `gh` CLI installed and authenticated (`gh auth status`)
 - `git` configured with GitHub access and a public author identity
-- Fork permissions on the target repository
+- For `upstream` mode: fork permissions on the target repository
+- For `own-repo` mode: write access to the target repository (verified by `detect-repo-mode.sh`)
 - A code change to contribute (this skill does not write the change for you —
   it handles the contribution workflow around an existing change)
 
+## Repo Mode Detection
+
+Before any other step, determine the repo mode:
+
+```bash
+REPO_MODE=$(scripts/detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO")
+```
+
+The script outputs `own-repo` or `upstream` based on the authenticated user's
+`viewerPermission` on the target repo. All subsequent phases branch on
+`$REPO_MODE`. The key differences:
+
+> **TRIAGE caveat**: `detect-repo-mode.sh` classifies TRIAGE permission as
+> `own-repo`. TRIAGE allows issue management but NOT branch push. If the PR
+> flow fails at `git push origin` with a permission error, the viewer likely
+> has TRIAGE (not WRITE) access — fall back to the `upstream` flow (fork +
+> push to fork).
+
+| Phase | `upstream` | `own-repo` |
+|-------|-----------|-----------|
+| Fork | Fork + clone via `gh repo fork --clone` | Skip — work in the existing checkout, push to `origin` |
+| Standards discovery | Full crawl (CONTRIBUTING.md, templates, CODEOWNERS, lint, CLA) | Templates only (check local PR template) |
+| CLA gate | Run pre-push CLA gate + post-open CLA watch | Skip entirely — you own the repo, no CLA |
+| PR head | `--head "$CURRENT_USER:branch-name"` (fork) | `--head "$CURRENT_USER:branch-name"` (same user, but push to origin not fork) |
+| PR-requires-issue | Mandatory (with trivial-fix exception) | Optional (one-line justification to skip) |
+
 ## The PR-Requires-Issue Rule
 
-Every PR opened by this skill MUST reference an issue via `Resolves #N` in the
-PR body. This is enforced as a precondition, not a soft suggestion:
+Every PR opened by this skill SHOULD reference an issue via `Resolves #N` in
+the PR body. The enforcement level depends on `$REPO_MODE`:
+
+**`upstream` mode** — mandatory (with trivial-fix exception):
 
 1. **If the user provides an existing issue number** — use it directly.
 2. **If no issue exists** — create one inline using the issue creation
@@ -1349,8 +1380,19 @@ PR body. This is enforced as a precondition, not a soft suggestion:
    the rule with an explicit one-line justification in the PR body:
    `> No issue — trivial fix (typo in README.md line 42).`
 
-The issue-first flow is the default because:
-- It gives the maintainer context before reviewing code
+**`own-repo` mode** — optional:
+
+1. **If the user provides an existing issue number** — use it directly.
+2. **If no issue exists** — create one inline using the issue creation
+   procedure (inlined below), OR skip the issue with a one-line
+   justification in the PR body:
+   `> No issue — own-repo, direct fix (refactor utils.py error handling).`
+   You own the repo, so you decide when an issue is needed. The issue-first
+   flow is still recommended for non-trivial changes (it creates a searchable
+   record), but it is not mandatory.
+
+The issue-first flow is the default for both modes because:
+- It gives the maintainer (or future-you) context before reviewing code
 - It prevents PRs from being opened for rejected proposals
 - It creates a searchable record of the feature/fix discussion
 
@@ -1359,7 +1401,7 @@ The issue-first flow is the default because:
 ### Phase 1: Orientation Issue (create or reference)
 
 ---
-description: Reusable issue creation procedure — eligibility check, standards discovery, duplicate search, body drafting, human review gate, posting via gh --body-file, validation. Inlined by github-issue (primary) and github-pr (so it can create orientation issues self-containedly)
+description: Reusable issue creation procedure — repo-mode detection, eligibility check (upstream only), standards discovery (full crawl for upstream, templates-only for own-repo), duplicate search, body drafting, human review gate, posting via gh --body-file, validation. Inlined by github-issue (primary) and github-pr (so it can create orientation issues self-containedly)
 ---
 
 ### Issue Creation Procedure
@@ -1369,9 +1411,21 @@ filing) and the `github-pr` skill (creates an orientation issue before opening
 a PR). It is inlined at build time via the standard
 include mechanism so consumers are self-contained.
 
+The procedure supports two repo modes, detected in Step 0:
+
+- **`upstream`** — a repository you do not own. Full contribution standards
+  crawl, eligibility check, CLA awareness, duplicate search. The original
+  flow this procedure was built for.
+- **`own-repo`** — a repository you own or have write access to. Lightweight
+  path: skip the eligibility check and full standards crawl, check only for
+  issue templates locally, still search for duplicates (you may have filed
+  the same issue before and forgotten), still apply the human review gate
+  and `gh --body-file` posting discipline.
+
 #### Inputs
 
 - `$UPSTREAM_OWNER` / `$UPSTREAM_REPO` — the target repository
+- `$REPO_MODE` — `own-repo` or `upstream` (set by Step 0)
 - Issue title and body content (from the user or a template)
 - Search terms for duplicate detection (project-specific)
 - `$RELATED_ISSUES` (optional) — comma-separated issue/PR numbers to
@@ -1382,8 +1436,16 @@ include mechanism so consumers are self-contained.
 
 #### Steps
 
-1. **Check contribution eligibility**: Before investing time, verify the
-   project accepts external contributions. Read `CONTRIBUTING.md` for:
+0. **Detect repo mode**: Run
+   `scripts/detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO"`.
+   The script outputs `own-repo` or `upstream` based on the authenticated
+   user's `viewerPermission` on the target repo (ADMIN/MAINTAIN/WRITE/TRIAGE
+   → `own-repo`; READ/NONE → `upstream`). Record the result in `$REPO_MODE`.
+   All subsequent steps branch on `$REPO_MODE`.
+
+1. **Check contribution eligibility** (`upstream` only; skip for `own-repo`):
+   Before investing time, verify the project accepts external contributions.
+   Read `CONTRIBUTING.md` for:
    - Whether external issues/PRs are accepted at all
    - CLA/DCO requirements
    - Issue reporting conventions (some projects use Discussions, not Issues)
@@ -1393,15 +1455,22 @@ include mechanism so consumers are self-contained.
    file a free-form issue — use one of the configured templates or contact
    links, or present the constraint to the user.
 
-2. **Discover contribution standards**: Run
-   `scripts/discover-contribution-standards.sh <owner> <repo> --skill github-issue`.
-   This crawls the repo's CONTRIBUTING.md, issue/PR templates, CODEOWNERS,
-   changelog format, lint configs, and AI agent rules, caching the result to
-   `${XDG_CACHE_HOME:-~/.cache}/skills/levonk/skills-src/skills/github-issue/<host>/<owner>/<repo>/standards.md`
-   with a 7-day TTL. If the cache is fresh, it returns the cached path
-   without re-crawling. Read the cached standards file before drafting.
+   For `own-repo`: you set the contribution policy, so the eligibility check
+   is moot. Skip directly to template discovery (Step 2b).
 
-   ---
+2. **Discover contribution standards**:
+   - **`upstream`** (full crawl): Run
+     `scripts/discover-contribution-standards.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO" --skill "$SKILL_NAME"`.
+     Set `$SKILL_NAME` to `github-issue` (standalone issue filing) or
+     `github-pr` (orientation issue for a PR) so the cache is namespaced
+     correctly. This crawls the repo's CONTRIBUTING.md, issue/PR templates,
+     CODEOWNERS, changelog format, lint configs, and AI agent rules, caching
+     the result to
+     `${XDG_CACHE_HOME:-~/.cache}/skills/levonk/skills-src/skills/$SKILL_NAME/<host>/<owner>/<repo>/standards.md`
+     with a 7-day TTL. If the cache is fresh, it returns the cached path
+     without re-crawling. Read the cached standards file before drafting.
+
+     ---
 description: Host-aware issue/PR template and contribution-standards directory discovery — which directories to search on each forge (GitHub, GitLab, Forgejo, Gitea, Bitbucket) and in what priority order
 ---
 
@@ -1534,6 +1603,15 @@ rather than using free-form markdown. The `labels` field pre-labels the issue
 — preserve those labels when posting.
 
 
+   - **`own-repo`** (templates only): Skip the full standards crawl — you
+     know your own conventions. Check only for issue templates in the local
+     working tree using the forge template discovery search order above
+     (`.github/ISSUE_TEMPLATE/` → `ISSUE_TEMPLATE/` → `docs/ISSUE_TEMPLATE/`
+     → `.github/ISSUE_TEMPLATE.md` → `issue_template.md` →
+     `docs/ISSUE_TEMPLATE.md`). If a template is found, use it. If not, use
+     the skill's default issue structure (Step 4). Do not cache — the local
+     tree is the source of truth and may change between filings.
+
 3. **Search for existing issues**: Run
    `scripts/search-existing-work.sh <owner> <repo> --verbose <search-terms...>`.
    Use multiple search terms — the existing issue may use different vocabulary.
@@ -1542,6 +1620,10 @@ rather than using free-form markdown. The `labels` field pre-labels the issue
    - Closed issue, rejected → read the rejection reason; if circumstances
      changed, reference it in a new issue; if not, don't re-open
    - Closed issue, resolved → the feature exists; don't duplicate
+
+   For `own-repo`: the duplicate search is still valuable — you may have
+   filed the same issue weeks ago and forgotten, or a collaborator may have
+   opened one. Do not skip it.
 
    **Rate limit awareness**: When running multiple searches in sequence,
    space them by 0.5s (reads) to avoid GitHub's secondary rate limit. See
@@ -1671,14 +1753,19 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
   was provided)
 
 
-Record the issue number — it is required for the PR body's `Resolves #N` link.
+Record the issue number (or the one-line justification if `own-repo` and
+skipping). The `Resolves #N` link is required in `upstream` mode and optional
+in `own-repo` mode.
 
 ### Phase 2: Fork, Branch, and Baseline
 
-1. **Detect access and fork**: Determine whether you have direct push access
-   to the upstream repo or need to fork. If forking, fork via
-   `gh repo fork <owner>/<repo> --clone`. Always rebase from upstream after
-   cloning.
+1. **Detect access and fork** (`upstream` only; skip for `own-repo`):
+   - **`upstream`**: Fork via `gh repo fork <owner>/<repo> --clone`. Always
+     rebase from upstream after cloning.
+   - **`own-repo`**: Skip the fork. Work in the existing checkout. Ensure
+     `origin` points at `$UPSTREAM_OWNER/$UPSTREAM_REPO` (verify with
+     `git remote -v`). If the checkout is shallow or stale, fetch and
+     rebase onto `origin/main` before branching.
 
 2. **Set up branch**: Sync from upstream (fetch + rebase) to start from a
    fresh base. Create a descriptively-named feature branch
@@ -1713,10 +1800,12 @@ Record the issue number — it is required for the PR body's `Resolves #N` link.
 
 ### Phase 4: CLA Gate, Push, and PR
 
-9. **CLA gate (pre-push)**: Before pushing, check whether the
-   contribution standards crawl detected a CLA requirement (the
-   `## CLA / DCO Requirements` section in the cached standards file).
-   If a CLA is required:
+9. **CLA gate (pre-push)** (`upstream` only; skip entirely for `own-repo`):
+   For `own-repo`, you own the repo — there is no CLA. Skip to step 10.
+
+   For `upstream`: before pushing, check whether the contribution standards
+   crawl detected a CLA requirement (the `## CLA / DCO Requirements` section
+   in the cached standards file). If a CLA is required:
 
    1. **Determine the target org**: Extract the org login from the
       standards file or from `gh api repos/$UPSTREAM_OWNER/$UPSTREAM_REPO`
@@ -1776,13 +1865,19 @@ Record the issue number — it is required for the PR body's `Resolves #N` link.
     changes, clean linear history from upstream/main to HEAD. There should
     be at most two commits: feature + style (if style produced changes).
 
-11. **Push**: Push the branch to your fork. Never merge upstream into the
-    feature branch — always rebase.
+11. **Push**: Push the branch to your fork (`upstream`) or to `origin`
+    (`own-repo`). Never merge upstream into the feature branch — always
+    rebase.
+    - **`upstream`**: `git push <fork-remote> <branch-name>`
+    - **`own-repo`**: `git push origin <branch-name>`
 
 12. **Generate PR description**: Using the project's own PR template (if
-    found during standards discovery) and the change content, draft the PR
-    body. Include `Resolves #N` (the issue number from Phase 1). If the
-    project has no PR template, use a clear structure:
+    found during standards discovery for `upstream`, or in the local working
+    tree for `own-repo`) and the change content, draft the PR body. Include
+    `Resolves #N` (the issue number from Phase 1, if an issue was created or
+    referenced). For `own-repo` with no issue, include the one-line
+    justification instead. If the project has no PR template, use a clear
+    structure:
     - **What** — what the PR adds/changes
     - **Why** — motivation, referencing the issue
     - **How** — implementation approach
@@ -1824,11 +1919,18 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
 14. **Post the PR**: After user approval, write the body to a file and post
     with `--body-file`:
     ```bash
+    # upstream: --head is "$CURRENT_USER:branch-name" (fork → upstream)
+    # own-repo: --head is "$CURRENT_USER:branch-name" (same user, origin → upstream)
+    #           --repo can be omitted (defaults to origin's default repo)
     gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" \
       --head "$CURRENT_USER:branch-name" \
       --base main \
       --title "..." --body-file /tmp/pr-body.md
     ```
+    For `own-repo`, `--head "$CURRENT_USER:branch-name"` works because the
+    branch was pushed to `origin` (which is `$UPSTREAM_OWNER/$UPSTREAM_REPO`).
+    The `--repo` flag is redundant for `own-repo` but harmless — keep it for
+    consistency.
 
 15. **Validate the posted body**: Run
     `scripts/validate-pr-issue.sh <owner>/<repo> pr <number>`.
@@ -1836,10 +1938,11 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
     the posting method, and `gh pr edit --body-file` until the validator
     passes.
 
-16. **CLA watch (post-open)**: If the pre-push CLA gate (step 9) detected
-    a CLA requirement, poll the PR for CLA bot activity. Some CLAs are
-    enforced by org-level GitHub Apps that only manifest as PR checks or
-    comments after the PR is opened — invisible to file crawling.
+16. **CLA watch (post-open)** (`upstream` only; skip for `own-repo`): If the
+    pre-push CLA gate (step 9) detected a CLA requirement, poll the PR for
+    CLA bot activity. Some CLAs are enforced by org-level GitHub Apps that
+    only manifest as PR checks or comments after the PR is opened — invisible
+    to file crawling. For `own-repo`, there is no CLA — skip this step.
 
     1. **Poll for CLA bot comments and checks** (within ~60 seconds of
        posting):
@@ -1897,7 +2000,10 @@ The cache has a 7-day TTL. Use `--skill github-pr` when calling
 `discover-contribution-standards.sh` so the cache is namespaced correctly.
 This is regenerable state — safe to delete, will be re-crawled on next use.
 
-### CLA Ledger (persistent user config)
+**`own-repo` mode**: the cache is not used. PR templates are read from the
+local working tree on each PR — the local tree is the source of truth.
+
+### CLA Ledger (persistent user config, `upstream` only)
 
 CLA sign-off records are stored in the USER config layer (not cache —
 this is persistent state that must survive cache clears):
@@ -1970,19 +2076,20 @@ relevant concept pages before opening a PR:
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
 starting, `[x]` when verified done, `[!]` if blocked.
 
-- [ ] Phase 1: Create or reference the orientation issue — run `discover-contribution-standards.sh --skill github-pr`, run `search-existing-work.sh`, record the issue number for `Resolves #N` (Phase 1)
-- [ ] Phase 2: Fork (if needed), set up feature branch from a fresh rebase onto upstream/main, validate existing tests as a baseline (Phase 2)
+- [ ] Detect repo mode — run `detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO"`, record `$REPO_MODE` (Repo Mode Detection)
+- [ ] Phase 1: Create or reference the orientation issue — if `upstream`: run `discover-contribution-standards.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO" --skill github-pr`; if `own-repo`: check local templates; run `search-existing-work.sh`; record the issue number for `Resolves #N` (or record the one-line justification if `own-repo` and skipping) (Phase 1)
+- [ ] Phase 2: If `upstream`: fork via `gh repo fork --clone`; if `own-repo`: verify `origin` points at the target repo. Set up feature branch from a fresh rebase, validate existing tests as a baseline (Phase 2)
 - [ ] Phase 3: Apply the code change with minimal scope, sync before commit (rebase), squash into a single clean feature commit (Phase 3 Steps 4-6)
 - [ ] Phase 3: Run the project's formatter and linter, commit style changes separately if any produced changes (Phase 3 Step 7)
 - [ ] Phase 3: Run `scan-artifacts.sh` on created files and fix HARD identity leaks (Phase 3 Step 8)
-- [ ] Phase 4: CLA gate (pre-push) — consult the CLA ledger, surface terms/sign link if missing or expired, record the ledger entry, get explicit user acknowledgment (Phase 4 Step 9)
+- [ ] Phase 4: If `upstream`: CLA gate (pre-push) — consult the CLA ledger, surface terms/sign link if missing or expired, record the ledger entry, get explicit user acknowledgment. If `own-repo`: skip CLA gate (Phase 4 Step 9)
 - [ ] Phase 4: Validate PR cleanliness — no merge commits, no unrelated changes, clean linear history, at most two commits (Phase 4 Step 10)
-- [ ] Phase 4: Push the branch to your fork — never merge upstream into the feature branch (Phase 4 Step 11)
-- [ ] Phase 4: Generate the PR description using the project's PR template with `Resolves #N`, placeholders substituted by text replacement (Phase 4 Step 12)
+- [ ] Phase 4: Push the branch — to fork (`upstream`) or to `origin` (`own-repo`); never merge upstream into the feature branch (Phase 4 Step 11)
+- [ ] Phase 4: Generate the PR description using the project's PR template with `Resolves #N` (or one-line justification if `own-repo` and no issue), placeholders substituted by text replacement (Phase 4 Step 12)
 - [ ] Phase 4: Present the complete PR content to the user for review — no auto-open (Phase 4 Step 13)
 - [ ] Phase 4: Post the PR with `gh pr create --body-file` after user approval (Phase 4 Step 14)
 - [ ] Phase 4: Validate the posted body with `validate-pr-issue.sh` — fix and re-post if corrupted (Phase 4 Step 15)
-- [ ] Phase 4: CLA watch (post-open) — poll for CLA bot comments/checks, surface failures, upgrade or invalidate the ledger entry (Phase 4 Step 16, if CLA required)
+- [ ] Phase 4: If `upstream` and CLA required: CLA watch (post-open) — poll for CLA bot comments/checks, surface failures, upgrade or invalidate the ledger entry. If `own-repo`: skip (Phase 4 Step 16)
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -1999,14 +2106,16 @@ agent to check something the scripts cannot verify.
 
 ### Orientation Issue (Phase 1)
 
-- [ ] **[script]** `./scripts/discover-contribution-standards.sh --skill github-pr` was run and cached the target repo's standards (or cache hit within 7-day TTL) (Phase 1)
+- [ ] **[script]** `./scripts/detect-repo-mode.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO"` was run and `$REPO_MODE` was recorded (Repo Mode Detection)
+- [ ] **[script]** If `upstream`: `./scripts/discover-contribution-standards.sh "$UPSTREAM_OWNER" "$UPSTREAM_REPO" --skill github-pr` was run and cached the target repo's standards (or cache hit within 7-day TTL) (Phase 1)
+- [ ] **[manual]** If `own-repo`: local PR templates were checked using the forge template discovery search order (no full crawl, no cache) (Phase 1)
 - [ ] **[script]** `./scripts/search-existing-work.sh` confirmed no duplicate issue/PR exists (Phase 1)
-- [ ] **[manual]** An orientation issue exists (created inline or user-provided) and its number is recorded for the PR body's `Resolves #N` link (Phase 1)
-- [ ] **[manual]** Trivial-fix exception (if used) has a one-line justification in the PR body: `> No issue — trivial fix (...)` (PR-Requires-Issue Rule)
+- [ ] **[manual]** An orientation issue exists (created inline or user-provided) and its number is recorded for the PR body's `Resolves #N` link, OR a one-line justification is recorded (`upstream` trivial-fix exception, or `own-repo` skip) (Phase 1, PR-Requires-Issue Rule)
 
 ### Branch and History (Phase 2-3)
 
-- [ ] **[manual]** The feature branch was created from a fresh rebase onto upstream/main — never merged upstream into the branch (Phase 2 Step 2, Phase 3 Step 5)
+- [ ] **[manual]** If `upstream`: the repo was forked via `gh repo fork --clone`. If `own-repo`: `origin` was verified to point at the target repo (Phase 2 Step 1)
+- [ ] **[manual]** The feature branch was created from a fresh rebase onto upstream/main (or origin/main for `own-repo`) — never merged upstream into the branch (Phase 2 Step 2, Phase 3 Step 5)
 - [ ] **[manual]** Iterative commits were squashed into a single clean feature commit using the PR title as the commit message (Phase 3 Step 6)
 - [ ] **[manual]** Format/lint changes (if any) are in a separate "style" commit on top of the feature commit — not mixed in (Phase 3 Step 7)
 - [ ] **[manual]** Pre-existing test failures were documented in the PR body — not fixed in this PR (Phase 2 Step 3)
@@ -2017,46 +2126,50 @@ agent to check something the scripts cannot verify.
 - [ ] **[manual]** Git author is configured with a public GitHub noreply email — no private hostname/username (Phase 2 Step 2)
 - [ ] **[manual]** No merge commits, no unrelated changes — clean linear history from upstream/main to HEAD, at most two commits (Phase 4 Step 10)
 
-### CLA Gate (Phase 4 Step 9)
+### CLA Gate (Phase 4 Step 9, `upstream` only)
 
-- [ ] **[manual]** If the standards crawl detected a CLA requirement: the CLA ledger was consulted via `scripts/skill-config.sh get "cla.$ORG.signed_at"` (Phase 4 Step 9)
-- [ ] **[manual]** If the ledger entry was missing/expired: CLA terms and sign link were surfaced to the user and explicit acknowledgment was received before pushing (Phase 4 Step 9)
-- [ ] **[manual]** The ledger entry was recorded via `scripts/skill-config.sh set --layer user` with `signed_at`, `expires_at`, and `source` (Phase 4 Step 9)
+- [ ] **[manual]** If `upstream` and the standards crawl detected a CLA requirement: the CLA ledger was consulted via `scripts/skill-config.sh get "cla.$ORG.signed_at"` (Phase 4 Step 9)
+- [ ] **[manual]** If `upstream` and the ledger entry was missing/expired: CLA terms and sign link were surfaced to the user and explicit acknowledgment was received before pushing (Phase 4 Step 9)
+- [ ] **[manual]** If `upstream` and a CLA was required: the ledger entry was recorded via `scripts/skill-config.sh set --layer user` with `signed_at`, `expires_at`, and `source` (Phase 4 Step 9)
+- [ ] **[manual]** If `own-repo`: the CLA gate was skipped (no CLA on your own repo) (Phase 4 Step 9)
 
 ### PR Body and Posting (Phase 4 Steps 12-15)
 
-- [ ] **[manual]** The PR body uses the project's own PR template (if found) and includes `Resolves #N` with all placeholders substituted by text replacement — never shell expansion (Phase 4 Step 12)
+- [ ] **[manual]** The PR body uses the project's own PR template (if found) and includes `Resolves #N` (or the one-line justification if no issue) with all placeholders substituted by text replacement — never shell expansion (Phase 4 Step 12)
 - [ ] **[manual]** The complete PR content (title + body) was presented to the user for review before posting — no auto-open (Phase 4 Step 13)
 - [ ] **[manual]** The PR was posted with `gh pr create --body-file` — never `--body` with inline strings (Phase 4 Step 14)
 - [ ] **[script]** `./scripts/validate-pr-issue.sh <owner>/<repo> pr <number>` exits zero — the posted body has no literal `\n`, no stripped backticks, no corruption (Phase 4 Step 15)
 
-### CLA Watch (Phase 4 Step 16, if CLA required)
+### CLA Watch (Phase 4 Step 16, `upstream` only, if CLA required)
 
-- [ ] **[manual]** The PR was polled for CLA bot comments and checks within ~60 seconds of posting (Phase 4 Step 16)
-- [ ] **[manual]** If a CLA bot comment was found and the check was failing: the comment and sign link were surfaced to the user immediately (Phase 4 Step 16)
-- [ ] **[manual]** If the CLA check passed: the ledger entry `source` was upgraded to `auto-detected-from-pr-$PR_NUMBER` (Phase 4 Step 16)
+- [ ] **[manual]** If `upstream` and CLA required: the PR was polled for CLA bot comments and checks within ~60 seconds of posting (Phase 4 Step 16)
+- [ ] **[manual]** If `upstream` and a CLA bot comment was found and the check was failing: the comment and sign link were surfaced to the user immediately (Phase 4 Step 16)
+- [ ] **[manual]** If `upstream` and the CLA check passed: the ledger entry `source` was upgraded to `auto-detected-from-pr-$PR_NUMBER` (Phase 4 Step 16)
+- [ ] **[manual]** If `own-repo`: the CLA watch was skipped (Phase 4 Step 16)
 
 ### Not Done (common false-completion signals)
 
 If any of these are true, the run is NOT complete:
 
-- The PR was opened but has no `Resolves #N` link → the PR-requires-issue rule was violated (PR-Requires-Issue Rule)
+- The PR was opened but has no `Resolves #N` link AND no one-line justification → the PR-requires-issue rule was violated (PR-Requires-Issue Rule)
 - `scan-artifacts.sh` exits non-zero but the PR was pushed anyway → identity leak visible to maintainers (Phase 3 Step 8)
 - `validate-pr-issue.sh` exits non-zero but the PR was left open → corrupted body visible to reviewers (Phase 4 Step 15)
 - The PR has merge commits → upstream was merged instead of rebased, history is not linear (Phase 3 Step 5)
 - Format/lint changes are mixed into the feature commit → they are not independently reviewable (Phase 3 Step 7)
 - The PR was auto-posted without user review → the human review gate was bypassed (Phase 4 Step 13)
-- A CLA was required but the ledger was never consulted → the user was not warned, the PR may be blocked (Phase 4 Step 9)
+- `upstream` mode: a CLA was required but the ledger was never consulted → the user was not warned, the PR may be blocked (Phase 4 Step 9)
 - The PR body was posted with `--body` inline instead of `--body-file` → literal `\n` or stripped backticks corrupted the body (Phase 4 Step 14)
+- `own-repo` mode: `origin` does not point at the target repo → the push went to the wrong remote (Phase 2 Step 1)
 
 ## Context Declaration
 
 ### File Paths
 
-- `scripts/discover-contribution-standards.sh` — crawls and caches contribution standards (includes CLA detection)
+- `scripts/detect-repo-mode.sh` — determines `own-repo` vs `upstream` via `gh repo view --json viewerPermission`
+- `scripts/discover-contribution-standards.sh` — crawls and caches contribution standards (includes CLA detection; `upstream` mode only)
 - `scripts/search-existing-work.sh` — searches for duplicate issues/PRs
 - `scripts/validate-pr-issue.sh` — validates posted body for corruption
-- `scripts/skill-config.sh` — three-layer config resolver with trust enforcement (CLA ledger reads/writes)
+- `scripts/skill-config.sh` — three-layer config resolver with trust enforcement (CLA ledger reads/writes; `upstream` mode only)
 - `scripts/resolve-reference.sh` — three-tier fallback resolver for runtime references
 - `references/included/knowledge/upstream-contribution-practices/` — materialized knowledge bundle
 
@@ -2064,11 +2177,12 @@ If any of these are true, the run is NOT complete:
 
 - `$UPSTREAM_OWNER` — target repository owner
 - `$UPSTREAM_REPO` — target repository name
-- `$CURRENT_USER` — the contributor's GitHub username (fork owner)
-- `$ISSUE_NUMBER` — the orientation issue number (from Phase 1)
+- `$REPO_MODE` — `own-repo` or `upstream` (set by Repo Mode Detection via `detect-repo-mode.sh`)
+- `$CURRENT_USER` — the contributor's GitHub username (fork owner for `upstream`, repo owner for `own-repo`)
+- `$ISSUE_NUMBER` — the orientation issue number (from Phase 1; may be absent for `own-repo` with one-line justification)
 - `$PR_TITLE` — PR title
 - `$PR_BODY_FILE` — path to the file containing the PR body (e.g. `/tmp/pr-body.md`)
-- `$ORG` — the target repo's org login (for CLA ledger keying, e.g. `VirusTotal` → `google`)
+- `$ORG` — the target repo's org login (for CLA ledger keying, e.g. `VirusTotal` → `google`; `upstream` mode only)
 
 ### Config Layers
 

@@ -5,8 +5,8 @@ description: Choose the right data structures and organize the data well, and th
 tags: [architecture, data-structures, algorithms, data-modeling, design, simplicity]
 date:
   created: "2026-08-27"
-  knowledge-basis: "2026-08-27"
-  last-used: "2026-08-27"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 ---
 
 # Data Structures First
@@ -124,6 +124,18 @@ algorithms will almost always be self-evident."
   keys where keys belong) and the queries are straightforward; get the
   schema wrong and the queries become contortions that re-derive the
   relationships the schema failed to capture.
+- **Wirewiki autocomplete — two structures for two access patterns.** 240
+  million domain names are split into a hot head (Tranco top 1 M, looked up
+  first) and a cold tail (CZDS, consulted only on miss). The head lives in
+  an in-memory character trie with the top 8 suggestions precomputed at
+  every node — a lookup is a walk of a few pointers, O(prefix length). The
+  tail is sorted, delta-compressed into fixed-size blocks on SSD with a
+  27 MB in-memory directory; a lookup binary-searches the directory then
+  linearly scans one 256-name block, O(prefix length × log N). Both inputs
+  (query length, domain count) are bounded, so both worst cases are
+  effectively O(1). The structure was chosen to fit a perception budget,
+  not to be clever — see
+  [Perceived-Latency-Driven Design](perceived-latency-driven-design.md).
 
 ## See Also
 
@@ -142,8 +154,15 @@ algorithms will almost always be self-evident."
 - [Database Scaling](database-scaling.md) — the storage-level instance of
   this principle: schema and data model choices dominate query and scaling
   complexity.
+- [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) —
+  the access pattern that drives the structure choice can be a perception
+  budget, not just a workload profile; the trie + block-index split exists
+  to fit inside a human typing cadence.
 
 ## Sources
 
 - Rob Pike, "Notes on Programming in C" (1989) — Rule 5.
 - Fred Brooks, *The Mythical Man-Month* (1975) — "Show me your tables..."
+- [p99 0 ms* autocomplete for 240 million domain names](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  — Ruurtjan Pul, 2026-06-22. In-memory trie + mmap block index chosen so
+  both worst cases are effectively O(1) under bounded inputs.

@@ -28,13 +28,20 @@ For each task in the prioritized plan:
 - [ ] **Verify typecheck** passes
 - [ ] **Verify build** passes
 - [ ] **Verify lint** passes with no new warnings
-- [ ] **Verify unit tests** pass
+- [ ] **Verify unit tests** pass — run only **affected** tests for speed (git-based change detection + the test runner's dependency-aware filtering: Vitest `--changed`, Jest `--findRelatedTests`, pytest-testmon, cargo-nextest crate filters). Never skip tests to save time — a slow suite is fixed by parallelizing/caching/sharding, not by weakening the gate
 - [ ] **Verify run** — service starts and serves a smoke request
 - [ ] **Confirm clean repo** — only the intended change is in the working tree
 - [ ] **Commit** the verified change (use `git-repository-management` skill for rollback-safe commits with pre/post tags)
 
 If verification fails: **revert the change and re-plan**. Do not accumulate
 unverified modifications — that defeats the evolutionary safety net.
+
+> **Keeping the per-step gate fast.** The evolutionary workflow runs the
+> full verification gate after every task. If the suite is slow, run only
+> the affected tests between steps (selective re-runs), then run the
+> **full** suite at the final verification (Phase 5) to catch
+> cross-cutting regressions. See the **cicd-testing-practices** knowledge
+> bundle → *Fast Test Feedback* for the complete strategy.
 
 ## Post-Refactor Checklist
 

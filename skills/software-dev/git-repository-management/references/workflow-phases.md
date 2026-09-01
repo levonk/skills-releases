@@ -237,6 +237,10 @@ remote before the main repo references them.
     escalates to the AI if there are real conflicts needing manual resolution.
     See [Tagging and Pushing](tagging-and-pushing.md) for the full conflict
     escalation flow.
+  - **New branches are not a decision point either**: If the branch has never
+    been pushed (no remote ref exists), `git-push.sh` detects the missing ref
+    during fetch, reports `REMOTE_STATUS:NEW_BRANCH`, and pushes with `-u` to
+    set upstream tracking. No need to fall back to a manual `git push -u`.
   - **Never manually rebase or pull before pushing**: `git-push.sh` handles
     fetch-rebase-push with a backup branch for safety. Running `git rebase` or
     `git pull` manually bypasses that backup and defeats the rollback safety

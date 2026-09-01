@@ -23,9 +23,10 @@ Analyze and improve existing AI guidance files (skills, workflows, agents, promp
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **requirements-upsert** (skill, consult) — Check existing guidance against the requirements ledger for consistency — flag contradictions as improvement candidates
 
 ---
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

@@ -5,8 +5,8 @@ description: Distinguish performance from scalability, latency from throughput, 
 tags: [architecture, scalability, performance, latency, throughput, capacity, back-of-the-envelope]
 date:
   created: "2026-07-24"
-  knowledge-basis: "2026-07-24"
-  last-used: "2026-07-24"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 ---
 
 # Scalability Fundamentals
@@ -87,6 +87,10 @@ Power   Approx         Bytes
   scaling compute.
 - [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) — risk
   hierarchy for scaling decisions.
+- [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) —
+  the latency target an interactive system must hit is set by human
+  perception, not by a round-number SLO; back-of-the-envelope math confirms
+  the backend fits inside the perception budget.
 
 ## Sources
 
@@ -94,3 +98,7 @@ Power   Approx         Bytes
   — Performance vs scalability, Latency vs throughput, Appendix.
 - [Latency numbers every programmer should know](https://gist.github.com/jboner/2841832)
   — historical reference; use the corrected modern figures above.
+- [p99 0 ms* autocomplete for 240 million domain names](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  — Ruurtjan Pul, 2026-06-22. A latency budget derived from measured typing
+  cadence (121 ms p99) rather than a round number; the backend was engineered
+  to fit inside it with headroom.

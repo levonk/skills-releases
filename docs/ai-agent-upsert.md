@@ -26,9 +26,10 @@ Create new expert agents, modify and improve existing agents, and audit agent de
 - **ai-workflow-upsert** (skill, sibling) — Full lifecycle management for workflows. Use when the target is a workflow, not an agent.
 - **agent-file-upsert** (skill, complement) — Generates AGENTS.md hierarchy for AI agents working in codebases — use for agent documentation, not agent definitions
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
+- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating agents to ensure generated agent definitions do not contradict project constraints
 
 ---
 
 - **Full skill**: [`skills/ai/agent-upsert/SKILL.md`](skills/ai/agent-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-08-30T01:15:41Z
+- **Generated**: 2026-09-01T00:09:13Z

@@ -24,6 +24,9 @@ see-also:
   - knowledge: "software-architecture-essentials"
     relationship: "complement"
     description: "Root-cause-first and fail-fast principles that doubt-driven review enforces at the decision level"
+  - knowledge: "agent-orchestration-practices"
+    relationship: "dependency"
+    description: "Multi-Model Adversarial Review concept page — the consensus-tier pattern that the multi-model upgrade path is based on"
 ---
 
 # Doubt-Driven Review Workflow
@@ -151,6 +154,78 @@ Stop when one of these conditions is met:
   let them decide.
 - **User override** — the user explicitly says "stop reviewing, proceed." Honor
   the override and note it in the story file.
+
+## Multi-Model Upgrade (Consensus-Tier Pattern)
+
+The default doubt-driven review uses a single fresh-context reviewer. When
+two or more models are available (e.g. a frontier model and a fast local
+model, or two different frontier models), upgrade to the **multi-model
+consensus-tier pattern** from the
+[multi-model-adversarial-review](../../knowledge/agent-orchestration-practices/multi-model-adversarial-review.md)
+knowledge bundle page.
+
+### How It Differs from Single-Model
+
+Instead of one reviewer in Step 3 (DOUBT), spawn **N reviewers** — one
+per available model — each with the **same adversarial prompt and the
+same rubric**. Do not assign different personas; model diversity provides
+the adversarial signal, not persona assignment.
+
+### Synthesis: Consensus Tiers
+
+Collect all N reviewer outputs and synthesize by **consensus tier**:
+
+- **High confidence (2+ models agree)** — two or more models independently
+  raised the same finding. Strong signal. Treat as Valid — must fix (or
+  Valid — defer if the fix is non-blocking).
+- **Lower confidence (lone model)** — only one model raised the finding.
+  Treat as Ambiguous — investigate before classifying. May be a genuine
+  blind spot or a hallucination.
+
+### Agreement Map
+
+Build an Agreement Map showing which models raised which findings:
+
+```
+| Finding                    | Model A | Model B | Model C | Tier |
+|----------------------------|---------|---------|---------|------|
+| Missing null check on L42  | raised  | raised  |    —    | High |
+| N+1 query in user loader   | raised  |    —    | raised  | High |
+| Inconsistent naming        |    —    | raised  |    —    | Lone |
+```
+
+### Lead Judgment Categorization
+
+In Step 4 (RECONCILE), categorize each finding using the lead judgment
+scheme:
+
+- **Act on** — must fix before commit. High-confidence findings with
+  clear remediation.
+- **Consider** — worth fixing but not blocking. High-confidence findings
+  with tradeoffs, or lone-model findings that are plausible and cheap.
+- **Noted** — acknowledged but no action now. Lone-model findings that
+  are speculative.
+- **Dismissed** — rejected with reasoning. Findings that are factually
+  wrong or out of scope. Document why.
+
+The lead judgment is the orchestrator's call, not a vote. The
+orchestrator can override consensus (dismiss a high-confidence finding
+if it is factually wrong) or elevate a lone-model finding (act on it if
+the orchestrator's own analysis confirms it).
+
+### Cross-Judge in Parallel
+
+The cross-judge (reading all reviewer outputs and synthesizing) runs in
+parallel with the orchestrator's own reading of the artifact. The
+orchestrator forms its own opinion independently, then compares with the
+Agreement Map. This prevents anchoring on the reviewers' findings.
+
+### Graceful Degradation
+
+With N=1 model, the multi-model pattern degrades to the single-model
+review. Every finding is lone-model (lower confidence). The Agreement Map
+has one column. The lead judgment categorization still applies. The
+upgrade is additive — single-model review remains valid.
 
 ## Integration with execute-upsert
 

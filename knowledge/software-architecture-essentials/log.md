@@ -1,5 +1,57 @@
 # Directory Update Log
 
+## 2026-08-30
+
+* **Ingest**: Added
+  [Ruurtjan Pul — "p99 0 ms* autocomplete for 240 million domain names"](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  (2026-06-22) and the
+  [Nielsen Norman Group response-time thresholds](https://www.nngroup.com/articles/response-times-3-important-limits/)
+  to the discipline axis of the bundle. The source filled one gap and
+  supplied concrete instances for five existing pages.
+  - [perceived-latency-driven-design.md](perceived-latency-driven-design.md)
+    — new concept: set latency targets from human perception thresholds
+    (measured typing cadence, Nielsen's 0.1 s "instantaneous" bound), not
+    from round-number SLOs; hide round-trips behind human motor latency
+    with client-side prefetch (`keyDown` prefetch + `keyUp` render); bound
+    the prefetch fan-out by the input alphabet (38 domain characters →
+    ≤ 312 results, ~2.5 kB on the wire); stop optimizing the backend once
+    the network dominates. Distinct from scalability-fundamentals (capacity
+    math), measure-before-optimizing (profiling discipline), and
+    caching-strategies (cache patterns) — this page is about *where the
+    latency target comes from* and *how to hide round-trips inside motor
+    time*.
+* **Update**: [measure-before-optimizing.md](measure-before-optimizing.md)
+  — added a Concrete Instance (the Wirewiki stopping rule: API at 2 ms,
+  network at 60 ms, so further API tuning stopped), a See Also link to
+  perceived-latency-driven-design, and the source. Updated knowledge-basis
+  and last-used to 2026-08-30.
+* **Update**: [data-structures-first.md](data-structures-first.md) — added a
+  Concrete Instance (in-memory trie for the Tranco head + mmap block index
+  for the 240 M CZDS tail, both effectively O(1) under bounded inputs), a
+  See Also link to perceived-latency-driven-design, and the source. Updated
+  knowledge-basis and last-used to 2026-08-30.
+* **Update**: [scalability-fundamentals.md](scalability-fundamentals.md) —
+  added a See Also link to perceived-latency-driven-design (the latency
+  target is set by perception, not a round number; back-of-the-envelope
+  math confirms the backend fits the budget) and the source. Updated
+  knowledge-basis and last-used to 2026-08-30.
+* **Update**: [caching-strategies.md](caching-strategies.md) — added a See
+  Also link to perceived-latency-driven-design (client-side prefetch as a
+  cache-aside variant; refresh-ahead is the server-side analog) and the
+  source. Updated knowledge-basis and last-used to 2026-08-30.
+* **Update**: [cdn-and-dns.md](cdn-and-dns.md) — added a See Also link to
+  perceived-latency-driven-design (edge caching of hot prefix paths absorbs
+  the prefetch fan-out; single-origin geography blows the budget for
+  distant users) and the source. Updated knowledge-basis and last-used to
+  2026-08-30.
+* **Update**: [overview.md](overview.md) — extended the discipline axis of
+  the architecture landscape with `perceived-latency-driven-design` between
+  data-structures-first and tech-decision-risk; added a Latency Target row
+  to the concern table; added the Ruurtjan and Nielsen sources. Updated
+  knowledge-basis and last-used to 2026-08-30.
+* **Update**: [index.md](index.md) — registered the new concept page on the
+  discipline axis after data-structures-first.
+
 ## 2026-08-27
 
 * **Ingest**: Added Rob Pike's "Notes on Programming in C" (the 5 Rules of

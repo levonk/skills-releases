@@ -1,21 +1,21 @@
 ---
 name: github-pr
-description: "Open a well-formed pull request against a third-party or upstream repository. Requires an issue number (creates an orientation issue inline using the github-issue procedure if none provided). Discovers the project's contribution standards and PR templates, forks and clones, runs the project's tests for a baseline, commits with a clean linear history, syncs before push, drafts a PR body that matches project conventions, presents it for human review, posts via gh --body-file, and validates the posted body. Use when the user wants to contribute a code change to a repository they don't own. Do NOT trigger on internal PRs, issue filing without code, or nix packaging — use github-issue for issues only, nixify for Nix flake packaging."
-version: 1.0.0
+description: "Open a well-formed pull request against a third-party/upstream repository OR your own repository. Detects repo mode (own-repo vs upstream) via gh viewerPermission. For upstream: forks and clones, discovers contribution standards and PR templates, runs CLA gate, pushes to fork. For own-repo: skips fork (push to origin directly), skips CLA gate, checks only for local PR templates. Both modes: requires an issue number (creates an orientation issue inline using the github-issue procedure if none provided; own-repo may skip with a one-line justification), runs the project's tests for a baseline, commits with a clean linear history, syncs before push, drafts a PR body that matches project conventions, presents it for human review, posts via gh --body-file, and validates the posted body. Use when the user wants to contribute a code change to a repository they own or don't own. Do NOT trigger on issue filing without code, or nix packaging — use github-issue for issues only, nixify for Nix flake packaging."
+version: 1.1.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-07-26"
-  last-used: "2026-07-26"
-tags: ["ai/skill", "software-development", "github", "pull-request", "upstream-contribution", "open-source", "fork", "forge"]
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
+tags: ["ai/skill", "software-development", "github", "pull-request", "upstream-contribution", "open-source", "fork", "forge", "own-repo"]
 see-also:
   - skill: github-issue
-    relationship: "dependency"
-    description: "PR requires an issue; if you only need issue creation, use github-issue standalone"
+    relationship: "complement"
+    description: "PRs should reference an issue (or a one-line justification in own-repo); use github-issue for issue-only work"
   - template: github-issue-procedure
     relationship: "base-framework"
-    description: "Issue creation procedure inlined at build time so github-pr is self-contained — no separate github-issue install required"
+    description: "Issue creation procedure inlined at build time so github-pr is self-contained — no separate github-issue install required (handles both own-repo and upstream modes)"
   - template: base-ai-guidance
     relationship: "base-framework"
     description: "Shared framework for creating all AI guidance types"
@@ -29,7 +29,7 @@ dependencies:
   - type: system
     name: gh
     url: https://cli.github.com/
-    reason: "Required for GitHub API calls (issue/PR creation, validation, fork)"
+    reason: "Required for GitHub API calls (issue/PR creation, validation, fork, repo-mode detection)"
   - type: system
     name: git
     reason: "Required for fork, clone, branch, rebase, commit, push"
@@ -343,7 +343,7 @@ by passing `timeout=<secs>` if needed.
 
 
 
-# GitHub PR: Open a Well-Formed Pull Request Against an Upstream Repository
+# GitHub PR: Open a Well-Formed Pull Request Against an Upstream or Own Repository
 
 ## Refresh
 

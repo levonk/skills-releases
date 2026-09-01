@@ -5,8 +5,8 @@ description: Content delivery networks (push vs pull CDNs, edge caching) and the
 tags: [architecture, cdn, dns, edge-caching, content-delivery, ttl]
 date:
   created: "2026-07-24"
-  knowledge-basis: "2026-07-24"
-  last-used: "2026-07-24"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 ---
 
 # CDN and DNS
@@ -72,8 +72,18 @@ level (browser, OS, resolver, authoritative). TTL controls cache lifetime.
   layer.
 - [Distribution and Packaging](distribution.md) — CDN distributes
   web-delivered content.
+- [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) —
+  edge caching of hot prefix paths absorbs frequent prefetch requests and
+  cuts the origin round-trip for distant users; a single-region origin
+  blows the perception budget for far-away users, which is the CDN/geo
+  argument for multi-region.
 
 ## Sources
 
 - [The System Design Primer](https://github.com/donnemartin/system-design-primer)
   — Domain name system, Content delivery network.
+- [p99 0 ms* autocomplete for 240 million domain names](https://ruurtjan.com/articles/p99-0ms-autocomplete-for-240-million-domain-names)
+  — Ruurtjan Pul, 2026-06-22. CDN caching of hot autocomplete paths absorbs
+  the per-keystroke prefetch fan-out; the single-European-origin limitation
+  (USA users +100–200 ms RTT) is the geographic-distance cost the CDN only
+  partly offsets.

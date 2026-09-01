@@ -29,6 +29,9 @@ see-also:
   - knowledge: "documentation-diagram-practices"
     relationship: "complement"
     description: "Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram"
+  - skill: requirements-upsert
+    relationship: "consult"
+    description: "Consult the requirements ledger when generating AGENTS.md so agent documentation reflects the project's durable constraints"
 
 ---
 

@@ -698,21 +698,32 @@ main() {
 	echo "BACKUP_CREATED"
 
 	# Step 2: Fetch remote
+	# A brand-new branch (no remote ref yet) will fail the fetch because the
+	# remote ref doesn't exist. Detect that case and skip to push with -u
+	# instead of bailing out with FETCH_ERROR.
+	local is_new_branch=0
 	echo "FETCHING:"
 	if ! git_cmd fetch "$remote" "$branch" 2>&1; then
-		echo "PUSH_FAILED:FETCH_ERROR"
-		echo "BACKUP_RESTORE:git checkout $branch && git reset --hard $original_sha"
-		echo "=== PUSH_END ==="
-		exit 1
+		# Check whether the remote ref exists at all — if not, this is a
+		# new branch being pushed for the first time.
+		if ! git_cmd rev-parse "${remote}/${branch}" >/dev/null 2>&1; then
+			is_new_branch=1
+			echo "REMOTE_STATUS:NEW_BRANCH"
+		else
+			echo "PUSH_FAILED:FETCH_ERROR"
+			echo "BACKUP_RESTORE:git checkout $branch && git reset --hard $original_sha"
+			echo "=== PUSH_END ==="
+			exit 1
+		fi
 	fi
 
-	# Step 3: Check if remote is ahead
+	# Step 3: Check if remote is ahead (skip for new branches — nothing to rebase against)
 	local remote_sha base_sha
 	remote_sha=$(git_cmd rev-parse "${remote}/${branch}" 2>/dev/null || echo "")
 	base_sha=$(git_cmd merge-base HEAD "${remote}/${branch}" 2>/dev/null || echo "")
 
-	if [[ -z "$remote_sha" || "$remote_sha" == "$base_sha" ]]; then
-		echo "REMOTE_STATUS:UP_TO_DATE"
+	if [[ "$is_new_branch" -eq 1 || -z "$remote_sha" || "$remote_sha" == "$base_sha" ]]; then
+		[[ "$is_new_branch" -eq 0 ]] && echo "REMOTE_STATUS:UP_TO_DATE"
 	else
 		echo "REMOTE_STATUS:AHEAD"
 
@@ -767,8 +778,11 @@ main() {
 	fi
 
 	# Step 5: Push (with --follow-tags to push auto-tags created by git-commit-batch.sh)
+	# For new branches, use -u to set upstream tracking so future fetches work.
 	echo "PUSHING:"
-	if git_cmd push --follow-tags "$remote" "$branch" 2>&1; then
+	local push_args=(--follow-tags)
+	[[ "$is_new_branch" -eq 1 ]] && push_args+=(-u)
+	if git_cmd push "${push_args[@]}" "$remote" "$branch" 2>&1; then
 		echo "PUSH_SUCCESS:$remote/$branch"
 		echo "BACKUP_BRANCH:$backup_branch"
 		echo "BACKUP_NOTE:Remove with: git branch -D $backup_branch"

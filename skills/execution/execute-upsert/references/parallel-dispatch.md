@@ -155,61 +155,146 @@ If a subagent returns `BLOCKED`:
 - Include the blocked story in the Phase 5 Blocker Report along with any
   sequentially-blocked stories.
 
-## Verifying Subagent Liveness (on Resume After a Crash)
+## Verifying Subagent Liveness (Write-Activity-Based)
 
 **Worktree existence does NOT mean agents are working.** A worktree only
 proves the setup step ran. If the orchestrator crashed and was restarted,
 the subagents are dead but the worktrees remain as tombstones.
 
-Before assuming any in-flight worktree has active work, verify liveness
-with these signals (strongest first):
+The liveness check uses **write-activity detection** — a pane with a
+file newer than the start of its own quiet window is alive (or deferred),
+not stale. This follows the
+[event-driven-supervision](../../knowledge/agent-orchestration-practices/event-driven-supervision.md)
+knowledge bundle page: the expensive check runs only in the branch about
+to escalate, not on every poll.
 
-1. **Git commits in the worktree branch** — `git -C <wt> log --oneline -1`.
-   If HEAD == the base SHA the worktree was created from, no work was
-   committed. An agent that has been "working" for hours with zero commits
-   is stuck or dead.
-2. **File modification recency** — `find <wt> -type f -not -path
-   '*/node_modules/*' -not -path '*/.git/*' -newermt '10 minutes ago'`.
-   Nothing modified in the last 10 minutes = not actively working.
-3. **Uncommitted change count trend** — `git -C <wt> status --porcelain |
-   wc -l`. A stagnant count over time = no progress.
+### The Quiet Window
 
-**One-liner to check all worktrees at once:**
+Each worktree has a **quiet window** — the time since the last file
+write in that worktree. The check is:
+
+- A file newer than the start of the quiet window → **alive or
+  deferred**. The subagent wrote recently; it is either still working
+  or paused but not dead. Do not escalate.
+- No file newer than the start of the quiet window → **stale**. The
+  subagent has not written anything within the quiet window. Escalate
+  (reclaim or re-dispatch).
+
+The quiet window length is configurable via
+`FM_WORKTREE_WRITE_TIMEOUT` (default: 10 minutes). A worktree with no
+writes for 10 minutes is stale.
+
+### Bounded Search
+
+The `find` is bounded to prevent scanning the entire filesystem:
+
+- `FM_WORKTREE_WRITE_MAXDEPTH` (default: 5) — limit the directory depth
+  of the search. Most work happens in the top few levels; deep scans are
+  wasted.
+- Prune `node_modules`, `.git`, `build`, `dist`, `.next`, `target` —
+  these are generated directories that may have stale timestamps from
+  build tools, not from the subagent.
+
+Search **only the worktree recorded for that task** — do not scan
+sibling worktrees or the main checkout. Each task's liveness is
+independent.
+
+### The Check (Run Only When About to Escalate)
+
+The expensive `find` check runs **only in the branch about to escalate**
+— when the orchestrator is about to reclaim or re-dispatch a worktree
+it suspects is dead. Do not run it on every poll. The cheap checks (git
+HEAD, uncommitted count) run first; the `find` runs only if the cheap
+checks are inconclusive.
 
 ```bash
-for wt in /tmp/<project>-worktrees/*/; do
-  slug=$(basename "$wt")
-  head=$(git -C "$wt" rev-parse --short HEAD)
-  changes=$(git -C "$wt" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-  recent=$(find "$wt" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -newermt '10 minutes ago' 2>/dev/null | wc -l | tr -d ' ')
-  echo "$slug  head=$head  uncommitted=$changes  recent=$recent"
-done
+# Cheap checks first
+head=$(git -C "$wt" rev-parse --short HEAD)
+changes=$(git -C "$wt" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+
+# Expensive check — only if cheap checks are inconclusive
+# (head == base AND changes == 0 — might be dead, verify with write activity)
+timeout "${FM_WORKTREE_WRITE_TIMEOUT:-600}" \
+  find "$wt" -type f \
+    -not -path '*/node_modules/*' \
+    -not -path '*/.git/*' \
+    -not -path '*/build/*' \
+    -not -path '*/dist/*' \
+    -not -path '*/.next/*' \
+    -not -path '*/target/*' \
+    -maxdepth "${FM_WORKTREE_WRITE_MAXDEPTH:-5}" \
+    -newermt "${FM_WORKTREE_WRITE_TIMEOUT:-10} minutes ago" \
+    2>/dev/null | wc -l | tr -d ' '
 ```
 
-Interpretation:
+### Interpretation
 
-- `head == base` + `recent == 0` → **dead**. Reclaim the worktree: commit
-  any partial work if useful, then re-dispatch a fresh subagent.
-- `recent > 0` → **alive**. The subagent is actively writing files. Wait
-  for it.
 - `head != base` → has committed work. Progress was made — inspect the
-  diff before deciding whether to keep or re-dispatch.
+  diff before deciding whether to keep or re-dispatch. Do not escalate.
+- `head == base` + `changes > 0` → uncommitted work exists. The
+  subagent may be mid-task. Run the write-activity check.
+- `head == base` + `changes == 0` + `recent > 0` → **alive or
+  deferred**. A file was written within the quiet window. Wait; do not
+  escalate.
+- `head == base` + `changes == 0` + `recent == 0` → **stale**. No
+  commits, no uncommitted changes, no recent writes. Escalate: reclaim
+  the worktree, commit any partial work if useful, re-dispatch a fresh
+  subagent.
 
-**On resume after a crash:**
+### On Resume After a Crash
 
-1. Run the liveness check above.
-2. For dead worktrees with partial uncommitted work: inspect the diff. If
-   the partial work is usable, commit it as a checkpoint. If not, discard
-   it (`git -C <wt> checkout -- . && git -C <wt> clean -fd`).
-3. Re-dispatch fresh subagents for the stories that had dead worktrees.
+1. Run the cheap checks for all worktrees.
+2. For worktrees where the cheap checks are inconclusive, run the
+   write-activity check.
+3. For stale worktrees with partial uncommitted work: inspect the diff.
+   If the partial work is usable, commit it as a checkpoint. If not,
+   discard it (`git -C <wt> checkout -- . && git -C <wt> clean -fd`).
+4. Re-dispatch fresh subagents for the stories that had stale worktrees.
    Do NOT assume the old subagent's partial state — start clean from the
    base SHA unless the committed checkpoint is solid.
 
 This liveness check applies to the parallel-dispatch worktrees created in
 the "Worktree Setup" section above. For sequential execution (single
-story branch, no worktree), the Phase 4 "Resume Detection" step in
+story branch, no worktree), the Phase 6 "Resume Detection" step in
 SKILL.md handles branch existence checks — liveness verification is not
 needed because the orchestrator itself is the single worker.
+
+## Turn-End Guard (Parallel Mode)
+
+When parallel subagents are still running and the orchestrator turn is
+about to end, the orchestrator must **not end the turn blind**. Either:
+
+1. **Block** — wait for the subagents to complete before ending the
+   turn. Use `read_subagent` with `block=true` to wait for each
+   in-flight subagent.
+2. **Follow up** — if the subagents are long-running and blocking would
+   exceed the turn budget, write a handoff (via the `handoff` skill)
+   that records the in-flight subagent IDs and their worktree paths so
+   the next session can resume supervision.
+
+The turn-end guard prevents a common failure mode: the orchestrator
+ends its turn, the subagents keep running but no one is watching, and
+when they complete their results are lost (no one reads them). The
+guard ensures that either the orchestrator waits for completion or
+explicitly hands off supervision.
+
+### When to Apply the Guard
+
+Apply the turn-end guard whenever:
+
+- One or more parallel subagents are still running (dispatched but not
+  yet read via `read_subagent`).
+- The orchestrator is about to end its turn (all sequential work is
+  done, or the turn budget is exhausted).
+
+### When to Skip the Guard
+
+Skip the turn-end guard when:
+
+- No parallel subagents are in flight (all have been read and their
+  results processed).
+- The orchestrator is not ending its turn (more sequential work
+  remains).
 
 ## Cleanup
 
@@ -224,8 +309,12 @@ needs to be redone, the worktree is the recovery point.
 
 ## See Also
 
-- [SKILL.md Phase 4](../SKILL.md) — the sequential execution loop that this
+- [SKILL.md Phase 6](../SKILL.md) — the sequential execution loop that this
   parallel mode optimizes
-- [triage-heuristic.md](triage-heuristic.md) — request size assessment
+- [triage-heuristic.md](triage-heuristic.md) — request size and shape
+  assessment
 - [documentation-update.md](documentation-update.md) — Phase 6 documentation
   updates after execution completes
+- [event-driven-supervision](../../knowledge/agent-orchestration-practices/event-driven-supervision.md)
+  — the knowledge bundle page on zero-token supervision, write-activity
+  liveness, and turn-end guards that this liveness check is based on

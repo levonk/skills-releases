@@ -3,37 +3,43 @@ name: execute-upsert
 description: >-
   Generic project execution controller that drives feature implementation from
   request to completion through a self-update → assess → establish-tech →
-  PRD → tasks → execute → document → ship pipeline. Self-updates all skills
-  to the latest version before starting, establishes the project's tech stack
-  as a binding constraint for all subagents (so they never use npm when the
-  project uses pnpm, never use npx when the project uses pnpm dlx, etc.),
-  assesses request size, creates a PRD if one doesn't exist (for large
-  requests), breaks the PRD into parallelizable task stories, executes each
-  story via subagents with a per-story code review before commit, runs a
-  doubt-driven adversarial review gate on non-trivial stories before commit,
-  applies a standing project quality floor to every change, enforces
-  simplicity and scope discipline on subagents, follows a systematic
-  debugging protocol when tests fail, updates the PRD and task files when
-  scope changes, updates project documentation, and ships the completed work
+  PRD → tasks → execute → document → holistic-review → ship → retrospective
+  pipeline. Self-updates all skills to the latest version before starting,
+  establishes the project's tech stack as a binding constraint for all
+  subagents (so they never use npm when the project uses pnpm, never use npx
+  when the project uses pnpm dlx, etc.), assesses request size, creates a PRD
+  if one doesn't exist (for large requests), breaks the PRD into
+  parallelizable task stories, executes each story via subagents with a
+  per-story code review before commit, runs a doubt-driven adversarial review
+  gate on non-trivial stories before commit, applies a standing project
+  quality floor to every change, enforces simplicity and scope discipline on
+  subagents, follows a systematic debugging protocol when tests fail, updates
+  the PRD and task files when scope changes, updates project documentation,
+  runs a holistic feature review in a fresh context after all stories
+  complete (checking cross-story integration, PRD goal alignment, and
+  emergent behavior that per-story reviews miss), ships the completed work
   via a deterministic push → create-PR → verify-body → auto-merge →
-  return-to-main script that handles all git and gh operations. Runs as much
-  as possible: when a story is blocked, marks it [!] Blocked with the reason
-  in the index and proceeds to the next runnable story, then presents a
-  final blocker report with the question, the options, the recommendation,
-  and why it was recommended. Use when users want to implement a feature or
-  change that is large enough to warrant structured planning, when they say
-  "execute", "implement this feature", "build this project", "run the
-  project executor", "drive this to completion", or reference a PRD or task
-  list they want executed. Do NOT trigger on quick fixes, single-file edits,
-  bug fixes with a known root cause, or questions about how something works
-  — this skill is for multi-step project execution, not trivial changes.
-version: 1.10.0
+  return-to-main script that handles all git and gh operations, and runs a
+  structured retrospective after shipping (process, technical, documentation,
+  tooling, and opportunity reflection that feeds improvements back into
+  skills and knowledge bundles). Runs as much as possible: when a story is
+  blocked, marks it [!] Blocked with the reason in the index and proceeds to
+  the next runnable story, then presents a final blocker report with the
+  question, the options, the recommendation, and why it was recommended. Use
+  when users want to implement a feature or change that is large enough to
+  warrant structured planning, when they say "execute", "implement this
+  feature", "build this project", "run the project executor", "drive this to
+  completion", or reference a PRD or task list they want executed. Do NOT
+  trigger on quick fixes, single-file edits, bug fixes with a known root
+  cause, or questions about how something works — this skill is for
+  multi-step project execution, not trivial changes.
+version: 1.12.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
-  knowledge-basis: "2026-08-24"
-  last-used: "2026-08-24"
+  knowledge-basis: "2026-08-30"
+  last-used: "2026-08-30"
 tags:
   - "ai/skill"
   - "execution"
@@ -52,6 +58,8 @@ tags:
   - "auto-merge"
   - "quality-gate"
   - "concurrency-lock"
+  - "base-sync"
+  - "git-imerge"
 see-also:
   - template: "base-ai-guidance"
     relationship: "base-framework"
@@ -74,6 +82,12 @@ see-also:
   - template: "work-lifecycle"
     relationship: "dependency"
     description: "Shared two-stage lifecycle protocol (todo → archive) for feature documents — inlined so execute-upsert archives completed features from todo/ to archive/YYYY/MM/ via git mv when all stories are [x] Done, with frontmatter dates (created, completed, last-activity)"
+  - template: "execution-binding-contract"
+    relationship: "dependency"
+    description: "Shared machine-enforced execution binding contract — the non-negotiable rules (worktree-per-story, commit-before-dispatch, commit-after-story) that the Devin CLI hooks enforce. Inlined near the top of execute-upsert so the active law is in attention before the reference body"
+  - template: "project-modes"
+    relationship: "dependency"
+    description: "Shared configurable delivery posture include — documents the project modes (no-mistakes, direct-PR, local-only, +yolo) that Phase 9 (Ship) branches on. Inlined so execute-upsert carries the mode table, detection priority, and safety notes without a separate install"
   - workflow: "greenfield-prd"
     relationship: "complement"
     description: "Source workflow for PRD creation — content inlined at build time into references/greenfield-prd.md (not a runtime dependency; workflows are not published to distribution repos)"
@@ -104,12 +118,21 @@ see-also:
   - skill: diagram-upsert
     relationship: "dependency"
     description: "Bundled via includeTree for offline availability. Execute-upsert uses it in Phase 4 (PRD) to produce Mermaid architecture diagrams and UX-flow diagrams (for graphical apps) that the PRD template requires. The bundled copy provides Mermaid syntax conventions and a validate-diagram.py script so PRD diagrams render correctly before the PRD is saved"
+  - skill: requirements-upsert
+    relationship: "dependency"
+    description: "Bundled via includeTree for offline availability. Execute-upsert reads the requirements ledger in Phase 4 (PRD) to understand existing durable constraints in scope, and snapshots any requirements that changed during the feature to history/ in Phase 8 (Document). The bundled copy provides snapshot-requirement.sh, index-requirements.sh, and validate-ledger.sh scripts"
   - template: "planned-enhancement-pr-template"
     relationship: "dependency"
     description: "Shared PR body template for planned enhancement PRs — inlined into execute-upsert at build time so Phase 9 (Ship) has the template for writing PR bodies without a separate install. The template covers feature/story/task status, changes, verification, and tracking file sections"
   - template: "gh-posting-guard"
     relationship: "dependency"
     description: "Shared guard for posting GitHub issue and PR bodies via gh CLI — inlined into execute-upsert at build time so Phase 9 (Ship) follows the --body-file protocol that prevents literal \\n and stripped backtick corruption. The ship-pr.sh script enforces this protocol deterministically"
+  - template: "holistic-feature-review-template"
+    relationship: "dependency"
+    description: "Shared holistic feature review template — inlined into execute-upsert at build time so Phase 8.5 (Holistic Feature Review) has the template for a fresh-context review of the complete feature against the PRD, checking cross-story integration and emergent behavior that per-story reviews miss. Used by any multi-story pipeline after all stories are [x] Done and before shipping"
+  - template: "retrospective-summary-template"
+    relationship: "dependency"
+    description: "Shared retrospective summary template — inlined into execute-upsert at build time so Phase 10 (Retrospective) has the 7-section template (process, technical, documentation, tooling, opportunities, codify, summary) for structured end-of-cycle reflection. The full version of what post-task-reflection covers narrowly. Used by any execution skill after a cycle completes (execute-upsert, ai-development-loop, handoff)"
 
 ---
 
