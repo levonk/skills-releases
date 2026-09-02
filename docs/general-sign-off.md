@@ -40,4 +40,4 @@ End-of-day workspace orchestrator that runs maintenance, review, and planning be
 
 - **Full skill**: [`skills/general/sign-off/SKILL.md`](skills/general/sign-off/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:17:25Z
+- **Generated**: 2026-09-02T09:52:56Z

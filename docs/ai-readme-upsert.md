@@ -37,4 +37,4 @@ Generate a project's README.md from scratch (greenfield) or update an existing o
 
 - **Full skill**: [`skills/ai/readme-upsert/SKILL.md`](skills/ai/readme-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:17:25Z
+- **Generated**: 2026-09-02T09:52:56Z
