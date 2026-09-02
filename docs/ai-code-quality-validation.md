@@ -34,4 +34,4 @@ Comprehensive code quality validation supporting multiple languages with linting
 
 - **Full skill**: [`skills/ai/code-quality-validation/SKILL.md`](skills/ai/code-quality-validation/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:14:22Z
+- **Generated**: 2026-09-02T09:17:25Z

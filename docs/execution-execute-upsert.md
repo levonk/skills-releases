@@ -47,4 +47,4 @@ Generic project execution controller that drives feature implementation from req
 
 - **Full skill**: [`skills/execution/execute-upsert/SKILL.md`](skills/execution/execute-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:14:22Z
+- **Generated**: 2026-09-02T09:17:25Z
