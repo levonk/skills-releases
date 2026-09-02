@@ -31,4 +31,4 @@ Capture and restore AI conversation context for seamless work continuation acros
 
 - **Full skill**: [`skills/ai/handoff/SKILL.md`](skills/ai/handoff/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-01T00:09:13Z
+- **Generated**: 2026-09-02T09:14:22Z

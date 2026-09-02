@@ -27,4 +27,4 @@ Use when making high-stakes business decisions, strategic choices, partnership e
 
 - **Full skill**: [`skills/execution/briefingmemo/SKILL.md`](skills/execution/briefingmemo/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-01T00:09:13Z
+- **Generated**: 2026-09-02T09:14:22Z
