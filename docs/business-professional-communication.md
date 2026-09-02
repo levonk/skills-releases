@@ -25,4 +25,4 @@ Craft clear, professional internal business communications across email, chat, m
 
 - **Full skill**: [`skills/business/professional-communication/SKILL.md`](skills/business/professional-communication/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:55:48Z
+- **Generated**: 2026-09-02T09:58:30Z
