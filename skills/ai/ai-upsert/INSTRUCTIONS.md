@@ -2302,7 +2302,7 @@ skill.
 
 
 ---
-description: Shared consult protocol for the requirements ledger — read current requirements before creating or updating AI guidance artifacts
+description: Shared consult protocol for the requirements ledger — read current and planned requirements before creating or updating AI guidance artifacts
 ---
 
 ### Requirements Ledger Consult Protocol
@@ -2315,32 +2315,45 @@ the project's durable constraints.
 #### What the Ledger Is
 
 The requirements ledger at `internal-docs/reqs/` tracks durable
-constraints and capabilities that survive across features. It has two
-layers:
+constraints and capabilities that survive across features. It uses a
+four-state lifecycle:
 
-- **`current/`** — the living spec. One file per requirement, organized
-  as `current/{proj}/{module}/{proj}_{module}_{slug}.md`. Each file has
-  a Statement, Rationale, Constraints, Verification, and Change Log.
-- **`history/`** — snapshots taken before each substantive change,
-  organized as `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`.
-- **`INDEX.md`** — auto-generated project/module tree of active
-  requirements.
+- **`proposed/`** — draft plans, not ready to be worked on. Organized
+  as `proposed/{proj}/{module}/{proj}_{module}_{slug}.md`.
+- **`todo/`** — ready change descriptions (plans for implementing a
+  change). Organized as `todo/{proj}/{module}/{proj}_{module}_{slug}.md`.
+- **`current/`** — how the system works now (pure description). One file
+  per requirement, organized as
+  `current/{proj}/{module}/{proj}_{module}_{slug}.md`. Each file has a
+  Statement, Rationale, Constraints, Verification, and Change Log.
+- **`history/`** — evolution log with completed plans and superseded
+  snapshots, organized as
+  `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md` (snapshots)
+  and `history/YYYY/MM/{proj}/{module}/todo-YYYYMMDDHHmm-{slug}.md`
+  (archived todos).
+- **`INDEX.md`** — auto-generated view across all four states.
+- **`INDEX.html`** — interactive JS-rendered view (open locally).
 
 `{proj}` defaults to the repo name in single-project repos. `{module}`
-is `_root` if the project has no module subdivision.
+is `_root` if the project has no module subdivision. In consumer repos
+where skills are installed, skill-imposed constraints use
+`{proj}` = `skills`. See `references/granularity-guidance.md` in the
+requirements-upsert skill for the full convention.
 
 #### How to Consult
 
 1. Read `internal-docs/reqs/INDEX.md` if it exists. This gives you the
-   project/module tree of all active requirements with one-line
-   summaries.
+   project/module tree of all requirements across all four states with
+   one-line summaries.
 2. Read individual requirement files that are in scope for the artifact
    you are creating or updating. A requirement is "in scope" if:
    - It applies to the module or area of the codebase the artifact
      touches
    - It constrains the technology choices the artifact might recommend
    - It defines a verification approach the artifact should reference
-3. If no `internal-docs/reqs/` directory exists, skip this protocol —
+3. Read `todo/` files to understand planned changes that may affect the
+   artifact you are creating.
+4. If no `internal-docs/reqs/` directory exists, skip this protocol —
    the project has not adopted the requirements ledger yet. Do not
    create one unless the user asks.
 
@@ -2352,27 +2365,30 @@ is `_root` if the project has no module subdivision.
   relevant to the agent's scope.
 - **Handoff documents** (`handoff`): include applicable requirements in
   the handoff's context section so the next session knows the
-  constraints.
+  constraints. When the session identified new durable constraints,
+  write a plan to `todo/` (if ready) or `proposed/` (if draft) using
+  the bundled requirements-upsert write machinery.
 - **Skill/workflow/agent/prompt/template/rule creation** (`ai-upsert`,
   `ai-workflow-upsert`, `agent-upsert`, `prompt-upsert`,
   `template-upsert`, `rule-upsert`): ensure the created artifact does
   not contradict any active requirement. If it does, surface the
-  conflict to the user before proceeding.
+  conflict to the user before proceeding. When the artifact introduces
+  a new durable constraint, write it to the ledger using the bundled
+  requirements-upsert write machinery.
 - **Guidance improvement** (`ai-guidance-improver`): check existing
   guidance against the requirements ledger for consistency. Flag
   contradictions as improvement candidates.
 
 #### What NOT to Do
 
-- Do not create or update requirements using this protocol — that
-  requires the full `requirements-upsert` skill (which has the
-  snapshot, index, and validation scripts). This protocol is read-only.
 - Do not copy requirement content into the artifact — link to the
   requirement file instead. The ledger is the single source of truth.
 - Do not skip the consult if the ledger exists — ignoring active
   requirements is how guidance artifacts become inconsistent with the
   project's actual constraints.
 
+
+references/included/skills/software-dev/requirements-upsert/
 
 references/included/skills/software-dev/cli-tool-upsert/references/
 
@@ -2497,6 +2513,7 @@ and corrupt the artifact.
 | 3. Decision + Mode | Skill vs KB vs Agent; then Mode A/B/C work | (this skill) |
 | 4. Review & Verify | Structured code review + script-standards validation before commit | code-review-guidance, devsecops-codeguard, secrets-egress-security, dev-environment-practices, python-services-practices, rust-development-practices |
 | 5. Commit | Commit via git-repository-management conventions | git-repository-management |
+| 6. Requirements Ledger Write | Write new durable constraints to the requirements ledger | requirements-upsert |
 
 ## Run Log (Crash-Safe Progress Record)
 
@@ -2526,7 +2543,7 @@ Write the log header:
 ## Phase Log
 ```
 
-**Append after each phase completes** (Phase 0 through Phase 5). Each entry is
+**Append after each phase completes** (Phase 0 through Phase 6). Each entry is
 a short section with the phase name, status, and any notable findings:
 
 ```markdown
@@ -2822,7 +2839,10 @@ flowchart TD
     AU --> Review
 
     Review["Phase 4: Review & Verify<br/>bundled code-review-guidance<br/>+ shell & python standards"] --> Commit["Phase 5: Commit<br/>bundled git-repo-mgmt<br/>stage only touched files"]
-    Commit --> Done([Done])
+    Commit --> ReqWrite{"Phase 6: Requirements Ledger Write<br/>New durable constraint?"}
+    ReqWrite -->|"Yes"| ReqLedger["Write to current/ (skills-src)<br/>or todo/ (consumer repos)<br/>bundled requirements-upsert"]
+    ReqWrite -->|"No"| Done([Done])
+    ReqLedger --> Done
 ```
 
 
@@ -3417,6 +3437,71 @@ log file itself (`.agents/log/YYYYMMDDHHmm-ai-upsert-{slug}.md`) so the
 record is durable.
 
 
+## Phase 6: Requirements Ledger Write
+
+After the artifact is committed, check whether the created or updated
+skill/knowledge bundle/agent introduces a new durable constraint or
+changes an existing one. If it does, write to the requirements ledger
+using the bundled requirements-upsert scripts at
+`references/included/skills/software-dev/requirements-upsert/scripts/`.
+
+### When to Write
+
+Write to the ledger when the artifact encodes a constraint that:
+- Survives across features (passes the Survival Test — see
+  `references/included/skills/software-dev/requirements-upsert/references/granularity-guidance.md`)
+- Is a durable constraint on how the project or system must behave
+- Would be violated by future changes if not codified
+
+Do NOT write to the ledger for:
+- One-off implementation details
+- Feature-scoped behavior (belongs in a PRD)
+- Architectural decisions (belongs in an ADR)
+
+### Where to Write
+
+**In skills-src (this repo):** The skills ARE the product. Write to
+`current/` using `{proj}` = `skills-src` and `{module}` = the skill
+category (`ai`, `execution`, `software-dev`, etc.). The skill is active
+immediately upon creation.
+
+Use `references/included/skills/software-dev/requirements-upsert/references/requirement-template.md`
+as the template. Run `snapshot-requirement.sh` to create the initial
+history entry, then `index-requirements.sh` to regenerate INDEX.md.
+
+**In consumer repos:** The skill imposes a constraint the consumer
+hasn't adopted yet. Write to `todo/` using `{proj}` = `skills` and
+`{module}` = the skill category. This separates skill-imposed
+constraints from product requirements in the consumer's ledger.
+
+Use `references/included/skills/software-dev/requirements-upsert/references/todo-template.md`
+as the template. Set `date.ready` to today. Run `index-requirements.sh`.
+
+### How to Detect skills-src vs Consumer Repo
+
+Check whether the target repo's name is `skills-src` or whether it
+contains `src/current/skills/` — if so, this is the skills-src repo and
+skills are the product. Otherwise, it's a consumer repo.
+
+### Commit
+
+Commit ledger writes as a separate commit:
+```
+docs(reqs): add {current/todo} {proj}/{module}/{slug} from ai-upsert
+```
+
+Append `Phase 6: CLEAN — requirements ledger updated` to the run log.
+
+### Skip Conditions
+
+Skip this phase if:
+- The artifact does not introduce a new durable constraint
+- No `internal-docs/reqs/` directory exists and the user has not asked
+  to adopt the requirements ledger
+- The artifact is a knowledge bundle update that doesn't change
+  constraints (e.g., adding a new concept page to an existing bundle)
+
+
 ## Cross-Cutting Concerns
 
 ### Script Execution Standards
@@ -3534,6 +3619,7 @@ format contract above).
 - [ ] Mode A/B/C work: Execute the type-specific workflow (scaffold, customize, extract scripts/references, add evals, package & verify — or convert — or audit and update)
 - [ ] Phase 4: Review & Verify — structured code review + script-standards validation before commit
 - [ ] Phase 5: Commit — stage only upsert-touched files and commit via git-repository-management conventions; commit the run log
+- [ ] Phase 6: Requirements Ledger Write — if the artifact introduces a new durable constraint, write to current/ (skills-src) or todo/ (consumer repos) using the bundled requirements-upsert scripts
 
 **Mark legend:**
 - `[ ]` — task pending (not yet started)
@@ -5306,6 +5392,7 @@ If any of these are true, the run is NOT complete:
 - Bundled project-detection skill (Phase 2): `references/included/skills/software-dev/project-detection/` — materialized at build time via `references/included/skills/software-dev/project-detection/`. Used in Phase 2 to detect the target project's tech stack
 - Bundled code-review-guidance skill (Phase 4): `references/included/skills/software-dev/code-review-guidance/` — materialized at build time via `references/included/skills/software-dev/code-review-guidance/`. Used in Phase 4 for the structured review checklist
 - Bundled git-repository-management skill (Phases 0 & 5): `references/included/skills/software-dev/git-repository-management/` — materialized at build time via `references/included/skills/software-dev/git-repository-management/`. Used in Phase 0 (clean-repo check) and Phase 5 (commit)
+- Bundled requirements-upsert skill (Phase 6): `references/included/skills/software-dev/requirements-upsert/` — materialized at build time via `references/included/skills/software-dev/requirements-upsert/`. Used in Phase 6 to write new durable constraints to the requirements ledger. Provides snapshot-requirement.sh, process-todo.sh, index-requirements.sh, validate-ledger.sh, and templates for current/, todo/, and proposed/ states
 - Bundled dev-environment-practices knowledge (Phase 4): `references/included/knowledge/dev-environment-practices/` — materialized at build time via `references/included/knowledge/dev-environment-practices/`. Provides `shell-scripting-best-practices.md` for shell script validation. Also bundled by code-review-guidance for standalone use
 - Bundled python-services-practices knowledge (Phase 4): `references/included/knowledge/python-services-practices/` — materialized at build time via `references/included/knowledge/python-services-practices/`. Provides `standalone-scripts.md` (PEP 723, uv) for Python script validation. Also bundled by code-review-guidance for standalone use
 - Bundled rust-development-practices knowledge (Phase 4): `references/included/knowledge/rust-development-practices/` — materialized at build time via `references/included/knowledge/rust-development-practices/`. Provides `rustfmt-clippy-config.md`, `quality-gates.md`, `testing-strategy.md`, `error-handling.md` for Rust code validation. Also bundled by code-review-guidance for standalone use

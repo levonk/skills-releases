@@ -57,6 +57,14 @@ around the broken script generation, you route around devbox entirely.
 
 ## Practice
 
+> **Before bypassing devbox, check whether per-platform pinning can fix the
+> issue.** [Per-Platform Devbox Package Entries](devbox-per-platform-packages.md)
+> documents a pattern where broken packages on one platform get a pinned
+> `github:nixos/nixpkgs/<channel>#pkg` entry for that platform only, while
+> `@latest` is used everywhere else. This keeps devbox functional on ALL
+> platforms. The bypass below is the escalation path when per-platform
+> pinning is not viable (too many packages broken on one platform).
+
 ### Override Devbox-Wrapped Commands with Direct Equivalents
 
 When devbox is broken on a platform, do not block — override the
@@ -141,6 +149,11 @@ devbox run -- nix-store --query --references $(which devbox) 2>&1 | head
 
 ## Related Concepts
 
+- [Per-Platform Devbox Package Entries](devbox-per-platform-packages.md) —
+  the preferred solution before escalating to the bypass. When only one or a
+  few packages are broken on one platform, per-platform pinning keeps devbox
+  functional everywhere. The bypass is the escalation when pinning is not
+  viable.
 - [Devbox Script Generation Bug](devbox-script-generation-bug.md) — a
   different devbox failure mode where `devbox run <script>` fails but
   `devbox run -- <cmd>` works. The workaround there is to use `just` targets

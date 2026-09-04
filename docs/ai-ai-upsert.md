@@ -3,9 +3,9 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **ai** · Status:  · Version: 3.4.0
+> Category: **ai** · Status:  · Version: 3.5.0
 
-Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, and agents. Determines which type the user needs, recommends the best fit if they ask for the wrong one, and asks the user to choose before implementing. For skills: create from scratch, convert workflows (preserving git history via git mv), update existing skills, run evals, benchmark performance, and optimize descriptions. For knowledge bundles: create OKF-compliant bundles, ingest new sources, query bundles for answers, and lint for contradictions. For agents: recognize agent creation/update requests and route to the dedicated agent-upsert skill, which handles scaffolding, frontmatter customization, design focus, verification, and auditing. Use when users want to create a skill, create a knowledge bundle, create an agent, convert a workflow to a skill, edit/optimize an existing skill, run skill evals, benchmark skill performance, organize structured knowledge into a compounding markdown wiki, create OKF bundles, add sources to bundles, query bundles, health-check bundles, scaffold a new agent, or audit an existing agent definition. Make sure to use this skill whenever the user mentions skill creation, skill development, skill testing, skill evaluation, skill benchmarking, skill optimization, workflow-to-skill conversion, knowledge bundles, OKF, Open Knowledge Format, concept documents, bundle ingest, bundle query, bundle lint, agent creation, agent design, agent scaffolding, agent updating, agent auditing, agent optimization, or wants to package/distribute skills, even if they don't explicitly ask for a "skill creator," "knowledge bundle creator," or "agent creator." Do NOT trigger on general coding questions, bug fixes, feature implementation, code review, general documentation questions, one-off markdown files, or README creation (use readme-upsert) — this skill is for skill, knowledge bundle, and agent lifecycle management, not general development or writing.
+Create and maintain three types of compounding AI artifacts — skills, OKF knowledge bundles, and agents. Determines which type the user needs, recommends the best fit if they ask for the wrong one, and asks the user to choose before implementing. For skills: create from scratch, convert workflows (preserving git history via git mv), update existing skills, run evals, benchmark performance, and optimize descriptions. For knowledge bundles: create OKF-compliant bundles, ingest new sources, query bundles for answers, and lint for contradictions. For agents: recognize agent creation/update requests and route to the dedicated agent-upsert skill, which handles scaffolding, frontmatter customization, design focus, verification, and auditing. Use when users want to create a skill, create a knowledge bundle, create an agent, convert a workflow to a skill, edit/optimize an existing skill, run skill evals, benchmark skill performance, organize structured knowledge into a compounding markdown wiki, create OKF bundles, add sources to bundles, query bundles, health-check bundles, scaffold a new agent, or audit an existing agent definition. Make sure to use this skill whenever the user mentions skill creation, skill development, skill testing, skill evaluation, skill benchmarking, skill optimization, workflow-to-skill conversion, knowledge bundles, OKF, Open Knowledge Format, concept documents, bundle ingest, bundle query, bundle lint, agent creation, agent design, agent scaffolding, agent updating, agent auditing, agent optimization, or wants to package/distribute skills, even if they don't explicitly ask for a \"skill creator,\" \"knowledge bundle creator,\" or \"agent creator.\" Do NOT trigger on general coding questions, bug fixes, feature implementation, code review, general documentation questions, one-off markdown files, or README creation (use readme-upsert) — this skill is for skill, knowledge bundle, and agent lifecycle management, not general development or writing.
 
 ## Metadata
 
@@ -13,7 +13,7 @@ Create and maintain three types of compounding AI artifacts — skills, OKF know
 |-------|-------|
 | Name | `ai-upsert` |
 | Category | `ai` |
-| Version | `3.4.0` |
+| Version | `3.5.0` |
 | Status | `` |
 | Owner |  |
 
@@ -47,10 +47,10 @@ Create and maintain three types of compounding AI artifacts — skills, OKF know
 - **** (, transitive-bundled-dependency) — Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides vault storage and egress firewall patterns for security review in Phase 4
 - **** (, transitive-bundled-dependency) — Transitively bundled via code-review-guidance (which bundles it for standalone use). Materialized at ai-upsert's references/included/knowledge/ at build time. Provides security patterns (banned C functions, credential detection, crypto governance, cert validation, SSH hardening) for security review in Phase 4
 - **execute-upsert** (skill, pattern-reference) — Sibling execution skill whose phased pipeline (Self-Update, Establish Technologies, per-story review, commit) ai-upsert 3.3.0 adopts for its own lifecycle
-- **requirements-upsert** (skill, consult) — Consult the requirements ledger when creating or updating skills, knowledge bundles, and agents to ensure generated artifacts do not contradict project constraints
+- **requirements-upsert** (skill, dependency) — Bundled via includeTree for offline availability. ai-upsert reads the requirements ledger (current/ and todo/) to ensure generated artifacts do not contradict project constraints. When a generated skill/knowledge bundle introduces a new durable constraint, ai-upsert writes it to the ledger: current/ in skills-src (where skills ARE the product), todo/ in consumer repos (using {proj}=skills convention for skill-imposed constraints). Uses the bundled snapshot-requirement.sh, process-todo.sh, and index-requirements.sh scripts
 
 ---
 
 - **Full skill**: [`skills/ai/ai-upsert/SKILL.md`](skills/ai/ai-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:58:30Z
+- **Generated**: 2026-09-04T10:32:01Z

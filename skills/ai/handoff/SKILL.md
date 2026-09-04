@@ -1,11 +1,11 @@
 ---
 name: handoff
-description: Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation.
-version: 2.8.0
+description: Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation. Do NOT trigger on general conversation, questions about current code, one-off task execution (use execute-upsert), or creating/updating skills (use ai-upsert) — this skill is for session continuity context capture and restoration, not general work execution or artifact creation.
+version: 2.9.0
 date:
   created: "2026-05-25"
   knowledge-basis: "2026-08-09"
-  last-used: "2026-08-22"
+  last-used: "2026-09-03"
 tags:
   - "ai/skill"
   - "handoff"
@@ -33,8 +33,8 @@ see-also:
     relationship: "dependency"
     description: "The execution skill that handoff always defers to. The handoff's Execution Plan block maps each task to an execute-upsert story with a type tag (trivial/standard/research), base SHA, and per-story DoD. execute-upsert enforces worktree-per-story, checkpoint commits, story branches, PRs, and clean-tree-before-stop uniformly across all task types"
   - skill: requirements-upsert
-    relationship: "consult"
-    description: "Consult the requirements ledger when capturing handoff context so the next session knows the project's durable constraints"
+    relationship: "dependency"
+    description: "Bundled via includeTree for offline availability. Handoff reads the requirements ledger (current/ and todo/) during context capture to include durable constraints in the handoff. When the session identifies new durable constraints, handoff writes plans to todo/ (ready) or proposed/ (draft) using the bundled snapshot-requirement.sh, process-todo.sh, and index-requirements.sh scripts"
   - knowledge: "agent-orchestration-practices"
     relationship: "dependency"
     description: "Provides the restart-proof-state concept page that the handoff system's state-as-file, append-only-event-log, fold-based-derivation principle is based on. The handoff file is just another state file, not a special artifact"

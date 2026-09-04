@@ -1688,7 +1688,7 @@ at a legacy dated path (`{root}/YYYY/MM/{filename}`). To backfill:
 
 
 ---
-description: Shared consult protocol for the requirements ledger — read current requirements before creating or updating AI guidance artifacts
+description: Shared consult protocol for the requirements ledger — read current and planned requirements before creating or updating AI guidance artifacts
 ---
 
 ### Requirements Ledger Consult Protocol
@@ -1701,32 +1701,45 @@ the project's durable constraints.
 #### What the Ledger Is
 
 The requirements ledger at `internal-docs/reqs/` tracks durable
-constraints and capabilities that survive across features. It has two
-layers:
+constraints and capabilities that survive across features. It uses a
+four-state lifecycle:
 
-- **`current/`** — the living spec. One file per requirement, organized
-  as `current/{proj}/{module}/{proj}_{module}_{slug}.md`. Each file has
-  a Statement, Rationale, Constraints, Verification, and Change Log.
-- **`history/`** — snapshots taken before each substantive change,
-  organized as `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md`.
-- **`INDEX.md`** — auto-generated project/module tree of active
-  requirements.
+- **`proposed/`** — draft plans, not ready to be worked on. Organized
+  as `proposed/{proj}/{module}/{proj}_{module}_{slug}.md`.
+- **`todo/`** — ready change descriptions (plans for implementing a
+  change). Organized as `todo/{proj}/{module}/{proj}_{module}_{slug}.md`.
+- **`current/`** — how the system works now (pure description). One file
+  per requirement, organized as
+  `current/{proj}/{module}/{proj}_{module}_{slug}.md`. Each file has a
+  Statement, Rationale, Constraints, Verification, and Change Log.
+- **`history/`** — evolution log with completed plans and superseded
+  snapshots, organized as
+  `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md` (snapshots)
+  and `history/YYYY/MM/{proj}/{module}/todo-YYYYMMDDHHmm-{slug}.md`
+  (archived todos).
+- **`INDEX.md`** — auto-generated view across all four states.
+- **`INDEX.html`** — interactive JS-rendered view (open locally).
 
 `{proj}` defaults to the repo name in single-project repos. `{module}`
-is `_root` if the project has no module subdivision.
+is `_root` if the project has no module subdivision. In consumer repos
+where skills are installed, skill-imposed constraints use
+`{proj}` = `skills`. See `references/granularity-guidance.md` in the
+requirements-upsert skill for the full convention.
 
 #### How to Consult
 
 1. Read `internal-docs/reqs/INDEX.md` if it exists. This gives you the
-   project/module tree of all active requirements with one-line
-   summaries.
+   project/module tree of all requirements across all four states with
+   one-line summaries.
 2. Read individual requirement files that are in scope for the artifact
    you are creating or updating. A requirement is "in scope" if:
    - It applies to the module or area of the codebase the artifact
      touches
    - It constrains the technology choices the artifact might recommend
    - It defines a verification approach the artifact should reference
-3. If no `internal-docs/reqs/` directory exists, skip this protocol —
+3. Read `todo/` files to understand planned changes that may affect the
+   artifact you are creating.
+4. If no `internal-docs/reqs/` directory exists, skip this protocol —
    the project has not adopted the requirements ledger yet. Do not
    create one unless the user asks.
 
@@ -1738,27 +1751,30 @@ is `_root` if the project has no module subdivision.
   relevant to the agent's scope.
 - **Handoff documents** (`handoff`): include applicable requirements in
   the handoff's context section so the next session knows the
-  constraints.
+  constraints. When the session identified new durable constraints,
+  write a plan to `todo/` (if ready) or `proposed/` (if draft) using
+  the bundled requirements-upsert write machinery.
 - **Skill/workflow/agent/prompt/template/rule creation** (`ai-upsert`,
   `ai-workflow-upsert`, `agent-upsert`, `prompt-upsert`,
   `template-upsert`, `rule-upsert`): ensure the created artifact does
   not contradict any active requirement. If it does, surface the
-  conflict to the user before proceeding.
+  conflict to the user before proceeding. When the artifact introduces
+  a new durable constraint, write it to the ledger using the bundled
+  requirements-upsert write machinery.
 - **Guidance improvement** (`ai-guidance-improver`): check existing
   guidance against the requirements ledger for consistency. Flag
   contradictions as improvement candidates.
 
 #### What NOT to Do
 
-- Do not create or update requirements using this protocol — that
-  requires the full `requirements-upsert` skill (which has the
-  snapshot, index, and validation scripts). This protocol is read-only.
 - Do not copy requirement content into the artifact — link to the
   requirement file instead. The ledger is the single source of truth.
 - Do not skip the consult if the ledger exists — ignoring active
   requirements is how guidance artifacts become inconsistent with the
   project's actual constraints.
 
+
+references/included/skills/software-dev/requirements-upsert/
 
 references/included/knowledge/agent-orchestration-practices/
 
@@ -1806,6 +1822,42 @@ This section provides handoff-specific guidance that complements the universal c
 3. **Artifact References** - References existing artifacts (PRDs, plans, ADRs, issues, commits, diffs) instead of duplicating content
 4. **Security** - Redacts sensitive information (API keys, passwords, PII)
 5. **Skill Suggestions** - Includes suggested skills for the next session
+6. **Requirements Ledger Write** - When the session identifies new durable constraints, writes plans to the requirements ledger so they survive even if the handoff is never restored
+
+### Requirements Ledger Write During Capture
+
+When capturing context, if the session identified a new durable
+constraint (a decision was made, a pattern was established, a constraint
+was discovered), write it to the requirements ledger using the bundled
+requirements-upsert scripts at
+`references/included/skills/software-dev/requirements-upsert/scripts/`.
+
+**Ready plans → `todo/`**: If the constraint is validated and ready to
+be implemented, write a todo file using
+`references/included/skills/software-dev/requirements-upsert/references/todo-template.md`.
+Set `status: todo`, `date.created` and `date.ready` to today. Run
+`index-requirements.sh` to regenerate INDEX.md.
+
+**Draft plans → `proposed/`**: If the constraint has open questions or
+unresolved dependencies, write a proposed file using
+`references/included/skills/software-dev/requirements-upsert/references/proposed-template.md`.
+Set `status: proposed`, `date.created` to today. Leave `date.ready`
+empty. Run `index-requirements.sh`.
+
+**Determining `{proj}` and `{module}`**: Use `{proj}` = repo name and
+`{module}` = `_root` (or the relevant module) for product requirements.
+Use `{proj}` = `skills` for skill-imposed constraints in consumer repos.
+See `references/included/skills/software-dev/requirements-upsert/references/granularity-guidance.md`
+for the full convention.
+
+**Commit**: Commit ledger writes as a separate commit:
+```
+docs(reqs): add todo/proposed {proj}/{module}/{slug} from handoff capture
+```
+
+The handoff document itself should reference the todo/proposed file in
+its context section so the next session knows the constraint was
+identified and where the plan lives.
 
 ### Restart-Proof State Principle
 

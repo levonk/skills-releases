@@ -1487,6 +1487,12 @@ misrouted. When `is_complex=true` (and not multi-toolchain), the agent MUST use
 
 6. **Fork and clone**: Run `scripts/fork-and-clone.sh <owner> <repo> <has_direct_access> <current_user>`. Use `--dry-run` to preview. Always rebase from upstream after cloning.
 
+6b. **Sync and baseline upstream CI (MANDATORY start gate)**: Run `scripts/sync-and-baseline.sh <owner>/<repo> <upstream_branch> --verbose` from within the cloned repo. This is the deterministic START gate that catches the class of bug that shipped broken on acryl PR #5: the PR branch was stale relative to main (main had a fix commit the PR didn't have), causing a "Typecheck, test, and build" CI failure that was not the nixify flake's fault. The script does two things:
+    - **Sync**: fetch + rebase onto the latest upstream tip (same as `setup-branch.sh` but runs BEFORE branch creation, guaranteeing the base is fresh).
+    - **Baseline CI**: query the upstream default branch's most recent CI run via `gh` and verify it's green. If upstream CI is red, **do not start work** — any CI failures on the PR branch would be ambiguous (are they our fault or pre-existing?). Wait for upstream CI to go green, then re-run this script. If `gh` is unavailable or the repo has no CI, the script exits 3 (non-blocking warning) and you may proceed — the staleness check is the critical one.
+
+    **Store the JSON output** — `upstream_sha` is the base SHA you branched from. If the script exits non-zero (exit 1 = rebase conflict, exit 2 = upstream CI red), resolve the issue before proceeding to Step 7. Do NOT skip this step — it is the deterministic catch for stale-base CI failures. The prose guidance "always rebase from upstream after cloning" in Step 6 is insufficient; this script makes it enforceable.
+
 7. **Detect release trigger mechanism**: Run `scripts/check-release-trigger.sh` from within the cloned repo. This inspects `.github/workflows/` for how releases are created (`secrets.GITHUB_TOKEN` vs PAT/App token) and outputs a JSON recommendation (`trigger: scheduled_lag_check` or `release_published`). **Store the `trigger` value — it determines which workflow template to use at Step 16.** This prevents the GITHUB_TOKEN trap where a `release: published` workflow silently never fires because GitHub does not start new runs from `GITHUB_TOKEN`-authored events.
 
 8. **Validate existing tests**: Run the project's test suite to establish a baseline. Document any pre-existing failures — do not fix source code in a Nix-only PR.
@@ -1603,6 +1609,16 @@ misrouted. When `is_complex=true` (and not multi-toolchain), the agent MUST use
 
 22. **Stage and test**: Run `scripts/validate-flake.sh <binary-name> <project-name>`. Stages flake.nix, runs `nix flake check --no-build`, `nix build`, `nix run . -- --help`, and `nix run .#<project-name> -- --help` (the runnable check that the `.#<project-name>` output from Step 12 actually exists and runs). Iterate until all pass. Build and test run **after** format and lint so the build cycle isn't wasted on files that would fail style CI — a flake that builds but fails upstream lint CI still gets rejected.
 
+22b. **Pre-push validation gate (MANDATORY before pushing)**: Run `scripts/validate-pre-push.sh <owner>/<repo> <project-dir> --base-ref <base-ref> --verbose`. This is the deterministic PRE-PUSH gate that catches the four classes of bug that shipped broken on acryl PR #5 — all four were cases where the skill's prose guidance was correct but the agent skipped the validation steps. This script makes the checks enforceable:
+    - **Hash mismatch catch**: runs `nix build .#default` and extracts the correct hash from the error output if there's a FOD hash mismatch (the `fetchPnpmDeps`/`fetchNpmDeps` hash was wrong). Prints the correct `sha256-...` value so you can fix it immediately without a second round-trip. Use `--skip-build` if you already ran `validate-flake.sh` and just want the workflow/staleness checks.
+    - **magic-nix-cache-action use-flakehub guard**: flags `magic-nix-cache-action` when `use-flakehub` is **omitted** (not explicitly set to `true` or `false`) AND `flakehub-cache-action` is not also present. The action defaults to `use-flakehub: true`, which attempts FlakeHub OIDC auth and breaks CI for orgs without a FlakeHub account — this was the root cause of the acryl PR #5 FlakeHub auth failure. We are changing the default by requiring `use-flakehub: false` when it's not already explicitly set. If the project explicitly set `use-flakehub: true`, they presumably have a FlakeHub org — leave it alone. See `references/advanced-features.md` — Nix binary caching in CI.
+    - **timeout-minutes present**: checks that `.github/workflows/nix.yml` has `timeout-minutes` set. Missing it caused a 6h hang on acryl PR #5's aarch64-darwin job (GitHub's default max).
+    - **Branch not stale**: compares HEAD to the base ref and fails if the branch is behind upstream. This is the final catch for the stale-base bug that `sync-and-baseline.sh` (Step 6b) caught at the start — if upstream moved during the work phase, this catches it before push.
+    - **Action pins**: delegates to `validate-action-pins.sh` (all `uses:` pinned to 40-char SHAs).
+    - **PR cleanliness**: delegates to `validate-pr-cleanliness.sh` (no merge commits, nixify artifacts only).
+
+    If the script exits non-zero, fix every issue in the `issues` array and re-run until it reports `"passed": true`. Do NOT proceed to Step 23 (push) with a failing `validate-pre-push.sh`. This script is the single deterministic gate that replaces the four separate prose-guided checks that were skipped on acryl PR #5.
+
 23. **Push**: Push both commits (feature + style) to the fork branch. Never merge upstream into the feature branch — always rebase.
 
 24. **Create orientation issue (fork only)**: Generate issue content from the appropriate orientation issue template — **branch on `flake_type` (Step 12)**: `source_build` -> `references/orientation-issue-source-build.md`; `prebuilt_tarball` -> `references/orientation-issue-prebuilt-tarball.md`; `nixpkgs_override_attrs` -> `references/orientation-issue-prebuilt-tarball.md` (same template — the flake wraps prebuilt binaries via nixpkgs' packaging, so the issue body structure is identical to the prebuilt tarball case). **When `flake_type=nixpkgs_override_attrs`**, strip all `#prebuilt` and `#source` output references from the template — the overrideAttrs flake only exposes `#default` and `#<project-name>` (not `#prebuilt` or `#source`). Replace mentions of "wraps the release tarball directly" with "reuses nixpkgs' packaging via `overrideAttrs`". **When `hybrid_fallback=true`** (from Step 12), include the hybrid fallback clause from the orientation issue template (documents that `#default` falls back to source on platforms without a prebuilt binary). **When `platform_scope` is `darwin_only` or `linux_only`** (Step 4a), include the "Platform scope" clause from the orientation issue template (documents why the flake only targets one OS family — pre-empts the "why no Linux/macOS?" review comment). **When `include_garnix=true`** (from Step 16c), include the Garnix clause from the orientation issue template (documents that a `garnix.yaml` is included for optional hosted CI). Present to user for review. Record issue number for PR body. **Handle the conditional "Relationship to nixpkgs" section** using the Step 10 output: if `project_in_nixpkgs: true`, keep the section and fill the `$PROJECT`/`$NIXPKGS_VERSION`/`$LATEST_RELEASE`/`$NIXPKGS_DARWIN_STABLE_VERSION` placeholders and pick the correct x86_64-darwin clause from `x86_64_darwin_in_meta`; if `project_in_nixpkgs: false`, delete the entire `<!-- BEGIN conditional -->` ... `<!-- END conditional -->` block. **Follow the "CRITICAL — How to post these bodies to GitHub" guard at the top of the template file**: substitute `$UPSTREAM_OWNER`/`$UPSTREAM_REPO`/`$CURRENT_USER` by text replacement, write the body to a file, and post with `gh issue create --body-file` — never `--body` with an inline string, never an unquoted heredoc (backticks get command-substituted and `\n` ends up literal).
@@ -1680,6 +1696,10 @@ misrouted. When `is_complex=true` (and not multi-toolchain), the agent MUST use
 | `prepare-nixpkgs-pr.sh` fails to fork NixOS/nixpkgs | GitHub API rate limit or the user already has a fork | Check `gh auth status` and rate limits. If a fork already exists, the script proceeds to clone it. Run with `--dry-run` to preview without forking |
 | nixpkgs PR build fails with hash mismatch | The fake hash in the scaffold `package.nix` needs to be replaced with the real hash | Set `hash = "sha256-AAAA..."` (fake), run `nix-build -A <package>`, copy the correct hash from the error output, replace, rebuild. See `references/nixpkgs-contribution.md` — Hash Discovery |
 | `test-with-act.sh` passes on ubuntu (act) but darwin users report breakage | `--act-only` validates only ubuntu, not darwin | Run without `--act-only` (default `--both` mode) to validate on darwin via direct nix on the macOS host. `act` cannot simulate darwin — only direct nix on macOS validates the darwin platform. See Step 16b |
+| CI fails with "Unable to authenticate to FlakeHub" (acryl PR #5) | `DeterminateSystems/magic-nix-cache-action` is in the workflow without an explicit `use-flakehub` setting — the action defaults to `true`, which attempts FlakeHub OIDC auth, but the GitHub org is not registered on FlakeHub | Add `use-flakehub: false` to the magic-nix-cache-action step to override the dangerous default. If the project has a FlakeHub org, set `use-flakehub: true` explicitly instead. `validate-pre-push.sh` (Step 22b) catches omitted `use-flakehub` deterministically. See `references/advanced-features.md` — Nix binary caching in CI |
+| CI fails with `fetchPnpmDeps`/`fetchNpmDeps` hash mismatch (acryl PR #5) | The FOD hash in `flake.nix` is wrong or stale | Run `validate-pre-push.sh` (Step 22b) — it runs `nix build .#default`, catches the mismatch, and prints the correct `sha256-...` hash from the error output. Replace the wrong hash and re-run. See Step 22b |
+| aarch64-darwin CI job runs for 6h then times out (acryl PR #5) | `.github/workflows/nix.yml` has no `timeout-minutes` — GitHub's default max is 6h | Add `timeout-minutes: 20` to the job (the skill's CI template specifies this). `validate-pre-push.sh` (Step 22b) catches missing `timeout-minutes` deterministically. See Step 22b |
+| "Typecheck, test, and build" CI fails on a test already fixed on main (acryl PR #5) | PR branch is stale — behind upstream/main | Run `sync-and-baseline.sh` (Step 6b) at the start to sync + baseline CI. Run `validate-pre-push.sh` (Step 22b) before push — it checks branch staleness deterministically. See Steps 6b and 22b |
 | `act` not found in devbox shell | `act` not in the project's `devbox.json` `packages` array | Add `"act"` to `packages` in `devbox.json` (all templates in `references/devbox-templates.md` include it). Without it, the script falls back to `nix run nixpkgs#act` (slower on first invocation) |
 | `nix run github:...` fails on `x86_64-darwin` but works on `aarch64-darwin` (or vice versa) | Project does not ship a prebuilt binary for that platform, and the standard prebuilt-tarball template only exposes outputs on platforms with a release asset | If source build is feasible for the missing platform, use the Hybrid Fallback Variant from `references/flake-templates/prebuilt-tarball.md` (`partial_platform_coverage=true` from `check-releases.sh`). If source build is not feasible, the flake correctly only supports platforms the project ships binaries for — document the gap in the PR body. See `references/architecture-analysis.md` — Partial Platform Coverage |
 | `nix run .#prebuilt` fails on a platform but `nix run .#default` works | The flake uses the hybrid fallback variant; `#prebuilt` is only exposed on platforms with a release asset, while `#default` falls back to source | This is correct behavior. Use `nix run .#default` or `nix run .#source` on platforms without a prebuilt binary. See `references/flake-templates/prebuilt-tarball.md` — Hybrid Fallback Variant |
@@ -1699,6 +1719,73 @@ misrouted. When `is_complex=true` (and not multi-toolchain), the agent MUST use
 | Hash automation workflow fails to find `hashes` attrset in `flake.nix` | The workflow regex targets the `assets` attrset shape (prebuilt-tarball.md) but the flake uses the `hashes` attrset shape (nixpkgs-override-attrs.md) | Use the overrideAttrs Variant of the hash automation workflow — it targets `hashes.${system} = "..."` instead of the `assets` block. See `references/advanced-features.md` — Release-Triggered Hash Automation — overrideAttrs Variant |
 
 
+## Deterministic Guards (Hooks)
+
+The skill's prose guidance is necessary but not sufficient — on acryl PR #5,
+all four nixify-specific failures were cases where the skill said the right
+thing in prose but the agent skipped the validation step. The deterministic
+guards below make the checks enforceable rather than advisory.
+
+### Start gate: `sync-and-baseline.sh` (Step 6b)
+
+Run after cloning (Step 6) and before branch creation (Step 9). Syncs from
+upstream + baselines CI status. If upstream CI is red, blocks work from
+starting on a broken base. This is the deterministic catch for the stale-base
+bug that caused the "Typecheck, test, and build" failure on acryl PR #5.
+
+### Pre-push gate: `validate-pre-push.sh` (Step 22b)
+
+Run after `validate-flake.sh` (Step 22) and before pushing (Step 23). Catches:
+1. FOD hash mismatches (runs `nix build .#default`, extracts correct hash)
+2. `magic-nix-cache-action` with `use-flakehub` omitted (defaults to `true`, breaks CI without FlakeHub org) and no `flakehub-cache-action` (the acryl PR #5 auth failure)
+3. Missing `timeout-minutes` on nix workflow jobs
+4. Stale branch (behind upstream)
+5. Action pins (delegates to `validate-action-pins.sh`)
+6. PR cleanliness (delegates to `validate-pr-cleanliness.sh`)
+
+Creates a marker file on pass so the push guard hook (below) allows the push.
+
+### Push guard hook: `nixify-push-guard.sh`
+
+A **PreToolUse hook** that intercepts `git push` commands. When the agent
+tries to push in a project that has `flake.nix`, it checks whether
+`validate-pre-push.sh` was run (marker file). If not, it **blocks the push**
+with a reminder to run Step 22b first. This is the last-resort guard that
+catches the agent skipping the pre-push gate — the exact failure mode on
+acryl PR #5.
+
+**Install (one-time, user-level — applies to all projects):**
+```bash
+bash scripts/install-push-guard.sh
+```
+
+This copies `hooks/nixify-push-guard.sh` to `~/.config/devin/hooks/` and wires
+it into `~/.config/devin/hooks.v1.json` as a PreToolUse hook on `exec`. The
+hook only fires when: (1) the command is `git push`, (2) `flake.nix` exists
+in the project directory, and (3) `validate-pre-push.sh` hasn't been run.
+
+**Uninstall:**
+```bash
+bash scripts/install-push-guard.sh --uninstall
+```
+
+**Bypass:** If `flake.nix` exists but this is not a nixify-managed project,
+set `NIXIFY_SKIP_GUARD=1` in the environment or delete the marker file at
+`/tmp/devin-nixify-guards/<hash>-<branch>-validated`.
+
+### Why hooks are needed in addition to scripts
+
+Scripts are advisory — the agent can skip them. Hooks are enforceable — the
+Devin CLI runs them automatically before tool calls. The acryl PR #5 failures
+were all "the agent skipped the step" failures, not "the step was wrong"
+failures. The skill's prose correctly said to run `validate-flake.sh` and
+to set `timeout-minutes` — but the agent didn't follow the prose. The
+`magic-nix-cache-action` failure was a guidance gap (the skill said "DO NOT add"
+but the action works again; the real issue was omitting `use-flakehub`, which
+defaults to `true` and attempts FlakeHub auth without an org). The push guard
+hook makes the pre-push validation a hard gate: no push without validation.
+
+
 ## Task List
 
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
@@ -1707,8 +1794,10 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Detect project type and architecture (Step 1-3)
 - [ ] Select flake template (Step 4)
 - [ ] Detect platform scope (Step 4a)
+- [ ] Sync and baseline upstream CI (Step 6b) [script]
 - [ ] Generate flake.nix (Step 5-14)
 - [ ] Build and test (`nix build`, `nix run .#<project> -- --help`) (Step 15-22)
+- [ ] Pre-push validation gate (Step 22b) [script]
 - [ ] Generate CI and garnix.yaml (Step 23-24)
 - [ ] Generate NixOS service module if applicable (Step 25)
 - [ ] Write PR body and open PR (Step 26-27)

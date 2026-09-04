@@ -5,7 +5,7 @@
 
 > Category: **software-dev** · Status:  · Version: 1.0.0
 
-Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre-built upstream images, Dockerfile + docker buildx, or Nix flake. Use when building, wrapping, or sourcing container images for any service — especially when the deployment target spans multiple CPU architectures. Enforces "check pre-built first" and "multi-arch mandatory" principles. Do NOT trigger on Kubernetes manifest authoring, docker-compose service orchestration, or Ansible playbook writing — those are deployment concerns, not image build concerns.
+Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre-built upstream images, Dockerfile + docker buildx, or Nix flake. Use when building, wrapping, or sourcing container images for any service — especially when the deployment target spans multiple CPU architectures. Enforces \"check pre-built first\" and \"multi-arch mandatory\" principles. Do NOT trigger on Kubernetes manifest authoring, docker-compose service orchestration, or Ansible playbook writing — those are deployment concerns, not image build concerns.
 
 ## Metadata
 
@@ -26,4 +26,4 @@ Build container images for mixed-architecture fleets (x86_64 + aarch64). Three b
 
 - **Full skill**: [`skills/software-dev/container-image-build/SKILL.md`](skills/software-dev/container-image-build/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:58:30Z
+- **Generated**: 2026-09-04T10:32:01Z

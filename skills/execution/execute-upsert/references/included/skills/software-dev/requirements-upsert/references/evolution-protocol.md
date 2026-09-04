@@ -4,7 +4,18 @@
 
 Requirements evolve. The ledger records both the current state and the
 history of changes. The current file is the living spec; history
-snapshots are taken before each substantive change.
+snapshots are taken before each substantive change. Plans for future
+changes live in `proposed/` and `todo/`.
+
+## The Four States
+
+```
+proposed/ ──(matures)──→ todo/ ──(implemented)──→ current/ updated + todo → history/
+current/  ──(superseded)──→ history/ (snapshot of pre-change version)
+```
+
+See `granularity-guidance.md` for the full four-state lifecycle
+description.
 
 ## When to Snapshot
 
@@ -23,7 +34,7 @@ DO snapshot for:
 - Changing the verification approach
 - Superseding the requirement
 
-## Snapshot Process
+## Snapshot Process (current → history)
 
 1. Run `scripts/snapshot-requirement.sh --project {proj} --module {module}
    --slug {slug}`.
@@ -34,6 +45,73 @@ DO snapshot for:
    - `date.superseded: "YYYY-MM-DD"` (when superseded)
    - `superseded-by:` pointing to the current file path
 4. The current file is then edited in place.
+
+## Process Todo (todo → history + current updated)
+
+When execute-upsert implements a change described in a todo file:
+
+1. Run `scripts/process-todo.sh --project {proj} --module {module}
+   --slug {slug}`.
+2. The script snapshots the pre-change `current/` requirement to
+   `history/` (if one exists).
+3. The todo file is moved to
+   `history/YYYY/MM/{proj}/{module}/todo-YYYYMMDDHHmm-{slug}.md` via
+   `git mv` (preserving git history), then its frontmatter is updated
+   in place to `status: implemented` with `date.implemented` set.
+4. **If no `current/` file exists** (new requirement): the AI creates
+   one fresh from `references/requirement-template.md`. The archived
+   todo is reference material only — read it to understand what was
+   implemented, but write `current/` as a pure description of how the
+   system works now. Do NOT copy the todo into `current/` — that would
+   import plan baggage (Desired Behavior, gap analysis, status:
+   implemented) into a file that should describe only current reality.
+   One file per requirement in `current/`, no previous-state content.
+5. **If `current/` already exists** (changed requirement): the AI
+   updates it to reflect the new behavior, bumps `date.last-revised`,
+   and appends a Change Log entry referencing the archived todo.
+6. For new requirements, run `snapshot-requirement.sh` to create the
+   initial history snapshot.
+7. Run `index-requirements.sh` to regenerate INDEX.md and INDEX.html.
+
+## Proposed → Todo Transition
+
+When a proposed plan matures and is ready to be implemented:
+
+1. Set `date.ready` in the frontmatter to today's date.
+2. Set `status: todo`.
+3. Move the file from `proposed/{proj}/{module}/` to
+   `todo/{proj}/{module}/` using `git mv` (preserves git history).
+4. Regenerate INDEX.md: `scripts/index-requirements.sh`.
+
+## Full Evolution Chain
+
+```
+proposed/{proj}/{module}/{proj}_{module}_{slug}.md
+  │
+  │ git mv (matures: set status=todo, date.ready)
+  ▼
+todo/{proj}/{module}/{proj}_{module}_{slug}.md
+  │
+  │ process-todo.sh: git mv todo to history/ (status=implemented)
+  │ AI writes current/ fresh from requirement-template.md
+  ▼
+history/YYYY/MM/{proj}/{module}/todo-YYYYMMDDHHmm-{slug}.md  (archived plan)
+  +
+current/{proj}/{module}/{proj}_{module}_{slug}.md            (new requirement, written fresh)
+  │
+  │ snapshot-requirement.sh on next change
+  ▼
+history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md   (superseded snapshot)
+```
+
+Every file move uses `git mv` to preserve git history — never plain
+`rm` + create. The todo→current transition is NOT a file move: the
+todo is archived to `history/` via `git mv`, and `current/` is written
+fresh from `requirement-template.md` using the archived todo as
+reference material only. This keeps `current/` as a clean description
+of how the system works today, with no plan baggage — you can recreate
+the production product from `current/` alone without digging through
+previous states.
 
 ## Supersession
 
@@ -59,8 +137,14 @@ Append to the Change Log section at the bottom of the current file:
 - YYYY-MM-DD — {what changed} — [snapshot](history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md)
 ```
 
-Keep entries terse — one line per change. The snapshot has the full
-pre-change content.
+Or, when the change was driven by a todo:
+
+```
+- YYYY-MM-DD — {what changed} — [todo](history/YYYY/MM/{proj}/{module}/todo-YYYYMMDDHHmm-{slug}.md)
+```
+
+Keep entries terse — one line per change. The snapshot or archived todo
+has the full pre-change content and the plan that drove the change.
 
 ## Relationship to ADRs
 

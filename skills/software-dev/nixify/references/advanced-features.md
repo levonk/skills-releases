@@ -671,7 +671,17 @@ jobs:
   ```
   Use the latest stable tag (not `main`/`latest`). Verify the tag is at least 7 days old (supply-chain safety). Format: `uses: <owner>/<repo>@<40-char-sha> # v<tag>`. Match the project's existing action pinning convention if it pins to SHAs already; if it uses mutable refs, pin to SHAs anyway — this is a security requirement, not a style choice.
 
-**DO NOT add `DeterminateSystems/magic-nix-cache-action`.** Its hosted backend was sunset in February 2025 and the step now degrades to a silent no-op; it adds noise and a dead dependency for no benefit. If binary caching is actually needed, use Cachix (see [Cachix Integration](#cachix-integration-binary-caching)).
+**Nix binary caching in CI — `magic-nix-cache-action` vs `flakehub-cache-action`:**
+
+There are two Determinate Systems cache actions. Choose based on whether the project has a FlakeHub subscription:
+
+- **`DeterminateSystems/magic-nix-cache-action`** — works again as of June 2025. Uses GitHub Actions' built-in cache API (free, 10 GB per repo, LRU eviction). Saves 30-50% CI time by restoring Nix store paths between workflow runs. Zero-config, no account needed. Limitation: cache is scoped to a single workflow in a single repo — can't share with developer machines or other repos. **CRITICAL: the action defaults to `use-flakehub: true`, which attempts FlakeHub OIDC authentication. If the GitHub org is NOT registered on FlakeHub, this produces `Unable to authenticate to FlakeHub. Individuals must register at FlakeHub.com; Organizations must create an organization at FlakeHub.com.` and breaks CI. ALWAYS explicitly set `use-flakehub: false` unless the project has a confirmed FlakeHub org (in which case set `use-flakehub: true` deliberately). Omitting `use-flakehub` is the error — the default `true` is the footgun. This was the root cause of the acryl PR #5 FlakeHub auth failure.**
+
+- **`DeterminateSystems/flakehub-cache-action`** — for projects WITH a FlakeHub subscription ($20/member/month, free for open-source projects via support@flakehub.com). Uses FlakeHub's managed binary cache. Cache is available outside CI — developer machines, other repos, other CI platforms. True binary cache, not just CI-run-to-CI-run. Authenticated via GitHub Actions OIDC (no static credentials). If the project has a FlakeHub org, prefer this over `magic-nix-cache-action`.
+
+**History note**: The free tier of `magic-nix-cache-action` was sunset in February 2025 when GitHub deprecated the Actions cache API v1. It was brought back in June 2025 after a community contributor reverse-engineered GitHub's new cache API. The action works again. The `use-flakehub: true` default is the footgun — always set `use-flakehub: false` explicitly unless the project has a FlakeHub org.
+
+If neither cache action is appropriate (e.g. the project uses Cachix already), use Cachix instead (see [Cachix Integration](#cachix-integration-binary-caching)).
 
 **Skip if:** The project does not use GitHub Actions for CI.
 

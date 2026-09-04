@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-ledger.sh — check requirements ledger consistency
+# validate-ledger.sh — check requirements ledger consistency across four states
 #
 # Usage:
 #   validate-ledger.sh
@@ -9,9 +9,11 @@
 #   1. Every current requirement has at least one history snapshot
 #   2. No orphan history entries (every snapshot links to a current file)
 #   3. Frontmatter dates are consistent
-#   4. INDEX.md is up to date
-#   5. EARS pattern validation (every Statement/Constraint uses SHALL + a
-#      valid EARS template; see lint-ears.py)
+#   4. INDEX.md exists
+#   5. EARS pattern validation (every current Statement/Constraint uses SHALL
+#      + a valid EARS template; see lint-ears.py)
+#   6. Proposed/todo files have valid status fields
+#   7. Todo files have a ready date set
 #
 # Exit 0 if all checks pass, exit 1 on errors.
 
@@ -35,6 +37,8 @@ if [[ -z "$ROOT" ]]; then
 fi
 
 REQS_DIR="$ROOT/internal-docs/reqs"
+PROPOSED_DIR="$REQS_DIR/proposed"
+TODO_DIR="$REQS_DIR/todo"
 CURRENT_DIR="$REQS_DIR/current"
 HISTORY_DIR="$REQS_DIR/history"
 INDEX_FILE="$REQS_DIR/INDEX.md"
@@ -46,6 +50,25 @@ if [[ ! -d "$CURRENT_DIR" ]]; then
     echo "Error: no requirements directory at $CURRENT_DIR" >&2
     exit 1
 fi
+
+# Helper: extract frontmatter field
+extract_fm() {
+    awk -v field="$2" '
+        /^---$/{c++; next}
+        c==1 && $0 ~ "^"field":" {
+            gsub(/^[^:]+:[[:space:]]*"?/, "")
+            gsub(/"$/, "")
+            print
+            exit
+        }
+        c==1 && $0 ~ "^[[:space:]]+"field":" {
+            gsub(/^[[:space:]]*[^:]+:[[:space:]]*"?/, "")
+            gsub(/"$/, "")
+            print
+            exit
+        }
+    ' "$1"
+}
 
 # Check 1: Every current requirement has at least one history snapshot
 while IFS= read -r filepath; do
@@ -59,7 +82,6 @@ while IFS= read -r filepath; do
     slug="${filename#${proj}_${module}_}"
     slug="${slug%.md}"
 
-    # Look for any history snapshot for this proj/module/slug
     snapshot_count=$(find "$HISTORY_DIR" -path "*/$proj/$module/req-*-${slug}.md" 2>/dev/null | wc -l | tr -d ' ')
 
     if [[ "$snapshot_count" -eq 0 ]]; then
@@ -68,38 +90,43 @@ while IFS= read -r filepath; do
     fi
 done < <(find "$CURRENT_DIR" -name '*.md' -type f)
 
-# Check 2: No orphan history entries
+# Check 2: No orphan history entries (both req- snapshots and todo- archives)
 while IFS= read -r filepath; do
     [[ -z "$filepath" ]] && continue
 
-    # Extract proj/module/slug from history path
-    # history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md
     rel="${filepath#$HISTORY_DIR/}"
-    # Skip YYYY/MM
     rest="${rel#*/}"
     rest="${rest#*/}"
     proj="${rest%%/*}"
     rest="${rest#*/}"
     module="${rest%%/*}"
     filename="${rest#*/}"
-    slug="${filename#req-*-}"
+
+    # Parse slug based on file type: req-YYYYMMDDHHmm-{slug}.md or todo-YYYYMMDDHHmm-{slug}.md
+    if [[ "$filename" == req-* ]]; then
+        slug="${filename#req-*-}"
+    elif [[ "$filename" == todo-* ]]; then
+        slug="${filename#todo-*-}"
+    else
+        slug="${filename%.md}"
+    fi
     slug="${slug%.md}"
 
     current_file="$CURRENT_DIR/$proj/$module/${proj}_${module}_${slug}.md"
     if [[ ! -f "$current_file" ]]; then
-        echo "WARNING: history snapshot $filepath has no corresponding current file (orphan)"
+        echo "WARNING: history entry $filepath has no corresponding current file (orphan)"
         WARNINGS=$((WARNINGS + 1))
     fi
-done < <(find "$HISTORY_DIR" -name 'req-*.md' -type f 2>/dev/null)
+done < <(find "$HISTORY_DIR" \( -name 'req-*.md' -o -name 'todo-*.md' \) -type f 2>/dev/null)
 
-# Check 3: Frontmatter date consistency
+# Check 3: Frontmatter date consistency (current/ files)
 while IFS= read -r filepath; do
     [[ -z "$filepath" ]] && continue
 
-    created="$(awk '/^---$/{c++; next} c==1 && /^[[:space:]]*created:/{gsub(/^[[:space:]]*created:[[:space:]]*"?/,""); gsub(/"$/,""); print; exit}' "$filepath")"
-    last_revised="$(awk '/^---$/{c++; next} c==1 && /^[[:space:]]*last-revised:/{gsub(/^[[:space:]]*last-revised:[[:space:]]*"?/,""); gsub(/"$/,""); print; exit}' "$filepath")"
-    status="$(awk '/^---$/{c++; next} c==1 && /^status:/{gsub(/^status:[[:space:]]*/,""); print; exit}' "$filepath")"
-    superseded="$(awk '/^---$/{c++; next} c==1 && /^[[:space:]]*superseded:/{gsub(/^[[:space:]]*superseded:[[:space:]]*"?/,""); gsub(/"$/,""); print; exit}' "$filepath")"
+    created="$(extract_fm "$filepath" "created")"
+    last_revised="$(extract_fm "$filepath" "last-revised")"
+    status="$(extract_fm "$filepath" "status")"
+    superseded="$(extract_fm "$filepath" "superseded")"
 
     if [[ -n "$created" && -n "$last_revised" ]]; then
         if [[ "$last_revised" < "$created" ]]; then
@@ -136,6 +163,35 @@ if [[ -f "$LINT_EARS" ]] && command -v uv >/dev/null 2>&1; then
 else
     echo "WARNING: lint-ears.py or uv not available — skipping EARS validation (run 'uv run --script $LINT_EARS --root \"$ROOT\"' manually)"
     WARNINGS=$((WARNINGS + 1))
+fi
+
+# Check 6: Proposed/todo files have valid status fields
+if [[ -d "$PROPOSED_DIR" ]]; then
+    while IFS= read -r filepath; do
+        [[ -z "$filepath" ]] && continue
+        status="$(extract_fm "$filepath" "status")"
+        if [[ "$status" != "proposed" ]]; then
+            echo "WARNING: $filepath — in proposed/ but status is '$status' (expected 'proposed')"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+    done < <(find "$PROPOSED_DIR" -name '*.md' -type f)
+fi
+
+if [[ -d "$TODO_DIR" ]]; then
+    while IFS= read -r filepath; do
+        [[ -z "$filepath" ]] && continue
+        status="$(extract_fm "$filepath" "status")"
+        if [[ "$status" != "todo" ]]; then
+            echo "WARNING: $filepath — in todo/ but status is '$status' (expected 'todo')"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+        # Check 7: Todo files should have a ready date
+        ready="$(extract_fm "$filepath" "ready")"
+        if [[ -z "$ready" ]]; then
+            echo "WARNING: $filepath — todo file has no date.ready set (should be moved to proposed/ if not ready)"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+    done < <(find "$TODO_DIR" -name '*.md' -type f)
 fi
 
 # Summary

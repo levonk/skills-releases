@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `b7244aac08bfbc9a82228c8affd07b3db13c2818` · Branch: `main` · Generated: 2026-09-02T09:58:30Z
+> Commit: `01b0acda3219eb4b8972537d372d5f0e0c35f996` · Branch: `main` · Generated: 2026-09-04T10:32:01Z
 
 ## Overview
 
@@ -27,6 +27,8 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](ai-project-detection.md) |
 | prompt-upsert | Create new AI prompts, modify and improve existing prompts, and scaffold reusable prompt files wi... | [Synopsis](ai-prompt-upsert.md) |
 | readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](ai-readme-upsert.md) |
+| requirements-upsert | Create, update, and maintain a durable requirements ledger that tracks the evolving statement of ... | [Synopsis](ai-requirements-upsert.md) |
+| requirements-upsert | Create, update, and maintain a durable requirements ledger that tracks the evolving statement of ... | [Synopsis](ai-requirements-upsert.md) |
 | rule-upsert | Create new AI agent rules or audit and update existing rules. Scaffolds new rules from the rule t... | [Synopsis](ai-rule-upsert.md) |
 | template-upsert | Create new reusable templates, modify and improve existing templates, and audit template contract... | [Synopsis](ai-template-upsert.md) |
 

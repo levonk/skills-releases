@@ -33,13 +33,13 @@ description: >-
   trigger on quick fixes, single-file edits, bug fixes with a known root
   cause, or questions about how something works — this skill is for
   multi-step project execution, not trivial changes.
-version: 1.12.0
+version: 1.13.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
   knowledge-basis: "2026-08-30"
-  last-used: "2026-08-30"
+  last-used: "2026-09-03"
 tags:
   - "ai/skill"
   - "execution"
@@ -120,7 +120,7 @@ see-also:
     description: "Bundled via includeTree for offline availability. Execute-upsert uses it in Phase 4 (PRD) to produce Mermaid architecture diagrams and UX-flow diagrams (for graphical apps) that the PRD template requires. The bundled copy provides Mermaid syntax conventions and a validate-diagram.py script so PRD diagrams render correctly before the PRD is saved"
   - skill: requirements-upsert
     relationship: "dependency"
-    description: "Bundled via includeTree for offline availability. Execute-upsert reads the requirements ledger in Phase 4 (PRD) to understand existing durable constraints in scope, and snapshots any requirements that changed during the feature to history/ in Phase 8 (Document). The bundled copy provides snapshot-requirement.sh, index-requirements.sh, and validate-ledger.sh scripts"
+    description: "Bundled via includeTree for offline availability. Execute-upsert reads the requirements ledger in Phase 4 (PRD) — current/ for existing constraints, todo/ for ready plans, proposed/ for draft plans. In Phase 8 (Document), it processes todo/ files via process-todo.sh (snapshots current, archives todo to history with status: implemented, updates current/), snapshots changed requirements, creates new requirements, and regenerates INDEX.md/INDEX.html. The bundled copy provides snapshot-requirement.sh, process-todo.sh, index-requirements.sh, validate-ledger.sh, and templates for all four states"
   - template: "planned-enhancement-pr-template"
     relationship: "dependency"
     description: "Shared PR body template for planned enhancement PRs — inlined into execute-upsert at build time so Phase 9 (Ship) has the template for writing PR bodies without a separate install. The template covers feature/story/task status, changes, verification, and tracking file sections"

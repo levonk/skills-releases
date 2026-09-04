@@ -3,9 +3,9 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **ai** · Status:  · Version: 2.8.0
+> Category: **ai** · Status:  · Version: 2.9.0
 
-Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation.
+Capture and restore AI conversation context for seamless work continuation across sessions. Use when needing to preserve conversation state, decisions made, and work progress to start a fresh AI session with full context without requiring re-explanation. Do NOT trigger on general conversation, questions about current code, one-off task execution (use execute-upsert), or creating/updating skills (use ai-upsert) — this skill is for session continuity context capture and restoration, not general work execution or artifact creation.
 
 ## Metadata
 
@@ -13,7 +13,7 @@ Capture and restore AI conversation context for seamless work continuation acros
 |-------|-------|
 | Name | `handoff` |
 | Category | `ai` |
-| Version | `2.8.0` |
+| Version | `2.9.0` |
 | Status | `` |
 | Owner |  |
 
@@ -24,11 +24,11 @@ Capture and restore AI conversation context for seamless work continuation acros
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 - **git-repository-management** (skill, dependency) — Commits pending work before context capture and commits the handoff document after save, so the handoff's git commit hash pins a clean, reproducible repo state
 - **execute-upsert** (skill, dependency) — The execution skill that handoff always defers to. The handoff's Execution Plan block maps each task to an execute-upsert story with a type tag (trivial/standard/research), base SHA, and per-story DoD. execute-upsert enforces worktree-per-story, checkpoint commits, story branches, PRs, and clean-tree-before-stop uniformly across all task types
-- **requirements-upsert** (skill, consult) — Consult the requirements ledger when capturing handoff context so the next session knows the project's durable constraints
+- **requirements-upsert** (skill, dependency) — Bundled via includeTree for offline availability. Handoff reads the requirements ledger (current/ and todo/) during context capture to include durable constraints in the handoff. When the session identifies new durable constraints, handoff writes plans to todo/ (ready) or proposed/ (draft) using the bundled snapshot-requirement.sh, process-todo.sh, and index-requirements.sh scripts
 - **** (, dependency) — Provides the restart-proof-state concept page that the handoff system's state-as-file, append-only-event-log, fold-based-derivation principle is based on. The handoff file is just another state file, not a special artifact
 
 ---
 
 - **Full skill**: [`skills/ai/handoff/SKILL.md`](skills/ai/handoff/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:58:30Z
+- **Generated**: 2026-09-04T10:32:01Z

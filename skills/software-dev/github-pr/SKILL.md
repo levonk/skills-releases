@@ -1,14 +1,14 @@
 ---
 name: github-pr
-description: "Open a well-formed pull request against a third-party/upstream repository OR your own repository. Detects repo mode (own-repo vs upstream) via gh viewerPermission. For upstream: forks and clones, discovers contribution standards and PR templates, runs CLA gate, pushes to fork. For own-repo: skips fork (push to origin directly), skips CLA gate, checks only for local PR templates. Both modes: requires an issue number (creates an orientation issue inline using the github-issue procedure if none provided; own-repo may skip with a one-line justification), runs the project's tests for a baseline, commits with a clean linear history, syncs before push, drafts a PR body that matches project conventions, presents it for human review, posts via gh --body-file, and validates the posted body. Use when the user wants to contribute a code change to a repository they own or don't own. Do NOT trigger on issue filing without code, or nix packaging — use github-issue for issues only, nixify for Nix flake packaging."
-version: 1.1.0
+description: "Open a well-formed pull request against a third-party/upstream repository OR your own repository. Detects repo mode (own-repo vs upstream) via gh viewerPermission. For upstream: forks and clones, discovers contribution standards and PR templates, runs CLA gate, pushes to fork, posts as a draft PR by default (configurable via posting.upstream_draft_pr) so you review on GitHub instead of in chat. For own-repo: skips fork (push to origin directly), skips CLA gate, checks only for local PR templates, posts directly after chat review. Both modes: requires an issue number (creates an orientation issue inline using the github-issue procedure if none provided; own-repo may skip with a one-line justification), runs the project's tests for a baseline, commits with a clean linear history, syncs before push, drafts a PR body that matches project conventions, posts via gh --body-file, and validates the posted body. Use when the user wants to contribute a code change to a repository they own or don't own. Do NOT trigger on issue filing without code, or nix packaging — use github-issue for issues only, nixify for Nix flake packaging."
+version: 1.2.0
 owner: "https://github.com/levonk"
 status: "ready"
 date:
   created: "2026-07-26"
   knowledge-basis: "2026-08-30"
-  last-used: "2026-08-30"
-tags: ["ai/skill", "software-development", "github", "pull-request", "upstream-contribution", "open-source", "fork", "forge", "own-repo"]
+  last-used: "2026-09-02"
+tags: ["ai/skill", "software-development", "github", "pull-request", "upstream-contribution", "open-source", "fork", "forge", "own-repo", "draft"]
 see-also:
   - skill: github-issue
     relationship: "complement"

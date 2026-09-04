@@ -3,9 +3,9 @@
 
 # Skills: the script is materialized into scripts/cli-tool-discovery.sh at build time
 
-> Category: **software-dev** · Status: ready · Version: 1.1.0
+> Category: **software-dev** · Status: ready · Version: 1.2.0
 
-Open a well-formed pull request against a third-party/upstream repository OR your own repository. Detects repo mode (own-repo vs upstream) via gh viewerPermission. For upstream: forks and clones, discovers contribution standards and PR templates, runs CLA gate, pushes to fork. For own-repo: skips fork (push to origin directly), skips CLA gate, checks only for local PR templates. Both modes: requires an issue number (creates an orientation issue inline using the github-issue procedure if none provided; own-repo may skip with a one-line justification), runs the project's tests for a baseline, commits with a clean linear history, syncs before push, drafts a PR body that matches project conventions, presents it for human review, posts via gh --body-file, and validates the posted body. Use when the user wants to contribute a code change to a repository they own or don't own. Do NOT trigger on issue filing without code, or nix packaging — use github-issue for issues only, nixify for Nix flake packaging.
+Open a well-formed pull request against a third-party/upstream repository OR your own repository. Detects repo mode (own-repo vs upstream) via gh viewerPermission. For upstream: forks and clones, discovers contribution standards and PR templates, runs CLA gate, pushes to fork, posts as a draft PR by default (configurable via posting.upstream_draft_pr) so you review on GitHub instead of in chat. For own-repo: skips fork (push to origin directly), skips CLA gate, checks only for local PR templates, posts directly after chat review. Both modes: requires an issue number (creates an orientation issue inline using the github-issue procedure if none provided; own-repo may skip with a one-line justification), runs the project's tests for a baseline, commits with a clean linear history, syncs before push, drafts a PR body that matches project conventions, posts via gh --body-file, and validates the posted body. Use when the user wants to contribute a code change to a repository they own or don't own. Do NOT trigger on issue filing without code, or nix packaging — use github-issue for issues only, nixify for Nix flake packaging.
 
 ## Metadata
 
@@ -13,7 +13,7 @@ Open a well-formed pull request against a third-party/upstream repository OR you
 |-------|-------|
 | Name | `github-pr` |
 | Category | `software-dev` |
-| Version | `1.1.0` |
+| Version | `1.2.0` |
 | Status | `ready` |
 | Owner | https://github.com/levonk |
 
@@ -27,6 +27,7 @@ Open a well-formed pull request against a third-party/upstream repository OR you
 - `fork`
 - `forge`
 - `own-repo`
+- `draft`
 
 ## Related Skills
 - **github-issue** (skill, complement) — PRs should reference an issue (or a one-line justification in own-repo); use github-issue for issue-only work
@@ -39,4 +40,4 @@ Open a well-formed pull request against a third-party/upstream repository OR you
 
 - **Full skill**: [`skills/software-dev/github-pr/SKILL.md`](skills/software-dev/github-pr/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-02T09:58:30Z
+- **Generated**: 2026-09-04T10:32:01Z

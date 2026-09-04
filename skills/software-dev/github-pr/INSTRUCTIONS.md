@@ -1396,6 +1396,37 @@ The issue-first flow is the default for both modes because:
 - It prevents PRs from being opened for rejected proposals
 - It creates a searchable record of the feature/fix discussion
 
+## Draft PR Mode
+
+For `upstream` repos, this skill creates PRs as **GitHub draft PRs** by
+default (`gh pr create --draft`). A draft PR is fully visible on GitHub —
+the body, commits, diffs, and CI checks are all there — but it cannot be
+merged until you click "Ready for review." This lets you review the
+rendered PR on GitHub itself instead of reviewing raw markdown in the
+chat.
+
+The chat-based human review gate (Step 13) is **skipped** when draft mode
+is active — the draft PR IS the review gate. You review on GitHub, edit
+the body there if needed (`gh pr edit --body-file`), and mark "Ready for
+review" when satisfied.
+
+For `own-repo` mode, draft mode is **off** — you own the repo, so the
+existing chat-based review gate applies and the PR is posted directly.
+
+### Config key
+
+```bash
+DRAFT_PR=$(SKILL_CONFIG_OWNER=levonk SKILL_CONFIG_REPO=skills-releases \
+SKILL_CONFIG_PATH=software-dev/github-pr \
+scripts/skill-config.sh get "posting.upstream_draft_pr" --default "true")
+```
+
+- `posting.upstream_draft_pr` — boolean, default `true`
+- Only consulted when `$REPO_MODE` is `upstream`
+- Set to `false` to force direct-post (with chat review gate) for upstream
+  repos on a case-by-case basis (USER or PROJ config layer)
+- `own-repo` mode always posts directly regardless of this key
+
 ## Steps
 
 ### Phase 1: Orientation Issue (create or reference)
@@ -1887,9 +1918,29 @@ in `own-repo` mode.
     Substitute all placeholders by **text replacement** — never shell
     expansion.
 
-13. **Human review gate**: Present the complete, final PR content (title +
-    body, with all placeholders substituted) to the user for review. Do NOT
-    auto-open. Wait for explicit approval.
+13. **Human review gate** (conditional on draft mode):
+
+    First, determine draft mode:
+    ```bash
+    DRAFT_PR="false"
+    if [ "$REPO_MODE" = "upstream" ]; then
+      DRAFT_PR=$(SKILL_CONFIG_OWNER=levonk SKILL_CONFIG_REPO=skills-releases \
+        SKILL_CONFIG_PATH=software-dev/github-pr \
+        scripts/skill-config.sh get "posting.upstream_draft_pr" --default "true")
+    fi
+    ```
+
+    **If `$DRAFT_PR` is `true`** (upstream + default config): Skip the
+    chat-based review. The draft PR IS the review gate — the user will
+    review the rendered PR on GitHub. Proceed directly to Step 14 with
+    `--draft`. Inform the user:
+    > Posting as a draft PR — review it on GitHub, then click "Ready for
+    > review" when satisfied. Edit the body there if needed.
+
+    **If `$DRAFT_PR` is `false`** (own-repo, or upstream with config
+    override): Present the complete, final PR content (title + body, with
+    all placeholders substituted) to the user for review. Do NOT auto-open.
+    Wait for explicit approval.
 
     ---
 description: Reusable guard for posting GitHub issue and PR bodies via gh CLI — prevents the two corruption modes (literal \n and stripped backticks) that have shipped broken posts in the wild
@@ -1916,21 +1967,48 @@ The template below contains markdown backticks (`` ` `` and triple-fence ``` ```
 **Never** use `gh ... --body "$BODY"` with an inline string. **Never** use an unquoted heredoc to build the body. The `--body-file` path is the only one that survives multi-line markdown with backticks and `$` intact.
 
 
-14. **Post the PR**: After user approval, write the body to a file and post
-    with `--body-file`:
+14. **Post the PR**: Write the body to a file and post with `--body-file`:
     ```bash
     # upstream: --head is "$CURRENT_USER:branch-name" (fork → upstream)
     # own-repo: --head is "$CURRENT_USER:branch-name" (same user, origin → upstream)
     #           --repo can be omitted (defaults to origin's default repo)
-    gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" \
+    DRAFT_FLAG=""
+    [ "$DRAFT_PR" = "true" ] && DRAFT_FLAG="--draft"
+    PR_URL=$(gh pr create --repo "$UPSTREAM_OWNER/$UPSTREAM_REPO" \
       --head "$CURRENT_USER:branch-name" \
       --base main \
-      --title "..." --body-file /tmp/pr-body.md
+      $DRAFT_FLAG \
+      --title "..." --body-file /tmp/pr-body.md)
     ```
-    For `own-repo`, `--head "$CURRENT_USER:branch-name"` works because the
-    branch was pushed to `origin` (which is `$UPSTREAM_OWNER/$UPSTREAM_REPO`).
-    The `--repo` flag is redundant for `own-repo` but harmless — keep it for
+    `gh pr create` prints the PR URL to stdout — capture it in `$PR_URL`
+    so you can present it to the user as a clickable link. For `own-repo`,
+    `--head "$CURRENT_USER:branch-name"` works because the branch was
+    pushed to `origin` (which is `$UPSTREAM_OWNER/$UPSTREAM_REPO`). The
+    `--repo` flag is redundant for `own-repo` but harmless — keep it for
     consistency.
+
+    **When `$DRAFT_PR` is `true`** (upstream draft PR), after posting you
+    MUST present the PR URL and an explicit review reminder to the user.
+    This is the review gate — do not omit it. Present:
+
+    > **Draft PR posted:** $PR_URL
+    >
+    > This is a draft PR against an upstream repo. It is not visible to
+    > maintainers as ready for review yet. You need to:
+    > 1. Open the link above and review the rendered PR body, commits, and diffs
+    > 2. Edit the body on GitHub if needed (or `gh pr edit --body-file`)
+    > 3. Click **"Ready for review"** on GitHub when you approve the PR
+    >    — this triggers maintainer notifications and CI runs
+
+    The URL must be a clickable link in your output, not just plain text.
+    Do not summarize or paraphrase the reminder — the user must see the
+    three steps explicitly.
+
+    **When `$DRAFT_PR` is `false`** (own-repo, or upstream with config
+    override), present the PR URL to the user as a clickable link with a
+    simpler confirmation:
+
+    > **PR posted:** $PR_URL
 
 15. **Validate the posted body**: Run
     `scripts/validate-pr-issue.sh <owner>/<repo> pr <number>`.
@@ -2086,8 +2164,9 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Phase 4: Validate PR cleanliness — no merge commits, no unrelated changes, clean linear history, at most two commits (Phase 4 Step 10)
 - [ ] Phase 4: Push the branch — to fork (`upstream`) or to `origin` (`own-repo`); never merge upstream into the feature branch (Phase 4 Step 11)
 - [ ] Phase 4: Generate the PR description using the project's PR template with `Resolves #N` (or one-line justification if `own-repo` and no issue), placeholders substituted by text replacement (Phase 4 Step 12)
-- [ ] Phase 4: Present the complete PR content to the user for review — no auto-open (Phase 4 Step 13)
-- [ ] Phase 4: Post the PR with `gh pr create --body-file` after user approval (Phase 4 Step 14)
+- [ ] Phase 4: Determine draft mode — if `upstream`: read `posting.upstream_draft_pr` config (default `true`); if `own-repo`: `$DRAFT_PR` is always `false` (Phase 4 Step 13)
+- [ ] Phase 4: If `$DRAFT_PR` is `true`: skip chat review, post directly as draft; if `false`: present complete PR content to the user for review before posting (Phase 4 Step 13)
+- [ ] Phase 4: Post the PR with `gh pr create --body-file` (add `--draft` if `$DRAFT_PR` is `true`); if draft, inform user to review on GitHub and mark "Ready for review" (Phase 4 Step 14)
 - [ ] Phase 4: Validate the posted body with `validate-pr-issue.sh` — fix and re-post if corrupted (Phase 4 Step 15)
 - [ ] Phase 4: If `upstream` and CLA required: CLA watch (post-open) — poll for CLA bot comments/checks, surface failures, upgrade or invalidate the ledger entry. If `own-repo`: skip (Phase 4 Step 16)
 
@@ -2136,8 +2215,12 @@ agent to check something the scripts cannot verify.
 ### PR Body and Posting (Phase 4 Steps 12-15)
 
 - [ ] **[manual]** The PR body uses the project's own PR template (if found) and includes `Resolves #N` (or the one-line justification if no issue) with all placeholders substituted by text replacement — never shell expansion (Phase 4 Step 12)
-- [ ] **[manual]** The complete PR content (title + body) was presented to the user for review before posting — no auto-open (Phase 4 Step 13)
+- [ ] **[manual]** Draft mode was determined correctly: if `upstream`, `posting.upstream_draft_pr` config was read (default `true`); if `own-repo`, `$DRAFT_PR` is `false` (Phase 4 Step 13)
+- [ ] **[manual]** If `$DRAFT_PR` is `true`: the chat-based review gate was skipped and the PR was posted as a draft (`--draft`); the user was informed to review on GitHub and mark "Ready for review" (Phase 4 Step 13-14)
+- [ ] **[manual]** If `$DRAFT_PR` is `false`: the complete PR content (title + body) was presented to the user for review before posting — no auto-open (Phase 4 Step 13)
 - [ ] **[manual]** The PR was posted with `gh pr create --body-file` — never `--body` with inline strings (Phase 4 Step 14)
+- [ ] **[manual]** The PR URL (`$PR_URL` from `gh pr create` stdout) was presented to the user as a clickable link (Phase 4 Step 14)
+- [ ] **[manual]** If `$DRAFT_PR` is `true`: the three-step review reminder (review on GitHub → edit if needed → click "Ready for review") was presented explicitly, not summarized or omitted (Phase 4 Step 14)
 - [ ] **[script]** `./scripts/validate-pr-issue.sh <owner>/<repo> pr <number>` exits zero — the posted body has no literal `\n`, no stripped backticks, no corruption (Phase 4 Step 15)
 
 ### CLA Watch (Phase 4 Step 16, `upstream` only, if CLA required)
@@ -2156,7 +2239,9 @@ If any of these are true, the run is NOT complete:
 - `validate-pr-issue.sh` exits non-zero but the PR was left open → corrupted body visible to reviewers (Phase 4 Step 15)
 - The PR has merge commits → upstream was merged instead of rebased, history is not linear (Phase 3 Step 5)
 - Format/lint changes are mixed into the feature commit → they are not independently reviewable (Phase 3 Step 7)
-- The PR was auto-posted without user review → the human review gate was bypassed (Phase 4 Step 13)
+- The PR was auto-posted without user review AND `$DRAFT_PR` is `false` → the human review gate was bypassed (Phase 4 Step 13)
+- `$DRAFT_PR` is `true` but `--draft` was not passed to `gh pr create` → the PR was posted as ready-for-review without the user's draft review (Phase 4 Step 14)
+- The PR URL was not presented to the user as a clickable link, or the draft review reminder was summarized/omitted → the user has no way to find or review the PR (Phase 4 Step 14)
 - `upstream` mode: a CLA was required but the ledger was never consulted → the user was not warned, the PR may be blocked (Phase 4 Step 9)
 - The PR body was posted with `--body` inline instead of `--body-file` → literal `\n` or stripped backticks corrupted the body (Phase 4 Step 14)
 - `own-repo` mode: `origin` does not point at the target repo → the push went to the wrong remote (Phase 2 Step 1)
@@ -2182,10 +2267,21 @@ If any of these are true, the run is NOT complete:
 - `$ISSUE_NUMBER` — the orientation issue number (from Phase 1; may be absent for `own-repo` with one-line justification)
 - `$PR_TITLE` — PR title
 - `$PR_BODY_FILE` — path to the file containing the PR body (e.g. `/tmp/pr-body.md`)
+- `$PR_URL` — the PR URL returned by `gh pr create` on stdout (presented to the user as a clickable link)
+- `$DRAFT_PR` — `true` or `false` (set by Phase 4 Step 13; `true` when `upstream` mode and `posting.upstream_draft_pr` config is `true`; always `false` for `own-repo`)
 - `$ORG` — the target repo's org login (for CLA ledger keying, e.g. `VirusTotal` → `google`; `upstream` mode only)
 
 ### Config Layers
 
 - **SYSTEM**: `$XDG_CONFIG_DIRS/skills/levonk/skills-releases/skills/github-pr/config.toml` (site policy, read-only)
-- **USER**: `$XDG_CONFIG_HOME/skills/levonk/skills-releases/skills/github-pr/config.toml` (user defaults, CLA ledger, trust policy)
+- **USER**: `$XDG_CONFIG_HOME/skills/levonk/skills-releases/skills/github-pr/config.toml` (user defaults, CLA ledger, trust policy, draft PR default)
 - **PROJ**: `<target-repo>/.agents/config/skills/levonk/skills-releases/skills/github-pr/config.toml` (project-specific behavior, if trusted)
+
+### Config Keys
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `posting.upstream_draft_pr` | boolean | `true` | When `upstream` mode, post PR as draft (`--draft`) and skip chat review gate. Set to `false` to force direct-post with chat review. Ignored for `own-repo` (always direct-post). |
+| `cla.$ORG.signed_at` | string (date) | — | CLA sign-off date for the org (upstream only) |
+| `cla.$ORG.expires_at` | string (date) | — | CLA expiry date (365-day TTL) |
+| `cla.$ORG.source` | string | — | CLA ledger entry source (`manual` / `user-acknowledged` / `auto-detected-from-pr-$N`) |

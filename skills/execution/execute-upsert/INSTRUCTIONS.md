@@ -3670,20 +3670,29 @@ ledger (if it exists):
 1. Check for `internal-docs/reqs/INDEX.md` in the target project. If it
    does not exist, skip this step — the project has not adopted the
    requirements ledger yet.
-2. Read `INDEX.md` for the project/module tree of active requirements.
-3. Read individual requirement files that are in scope for this feature.
-   A requirement is "in scope" if it constrains the technology choices,
-   defines a verification approach the PRD should reference, or applies
-   to the module the feature touches.
-4. If the feature introduces new durable constraints (requirements that
+2. Read `INDEX.md` for the project/module tree of all requirements across
+   all four states (proposed, todo, current, history).
+3. Read individual `current/` requirement files that are in scope for
+   this feature. A requirement is "in scope" if it constrains the
+   technology choices, defines a verification approach the PRD should
+   reference, or applies to the module the feature touches.
+4. Read `todo/` files that are in scope — these are ready-to-implement
+   change descriptions. If a todo file describes the change this feature
+   is implementing, the PRD should reference it and Phase 8 will process
+   it via `process-todo.sh`.
+5. Read `proposed/` files that are in scope — these are draft plans. If
+   the feature addresses a proposed plan, note that the proposed file
+   should be matured to todo/ before implementation (or skipped if the
+   feature supersedes the proposal).
+6. If the feature introduces new durable constraints (requirements that
    will outlive this feature), note them — they will be added to the
    ledger in Phase 8 (Document).
-5. If the feature changes an existing requirement, note it — the
+7. If the feature changes an existing requirement, note it — the
    requirement will be snapshot-ed and updated in Phase 8.
 
 The bundled `requirements-upsert` skill at
 `references/included/skills/software-dev/requirements-upsert/` has the
-full ledger protocol, scripts, and templates.
+full ledger protocol, scripts, and templates for all four states.
 
 ### If a PRD exists
 
@@ -4440,25 +4449,48 @@ After all stories are completed (or when the user pauses execution):
 ### Update Requirements Ledger
 
 If the project has a requirements ledger (`internal-docs/reqs/`) and the
-feature introduced or changed durable requirements (as noted in Phase 4):
+feature introduced, changed, or implemented durable requirements (as
+noted in Phase 4):
 
-1. **New requirements**: Create each new requirement file using the
-   bundled `requirements-upsert` skill's template at
+1. **Process todo files**: If the feature implemented a change described
+   in a `todo/` file, run `process-todo.sh` to handle the
+   todo→history+current transition:
+   ```bash
+   ./references/included/skills/software-dev/requirements-upsert/scripts/process-todo.sh \
+       --project {proj} --module {module} --slug {slug}
+   ```
+   The script snapshots the pre-change `current/` requirement to
+   `history/` (if one exists), archives the todo to `history/` with
+   `status: implemented`, and regenerates INDEX.md. Then update the
+   `current/` file to reflect the new behavior (using the todo's
+   "Desired Behavior" section as the basis). If no `current/` file
+   existed, create one using `requirement-template.md` and run
+   `snapshot-requirement.sh` for the initial history entry. Append a
+   Change Log entry referencing the archived todo.
+
+2. **New requirements** (not from a todo): Create each new requirement
+   file using the bundled `requirements-upsert` skill's template at
    `references/included/skills/software-dev/requirements-upsert/references/requirement-template.md`.
    Run `snapshot-requirement.sh` to create the initial history entry,
-   then `index-requirements.sh` to regenerate `INDEX.md`.
-2. **Changed requirements**: For each requirement that changed during
-   the feature, run `snapshot-requirement.sh` first (to preserve the
-   pre-change version in history), then edit the current file in place,
-   update `date.last-revised`, and append a Change Log entry. Run
-   `index-requirements.sh` to regenerate `INDEX.md`.
-3. **Scripts**: The scripts are materialized at
+   then `index-requirements.sh` to regenerate `INDEX.md` and
+   `INDEX.html`.
+
+3. **Changed requirements** (not from a todo): For each requirement that
+   changed during the feature, run `snapshot-requirement.sh` first (to
+   preserve the pre-change version in history), then edit the current
+   file in place, update `date.last-revised`, and append a Change Log
+   entry. Run `index-requirements.sh` to regenerate `INDEX.md` and
+   `INDEX.html`.
+
+4. **Scripts**: The scripts are materialized at
    `references/included/skills/software-dev/requirements-upsert/scripts/`.
    Source them from there or run them directly.
-4. Commit the ledger changes as a separate commit:
+
+5. Commit the ledger changes as a separate commit:
    ```
    docs(reqs): update requirements ledger for [PRD-NAME]
 
+   - Processed todo: {proj}/{module}/{slug} → current/ updated, todo archived
    - Added: {proj}/{module}/{new-slug}
    - Updated: {proj}/{module}/{changed-slug}
    ```
@@ -7511,7 +7543,7 @@ When working with task lists, the AI must:
 - **Project-detection skill (bundled)**: `references/included/skills/software-dev/project-detection/` — materialized at build time via `references/included/skills/software-dev/project-detection/`. Used in Phase 3 to detect the project's tech stack
 - **Code-review-guidance skill (bundled)**: `references/included/skills/software-dev/code-review-guidance/` — materialized at build time via `references/included/skills/software-dev/code-review-guidance/`. Used in Phase 6 for per-story code review
 - **Diagram-upsert skill (bundled)**: `references/included/skills/content/diagram-upsert/` — materialized at build time via `references/included/skills/content/diagram-upsert/`. Used in Phase 4 (PRD) to produce Mermaid architecture and UX-flow diagrams that the PRD template requires
-- **Requirements-upsert skill (bundled)**: `references/included/skills/software-dev/requirements-upsert/` — materialized at build time via `references/included/skills/software-dev/requirements-upsert/`. Used in Phase 4 (PRD) to read the current requirements ledger before creating the PRD, and in Phase 8 (Document) to snapshot and update requirements that changed during the feature. Provides snapshot-requirement.sh, index-requirements.sh, and validate-ledger.sh scripts
+- **Requirements-upsert skill (bundled)**: `references/included/skills/software-dev/requirements-upsert/` — materialized at build time via `references/included/skills/software-dev/requirements-upsert/`. Used in Phase 4 (PRD) to read the requirements ledger (current/, todo/, proposed/) before creating the PRD, and in Phase 8 (Document) to process todo/ files, snapshot and update requirements that changed during the feature, and archive completed todos to history/. Provides snapshot-requirement.sh, process-todo.sh, index-requirements.sh, validate-ledger.sh scripts and templates for all four states (proposed/todo/current/history). History path shapes: `history/YYYY/MM/{proj}/{module}/req-YYYYMMDDHHmm-{slug}.md` (snapshots) and `history/YYYY/MM/{proj}/{module}/todo-YYYYMMDDHHmm-{slug}.md` (archived todos)
 - **Tech context output**: `internal-docs/feature/todo/{slug}/tech-context.txt` (or PRD frontmatter)
 - **PRD output**: `internal-docs/feature/todo/{slug}/feat-YYYYMMDDHHmm-{slug}.md`
 - **Task output**: `internal-docs/feature/todo/{slug}/tasks/`

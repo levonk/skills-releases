@@ -1,5 +1,27 @@
 # Directory Update Log
 
+## 2026-09-02
+
+* **Add**: [devbox-per-platform-packages.md](devbox-per-platform-packages.md) —
+  documents the per-platform devbox.json package entry pattern. When a package
+  builds on most platforms but fails on one (e.g., x86_64-darwin / Intel Macs),
+  use the object form with two entries per broken package: `pkg@latest` with
+  `excluded_platforms: ["x86_64-darwin"]` for the working platforms, and
+  `github:nixos/nixpkgs/<channel>#pkg` with `platforms: ["x86_64-darwin"]`
+  pinned to a channel known to build on the broken platform. This keeps devbox
+  functional on ALL platforms without bypassing it or pinning the entire
+  nixpkgs to an older revision. Includes a migration guide from array form to
+  per-platform object form, a decision table for per-platform pinning vs
+  bypass (vs [Devbox Broken Override](devbox-broken-override.md)), and
+  prevention guidance. Sourced from the skills-src devbox.json per-platform
+  package entries.
+* **Update**: Updated [index.md](index.md) with the new concept entry.
+* **Update**: Updated [overview.md.tmpl](overview.md.tmpl) — added
+  "Cross-Platform" row to the phase/practice table.
+* **Update**: Updated [devbox-broken-override.md](devbox-broken-override.md)
+  — added cross-reference to per-platform pinning as the preferred solution
+  before escalating to the bypass.
+
 ## 2026-08-30
 
 * **Add**: [diff-tooling-stack.md](diff-tooling-stack.md) — the

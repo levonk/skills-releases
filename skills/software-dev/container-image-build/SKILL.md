@@ -1,6 +1,6 @@
 ---
 name: container-image-build
-description: Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre-built upstream images, Dockerfile + docker buildx, or Nix flake. Use when building, wrapping, or sourcing container images for any service — especially when the deployment target spans multiple CPU architectures. Enforces "check pre-built first" and "multi-arch mandatory" principles. Do NOT trigger on Kubernetes manifest authoring, docker-compose service orchestration, or Ansible playbook writing — those are deployment concerns, not image build concerns.
+description: "Build container images for mixed-architecture fleets (x86_64 + aarch64). Three branches: wrap pre-built upstream images, Dockerfile + docker buildx, or Nix flake. Use when building, wrapping, or sourcing container images for any service — especially when the deployment target spans multiple CPU architectures. Enforces \"check pre-built first\" and \"multi-arch mandatory\" principles. Do NOT trigger on Kubernetes manifest authoring, docker-compose service orchestration, or Ansible playbook writing — those are deployment concerns, not image build concerns."
 version: 1.0.0
 date:
   created: "2026-07-09"

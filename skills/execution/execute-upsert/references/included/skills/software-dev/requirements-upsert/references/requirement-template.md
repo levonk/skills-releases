@@ -11,6 +11,12 @@ supersedes: ""
 see-also: []
 ---
 
+<!-- This is the current/ template — a pure description of how the system
+     works NOW. No plan, no gap analysis, no implementation notes. Those
+     belong in todo/ (ready plans) or proposed/ (draft plans). When a todo
+     is implemented, the current/ file is updated to reflect the new
+     reality and the todo moves to history/. -->
+
 ## Statement
 
 <!-- EARS templates — pick the one that fits. See references/ears-patterns.md
