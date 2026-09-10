@@ -27,4 +27,4 @@ Write unit tests in the style of Roy Osherove's 'The Art of Unit Testing' — re
 
 - **Full skill**: [`skills/software-dev/unit-test-writing/SKILL.md`](skills/software-dev/unit-test-writing/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-04T10:32:01Z
+- **Generated**: 2026-09-10T02:50:59Z

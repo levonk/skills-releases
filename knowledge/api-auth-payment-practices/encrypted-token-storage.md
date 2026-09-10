@@ -49,6 +49,8 @@ WISP (Written Information Security Program) must document:
 
 ## Related Concepts
 
+- [Authorization Taxonomy](authorization-taxonomy.md) — tokens are token-based
+  Information axis data; encryption protects that data at rest
 - [Payment Provider Interface](payment-provider-interface.md) — Provider uses
   these tokens
 - [Multi-Tenant RLS](multi-tenant-rls.md) — Tokens isolated per tenant

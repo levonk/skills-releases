@@ -82,6 +82,24 @@ bundles.
    on first use, then "CI" thereafter. Never assume the reader knows the
    acronym.
 
+9. **No em dashes.** Do not use em dashes (—). Use commas or parentheses
+   instead. AI overuses em dashes for dramatic pauses and parenthetical
+   asides. See the
+   [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+   concept page for the full rationale.
+
+#### AI Writing Tells
+
+AI-generated text has recognizable overuse patterns that survive the clarity
+rules above. A sentence can be active, short, and one-topic-per-sentence and
+still read as AI slop. The tells include: negative parallelism ("It's not X,
+it's Y"), magic adverbs ("quietly", "deeply"), "delve" and friends, "tapestry"
+and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
+vulnerability, grandiose stakes inflation, fractal summaries, signposted
+conclusions, and more. For the full catalog and self-check, see the
+[AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+concept page in the `simplified-technical-english` knowledge bundle.
+
 #### What Counts as Technical English
 
 Apply these guidelines to:
@@ -112,6 +130,10 @@ Before finishing a piece of technical prose, run this checklist:
 - [ ] Is every acronym defined on first use?
 - [ ] Are decorative modifiers removed?
 - [ ] Does each sentence carry one topic?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead.)
+- [ ] Is the prose free of AI writing tells? (Negative parallelism, anaphora
+      abuse, tricolon abuse, "delve", "tapestry", "Here's the kicker", fractal
+      summaries, signposted conclusions. See the AI Writing Tells concept page.)
 
 If any answer is "no," revise before publishing.
 

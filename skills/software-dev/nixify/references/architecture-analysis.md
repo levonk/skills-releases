@@ -210,7 +210,7 @@ includes platforms with prebuilt binaries. The hash automation workflow
 platforms). The `#source` output on fallback platforms tracks the git tag,
 not release assets — it is NOT hash-automated. This is correct: the source
 build is reproducible from the git tag, so it doesn't need hash automation.
-See `references/advanced-features.md` — Release-Triggered Hash Automation.
+See `references/advanced/hash-automation.md`.
 
 ---
 

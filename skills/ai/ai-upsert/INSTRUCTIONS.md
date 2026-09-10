@@ -1283,6 +1283,24 @@ bundles.
    on first use, then "CI" thereafter. Never assume the reader knows the
    acronym.
 
+9. **No em dashes.** Do not use em dashes (—). Use commas or parentheses
+   instead. AI overuses em dashes for dramatic pauses and parenthetical
+   asides. See the
+   [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+   concept page for the full rationale.
+
+#### AI Writing Tells
+
+AI-generated text has recognizable overuse patterns that survive the clarity
+rules above. A sentence can be active, short, and one-topic-per-sentence and
+still read as AI slop. The tells include: negative parallelism ("It's not X,
+it's Y"), magic adverbs ("quietly", "deeply"), "delve" and friends, "tapestry"
+and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
+vulnerability, grandiose stakes inflation, fractal summaries, signposted
+conclusions, and more. For the full catalog and self-check, see the
+[AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+concept page in the `simplified-technical-english` knowledge bundle.
+
 #### What Counts as Technical English
 
 Apply these guidelines to:
@@ -1313,6 +1331,10 @@ Before finishing a piece of technical prose, run this checklist:
 - [ ] Is every acronym defined on first use?
 - [ ] Are decorative modifiers removed?
 - [ ] Does each sentence carry one topic?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead.)
+- [ ] Is the prose free of AI writing tells? (Negative parallelism, anaphora
+      abuse, tricolon abuse, "delve", "tapestry", "Here's the kicker", fractal
+      summaries, signposted conclusions. See the AI Writing Tells concept page.)
 
 If any answer is "no," revise before publishing.
 
@@ -2227,7 +2249,7 @@ fi
 
 
 ---
-description: Shared protocol for committing a clean checkpoint before delegating work to a subagent or starting a commit batch, so failures can be rolled back without losing prior progress
+description: Shared protocol for committing a clean checkpoint before delegating work to a subagent or starting a commit batch, so failures can be rolled back without losing prior progress. Includes a warning that worktree isolation (execution-gate.sh) applies to ALL story work, not just subagent dispatch — working on main fouls up parallel agents
 ---
 
 ### Pre-Task Commit Checkpoint
@@ -2236,6 +2258,21 @@ Before delegating a unit of work to a subagent (or starting any commit batch),
 ensure the working tree is at a clean, labeled commit. This creates a rollback
 point: if the subagent fails or produces unwanted changes, `git reset` or
 `git checkout` returns to the checkpoint without losing prior stories' work.
+
+> **WARNING — Worktree isolation applies to ALL story work, not just subagent
+> dispatch.** The checkpoint protocol below is necessary but not sufficient.
+> If the consuming project has `.devin/scripts/execution-gate.sh` (Devin CLI
+> hooks installed), **every story must run in its own worktree** — including
+> stories you execute inline in the parent session without dispatching a
+> subagent. Working directly on main fouls up parallel agents whose worktrees
+> branch off main's HEAD, and a commit landing on main while they work creates
+> merge conflicts when they merge back. The gate is not a ceiling on when
+> subagents may be used; it is a floor for *all* write-capable story work.
+> Abandoning subagent dispatch to do the work inline with parent-session tools
+> is circumvention, not compliance. See the `execution-binding-contract`
+> include (wired into `execute-upsert`) for the full machine-enforced rules.
+> If your skill does not include it, read it at
+> `src/current/includes/execution-binding-contract.md.tmpl` before starting.
 
 #### When to Checkpoint
 
@@ -4171,8 +4208,7 @@ description: Shared CLI tool discovery — run cli-tool-discovery.sh to find and
 Before concluding a CLI tool is unavailable, run `cli-tool-discovery.sh`. It
 detects environment wrappers (devbox, mise, flox, direnv, nix), searches 30+
 standard PATH locations, checks package managers (brew, mise, asdf), and
-finally checks repo-root fallback dirs (`$REPO_ROOT/bin`, `scripts/`,
-`.local/bin`) as a last resort — all in one pass. **Never give up on
+accounts for the project's tech stack — all in one pass. **Never give up on
 the first `command -v` failure.**
 
 For ad-hoc package execution (e.g. `uvx`, `pnpm dlx`, `cargo binstall`, `go
@@ -4217,112 +4253,6 @@ cli-tool-discovery.sh --runner <python|node|rust|go>
 In exec mode (`--`), the script resolves the tool and replaces itself with
 the tool process — stdout/stderr/exit code pass through directly. If the tool
 is inside a wrapper, it execs through the wrapper. If not found, exits 127.
-
-#### Devbox-aware resolution flow
-
-The devbox shell environment variable (`DEVBOX_SHELL` or `IN_DEVBOX_SHELL`)
-is checked **first**, before any other resolution. This simplifies all
-downstream logic: if we're already inside a `devbox shell`, devbox-managed
-binaries are on `PATH` and no wrapper detection is needed (mise/flox/direnv/nix
-are skipped entirely).
-
-- **Inside a `devbox shell`** (env var set): `command -v` → path-exhaustion →
-  `devbox add <tool>` → retry. If found, returns `FOUND`; otherwise skips
-  other wrappers and goes directly to the nix/uv fallback.
-- **Not inside a `devbox shell`**, but devbox is available and a `devbox.json`
-  exists up the tree: verifies the tool exists inside the devbox environment
-  (`devbox run -- command -v <tool>`). If not found, tries `devbox add` +
-  recheck. If confirmed available, returns `WRAPPER:devbox run --`. If still
-  not found inside devbox, falls through to normal flow and nix/uv fallback.
-- **devbox unavailable or no `devbox.json`**: normal flow — `command -v`,
-  other wrappers (mise, flox, direnv, nix), path-exhaustion.
-
-#### nix/uv fallback
-
-When the tool is not found by any of the above methods, the script tries to
-install it via available package managers — searching the repo first before
-attempting install:
-
-- **uv → pip** (special case for `tool == uv`): ensures uv is recorded in
-  devbox.json and falls back to pip/pip3/python3 -m pip for Python package
-  operations.
-- **nix**: if nix is available, searches nixpkgs for `<tool>` (via
-  `nix eval nixpkgs#<tool>.meta.mainProgram`). If a package exists, installs
-  it via `nix profile install` and rechecks PATH.
-- **uv**: if uv is available, tries `uv tool install <tool>` from PyPI
-  (the install attempt itself serves as the search — it fails fast if the
-  package doesn't exist). If successful, rechecks PATH.
-
-#### Repo-root fallback (last resort)
-
-After all system PATH locations and package manager lookups are exhausted,
-the script checks `$REPO_ROOT/bin`, `$REPO_ROOT/scripts`, and
-`$REPO_ROOT/.local/bin` as a **last resort**. This covers project-local tool
-shim layouts like [Hermit](https://cashapp.github.io/hermit/), where
-`bin/<tool>` symlinks auto-bootstrap the tool on first run.
-
-**Why last?** Repo-root `bin/` directories are the least secure search
-location — a cloned repository could contain malicious executables in `bin/`.
-System paths, home directories, and package managers are all more trustworthy
-because they require explicit installation or system-level access. By
-searching repo-root `bin/` only after everything else fails, the script
-minimizes the risk of a rogue project binary shadowing a legitimate system
-tool.
-
-Tech-stack-specific repo dirs (`node_modules/.bin`, `target/release`,
-`.venv/bin`, `vendor/bin`, etc.) are **not** deferred — they are
-build-system-managed and stay in the normal search order. Only the
-unconditional `$REPO_ROOT/bin` / `scripts/` / `.local/bin` fallback is
-deferred to last.
-
-```mermaid
-flowchart TD
-    Start["cli-tool-discovery.sh<br/>resolve_tool()"] --> InShell{"1. In devbox shell?<br/>(DEVBOX_SHELL /<br/>IN_DEVBOX_SHELL)"}
-    InShell -- "yes" --> ShellPathCheck{"1a. On PATH?<br/>(command -v)"}
-    ShellPathCheck -- "yes" --> FoundShellPath["FOUND: path"]
-    ShellPathCheck -- "no" --> ShellExhaust["1b. Path-exhaustion<br/>(standard locations +<br/>package managers)"]
-    ShellExhaust --> ShellExhaustFound{"found?"}
-    ShellExhaustFound -- "yes" --> FoundShellExhaust["FOUND: path"]
-    ShellExhaustFound -- "no" --> DevboxAdd["1c. devbox add tool<br/>(install into project)"]
-    DevboxAdd --> RetryCheck{"1d. Retry: on PATH or<br/>path-exhaustion found?"}
-    RetryCheck -- "yes" --> FoundRetry["FOUND: path"]
-    RetryCheck -- "no" --> FallbackStart["4. nix/uv fallback"]
-    InShell -- "no" --> DevboxAvail{"2. devbox available?<br/>(command -v devbox)"}
-    DevboxAvail -- "no" --> NormalFlow["3. Normal flow"]
-    DevboxAvail -- "yes" --> DevboxJson{"devbox.json exists<br/>up the tree?"}
-    DevboxJson -- "no" --> NormalFlow
-    DevboxJson -- "yes" --> DevboxVerify["2a. On PATH inside devbox?<br/>(devbox run -- command -v)"]
-    DevboxVerify --> DevboxVerifyFound{"found?"}
-    DevboxVerifyFound -- "yes" --> WrapperDevbox["WRAPPER: devbox run --"]
-    DevboxVerifyFound -- "no" --> DevboxAdd2["2b. devbox add + recheck<br/>inside devbox"]
-    DevboxAdd2 --> DevboxAddFound{"found?"}
-    DevboxAddFound -- "yes" --> WrapperDevbox
-    DevboxAddFound -- "no" --> NormalFlow
-    WrapperDevbox -- "caller execs<br/>devbox run -- tool" --> ShellPathCheck
-    NormalFlow --> NormalPathCheck{"3a. On PATH?<br/>(command -v)"}
-    NormalPathCheck -- "yes" --> FoundNormalPath["FOUND: path"]
-    NormalPathCheck -- "no" --> OtherWrappers["3b. Other wrappers<br/>(mise, flox, direnv, nix)"]
-    OtherWrappers --> NormalExhaust["3c. Global path-exhaustion<br/>(standard locations +<br/>package managers)"]
-    NormalExhaust --> NormalExhaustFound{"found?"}
-    NormalExhaustFound -- "yes" --> FoundNormalExhaust["FOUND: path"]
-    NormalExhaustFound -- "no" --> RepoRootFallback["3d. Repo-root fallback<br/>($REPO_ROOT/bin, scripts/,<br/>.local/bin — LAST, least secure)"]
-    RepoRootFallback --> RepoRootFound{"found?"}
-    RepoRootFound -- "yes" --> FoundRepoRoot["FOUND: path"]
-    RepoRootFound -- "no" --> FallbackStart
-    FallbackStart --> UvSpecial{"4a. tool == uv?"}
-    UvSpecial -- "yes" --> PipFallback["FALLBACK: pip<br/>(ensure_devbox_package + pip)"]
-    UvSpecial -- "no" --> NixFallback{"4b. nix available?<br/>search nixpkgs for tool"}
-    NixFallback -- "found + installed" --> NixRecheck["recheck PATH"]
-    NixRecheck --> NixFound{"found?"}
-    NixFound -- "yes" --> FoundNix["FOUND: path"]
-    NixFound -- "no" --> UvFallback{"4c. uv available?<br/>uv tool install tool"}
-    NixFallback -- "not found" --> UvFallback
-    UvFallback -- "installed" --> UvRecheck["recheck PATH"]
-    UvRecheck --> UvFound{"found?"}
-    UvFound -- "yes" --> FoundUv["FOUND: path"]
-    UvFound -- "no" --> NotFound["5. NOT_FOUND"]
-    UvFallback -- "not found" --> NotFound
-```
 
 #### Output (runner mode)
 
@@ -4392,35 +4322,6 @@ discover the runner programmatically.
   `--runner <ecosystem>` instead so the binary and invocation stay paired
   and the policy lives in one place (the tech-stack table, mirrored by the
   runner mode)
-
-#### Timeout configuration
-
-All internal probe and install operations are hang-safe — they run with a
-timeout so a broken devbox, slow brew cache, or stalled nix substituter
-cannot block the resolver indefinitely. Exec mode (`-- <tool> [args]`) is
-never timed; it's the user's command.
-
-| Env var | Default | Scope |
-|---------|---------|-------|
-| `CLTOOL_PROBE_TIMEOUT_SECS` | `30` | Lookups: `brew list`, `brew --prefix`, `mise which`, `asdf which`, `nix eval`, `rtk rewrite` |
-| `CLTOOL_INSTALL_TIMEOUT_SECS` | `120` | Network installs: `devbox add`, `nix profile install`, `uv tool install` |
-| `DEVBOX_PROBE_TIMEOUT_SECS` | `15` | `devbox run -- command -v` probes specifically |
-
-On timeout, the probe or install is treated as a failure and the resolver
-falls through to the next strategy (ultimately `NOT_FOUND`). Override the
-defaults for slow networks or cold caches:
-
-```bash
-CLTOOL_PROBE_TIMEOUT_SECS=60 CLTOOL_INSTALL_TIMEOUT_SECS=300 bash cli-tool-discovery.sh <tool>
-```
-
-The Python include (`cli-tool-discovery.py.tmpl`) reads the same env vars
-(`CLTOOL_PROBE_TIMEOUT_SECS`, `CLTOOL_INSTALL_TIMEOUT_SECS`) and applies
-them to `subprocess.run(..., timeout=...)` calls in `resolve_tool` and
-`_rtk_supports`. `subprocess.TimeoutExpired` is caught and treated as
-not-found. `run_tool` / `run_tool_exec` / `devbox_run` / `rtk_wrap` pass
-`**kwargs` through to `subprocess.run`, so callers can opt into a timeout
-by passing `timeout=<secs>` if needed.
 
 
 ---

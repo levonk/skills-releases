@@ -28,6 +28,10 @@ full depth.
 * [Procedures and Lists](procedures-and-lists.md) - Front-loading important information, procedure structure (intro sentence, single-step, sub-step numbering), list formatting, transitions
 * [Word Choice and Consistency](word-choice.md) - Slang/jargon/idioms, contractions, abbreviations, e.g./i.e., acronym nuances, US/UK English, gender-neutral pronouns, tested examples
 
+### AI Writing Tells
+
+* [AI Writing Tells](ai-writing-tells.md) - A catalog of AI-specific writing patterns to avoid (negative parallelism, "delve", "tapestry", anaphora abuse, tricolon abuse, em dashes, fractal summaries, signposted conclusions). Distinct from general STE100 clarity rules: a sentence can be clear and active but still read as AI slop. Cross-references the Founder Content System's banned-pattern list as the social-media-specific application.
+
 ### Engineering Blog Writing
 
 * [Engineering Blog Fundamentals](engineering-blog-fundamentals.md) - Why write engineering blogs, topic selection, and the characteristics of compelling posts

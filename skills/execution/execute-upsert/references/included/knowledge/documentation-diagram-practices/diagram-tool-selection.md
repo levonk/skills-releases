@@ -1,12 +1,12 @@
 ---
 type: Practice
 title: Diagram Tool Selection
-description: Pick the right diagram tool (Mermaid, PlantUML, Excalidraw, or editorial HTML/SVG) by output type, version-control needs, and rendering environment — text-based tools for markdown-embedded diffability, Excalidraw for whiteboard sketching, PlantUML for precise UML, editorial HTML/SVG for standalone deliverables.
-tags: [documentation, diagrams, tool-selection, mermaid, plantuml, excalidraw, editorial, html-svg]
+description: Pick the right diagram tool (Mermaid, PlantUML, D2, Excalidraw, or editorial HTML/SVG) by output type, version-control needs, and rendering environment — text-based tools for markdown-embedded diffability, D2 for orthogonal autolayout and agentic generation, Excalidraw for whiteboard sketching, PlantUML for precise UML, editorial HTML/SVG for standalone deliverables.
+tags: [documentation, diagrams, tool-selection, mermaid, plantuml, d2, tala, excalidraw, editorial, html-svg]
 date:
   created: "2026-07-19"
-  knowledge-basis: "2026-08-21"
-  last-used: "2026-08-21"
+  knowledge-basis: "2026-09-08"
+  last-used: "2026-09-08"
 ---
 
 # Diagram Tool Selection
@@ -14,13 +14,14 @@ date:
 ## Practice
 
 Pick the diagram tool by **output type** and **rendering environment**, not by
-general familiarity. The four routes serve orthogonal sweet spots and can be
+general familiarity. The five routes serve orthogonal sweet spots and can be
 mixed within one project — pick per diagram, not per document.
 
 | Tool | Source format | Renders in | Best for | VCS diffable |
 |------|--------------|-----------|----------|--------------|
 | **Mermaid** | Text (fenced code block) | GitHub, Obsidian, VS Code, most static site generators | Flowcharts, decision trees, sequence diagrams embedded in markdown | ✅ Yes |
 | **PlantUML** | Text (`@startuml`/`@enduml`) | Server (plantuml.com), local jar, Obsidian plugin | Precise UML (class, state, component, deployment), complex sequence diagrams | ✅ Yes |
+| **D2** | Text (`.d2` files) | D2 CLI (SVG/PNG/PDF), [play.d2lang.com](https://play.d2lang.com) (client-side) | Architecture diagrams with orthogonal autolayout (TALA), agentic diagram generation with custom positioning | ✅ Yes |
 | **Excalidraw** | `.excalidraw` JSON or binary | Excalidraw app, Obsidian plugin, npm package | Hand-drawn whiteboard sketches, architecture whiteboard sessions, low-fidelity mockups | ⚠️ JSON (diffable but noisy) |
 | **Editorial HTML/SVG** | Self-contained `.html` with inline SVG/CSS | Any modern browser, slide decks, OG cards, print | Standalone editorial diagrams where the diagram is the deliverable, not an inline embed | ⚠️ HTML (diffable but verbose) |
 
@@ -32,27 +33,35 @@ mixed within one project — pick per diagram, not per document.
 2. **Need precise UML notation (class diagrams, state machines, component
    diagrams) with layout control?** → **PlantUML**. Richer UML vocabulary
    than Mermaid; server or local jar rendering.
-3. **Whiteboard-style sketch where hand-drawn aesthetics communicate
+3. **Architecture diagram where orthogonal (whiteboard-like) autolayout or
+   agentic generation matters?** → **D2** with TALA. Text-based `.d2` source
+   compiled to SVG via CLI; TALA's custom/partial positioning lets AI models
+   set coordinates while the engine handles routing. See
+   [D2 and TALA Practices](d2-tala.md).
+4. **Whiteboard-style sketch where hand-drawn aesthetics communicate
    "tentative / work in progress"?** → **Excalidraw**. The sketch aesthetic
    signals impermanence — readers don't mistake it for a finalized architecture.
-4. **The diagram is the deliverable — a standalone HTML/SVG/PNG file for a
+5. **The diagram is the deliverable — a standalone HTML/SVG/PNG file for a
    blog post, slide, OG card, or long-form essay where editorial layout and
    visual hierarchy matter more than VCS diffability?** → **Editorial
    HTML/SVG**. Follow
    [Editorial HTML/SVG Diagram Practices](editorial-html-svg-diagrams.md) and
    the upstream [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design)
    skill (39 visual types, skinnable design system, brand onboarding).
-5. **Offline / air-gapped environment?** → **Mermaid** (renders client-side) or
-   **PlantUML with local jar** (avoid the public plantuml.com server).
-6. **Diagram must be editable by non-developers?** → **Excalidraw** (GUI
+6. **Offline / air-gapped environment?** → **Mermaid** (renders client-side),
+   **PlantUML with local jar** (avoid the public plantuml.com server), or
+   **D2 CLI** (local compilation, no server needed).
+7. **Diagram must be editable by non-developers?** → **Excalidraw** (GUI
    editor) — text-based tools require syntax knowledge.
 
 ### When to mix tools in one document
 
-A single ADR or design doc can use all three markdown-embedded tools:
+A single ADR or design doc can use multiple tools together:
 
 - **Mermaid** for the decision tree (renders inline, no server)
 - **PlantUML** for the detailed sequence diagram (precise UML, auto-layout)
+- **D2** for the architecture diagram (orthogonal TALA layout, agentic
+  generation with custom positioning)
 - **Excalidraw** for the whiteboard sketch of the proposed architecture
   (signals "this is a draft, not a finalized design")
 
@@ -88,6 +97,8 @@ environment up front avoids rework.
 - [Mermaid Practices](mermaidjs.md) — syntax conventions once Mermaid is selected.
 - [PlantUML Practices](plantuml.md) — rendering pipelines once PlantUML is selected.
 - [Excalidraw Practices](excalidraw.md) — storage and workflow once Excalidraw is selected.
+- [D2 and TALA Practices](d2-tala.md) — the orthogonal-autolayout route
+  (TALA, custom/partial positioning, agentic generation).
 - [Editorial HTML/SVG Diagram Practices](editorial-html-svg-diagrams.md) —
   the standalone-deliverable route (deletion-first, 4px grid, connector rules,
   skinnable design system).

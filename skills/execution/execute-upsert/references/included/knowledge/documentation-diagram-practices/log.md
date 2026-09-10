@@ -1,5 +1,27 @@
 # Directory Update Log
 
+## 2026-09-08
+
+* **Ingest**: Added [d2-tala.md](d2-tala.md) — new concept page documenting D2
+  text-based diagramming with the TALA orthogonal autolayout engine, now
+  open-source under MPL-2.0 (announced September 7, 2026, bundled into D2
+  v0.9.0). Covers layout engine selection (TALA vs Dagre vs ELK), custom
+  positioning for agentic diagram generation (models set coordinates, TALA
+  routes connectors), partial positioning (hybrid pinned + auto-placed), SVG
+  output preference, the client-side playground, and TALA's tradeoffs
+  (randomness, weaker DAG layout, nonlinear scaling). Motivated by the TALA
+  open-sourcing removing the previous proprietary barrier to recommending D2.
+* **Update**: Updated [diagram-tool-selection.md](diagram-tool-selection.md)
+  — added a 5th route (D2) to the tool table and decision tree, with a
+  cross-link to the new concept page. Updated the "mix tools" guidance to
+  include D2 for architecture diagrams. Added D2 to the offline/air-gapped
+  option (D2 CLI, no server needed).
+* **Update**: Updated [index.md](index.md) with the new concept entry and
+  broadened the tool-selection description to include D2.
+* **Update**: Updated [overview.md](overview.md) synthesis — added the D2
+  route to the tool-landscape diagram, the synthesis table, and the sources
+  list (TALA blog post attribution).
+
 ## 2026-08-21
 
 * **Ingest**: Added [editorial-html-svg-diagrams.md](editorial-html-svg-diagrams.md)

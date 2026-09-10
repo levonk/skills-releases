@@ -187,7 +187,7 @@ run_act() {
 	if [ ! -f "$workflow" ]; then
 		echo "[test-with-act] WARNING: Workflow file not found: $workflow" >&2
 		echo "[test-with-act] Skipping act (ubuntu) validation — no nix.yml generated yet." >&2
-		echo "[test-with-act] Generate the workflow first (see references/advanced-features.md)." >&2
+		echo "[test-with-act] Generate the workflow first (see references/advanced/github-actions-nix.md)." >&2
 		return 0
 	fi
 

@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Documentation Diagram Practices Overview
-description: Synthesis of documentation diagram practices — tool selection across Mermaid, PlantUML, Excalidraw, and editorial HTML/SVG, plus the syntax and design conventions that keep diagrams rendering and reading well across markdown pre-processors and standalone deliverables.
-tags: [documentation, diagrams, mermaid, plantuml, excalidraw, editorial, html-svg, overview, synthesis]
+description: Synthesis of documentation diagram practices — tool selection across Mermaid, PlantUML, D2/TALA, Excalidraw, and editorial HTML/SVG, plus the syntax and design conventions that keep diagrams rendering and reading well across markdown pre-processors and standalone deliverables.
+tags: [documentation, diagrams, mermaid, plantuml, d2, tala, excalidraw, editorial, html-svg, overview, synthesis]
 date:
   created: "2026-07-19"
-  knowledge-basis: "2026-08-21"
-  last-used: "2026-08-21"
+  knowledge-basis: "2026-09-08"
+  last-used: "2026-09-08"
 ---
 
 ---
@@ -69,6 +69,24 @@ bundles.
    on first use, then "CI" thereafter. Never assume the reader knows the
    acronym.
 
+9. **No em dashes.** Do not use em dashes (—). Use commas or parentheses
+   instead. AI overuses em dashes for dramatic pauses and parenthetical
+   asides. See the
+   [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+   concept page for the full rationale.
+
+#### AI Writing Tells
+
+AI-generated text has recognizable overuse patterns that survive the clarity
+rules above. A sentence can be active, short, and one-topic-per-sentence and
+still read as AI slop. The tells include: negative parallelism ("It's not X,
+it's Y"), magic adverbs ("quietly", "deeply"), "delve" and friends, "tapestry"
+and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
+vulnerability, grandiose stakes inflation, fractal summaries, signposted
+conclusions, and more. For the full catalog and self-check, see the
+[AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+concept page in the `simplified-technical-english` knowledge bundle.
+
 #### What Counts as Technical English
 
 Apply these guidelines to:
@@ -99,6 +117,10 @@ Before finishing a piece of technical prose, run this checklist:
 - [ ] Is every acronym defined on first use?
 - [ ] Are decorative modifiers removed?
 - [ ] Does each sentence carry one topic?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead.)
+- [ ] Is the prose free of AI writing tells? (Negative parallelism, anaphora
+      abuse, tricolon abuse, "delve", "tapestry", "Here's the kicker", fractal
+      summaries, signposted conclusions. See the AI Writing Tells concept page.)
 
 If any answer is "no," revise before publishing.
 
@@ -120,6 +142,7 @@ tool-selection → mermaid (inline, render-portability) → plantuml (precise, s
               excalidraw (hand-drawn, whiteboard, .excalidraw JSON)   editorial html/svg
                                                                         (standalone deliverable,
                                                                          4px grid, design system)
+              d2 (text-based, orthogonal TALA autolayout, agentic positioning)
 ```
 
 | Concern | Practice | Prevents |
@@ -127,6 +150,7 @@ tool-selection → mermaid (inline, render-portability) → plantuml (precise, s
 | Selection | [Diagram Tool Selection](diagram-tool-selection.md) | Picking a tool that doesn't render in your target environment, version-control friction, unreachable rendering servers, using markdown-embed tools for standalone deliverables |
 | Mermaid | [Mermaid Practices](mermaidjs.md) | Parse errors from unquoted labels, `<br/>` stripped by pre-processors, broken decision nodes |
 | PlantUML | [PlantUML Practices](plantuml.md) | Missing `@startuml`/`@enduml`, server-only rendering, layout sprawl, unreadable sequence diagrams |
+| D2/TALA | [D2 and TALA Practices](d2-tala.md) | Wrong layout engine for diagram shape, unrouteable agentic diagrams, layout instability from TALA randomness, nonlinear scaling on large diagrams |
 | Excalidraw | [Excalidraw Practices](excalidraw.md) | Binary blob in git, lost sketch history, hand-drawn diagrams where precision is required |
 | Editorial HTML/SVG | [Editorial HTML/SVG Diagram Practices](editorial-html-svg-diagrams.md) | AI-slop schematics (diagonal slants, labels on arrows, identical boxes, accent spray), off-grid layouts, unbranded default skins shipped into branded projects, inaccessible SVG |
 | Contrast | [Color Contrast Practices](color-contrast.md) | Light text on pastel fills, sub-WCAG contrast ratios, labels that vanish on dim screens and in print |
@@ -183,6 +207,11 @@ to `log.md` when adding.
   practices in [editorial-html-svg-diagrams.md](editorial-html-svg-diagrams.md).
   Ships 39 visual types, semantic patterns, a skinnable style guide,
   brand-onboarding flows, and geometry verification scripts.
+- [TALA is open-source](https://d2lang.com/blog/tala-is-open-source/) —
+  Alexander Wang, September 7, 2026. Announces TALA (Terrastruct's AutoLayout
+  Algorithm) open-sourced under MPL-2.0, bundled into D2 v0.9.0. Sources the
+  D2/TALA practices in [d2-tala.md](d2-tala.md) — layout engine selection,
+  custom/partial positioning for agentic generation, and TALA's tradeoffs.
 
 ---
 

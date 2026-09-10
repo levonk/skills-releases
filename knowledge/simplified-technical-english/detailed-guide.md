@@ -303,7 +303,7 @@ precisely. Relax them when:
 ## Cross-References
 
 - Core guidelines: [Simplified Technical English](simplified-technical-english.md) (sibling concept page in this bundle)
-- Punctuation: [Punctuation](punctuation.md) — commas, semicolons, hyphens, em dashes, slashes
+- Punctuation: [Punctuation](punctuation.md) — commas, semicolons, hyphens, em dashes (banned), slashes
 - Capitalization and articles: [Capitalization and Articles](capitalization.md) — title-style vs sentence-style, a/an by vowel sound
 - Procedures and lists: [Procedures and Lists](procedures-and-lists.md) — front-loading, procedure structure, list formatting, transitions
 - Word choice and consistency: [Word Choice and Consistency](word-choice.md) — slang/jargon, contractions, abbreviations, e.g./i.e., gender-neutral pronouns, tested examples

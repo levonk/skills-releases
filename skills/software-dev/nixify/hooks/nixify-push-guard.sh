@@ -93,6 +93,6 @@ fi
 
 # Block the push — validate-pre-push.sh hasn't run for this project+branch
 cat <<'JSON'
-{"decision": "block", "reason": "NIXIFY PUSH GUARD: You are about to push a nixify PR (flake.nix detected) but validate-pre-push.sh (Step 22b) has NOT been run for this branch. This is the deterministic gate that catches: (1) fetchPnpmDeps/fetchNpmDeps hash mismatches, (2) magic-nix-cache-action prohibition, (3) missing timeout-minutes, (4) stale branch. Run: bash scripts/validate-pre-push.sh <owner>/<repo> . --base-ref origin/main --verbose — then push. If validate-pre-push.sh is not available (not a nixify-managed project), delete flake.nix or set NIXIFY_SKIP_GUARD=1 in the environment."}
+{"decision": "block", "reason": "NIXIFY PUSH GUARD: You are about to push a nixify PR (flake.nix detected) but validate-pre-push.sh (Step 22b) has NOT been run for this branch. This is the deterministic gate that catches: (1) fetchPnpmDeps/fetchNpmDeps hash mismatches, (2) magic-nix-cache-action use-flakehub guard, (3) magic-nix-cache-action darwin os guard, (4) missing timeout-minutes, (5) deprecated runner labels, (6) stale branch. Run: bash scripts/validate-pre-push.sh <owner>/<repo> . --base-ref origin/main --verbose — then push. If validate-pre-push.sh is not available (not a nixify-managed project), delete flake.nix or set NIXIFY_SKIP_GUARD=1 in the environment."}
 JSON
 exit 2

@@ -10,7 +10,7 @@ different situations see the right error instead of Nix's generic "unsupported p
 |----------|---------|---------|
 | Unsupported platform | User's system not in `meta.platforms` | "This project is `<scope>`-only. It doesn't expose `<excluded>` targets. To build from source on `<included>`, see the project's build instructions." |
 | FakeHash unverified | User's system IS in `meta.platforms` but hash is `lib.fakeHash` | "The `<system>` source-build hash is unverified (set to `lib.fakeHash` after GitHub's Intel macOS runner was decommissioned). Run `nix build .#source` on an Intel Mac to compute the real hash, then open a PR with the updated hash." |
-| CI runner decommissioned | `validate-x86-darwin` job fails in CI | Self-prune PR explains the runner retirement (see `references/advanced-features.md` — Self-Pruning on Runner Decommission) |
+| CI runner decommissioned | `validate-x86-darwin` job fails in CI | Self-prune PR explains the runner retirement (see `references/advanced/github-actions-nix.md` — Self-Pruning on Runner Decommission) |
 
 ## Nix implementation
 

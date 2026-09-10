@@ -1283,6 +1283,24 @@ bundles.
    on first use, then "CI" thereafter. Never assume the reader knows the
    acronym.
 
+9. **No em dashes.** Do not use em dashes (—). Use commas or parentheses
+   instead. AI overuses em dashes for dramatic pauses and parenthetical
+   asides. See the
+   [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+   concept page for the full rationale.
+
+#### AI Writing Tells
+
+AI-generated text has recognizable overuse patterns that survive the clarity
+rules above. A sentence can be active, short, and one-topic-per-sentence and
+still read as AI slop. The tells include: negative parallelism ("It's not X,
+it's Y"), magic adverbs ("quietly", "deeply"), "delve" and friends, "tapestry"
+and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
+vulnerability, grandiose stakes inflation, fractal summaries, signposted
+conclusions, and more. For the full catalog and self-check, see the
+[AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+concept page in the `simplified-technical-english` knowledge bundle.
+
 #### What Counts as Technical English
 
 Apply these guidelines to:
@@ -1313,6 +1331,10 @@ Before finishing a piece of technical prose, run this checklist:
 - [ ] Is every acronym defined on first use?
 - [ ] Are decorative modifiers removed?
 - [ ] Does each sentence carry one topic?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead.)
+- [ ] Is the prose free of AI writing tells? (Negative parallelism, anaphora
+      abuse, tricolon abuse, "delve", "tapestry", "Here's the kicker", fractal
+      summaries, signposted conclusions. See the AI Writing Tells concept page.)
 
 If any answer is "no," revise before publishing.
 
@@ -1561,7 +1583,7 @@ See `references/script-execution-standards.md` for the full devbox/rtk detection
 
 
 ---
-description: Shared protocol for committing a clean checkpoint before delegating work to a subagent or starting a commit batch, so failures can be rolled back without losing prior progress
+description: Shared protocol for committing a clean checkpoint before delegating work to a subagent or starting a commit batch, so failures can be rolled back without losing prior progress. Includes a warning that worktree isolation (execution-gate.sh) applies to ALL story work, not just subagent dispatch — working on main fouls up parallel agents
 ---
 
 ### Pre-Task Commit Checkpoint
@@ -1570,6 +1592,21 @@ Before delegating a unit of work to a subagent (or starting any commit batch),
 ensure the working tree is at a clean, labeled commit. This creates a rollback
 point: if the subagent fails or produces unwanted changes, `git reset` or
 `git checkout` returns to the checkpoint without losing prior stories' work.
+
+> **WARNING — Worktree isolation applies to ALL story work, not just subagent
+> dispatch.** The checkpoint protocol below is necessary but not sufficient.
+> If the consuming project has `.devin/scripts/execution-gate.sh` (Devin CLI
+> hooks installed), **every story must run in its own worktree** — including
+> stories you execute inline in the parent session without dispatching a
+> subagent. Working directly on main fouls up parallel agents whose worktrees
+> branch off main's HEAD, and a commit landing on main while they work creates
+> merge conflicts when they merge back. The gate is not a ceiling on when
+> subagents may be used; it is a floor for *all* write-capable story work.
+> Abandoning subagent dispatch to do the work inline with parent-session tools
+> is circumvention, not compliance. See the `execution-binding-contract`
+> include (wired into `execute-upsert`) for the full machine-enforced rules.
+> If your skill does not include it, read it at
+> `src/current/includes/execution-binding-contract.md.tmpl` before starting.
 
 #### When to Checkpoint
 

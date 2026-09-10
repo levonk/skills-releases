@@ -17,7 +17,7 @@
 # The maintainer-opt-in constraint: the contributor cannot install the Garnix
 # GitHub App on a repo they don't own. The garnix.yaml is inert until the
 # maintainer enables the app — no side effects, no broken checks. See
-# references/advanced-features.md — Garnix CI (Hosted Alternative).
+# references/advanced/garnix.md — Garnix CI (Hosted Alternative).
 #
 # Output:
 #   - If --output is given: writes garnix.yaml to that path, prints JSON status

@@ -258,6 +258,14 @@ measured per-platform, not carried across.
 
 ## Relationship to Other Concepts
 
+- **[AI Writing Tells](../simplified-technical-english/ai-writing-tells.md)** —
+  The universal banned-pattern list below is the social-media-specific
+  application of the systematic AI-tell catalog. The AI Writing Tells page
+  covers the full range of patterns (word choice, sentence structure,
+  paragraph structure, tone, formatting, composition) across all prose
+  types. This page's banned-pattern list is the subset that surfaces most in
+  founder social content (negative parallelism, punchline stacking,
+  dramatized pre-framing, press-release verbs, sweeping absolutes).
 - **[Personal Brand](personal-brand.md)** — The founder content system is the
   execution layer for the personal-brand principle. Personal brand defines
   the three channels (speaking, writing, open source/community) and the

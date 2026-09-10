@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: API Auth Payment Practices Overview
-description: Synthesis of SaaS authentication, payment processing, multi-tenant isolation, encrypted token storage, tier-based feature gating, and webhook handling practices.
-tags: [auth, payment, stripe, supabase, multi-tenant, rls, saas, overview, synthesis]
+description: Synthesis of SaaS authentication, authorization terminology, payment processing, multi-tenant isolation, encrypted token storage, tier-based feature gating, and webhook handling practices.
+tags: [auth, authorization, payment, stripe, supabase, multi-tenant, rls, saas, overview, synthesis]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  knowledge-basis: "2026-08-31"
+  last-used: "2026-09-04"
 sources:
   - id: feat-202607170936-bookkeeping-saas-mvp
     resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md"
@@ -17,6 +17,10 @@ sources:
   - id: tasks-bookkeeping-saas-mvp-09-001-billing-tiers-trial
     resource: "internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-09-001-billing-tiers-trial.md"
     title: "bookkeep-saas"
+  - id: idpro-2026-authz-terminology
+    resource: "https://idpro.org/authorization-terminology-is-a-mess-lets-fix-it/"
+    title: "Authorization Terminology is a Mess: Let's Fix It"
+    author: "Andrea Chiarelli"
 ---
 
 ---
@@ -79,6 +83,24 @@ bundles.
    on first use, then "CI" thereafter. Never assume the reader knows the
    acronym.
 
+9. **No em dashes.** Do not use em dashes (—). Use commas or parentheses
+   instead. AI overuses em dashes for dramatic pauses and parenthetical
+   asides. See the
+   [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+   concept page for the full rationale.
+
+#### AI Writing Tells
+
+AI-generated text has recognizable overuse patterns that survive the clarity
+rules above. A sentence can be active, short, and one-topic-per-sentence and
+still read as AI slop. The tells include: negative parallelism ("It's not X,
+it's Y"), magic adverbs ("quietly", "deeply"), "delve" and friends, "tapestry"
+and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
+vulnerability, grandiose stakes inflation, fractal summaries, signposted
+conclusions, and more. For the full catalog and self-check, see the
+[AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+concept page in the `simplified-technical-english` knowledge bundle.
+
 #### What Counts as Technical English
 
 Apply these guidelines to:
@@ -109,6 +131,10 @@ Before finishing a piece of technical prose, run this checklist:
 - [ ] Is every acronym defined on first use?
 - [ ] Are decorative modifiers removed?
 - [ ] Does each sentence carry one topic?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead.)
+- [ ] Is the prose free of AI writing tells? (Negative parallelism, anaphora
+      abuse, tricolon abuse, "delve", "tapestry", "Here's the kicker", fractal
+      summaries, signposted conclusions. See the AI Writing Tells concept page.)
 
 If any answer is "no," revise before publishing.
 
@@ -116,19 +142,21 @@ If any answer is "no," revise before publishing.
 
 # API Auth Payment Practices Overview
 
-This bundle documents practices for SaaS authentication, payment processing, and
-multi-tenant data isolation. Each concept was extracted from the bookkeep-saas
-PRD and task specifications — the hard constraints and architectural decisions
-that ensure secure auth, reliable billing, and tenant data isolation.
+This bundle documents practices for SaaS authentication, authorization,
+payment processing, and multi-tenant data isolation. Each concept was extracted
+from the bookkeep-saas PRD, task specifications, and external authorization
+research — the hard constraints and architectural decisions that ensure secure
+auth, reliable billing, and tenant data isolation.
 
 ## The Auth-Payment Stack
 
 ```
-auth-provider-selection → multi-tenant-rls → payment-provider → token-storage → tier-gating → webhooks
+authorization-taxonomy → auth-provider-selection → multi-tenant-rls → payment-provider → token-storage → tier-gating → webhooks
 ```
 
 | Phase | Practice | Prevents |
 |-------|----------|----------|
+| Terminology | [Authorization Taxonomy](authorization-taxonomy.md) | Category errors from comparing RBAC/ABAC/PBAC/MAC/DAC as peers; conflating model with architecture |
 | Auth | [Auth Provider Selection](auth-provider-selection.md) | Auth migration on paying users, missing passkey-first onboarding, vendor lock-in |
 | Isolation | [Multi-Tenant RLS](multi-tenant-rls.md) | Cross-tenant data leakage, shared schema contamination |
 | Payment | [Payment Provider Interface](payment-provider-interface.md) | Stripe lock-in, billing rewrite for new providers |
@@ -157,7 +185,8 @@ auth-provider-selection → multi-tenant-rls → payment-provider → token-stor
 
 ## Scope
 
-This bundle covers **SaaS auth, payment, and tenant isolation**. It does **not**
+This bundle covers **SaaS auth, authorization terminology, payment, and tenant
+isolation**. It does **not**
 cover:
 
 - Frontend stack conventions — see
@@ -172,6 +201,7 @@ cover:
 - `internal-docs/feature/2026/07/bookkeeping-saas-mvp/feat-202607170936-bookkeeping-saas-mvp.md` — bookkeep-saas PRD (1325 lines)
 - `internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-06-002-auth.md` — auth story (174 lines)
 - `internal-docs/feature/2026/07/bookkeeping-saas-mvp/tasks/tasks-bookkeeping-saas-mvp-09-001-billing-tiers-trial.md` — billing story (236 lines)
+- `https://idpro.org/authorization-terminology-is-a-mess-lets-fix-it/` — IDPro article by Andrea Chiarelli defining the six-axis authorization taxonomy
 
 ## Related Knowledge Bundles
 

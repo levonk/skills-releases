@@ -33,4 +33,4 @@ Discover and refine purchasing requirements through structured interviewing. Use
 
 - **Full skill**: [`skills/commerce/needs-discovery/SKILL.md`](skills/commerce/needs-discovery/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-04T10:32:01Z
+- **Generated**: 2026-09-10T02:50:59Z

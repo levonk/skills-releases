@@ -166,6 +166,9 @@ Flip back to Supabase Auth only if **all** of these are true:
 
 ## Related Concepts
 
+- [Authorization Taxonomy](authorization-taxonomy.md) — the six-axis
+  vocabulary this decision instantiates: better-auth claims are the Information
+  axis (token-based), RLS is the Enforcement axis (storage-engine PEP)
 - [Multi-Tenant RLS](multi-tenant-rls.md) — RLS policies enforced after auth
   sets the session variable
 - [Encrypted Token Storage](encrypted-token-storage.md) — Tokens stored

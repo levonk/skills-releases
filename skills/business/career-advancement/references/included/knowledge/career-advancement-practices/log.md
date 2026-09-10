@@ -1,5 +1,17 @@
 # Directory Update Log
 
+## 2026-09-08
+
+* **Update**: Added cross-reference from
+  [founder-content-system.md](founder-content-system.md) to the new
+  [AI Writing Tells](../simplified-technical-english/ai-writing-tells.md)
+  concept page in the `simplified-technical-english` bundle. The Founder
+  Content System's universal banned-pattern list is the social-media-specific
+  application of the systematic AI-tell catalog. The AI Writing Tells page
+  covers the full range of patterns across all prose types; the Founder
+  Content System's banned-pattern list is the subset that surfaces most in
+  founder social content.
+
 ## 2026-08-21 (eleventh revision — Founder Content System concept page)
 
 * **Addition**: Created [founder-content-system.md](founder-content-system.md)

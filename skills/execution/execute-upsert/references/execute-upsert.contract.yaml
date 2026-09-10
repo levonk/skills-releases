@@ -10,10 +10,10 @@ description: >
 
 must:
   - id: gate-before-dispatch
-    clause: "Every subagent dispatch MUST go through execution-gate.sh FIRST"
+    clause: "Every write-capable subagent dispatch MUST go through execution-gate.sh FIRST. Read-only subagent_explore dispatches are exempt (profile-enforced read-only tool access — they cannot mutate the working directory, so the worktree protection rationale does not apply)."
     severity: block
     enforcement: machine
-    check: ".devin/scripts/check-subagent-gate.sh (PreToolUse hook on run_subagent)"
+    check: ".devin/scripts/check-subagent-gate.sh (PreToolUse hook on run_subagent — exempts subagent_explore, blocks write-capable profiles without gate-pass)"
     fallback: "Read-only subagent_explore dispatches are exempt (profile-enforced read-only tool access)"
 
   - id: worktree-only-work

@@ -353,7 +353,7 @@ Key details (hybrid variant):
 - The hash automation workflow (Step 16) only bumps hashes for platforms in
   `ASSET_MAP` (the prebuilt platforms). The `#source` output on fallback
   platforms tracks the git tag, not release assets — it is NOT hash-automated.
-  See `references/advanced-features.md` — Release-Triggered Hash Automation.
+  See `references/advanced/hash-automation.md`.
 - **If source build is not feasible** for the missing platform(s), do NOT use
   this variant. Use the standard prebuilt-only template and document the
   platform gap in the PR body. The flake correctly only supports platforms the

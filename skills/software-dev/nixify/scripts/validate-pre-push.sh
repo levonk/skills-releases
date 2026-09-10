@@ -13,7 +13,7 @@
 #      second round-trip.
 #
 #   2. magic-nix-cache-action present in any workflow — the skill's
-#      references/advanced-features.md says "DO NOT add" it, but prose
+#      references/advanced/github-actions-nix.md says "DO NOT add" it, but prose
 #      guidance was ignored. This script GREPS for it deterministically
 #      and fails if found. The hosted backend was sunset Feb 2025; the
 #      action degrades to a FlakeHub auth failure that breaks CI.
@@ -115,17 +115,20 @@ run_check() {
 
 echo "[validate-pre-push] Running $CHECKS_RUN pre-push validation checks..."
 
-# ── Check 1: magic-nix-cache-action use-flakehub guard ──────────────────────
-# The action is NOT banned — it works again as of June 2025. The action defaults
-# to use-flakehub: true, which attempts FlakeHub OIDC authentication. If the
-# GitHub org is NOT registered on FlakeHub, this produces the acryl PR #5 error:
-# "Unable to authenticate to FlakeHub. Individuals must register at FlakeHub.com;
-# Organizations must create an organization at FlakeHub.com."
-#
-# The error condition is OMITTING use-flakehub — the default true is the footgun.
-# We are changing the default by requiring use-flakehub: false when it's not
-# already explicitly set. If the project explicitly set use-flakehub: true, they
-# presumably have a FlakeHub org — leave it alone.
+# ── Check 1: magic-nix-cache-action use-flakehub + darwin os guard ──────────
+# The action is NOT banned — it works again as of June 2025. Two footguns:
+#   1. The action defaults to use-flakehub: true, which attempts FlakeHub OIDC
+#      authentication. If the GitHub org is NOT registered on FlakeHub, this
+#      produces the acryl PR #5 error: "Unable to authenticate to FlakeHub..."
+#      The error condition is OMITTING use-flakehub — the default true is the
+#      footgun. We require use-flakehub: false when it's not already explicitly
+#      set. If the project explicitly set use-flakehub: true, they presumably
+#      have a FlakeHub org — leave it alone.
+#   2. The v14 static binary for arm64-darwin fails on macos-14 runners with
+#      dyld: Symbol not found (built against a newer libc++ than the runner
+#      ships). The job hangs ~20 min then cancels. The action must be gated
+#      to Linux-only via 'if: runner.os == "Linux"'. This was the fourth
+#      class of bug on acryl PR #5 (commit 82586e0).
 check_magic_nix_cache() {
 	if [ ! -d ".github/workflows" ]; then
 		return 0
@@ -158,13 +161,33 @@ check_magic_nix_cache() {
 				return 1
 			fi
 		fi
+		# Sub-check: darwin os guard — the v14 static binary for arm64-darwin
+		# fails on macos-14 runners with dyld: Symbol not found (built against a
+		# newer libc++ than the runner ships). The action must be gated to
+		# Linux-only via 'if: runner.os == "Linux"' (or equivalent os condition).
+		# Without the guard, the darwin job hangs ~20 min then cancels.
+		# This was the fourth class of bug on acryl PR #5 (commit 82586e0).
+		local has_runner_os_guard
+		has_runner_os_guard=$(awk '/magic-nix-cache/{found=1} found && /runner\.os[[:space:]]*==[[:space:]]*[\047"]?Linux[\047"]?/{print "yes"; exit}' "$wf" 2>/dev/null || echo "")
+		if [ "$has_runner_os_guard" != "yes" ]; then
+			echo "ERROR: magic-nix-cache-action in $wf without an 'if: runner.os == \"Linux\"' guard." >&2
+			echo "  The v14 static binary for arm64-darwin fails on macos-14 runners with:" >&2
+			echo "    dyld: Symbol not found: __ZNSt13exception_ptr31__from_native_exception_pointerEPv" >&2
+			echo "  The binary was built against a newer libc++ than the runner ships." >&2
+			echo "  The job hangs ~20 min then cancels — the build never starts." >&2
+			echo "  Fix: add 'if: runner.os == \"Linux\"' to the magic-nix-cache-action step." >&2
+			echo "  Darwin builds work without the cache, just slower." >&2
+			echo "  See DeterminateSystems/nix-installer#1684 and llvm/llvm-project#86077." >&2
+			echo "  This was the fourth class of bug shipped on acryl PR #5 (commit 82586e0)." >&2
+			return 1
+		fi
 	done
 	return 0
 }
-run_check "magic-nix-cache-action use-flakehub guard" check_magic_nix_cache
+run_check "magic-nix-cache-action use-flakehub + darwin os guard" check_magic_nix_cache
 
 # ── Check 2: timeout-minutes on nix workflow jobs ───────────────────────────
-# The skill's CI template (advanced-features.md:575) specifies timeout-minutes: 20.
+# The skill's CI template (github-actions-nix.md) specifies timeout-minutes: 20.
 # Missing timeout-minutes caused a 6h hang on acryl PR #5's aarch64-darwin job.
 check_timeout_minutes() {
 	local nix_yml=".github/workflows/nix.yml"
@@ -186,12 +209,52 @@ check_timeout_minutes() {
 }
 run_check "timeout-minutes present" check_timeout_minutes
 
-# ── Check 3: action pins (delegate to existing script) ──────────────────────
+# ── Check 3: deprecated runner labels ──────────────────────────────────────
+# GitHub decommissions old runner images on a fixed schedule. Using a
+# decommissioned label causes "no runner available" failures. The skill's
+# guidance is: ALWAYS USE THE NEWEST RUNNER. This check flags known-
+# deprecated macOS runner labels so the agent catches them before push.
+# Current newest: macos-26 (ARM), macos-26-intel (Intel), ubuntu-latest.
+# Deprecated: macos-12, macos-13, macos-14, macos-15.
+# See references/advanced/github-actions-nix.md — ALWAYS USE THE NEWEST RUNNER.
+check_deprecated_runners() {
+	if [ ! -d ".github/workflows" ]; then
+		return 0
+	fi
+	local deprecated_labels="macos-12 macos-13 macos-14 macos-15"
+	local found_deprecated=""
+	for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
+		[ -f "$wf" ] || continue
+		for label in $deprecated_labels; do
+			# Match runs-on: <label> or runs-on: ${{ matrix.runner }} where
+			# matrix includes the label. Simple grep — if the label appears
+			# in a runs-on context, flag it.
+			if grep -qE "runs-on:.*\b${label}\b" "$wf" 2>/dev/null; then
+				found_deprecated="$found_deprecated $label (in $wf)"
+			elif grep -qE "matrix\.(runner|os):.*\b${label}\b" "$wf" 2>/dev/null; then
+				found_deprecated="$found_deprecated $label (in $wf matrix)"
+			fi
+		done
+	done
+	if [ -n "$found_deprecated" ]; then
+		echo "ERROR: deprecated GitHub Actions runner label(s) found:$found_deprecated" >&2
+		echo "  These runner images are decommissioned or scheduled for removal." >&2
+		echo "  ALWAYS USE THE NEWEST RUNNER — no exceptions." >&2
+		echo "  Current newest labels: macos-26 (ARM), macos-26-intel (Intel), ubuntu-latest (Linux)." >&2
+		echo "  Replace the deprecated label with the newest equivalent." >&2
+		echo "  See references/advanced/github-actions-nix.md — ALWAYS USE THE NEWEST RUNNER." >&2
+		return 1
+	fi
+	return 0
+}
+run_check "deprecated runner labels (use newest)" check_deprecated_runners
+
+# ── Check 4: action pins (delegate to existing script) ──────────────────────
 if [ -d ".github/workflows" ]; then
 	run_check "action pins (SHA-pinned)" "$SCRIPT_DIR/validate-action-pins.sh" .
 fi
 
-# ── Check 4: stale branch ───────────────────────────────────────────────────
+# ── Check 5: stale branch ───────────────────────────────────────────────────
 # Compare HEAD's merge-base with the base ref. If the base ref has commits
 # that HEAD doesn't have, the branch is behind (stale). This is the
 # deterministic catch for the acryl PR #5 "Typecheck, test, and build"
@@ -221,7 +284,7 @@ check_stale_branch() {
 }
 run_check "branch not stale (up to date with $BASE_REF)" check_stale_branch
 
-# ── Check 5: nix build hash-mismatch catch (the big one) ────────────────────
+# ── Check 6: nix build hash-mismatch catch (the big one) ────────────────────
 # Run `nix build .#default` and check for hash mismatch errors. If found,
 # extract the correct hash from the error output and print it so the agent
 # can fix it immediately. This is the deterministic catch for the acryl PR #5

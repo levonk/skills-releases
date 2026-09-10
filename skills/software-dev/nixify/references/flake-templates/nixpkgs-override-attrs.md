@@ -53,7 +53,7 @@ ALL of the following must be true:
     # Pin x86_64-darwin to a stable release branch for older macOS Intel
     # compatibility. The -darwin branches receive security updates without
     # the breaking churn of nixpkgs-unstable. See darwin-legacy-pin.md.
-    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
+    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -143,8 +143,7 @@ ALL of the following must be true:
   repo only maintains `version` + 4 SRI hashes.
 - **Per-platform SRI hashes** — the `hashes` attrset has one entry per target
   system. The hash automation workflow (Step 16) bumps these on each release.
-  See `references/advanced-features.md` — Release-Triggered Hash Automation —
-  overrideAttrs Variant for the adapted regex.
+  See `references/advanced/hash-automation.md` for the adapted regex.
 - **`OutdatedBuildDetector` disable** — nixpkgs packaging for browsers and
   some Electron apps includes a build-time check that compares the built
   version against the expected version and warns or fails if they differ.
@@ -191,8 +190,7 @@ attrset shape (`hashes = { "<system>" = "<sri>"; };`), not the `assets`
 attrset shape from `prebuilt-tarball.md` (`assets = { "<system>" = { file =
 ...; sha256 = ...; }; }`). The regex in the workflow script must be adapted
 to match `hashes.${system} = "..."` instead of the `assets` block. See
-`references/advanced-features.md` — Release-Triggered Hash Automation —
-overrideAttrs Variant for the adapted workflow template.
+`references/advanced/hash-automation.md` for the adapted workflow template.
 
 The reverse-check guard and `.sha256` sibling cross-check from the standard
 hash automation both apply to this variant — they catch omitted platforms and

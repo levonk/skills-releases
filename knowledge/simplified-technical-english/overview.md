@@ -5,8 +5,8 @@ description: Synthesis of STE100-inspired Simplified Technical English practices
 tags: [technical-writing, ste100, simplified-technical-english, documentation, overview, synthesis]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-08-27"
-  last-used: "2026-08-27"
+  knowledge-basis: "2026-09-08"
+  last-used: "2026-09-08"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
@@ -85,6 +85,24 @@ bundles.
    on first use, then "CI" thereafter. Never assume the reader knows the
    acronym.
 
+9. **No em dashes.** Do not use em dashes (—). Use commas or parentheses
+   instead. AI overuses em dashes for dramatic pauses and parenthetical
+   asides. See the
+   [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+   concept page for the full rationale.
+
+#### AI Writing Tells
+
+AI-generated text has recognizable overuse patterns that survive the clarity
+rules above. A sentence can be active, short, and one-topic-per-sentence and
+still read as AI slop. The tells include: negative parallelism ("It's not X,
+it's Y"), magic adverbs ("quietly", "deeply"), "delve" and friends, "tapestry"
+and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
+vulnerability, grandiose stakes inflation, fractal summaries, signposted
+conclusions, and more. For the full catalog and self-check, see the
+[AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
+concept page in the `simplified-technical-english` knowledge bundle.
+
 #### What Counts as Technical English
 
 Apply these guidelines to:
@@ -115,6 +133,10 @@ Before finishing a piece of technical prose, run this checklist:
 - [ ] Is every acronym defined on first use?
 - [ ] Are decorative modifiers removed?
 - [ ] Does each sentence carry one topic?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead.)
+- [ ] Is the prose free of AI writing tells? (Negative parallelism, anaphora
+      abuse, tricolon abuse, "delve", "tapestry", "Here's the kicker", fractal
+      summaries, signposted conclusions. See the AI Writing Tells concept page.)
 
 If any answer is "no," revise before publishing.
 
@@ -158,10 +180,16 @@ the bundle is the canonical source.
 |---------|---------|
 | [Simplified Technical English](simplified-technical-english.md) | The core 8 principles + quick self-check. The same content as the build-time include, with OKF frontmatter and sources. |
 | [Detailed Guide](detailed-guide.md) | The full 10 writing rules, approved-words guidance, 3 before/after examples, and the 10-step self-check protocol. |
-| [Punctuation](punctuation.md) | Oxford commas, comma placement, semicolons for independent clauses, hyphens for compound modifiers, em dashes, slashes. |
+| [Punctuation](punctuation.md) | Oxford commas, comma placement, semicolons for independent clauses, hyphens for compound modifiers, em dashes (banned), slashes. |
 | [Capitalization and Articles](capitalization.md) | Title-style vs sentence-style headlines, basic capitalization rules, a/an by vowel sound. |
 | [Procedures and Lists](procedures-and-lists.md) | Front-loading important information, procedure structure (intro sentence, single-step, sub-step numbering), list formatting, transitions. |
 | [Word Choice and Consistency](word-choice.md) | Slang/jargon/idioms, contractions, abbreviations, e.g./i.e., acronym nuances, US/UK English, gender-neutral pronouns, tested examples. |
+
+### AI Writing Tells
+
+| Concept | Purpose |
+|---------|---------|
+| [AI Writing Tells](ai-writing-tells.md) | A catalog of AI-specific writing patterns to avoid (negative parallelism, "delve", "tapestry", anaphora abuse, tricolon abuse, em dashes, fractal summaries, signposted conclusions). Distinct from general STE100 clarity rules. Cross-references the Founder Content System's banned-pattern list as the social-media-specific application. |
 
 ### Engineering Blog Writing
 

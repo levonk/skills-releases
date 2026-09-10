@@ -1,7 +1,7 @@
 ---
 type: Practice
 title: Punctuation for Technical Prose
-description: Normative punctuation rules for technical documentation — Oxford commas, comma placement rules, semicolons for independent clauses, hyphens for compound modifiers, em dashes for parenthetical emphasis, slashes for combinations. Applies to all technical prose output.
+description: Normative punctuation rules for technical documentation — Oxford commas, comma placement rules, semicolons for independent clauses, hyphens for compound modifiers, em dashes (banned; use commas or parentheses), slashes for combinations. Applies to all technical prose output.
 tags: [technical-writing, ste100, simplified-technical-english, documentation, punctuation, commas, hyphens, em-dashes]
 date:
   created: "2026-08-26"
@@ -151,17 +151,26 @@ Hyphenate compound nouns when one of the words is abbreviated.
 
 ## Em Dashes
 
-Use an em dash (—) to set off a parenthetical phrase with more emphasis than
-parentheses provide. Do not add spaces around an em dash.
+Do not use em dashes (—). Use commas or parentheses instead. AI overuses em
+dashes for dramatic pauses, parenthetical asides, and pivot points. A human
+writer might use 2-3 per piece. AI will use 20+. Em dashes are banned to
+prevent this overuse pattern. See
+[AI Writing Tells](ai-writing-tells.md) for the full rationale.
 
-**Correct (no spaces around the dash):**
+**Use parentheses for parenthetical asides:**
+> The configuration (numbers, paths, and flags) is stored in a YAML file.
+
+**Use commas for parenthetical emphasis:**
+> The configuration, which includes numbers, paths, and flags, is stored in a
+> YAML file.
+
+**Avoid (em dashes):**
 > The configuration—numbers, paths, and flags—is stored in a YAML file.
+> The problem—and this is the part nobody talks about—is systemic.
 
-**Avoid (spaces around the dash):**
-> The configuration — numbers, paths, and flags — is stored in a YAML file.
-
-Do not confuse the em dash (—) with the hyphen (-) or the en dash (–). The em
-dash is the longest of the three.
+Do not confuse the em dash (—) with the hyphen (-) or the en dash (–). The hyphen
+is used for compound modifiers (see Hyphens above). The en dash is used for
+number ranges (pages 10–20). Neither is banned. Only the em dash is banned.
 
 ## Slashes
 
@@ -197,7 +206,7 @@ Before publishing, check punctuation:
 - [ ] Are independent clauses without conjunctions joined by semicolons (not
       commas)?
 - [ ] Are compound modifiers before nouns hyphenated?
-- [ ] Are em dashes used without spaces?
+- [ ] Are em dashes avoided? (Use commas or parentheses instead)
 - [ ] Are slashes used only for combinations, not for "or"?
 
 ## Cross-References

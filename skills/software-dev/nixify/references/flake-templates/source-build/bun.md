@@ -19,7 +19,7 @@ Nix builds run in a sandbox without network access. `bun install` needs to fetch
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     # Pin x86_64-darwin to a stable release branch for older macOS Intel
     # compatibility. See references/flake-templates/darwin-legacy-pin.md.
-    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
+    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -165,7 +165,7 @@ The `outputHash` for the deps derivation must be computed empirically:
 3. Replace the placeholder with the correct SRI hash.
 4. Re-run to confirm.
 
-This hash changes whenever `bun.lock` changes. For release-based repos, the hash automation workflow (see `references/advanced-features.md` — Release-Triggered Hash Automation) should be adapted to also bump the FOD hash.
+This hash changes whenever `bun.lock` changes. For release-based repos, the hash automation workflow (see `references/advanced/hash-automation.md`) should be adapted to also bump the FOD hash.
 
 ## Per-platform FOD hashes (MANDATORY when bun.lock has platform-gated optionals)
 

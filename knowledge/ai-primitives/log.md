@@ -11,6 +11,35 @@ date:
 
 # Bundle Update Log
 
+## 2026-09-09
+* **Ingest**: Added [cross-domain/agent-plugins-spec.md](cross-domain/agent-plugins-spec.md)
+  — concept page documenting the agentplugins/agent-plugins-spec v1.0.0, an
+  open vendor-neutral packaging standard for Agent Skills and MCP servers.
+  Maps the spec's plugin package model (`plugin.json` manifest with closed
+  schema, fixed component locations `skills/` and `mcp.json`, containment
+  rules, narrowest-failure-boundary resilience pattern) onto the skills-src
+  primitive system. Documents the agentskills.io SKILL.md format (required
+  `name` + `description`, optional `license`/`compatibility`/`metadata`/
+  `allowed-tools`, progressive disclosure) that the spec defers to.
+  Identifies five divergences: (1) no `plugin.json` manifest in skills-src,
+  (2) SKILL.md frontmatter is a rich superset not portable to conformant
+  clients, (3) `name` must match parent directory (skills-src allows
+  divergence), (4) no agent component type — the spec explicitly excludes
+  agents as "too client-specific for a stable portable contract," a data
+  point for the portability of the agent primitive, (5) different
+  distribution mechanism (vercel-labs/skills CLI vs plugin directories).
+  Includes a three-way comparison table (agent-plugins spec vs vercel/eve
+  vs skills-src) showing how all three are "convention over configuration"
+  designs that agree on core primitives but standardize different layers
+  (packaging vs runtime vs authoring). Extracts six design lessons
+  (manifest as conformance floor, closed schema with extensions escape
+  hatch, fixed locations over manifest configuration, narrowest-failure-
+  boundary resilience, agents too client-specific for v1, secrets are not
+  portable). Sources: agent-plugins spec 1.0.0, agentskills.io
+  specification, spec Design Decisions section.
+* **Update**: Listed the new cross-domain page in [index.md](index.md) and
+  [overview.md.tmpl](overview.md.tmpl).
+
 ## 2026-08-03
 * **Update**: Expanded [comparison/model-assessment.md](comparison/model-assessment.md)
   from twelve to twenty-two criteria. Added ten new criteria covering the

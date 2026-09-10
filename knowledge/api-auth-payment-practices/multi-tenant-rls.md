@@ -48,5 +48,9 @@ Lead magnet data is **not** mixed with paid tenant data:
 
 ## Related Concepts
 
+- [Authorization Taxonomy](authorization-taxonomy.md) — RLS is a storage-engine
+  Policy Enforcement Point (PEP) on the Enforcement axis
+- [Auth Provider Selection](auth-provider-selection.md) — Auth sets the session
+  variable that RLS policies reference
 - [Supabase Auth Pattern](supabase-auth-pattern.md) — Auth establishes tenant_id
 - [Encrypted Token Storage](encrypted-token-storage.md) — Tokens stored per-tenant

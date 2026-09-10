@@ -152,3 +152,15 @@ See [Build-Time vs Runtime Dependencies](../build-system/dependencies.md).
 
 [`ai-upsert`](../upsert-skills/ai-upsert.md) — creates, updates,
 converts, and benchmarks skills; creates and maintains OKF knowledge bundles.
+
+## Real-World References
+
+The [Agent Skills specification](https://agentskills.io/specification) defines
+the portable `SKILL.md` format that the
+[agentplugins/agent-plugins-spec](../cross-domain/agent-plugins-spec.md) uses
+for its skill component type. The agentskills.io format requires only `name`
++ `description` frontmatter (with optional `license`, `compatibility`,
+`metadata`, `allowed-tools`), and recommends progressive disclosure
+(metadata → body → resources). skills-src's SKILL.md frontmatter is a rich
+superset of this format. See the cross-domain page for the full mapping and
+gap analysis.

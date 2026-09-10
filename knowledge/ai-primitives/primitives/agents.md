@@ -150,7 +150,7 @@ expertise).
 - `agents/software-dev/code-reviewer.md` — Reviews code
 - `agents/software-dev/senior-software-engineer.md` — Senior eng expertise
 
-## Real-World Reference
+## Real-World References
 
 [vercel/eve](../cross-domain/eve-filesystem-agents.md) is a production
 filesystem-first framework for durable AI agents. It implements the agent
@@ -158,6 +158,16 @@ primitive using path-as-name conventions: `agent/instructions.md` (always-on
 prompt), `agent/tools/` (typed capabilities), `agent/skills/` (on-demand
 procedures — direct match), and `agent/subagents/` (delegation). See the
 cross-domain page for the full layout mapping and design lessons.
+
+[agentplugins/agent-plugins-spec](../cross-domain/agent-plugins-spec.md)
+is an open vendor-neutral packaging standard (v1.0.0) for Agent Skills and
+MCP servers. It defines a portable `plugin.json` manifest, fixed component
+locations (`skills/`, `mcp.json`), and containment rules. The spec defers
+SKILL.md format to the agentskills.io specification (required `name` +
+`description`, optional `metadata` map). The spec explicitly excludes agents
+as too client-specific for v1 — a data point for the portability of the
+agent primitive. See the cross-domain page for the full mapping and gap
+analysis.
 
 ## Producer Skill
 

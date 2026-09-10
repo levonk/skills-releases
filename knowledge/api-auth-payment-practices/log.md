@@ -1,5 +1,33 @@
 # Directory Update Log
 
+## 2026-09-04
+
+* **Ingest**: Added [authorization-taxonomy.md](authorization-taxonomy.md) —
+  a six-axis classification for authorization terminology (Administration,
+  Model, Policy, Information, Decision, Enforcement). The key insight is that
+  familiar labels (RBAC, ABAC, PBAC, MAC, DAC, ReBAC, ACL) each answer one
+  axis, not the whole system. PBAC is an architecture (Decision axis), not a
+  model. MAC/DAC are administration strategies, not models. Sourced from the
+  IDPro article "Authorization Terminology is a Mess: Let's Fix It" by Andrea
+  Chiarelli, with supporting references to the companion PBAC article and the
+  Mohamed et al 2022 systematic literature review.
+* **Update**: Updated [index.md](index.md) — added the authorization-taxonomy
+  concept entry; broadened the bundle description to include authorization.
+* **Update**: Updated [overview.md](overview.md) — added the taxonomy to the
+  auth-payment stack diagram and phase table; broadened scope and sources;
+  bumped `date.knowledge-basis` to 2026-08-31 (article publication date) and
+  `date.last-used` to 2026-09-04; added the IDPro source to frontmatter.
+* **Cross-link**: Added bidirectional links between the new taxonomy page and
+  [auth-provider-selection.md](auth-provider-selection.md),
+  [multi-tenant-rls.md](multi-tenant-rls.md), and
+  [encrypted-token-storage.md](encrypted-token-storage.md) — the taxonomy
+  provides the vocabulary (Information axis, Enforcement axis) that those
+  practice pages instantiate.
+* **Source**: IDPro article
+  `https://idpro.org/authorization-terminology-is-a-mess-lets-fix-it/` by
+  Andrea Chiarelli (Principal Developer Advocate at Auth0/Okta), published
+  2026-08-31.
+
 ## 2026-07-26
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.

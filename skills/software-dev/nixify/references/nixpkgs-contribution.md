@@ -113,6 +113,54 @@ the reference for the nixpkgs `package.nix`:
 4. Add `meta` attributes (the in-repo flake may not have these — nixpkgs
    requires them)
 
+### Reusing the In-Repo `package.nix` (Package Extraction)
+
+When Step 12 applied the package extraction pattern
+(`package_extraction=true` — see
+[`flake-templates/package-extraction.md`](../flake-templates/package-extraction.md)),
+the in-repo `package.nix` is already in the callPackage shape nixpkgs expects.
+The nixpkgs PR does NOT write a new `package.nix` from scratch — it reuses the
+in-repo one with three changes:
+
+1. **`src`**: Replace `src = lib.cleanSource ./.` with `fetchFromGitHub`:
+   ```nix
+   src = fetchFromGitHub {
+     owner = "$UPSTREAM_OWNER";
+     repo = "$UPSTREAM_REPO";
+     rev = "v${version}";
+     hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+   };
+   ```
+   Add `fetchFromGitHub` to the function arguments.
+
+2. **`version`**: Remove the `? "2.3.0"` default and the
+   `# x-release-please-version` marker. The nixpkgs version is pinned by the
+   PR, not by release-please:
+   ```nix
+   version = "2.3.0";
+   ```
+
+3. **`meta.maintainers`**: Add a maintainer entry (the in-repo `package.nix`
+   does not have one — nixpkgs requires it):
+   ```nix
+   meta = {
+     # ... existing meta ...
+     maintainers = [ lib.maintainers.your-handle ];
+   };
+   ```
+
+Everything else — the builder function, `buildInputs`, `nativeBuildInputs`,
+`ldflags`, `doCheck`, `meta.description`/`homepage`/`license`/`mainProgram`/
+`platforms` — stays identical. This is the key benefit of the extraction
+pattern: the nixpkgs PR is a diff of 3 lines, not a new file written from
+scratch, which reduces the chance of the nixpkgs package diverging from the
+in-repo flake over time.
+
+**Workflow**: Copy the in-repo `package.nix` to
+`pkgs/by-name/<prefix>/<package-name>/package.nix` in the nixpkgs fork, apply
+the three changes above, then proceed with hash discovery (below) and the
+maintainer entry (separate commit).
+
 ## Maintainer Entry
 
 Before the nixpkgs PR can be merged, you must add yourself to

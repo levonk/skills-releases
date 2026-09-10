@@ -1,5 +1,36 @@
 # Directory Update Log
 
+## 2026-09-08
+
+* **Creation**: Authored
+  [ai-writing-tells.md](ai-writing-tells.md) — a catalog of AI-specific
+  writing patterns to avoid in technical prose and content. Covers word choice
+  tells (magic adverbs, "delve", "tapestry", "serves as"), sentence structure
+  tells (negative parallelism, "Not X. Not Y. Just Z.", anaphora abuse,
+  tricolon abuse), paragraph structure tells (short punchy fragments,
+  listicle-in-a-trench-coat), tone tells ("Here's the kicker", false
+  vulnerability, grandiose stakes), formatting tells (em dashes, bold-first
+  bullets, unicode decoration), and composition tells (fractal summaries, dead
+  metaphor, historical analogy stacking, signposted conclusions). Sourced from
+  Kevin Lewis's "My Claude.md" blog post
+  (<https://lws.io/blog/claude-dot-md/>) and cross-referenced to the Founder
+  Content System's universal banned-pattern list
+  ([career-advancement-practices/founder-content-system.md](https://github.com/levonk/skills-releases/blob/main/knowledge/career-advancement-practices/founder-content-system.md))
+  as the social-media-specific application.
+* **Update**: Banned em dashes in [punctuation.md](punctuation.md). The
+  previous guidance recommended em dashes for parenthetical emphasis. The new
+  guidance bans em dashes entirely; use commas or parentheses instead. This
+  aligns with the AI Writing Tells page (em-dash addiction as a formatting
+  tell) and with the Founder Content System's existing "no dashes" rule.
+  Updated the em-dash self-check item in
+  [punctuation.md](punctuation.md) and the cross-reference in
+  [detailed-guide.md](detailed-guide.md).
+* **Update**: Added em-dash ban and AI-tell pointer to the build-time include
+  [ste100-simplified-technical-english.md.tmpl](https://github.com/levonk/skills-releases/blob/main/includes/ste100-simplified-technical-english.md.tmpl).
+  Added the new page to [index.md](index.md) and [overview.md](overview.md)
+  concept tables. Bumped `date.knowledge-basis` and `date.last-used` to
+  2026-09-08 on the overview.
+
 ## 2026-08-27
 
 * **Ingest**: Added *Writing For Developers: Blogs That Get Read* by Piotr

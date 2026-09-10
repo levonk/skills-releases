@@ -15,7 +15,7 @@ Use when the project does not have published binary releases and uses Maven.
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     # Pin x86_64-darwin to a stable release branch for older macOS Intel
     # compatibility. See references/flake-templates/darwin-legacy-pin.md.
-    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
+    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
