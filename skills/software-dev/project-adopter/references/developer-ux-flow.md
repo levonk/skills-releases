@@ -51,6 +51,17 @@ Configure `devbox.json` based on detected systems:
 - **Python**: Add `"python3"`, `"poetry"`, `"black"`, `"ruff"`
 - **Go**: Add `"go"`, `"gopls"`
 
+**Standard security & workflow packages** (every adopted project — added by
+`adopt-project.sh` via dev-env-upsert `add-packages`, or in the fallback
+`generate_devbox_json`):
+- `git-secrets` — secret pattern scanning in staged files
+- `gitleaks` — secret scanning with extended pattern coverage
+- `git-imerge` — incremental merge for rebasing/merging feature branches
+- `treehouse` — worktree pool manager for the worktree-per-feature workflow
+  (the pre-commit worktree-isolation hook installed in step 19a blocks commits
+  on `main` without a worktree; treehouse provides the `get --lease` /
+  `return` lifecycle)
+
 ### Indexed AST Tool Setup
 
 Indexed AST tool selection is **delegated to the dev-env-upsert skill** via its `setup` operation. The detection logic is file-type-aware:

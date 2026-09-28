@@ -35,9 +35,10 @@ End-of-day workspace orchestrator that runs maintenance, review, and planning be
 - **repository-health-review** (skill, complement) — Deeper health audit for repos flagged by the sweep — sign-off surfaces these as candidates, the user chooses whether to run the full review
 - **task-triage** (skill, dependency) — Prioritizes tomorrow's work using the 26-tier framework — sign-off feeds it the compiled task list from tickets, handoffs, and ongoing projects
 - **ai-guidance-improver** (skill, complement) — Acts on AI session review findings — sign-off identifies improvement opportunities, ai-guidance-improver implements them
+- **** (, dependency) — Local autonomous-loop orchestrator for overnight work — sign-off Phase 9 launches approved candidates via gnhf (never cloud_handoff). gnhf runs a coding agent CLI in the user's own checkout, commits to a local gnhf/ branch, and emits a permanent exit summary. See https://github.com/kunchenguid/gnhf
 
 ---
 
 - **Full skill**: [`skills/general/sign-off/SKILL.md`](skills/general/sign-off/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-10T02:50:59Z
+- **Generated**: 2026-09-28T10:26:51Z

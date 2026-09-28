@@ -2302,10 +2302,14 @@ instruction.
    gate first.** Run `bash .devin/scripts/execution-gate.sh <story-slug>
    [base-sha]` before any `run_subagent` call that uses a write-capable
    profile (`subagent_general` or a custom profile with write/exec access).
-   This creates a per-story git worktree at
-   `/tmp/<project>-worktrees/<story-slug>` and writes a gate-pass file. The
-   PreToolUse hook on `run_subagent` **blocks** dispatch if no gate-pass file
-   exists — a hard machine gate, not a text instruction.
+   This creates a per-story git worktree (treehouse pool path, printed on
+   stdout) and writes a per-story gate-pass
+   file (`/tmp/devin-execution-gates/gate-pass-<story-slug>`). **Run the gate
+   once per story** — including parallel stories: each run acquires a
+   distinct worktree, and a second story's run never resumes the first
+   story's lease. The PreToolUse hook on `run_subagent` **blocks** dispatch
+   if no live gate-pass file exists — a hard machine gate, not a text
+   instruction.
 
    **Read-only exemption:** `subagent_explore` subagents are exempt from the
    gate. They have profile-enforced read-only tool access (grep, glob, read,
@@ -2360,8 +2364,10 @@ three hooks into the consumer project's `.devin/` directory:
   - **Allows** `subagent_explore` (read-only) dispatches unconditionally —
     they cannot mutate the working directory.
   - **Blocks** write-capable dispatches (`subagent_general`, custom
-    write-capable profiles, or missing profile) if no gate-pass file exists,
-    returning `{"decision": "block"}`.
+    write-capable profiles, or missing profile) if no live gate-pass file
+    exists under `/tmp/devin-execution-gates/` (`gate-pass-<story-slug>` per
+    story, or the `current-gate-pass` compat pointer), returning
+    `{"decision": "block"}`.
 - **UserPromptSubmit hook** (`inject-binding-contract.sh`) — injects this
   contract into context when the user's prompt mentions execution keywords.
   Keeps the non-negotiable rules in active attention.
@@ -3357,10 +3363,13 @@ tool-call level — the agent cannot rationalize past them.
    - **Allows** `subagent_explore` (read-only) dispatches unconditionally —
      they cannot mutate the working directory (profile-enforced tool access).
    - **Blocks** write-capable dispatches (`subagent_general`, custom
-     write-capable profiles, or missing profile) if no gate-pass file exists
-     at `/tmp/devin-execution-gates/current-gate-pass`, returning
-     `{"decision": "block"}` — the dispatch cannot proceed. This is the
-     hard gate that enforces worktree-per-story for mutating work.
+     write-capable profiles, or missing profile) if no live gate-pass file
+     exists under `/tmp/devin-execution-gates/` — gate-pass files are
+     per-story (`gate-pass-<story-slug>`), and the hook also honors the
+     `current-gate-pass` compat pointer written for older gate versions —
+     returning `{"decision": "block"}` so the dispatch cannot proceed.
+     This is the hard gate that enforces worktree-per-story for mutating
+     work.
 
    # Worktree Enforcement Bypass Table
 
@@ -3427,21 +3436,40 @@ worktree and writes the gate-pass file. Run it BEFORE dispatching any
 subagent:
 
 ```bash
-bash .devin/scripts/execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>]
+bash .devin/scripts/execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>] [--new] [--allow-dirty]
 ```
 
 The script:
-- Blocks if on main/master with uncommitted changes (exit 2)
-- Creates a worktree at `/tmp/<project>-worktrees/<story-slug>` on a
-  `feature/current/execute-upsert/<story-slug>` branch
+- Blocks if on main/master with uncommitted changes (exit 2) — pass
+  `--allow-dirty` to bypass when the dirty files are unrelated to the story
+  and must stay untouched on the default branch (the story's worktree starts
+  clean; no stash round-trip needed)
+- Acquires a per-story worktree via treehouse (pool path printed on stdout)
+  and creates a `feature/current/execute-upsert/<story-slug>` branch in it
 - Symlinks `node_modules` if it exists (so the worktree can build/test)
 - Records the checkpoint SHA in
   `/tmp/devin-execution-gates/checkpoint-<story-slug>`
-- Writes the worktree path to the gate-pass file
+- Writes the worktree path to the per-story gate-pass file
+  `/tmp/devin-execution-gates/gate-pass-<story-slug>` (and refreshes the
+  `current-gate-pass` compat pointer)
 - Records the story type in `/tmp/devin-execution-gates/story-type-<story-slug>`
   (forward-compatible metadata — currently unused behaviorally; all types get
   the same worktree/branch/PR/clean-tree discipline)
 - Outputs the worktree path on stdout (pass it to the subagent)
+
+### Gate-pass Semantics (Resume, Per-Story, --new)
+
+Gate-pass files are **per-story**. Re-running the gate for the same slug
+resumes that story's existing worktree (prints `RESUME:` and returns the same
+path). Running the gate for a **different** slug always acquires a new
+worktree — it never resumes another story's lease. This is what makes
+parallel dispatch safe: run the gate once per story, and each dispatch gets
+its own worktree (see `references/parallel-dispatch.md`).
+
+Pass `--new` to discard a recorded lease for the same slug and force a fresh
+acquisition (the prior treehouse lease is returned first, best-effort). Use
+this when a story's worktree is stale, corrupted, or was rolled back and you
+want a clean environment rather than resuming the old one.
 
 ### Story Type (Forward-Compatible Metadata)
 
@@ -3558,12 +3586,12 @@ cache-warmed, pool-managed — so there is no reason to work directly on
 `main` even for small changes.
 
 For **direct execution** (small changes), call `execution-gate.sh` with
-`--story-type standalone`:
+`--story-type trivial`:
 
 ```bash
 SLUG="{feature-slug}"
 WORKTREE_PATH=$(bash .devin/scripts/execution-gate.sh "$SLUG" \
-  --story-type standalone)
+  --story-type trivial)
 cd "$WORKTREE_PATH"
 ```
 
@@ -4126,7 +4154,7 @@ For each task story that isn't completed yet:
    require the gate — they cannot mutate the working directory.
 
    ```bash
-   # Run the gate — creates worktree + gate-pass file
+   # Run the gate — creates worktree + per-story gate-pass file
    # --story-type is optional (defaults to standard); forward-compatible metadata
    WORKTREE_PATH=$(bash .devin/scripts/execution-gate.sh "$STORY_ID_AND_SLUG" "$BASE_SHA" --story-type "$STORY_TYPE")
    ```
@@ -4136,6 +4164,11 @@ For each task story that isn't completed yet:
    non-zero, do NOT attempt to dispatch — resolve the blocker (commit
    uncommitted changes on main, verify the base SHA) and re-run the
    gate.
+
+   **Parallel stories:** run the gate once per story. Gate-pass files are
+   per-story (`gate-pass-<story-slug>`), so each run acquires a distinct
+   worktree — a second story's gate run never resumes the first story's
+   lease. See `references/parallel-dispatch.md`.
 
    If the hooks are not installed (no `.devin/hooks.v1.json`), the
    `refresh.sh` script installs them automatically on the next skill

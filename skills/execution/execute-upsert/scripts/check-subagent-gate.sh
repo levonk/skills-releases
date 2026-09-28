@@ -28,7 +28,12 @@ if [[ "${SKILL_BYPASS_GATE:-0}" == "1" ]]; then
 fi
 
 GATE_DIR="/tmp/devin-execution-gates"
-GATE_PASS="$GATE_DIR/current-gate-pass"
+# Gate-pass files are per-story: gate-pass-<story-slug>. Any live per-story
+# file counts — the hook's job is "the gate ran and a worktree exists", not
+# "this specific story's worktree" (the dispatch prompt carries the path).
+# The legacy current-gate-pass file is still checked for compatibility with
+# older execution-gate.sh versions that write only that file.
+LEGACY_GATE_PASS="$GATE_DIR/current-gate-pass"
 
 # Read hook event from stdin
 INPUT=$(cat)
@@ -50,16 +55,21 @@ if [[ "$PROFILE" == "subagent_explore" ]]; then
   exit 0
 fi
 
-# Check for gate pass
-if [[ -f "$GATE_PASS" ]]; then
-  WORKTREE_PATH=$(cat "$GATE_PASS")
-  # Verify the worktree still exists
-  if [[ -d "$WORKTREE_PATH" ]]; then
+# Check for a gate pass — accept the FIRST file whose recorded worktree path
+# still exists on disk. An unmatched glob stays literal and fails the -f test.
+GATE_FILES_FOUND=0
+for gp in "$GATE_DIR"/gate-pass-* "$LEGACY_GATE_PASS"; do
+  [[ -f "$gp" ]] || continue
+  GATE_FILES_FOUND=1
+  WORKTREE_PATH=$(cat "$gp" 2>/dev/null || true)
+  if [[ -n "$WORKTREE_PATH" ]] && [[ -d "$WORKTREE_PATH" ]]; then
     exit 0
-  else
-    echo "{\"decision\": \"block\", \"reason\": \"Execution gate: worktree at $WORKTREE_PATH no longer exists. Run execution-gate.sh again before dispatching.\"}"
-    exit 2
   fi
+done
+
+if [[ "$GATE_FILES_FOUND" -eq 1 ]]; then
+  echo "{\"decision\": \"block\", \"reason\": \"Execution gate: recorded worktree(s) no longer exist. Run execution-gate.sh again before dispatching.\"}"
+  exit 2
 fi
 
 # No gate pass — block

@@ -33,13 +33,13 @@ description: >-
   trigger on quick fixes, single-file edits, bug fixes with a known root
   cause, or questions about how something works — this skill is for
   multi-step project execution, not trivial changes.
-version: 1.13.0
+version: 1.14.0
 user-invocable: true
 disable-model-invocation: true
 date:
   created: "2026-07-11"
   knowledge-basis: "2026-08-30"
-  last-used: "2026-09-03"
+  last-used: "2026-09-21"
 tags:
   - "ai/skill"
   - "execution"

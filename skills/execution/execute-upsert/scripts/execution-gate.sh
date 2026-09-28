@@ -9,6 +9,24 @@
 # blocks every run_subagent call until this script has run and written a gate-pass
 # file. The agent cannot rationalize past it — it is a turnstile, not a sign.
 #
+# Gate-pass files are PER-STORY: /tmp/devin-execution-gates/gate-pass-<slug>.
+# Running the gate for a second story acquires a SECOND worktree — it never
+# resumes the first story's lease. This is what makes parallel dispatch safe:
+# one gate run per story, one worktree per story. Re-running the gate for the
+# SAME slug resumes that story's existing worktree (RESUME path); pass --new
+# to discard the recorded lease and force a fresh acquisition.
+#
+# --allow-dirty bypasses the uncommitted-changes-on-main precondition: the
+# gate proceeds while leaving the dirty files untouched on the default
+# branch. Use it when the dirty files are unrelated to the story — e.g.
+# acquiring a worktree for new work while prior WIP stays on main. The
+# bypass is explicit (a flag, not a heuristic) so the intent is recorded
+# and the check remains the default.
+#
+# The legacy /tmp/devin-execution-gates/current-gate-pass file is still
+# written (pointing at the most recent worktree) as a compat pointer for
+# older hook versions that check only that file.
+#
 # Worktree acquisition uses treehouse (https://github.com/kunchenguid/treehouse)
 # when available — a pool manager that reuses worktrees with dependencies and
 # build cache intact. When treehouse is not installed, falls back to manual
@@ -16,25 +34,39 @@
 # branch is created inside it with `git checkout -b`.
 #
 # Usage:
-#   bash .devin/scripts/execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>]
+#   bash .devin/scripts/execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>] [--new] [--allow-dirty]
 #
 # Outputs (stdout): the worktree path (for the orchestrator to pass to the subagent)
 # Outputs (stderr): progress/diagnostic messages
 # Exit codes:
-#   0 = gate passed, worktree ready
+#   0 = gate passed, worktree ready (fresh acquisition or RESUME of an
+#       existing lease for the same slug)
 #   1 = usage error
 #   2 = pre-condition failure (uncommitted changes on main, missing base SHA, etc.)
-#   3 = worktree already exists (informational — see below)
 set -euo pipefail
 
 PROJECT_DIR="${DEVIN_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 PROJECT_NAME="$(basename "$PROJECT_DIR")"
 GATE_DIR="/tmp/devin-execution-gates"
-GATE_PASS="$GATE_DIR/current-gate-pass"
-WORKTREE_BASE="/tmp/${PROJECT_NAME}-worktrees"
+# GATE_PASS is set after arg parsing — it is per-story:
+#   $GATE_DIR/gate-pass-<story-slug>
+# CURRENT_GATE_PASS is a compat pointer to the most recent live worktree,
+# kept for older hook versions that check only that file.
+CURRENT_GATE_PASS="$GATE_DIR/current-gate-pass"
 
-# Include shared treehouse helpers (treehouse_available, treehouse_acquire, etc.)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Canonicalize a path (resolve symlinks — e.g. /tmp → /private/tmp on macOS).
+# `git worktree list` reports canonical paths, so comparisons must normalize
+# both sides. Falls back to the input when the path does not exist.
+canon_path() { (cd "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"; }
+
+# /tmp always exists, so canon_path resolves the base to its real location.
+WORKTREE_BASE="$(canon_path /tmp)/${PROJECT_NAME}-worktrees"
+
+# Include shared helpers — inlined at build time so the rendered script is
+# self-contained (install-hooks.sh copies only this file into .devin/scripts/).
+# treehouse helpers: treehouse_available, treehouse_acquire, treehouse_return,
+#   treehouse_is_managed
+# arg-parse helpers: reject_unknown_flag, parse_value_flag, parse_bool_flag
 # treehouse-helpers.sh — shared helpers for treehouse worktree pool management
 #
 # Treehouse (https://github.com/kunchenguid/treehouse) manages a pool of
@@ -233,42 +265,264 @@ treehouse_is_managed() {
 	echo 0
 }
 
+# arg-parse-helpers.sh — shared helpers for shell argument parsers
+#
+# Provides:
+#   reject_unknown_flag "$1"
+#     Exit 1 with "Unknown option: $1" on stderr if $1 starts with `-`.
+#     Call this as the first line of a `*)` default branch in a while/case
+#     arg parser. Prevents unknown flags (--foo) from being silently
+#     captured as positional arguments.
+#
+#   parse_value_flag "$1" "$2" out_var
+#     Normalize a value-taking flag into out_var. Handles all three forms:
+#       --flag value       (consumes 2 args)
+#       --flag=value       (consumes 1 arg)
+#       -f value           (consumes 2 args)
+#       -f=value           (consumes 1 arg)
+#     Sets out_var to the value and the global SHIFT_COUNT to 1 or 2.
+#     Returns 0 on success, 1 if the flag does not match any recognized
+#     form (caller should fall through to the next case).
+#
+#   parse_bool_flag "$1" var_name
+#     Normalize a boolean flag into var_name. Handles:
+#       --flag             (sets var_name=true, consumes 1 arg)
+#       --flag=true        (sets var_name=true, consumes 1 arg)
+#       --flag=false       (sets var_name=false, consumes 1 arg)
+#       --flag=bogus       (exits 1 with error on stderr)
+#     Returns 0 if the flag matched (var_name set), 1 if not (caller
+#     falls through). SHIFT_COUNT is set to 1.
+#
+#   parse_format_flag "$1" "$2" out_var
+#     Specialization of parse_value_flag for --format/-f/--json. Sets
+#     out_var to the format value and SHIFT_COUNT to the shift count.
+#     Recognizes:
+#       --format value | --format=value | -f value | -f=value | --json
+#     Returns 0 on match, 1 otherwise.
+#
+# Globals set by the parse_* helpers:
+#   SHIFT_COUNT — number of args to shift after a successful parse
+#
+# Usage pattern in a script's main() arg parser:
+#
+#   source "$SCRIPT_DIR/arg-parse-helpers.sh"
+#
+#   while [[ $# -gt 0 ]]; do
+#       case "$1" in
+#       -v|--verbose)
+#           parse_bool_flag "$1" VERBOSE; shift "$SHIFT_COUNT" ;;
+#       -f|--format|--format=*|-f=*|--json)
+#           if parse_format_flag "$1" "$2" format; then
+#               shift "$SHIFT_COUNT"
+#           else
+#               reject_unknown_flag "$1"; shift
+#           fi
+#           ;;
+#       -p|--path)
+#           parse_value_flag "$1" "$2" repo_path; shift "$SHIFT_COUNT" ;;
+#       --output|--output=*)
+#           parse_value_flag "$1" "$2" output_path; shift "$SHIFT_COUNT" ;;
+#       -h|--help)
+#           usage; exit 0 ;;
+#       *)
+#           reject_unknown_flag "$1"
+#           # ... positional assignment ...
+#           shift
+#           ;;
+#       esac
+#   done
+#
+# Materialization: each consuming skill has a
+# `scripts/arg-parse-helpers.sh.tmpl` file containing a single include
+# directive that pulls in this file. The templater inlines this file at
+# build time. Scripts then `source` the materialized copy from the same
+# `scripts/` directory.
+#
+# Consumers:
+#   - project-detection/scripts/detect-all-systems.sh
+#   - project-detection/scripts/detect-build-systems.sh
+#   - project-detection/scripts/detect-ci-cd-systems.sh
+#   - monorepo-extractor/scripts/detect-build-systems.sh
+#   - monorepo-extractor/scripts/detect-ci-cd-systems.sh
+#   - git-repository-management/scripts/git-tag.sh
+#   - nixify/scripts/detect-garnix-scope.sh
+#   - nixify/scripts/test-with-act.sh
+#   - code-quality-validation/scripts/quality-validator.sh
+
+# Guard against double-sourcing
+if [[ -n "${_ARG_PARSE_HELPERS_SOURCED:-}" ]]; then
+	return 0 2>/dev/null || exit 0
+fi
+_ARG_PARSE_HELPERS_SOURCED=1
+
+# Global shift count set by parse_* helpers
+SHIFT_COUNT=0
+
+reject_unknown_flag() {
+	if [[ "$1" == -* ]]; then
+		echo "Unknown option: $1" >&2
+		exit 1
+	fi
+}
+
+# parse_value_flag "$1" "$2" out_var
+# Returns 0 on match (out_var set, SHIFT_COUNT set), 1 on no match.
+parse_value_flag() {
+	local flag="$1"
+	local next="$2"
+	local out_var="$3"
+
+	case "$flag" in
+	--*=*)
+		# --flag=value form
+		printf -v "$out_var" '%s' "${flag#*=}"
+		SHIFT_COUNT=1
+		return 0
+		;;
+	-*=*)
+		# -f=value form
+		printf -v "$out_var" '%s' "${flag#*=}"
+		SHIFT_COUNT=1
+		return 0
+		;;
+	--*)
+		# --flag value form (long flag, value is next arg)
+		if [[ -z "$next" ]]; then
+			echo "Option requires a value: $flag" >&2
+			exit 1
+		fi
+		printf -v "$out_var" '%s' "$next"
+		SHIFT_COUNT=2
+		return 0
+		;;
+	-*)
+		# -f value form (short flag, value is next arg)
+		if [[ -z "$next" ]]; then
+			echo "Option requires a value: $flag" >&2
+			exit 1
+		fi
+		printf -v "$out_var" '%s' "$next"
+		SHIFT_COUNT=2
+		return 0
+		;;
+	*)
+		# Not a value flag — caller should fall through
+		return 1
+		;;
+	esac
+}
+
+# parse_bool_flag "$1" var_name
+# Returns 0 on match (var_name set, SHIFT_COUNT=1), 1 on no match.
+parse_bool_flag() {
+	local flag="$1"
+	local var_name="$2"
+
+	case "$flag" in
+	--*=*)
+		# --flag=value form — validate the value
+		local value="${flag#*=}"
+		if [[ "$value" != "true" && "$value" != "false" ]]; then
+			echo "Invalid boolean value for $flag: $value (expected true|false)" >&2
+			exit 1
+		fi
+		printf -v "$var_name" '%s' "$value"
+		SHIFT_COUNT=1
+		return 0
+		;;
+	--*)
+		# --flag form — implicit true
+		printf -v "$var_name" '%s' "true"
+		SHIFT_COUNT=1
+		return 0
+		;;
+	*)
+		# Not a boolean flag — caller should fall through
+		return 1
+		;;
+	esac
+}
+
+# parse_format_flag "$1" "$2" out_var
+# Specialization of parse_value_flag that also handles --json shorthand.
+# Returns 0 on match (out_var set, SHIFT_COUNT set), 1 on no match.
+parse_format_flag() {
+	local flag="$1"
+	local next="$2"
+	local out_var="$3"
+
+	# --json shorthand — always maps to "json"
+	if [[ "$flag" == "--json" ]]; then
+		printf -v "$out_var" '%s' "json"
+		SHIFT_COUNT=1
+		return 0
+	fi
+
+	# Delegate to parse_value_flag for --format/-f forms
+	case "$flag" in
+	--format | --format=* | -f | -f=*)
+		parse_value_flag "$flag" "$next" "$out_var"
+		return $?
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
 
 # --- Args ---
-# Parse positional args + optional --story-type flag.
-# Usage: execution-gate.sh <story-id-slug> [base-sha] [--story-type <type>]
+# Parse positional args + optional --story-type, --new, and --allow-dirty flags.
+# Usage: execution-gate.sh <story-id-slug> [base-sha] [--story-type <type>] [--new] [--allow-dirty]
 # The --story-type flag is a forward-compatible metadata tag (trivial|standard|research).
 # Today all types are treated identically — the value is stored in the gate-pass
 # file for future divergence. If divergence is needed, the behavior change is a
 # single case statement here, not a handoff document re-edit.
+# The --new flag skips the resume path and forces a fresh worktree acquisition
+# for this slug (best-effort release of any recorded prior lease first).
+# The --allow-dirty flag bypasses the dirty-default-branch precondition
+# (Check 1) without touching the working tree — for callers that knowingly
+# leave unrelated uncommitted files on main/master while the story runs in
+# its worktree.
 STORY_TYPE="standard"
+FORCE_NEW=0
+NEW_FLAG="false"
+ALLOW_DIRTY=0
+ALLOW_DIRTY_FLAG="false"
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --story-type)
-      STORY_TYPE="$2"
-      shift 2
+    --story-type|--story-type=*)
+      parse_value_flag "$1" "${2:-}" STORY_TYPE
+      shift "$SHIFT_COUNT"
       ;;
-    --story-type=*)
-      STORY_TYPE="${1#--story-type=}"
-      shift
+    --new|--new=*)
+      parse_bool_flag "$1" NEW_FLAG
+      shift "$SHIFT_COUNT"
+      ;;
+    --allow-dirty|--allow-dirty=*)
+      parse_bool_flag "$1" ALLOW_DIRTY_FLAG
+      shift "$SHIFT_COUNT"
       ;;
     *)
+      reject_unknown_flag "$1"
       if [[ -z "${STORY_SLUG:-}" ]]; then
         STORY_SLUG="$1"
       elif [[ -z "${BASE_SHA:-}" ]]; then
         BASE_SHA="$1"
       else
         echo "Unexpected argument: $1" >&2
-        echo "Usage: execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>]" >&2
+        echo "Usage: execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>] [--new] [--allow-dirty]" >&2
         exit 1
       fi
       shift
       ;;
   esac
 done
+if [[ "$NEW_FLAG" == "true" ]]; then FORCE_NEW=1; fi
+if [[ "$ALLOW_DIRTY_FLAG" == "true" ]]; then ALLOW_DIRTY=1; fi
 
 if [[ -z "${STORY_SLUG:-}" ]]; then
-  echo "Usage: execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>]" >&2
+  echo "Usage: execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>] [--new] [--allow-dirty]" >&2
   exit 1
 fi
 
@@ -284,6 +538,8 @@ esac
 BASE_SHA="${BASE_SHA:-HEAD}"
 WORKTREE_PATH="$WORKTREE_BASE/$STORY_SLUG"
 STORY_BRANCH="feature/current/execute-upsert/$STORY_SLUG"
+# Per-story gate-pass file — resume is keyed to THIS story's slug only.
+GATE_PASS="$GATE_DIR/gate-pass-${STORY_SLUG}"
 
 mkdir -p "$GATE_DIR"
 
@@ -292,10 +548,15 @@ CURRENT_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
   DIRTY=$(git -C "$PROJECT_DIR" status --porcelain | wc -l | tr -d ' ')
   if [[ "$DIRTY" -gt 0 ]]; then
-    echo "BLOCK: You are on $CURRENT_BRANCH with $DIRTY uncommitted changes." >&2
-    echo "Create a checkpoint commit or stash before dispatching subagents." >&2
-    echo "Run: git -C \"$PROJECT_DIR\" stash or commit your changes first." >&2
-    exit 2
+    if [[ "$ALLOW_DIRTY" -eq 1 ]]; then
+      echo "[gate] --allow-dirty: proceeding with $DIRTY uncommitted change(s) on $CURRENT_BRANCH — they are out of scope for this story and stay untouched on the default branch." >&2
+    else
+      echo "BLOCK: You are on $CURRENT_BRANCH with $DIRTY uncommitted changes." >&2
+      echo "Create a checkpoint commit or stash before dispatching subagents." >&2
+      echo "Run: git -C \"$PROJECT_DIR\" stash or commit your changes first." >&2
+      echo "If the dirty files are unrelated to this story and should stay on $CURRENT_BRANCH, re-run with --allow-dirty." >&2
+      exit 2
+    fi
   fi
 fi
 
@@ -305,31 +566,72 @@ if ! git -C "$PROJECT_DIR" rev-parse --verify "$BASE_SHA" >/dev/null 2>&1; then
   exit 2
 fi
 
+# --- --new: discard a recorded prior lease for this slug ---
+# A per-story gate-pass normally triggers RESUME below. --new bypasses that and
+# forces a fresh acquisition. If a prior treehouse lease is recorded for this
+# slug, return it first so it does not leak a pool slot (best-effort — a failed
+# return warns but does not block the new acquisition).
+if [[ "$FORCE_NEW" -eq 1 ]] && [[ -f "$GATE_PASS" ]]; then
+  OLD_PATH="$(canon_path "$(cat "$GATE_PASS")")"
+  echo "[gate] --new: discarding prior gate-pass for $STORY_SLUG (was: $OLD_PATH)" >&2
+  if [[ "$(treehouse_available)" == "1" ]] && [[ -f "$GATE_DIR/lease-${STORY_SLUG}" ]] && [[ -d "$OLD_PATH" ]]; then
+    OLD_LEASE_ID=""
+    OLD_LEASE_HOLDER=""
+    { IFS= read -r OLD_LEASE_ID; IFS= read -r OLD_LEASE_HOLDER; } < "$GATE_DIR/lease-${STORY_SLUG}" || true
+    treehouse_return "$OLD_PATH" "$OLD_LEASE_ID" "$OLD_LEASE_HOLDER" 2>&1 | sed 's/^/[gate] /' >&2 || \
+      echo "[gate] WARNING: could not return prior lease at $OLD_PATH — continuing" >&2
+  elif [[ -d "$OLD_PATH" ]] && git -C "$PROJECT_DIR" worktree list --porcelain 2>/dev/null | grep -qxF "worktree $OLD_PATH"; then
+    # Non-treehouse worktree — the gate cannot safely remove it (it may hold
+    # uncommitted work). Warn so the operator can clean it up manually.
+    echo "[gate] WARNING: prior worktree at $OLD_PATH is not treehouse-managed." >&2
+    echo "[gate]   It is now untracked by the gate — inspect and remove manually:" >&2
+    echo "[gate]   git -C \"$PROJECT_DIR\" worktree remove \"$OLD_PATH\"" >&2
+  elif [[ -d "$OLD_PATH" ]]; then
+    echo "[gate] WARNING: prior path $OLD_PATH exists but is not a registered worktree — inspect and remove manually." >&2
+  fi
+  # Clear the compat pointer if it still references the discarded worktree —
+  # otherwise a failed acquisition below would leave it pointing at a stale
+  # path the hook could mistake for a live gate-pass.
+  if [[ "$(canon_path "$(cat "$CURRENT_GATE_PASS" 2>/dev/null || true)")" == "$OLD_PATH" ]]; then
+    rm -f "$CURRENT_GATE_PASS"
+  fi
+  rm -f "$GATE_PASS" "$GATE_DIR/lease-${STORY_SLUG}"
+fi
+
 # --- Check 3: worktree already exists (resume case) ---
+# Keyed to THIS story's per-story gate-pass file — a different story's lease
+# never satisfies this check, so a second story's gate run acquires its own
+# worktree instead of resuming the first story's.
 # For treehouse-managed worktrees, we check the gate-pass file for a lease path.
 # For manual worktrees, we check git worktree list.
-if [[ -f "$GATE_PASS" ]]; then
-  EXISTING_PATH="$(cat "$GATE_PASS")"
+if [[ "$FORCE_NEW" -eq 0 ]] && [[ -f "$GATE_PASS" ]]; then
+  # Canonicalize — gate-pass files written before canonicalization (or with
+  # a symlinked /tmp prefix) must still match `git worktree list` output.
+  EXISTING_PATH="$(canon_path "$(cat "$GATE_PASS")")"
   if [[ -d "$EXISTING_PATH" ]]; then
-    # Verify it's still a valid worktree
-    if git -C "$PROJECT_DIR" worktree list 2>/dev/null | grep -q "$EXISTING_PATH"; then
+    # Verify it's still a valid worktree — anchored porcelain match, not a
+    # substring grep (a slug like "foo" must not match "foo-bar"'s worktree).
+    if git -C "$PROJECT_DIR" worktree list --porcelain 2>/dev/null | grep -qxF "worktree $EXISTING_PATH"; then
       echo "RESUME: Worktree already exists at $EXISTING_PATH" >&2
+      echo "$EXISTING_PATH" > "$CURRENT_GATE_PASS"
       echo "$EXISTING_PATH"
       exit 0
     fi
     # Treehouse worktree — check if lease is still active
     if [[ "$(treehouse_available)" == "1" ]] && [[ "$(treehouse_is_managed "$EXISTING_PATH")" == "1" ]]; then
       echo "RESUME: Treehouse worktree still leased at $EXISTING_PATH" >&2
+      echo "$EXISTING_PATH" > "$CURRENT_GATE_PASS"
       echo "$EXISTING_PATH"
       exit 0
     fi
   fi
 fi
 
-# Also check legacy manual worktree path
-if git -C "$PROJECT_DIR" worktree list | grep -q "$WORKTREE_PATH"; then
+# Also check legacy manual worktree path (anchored porcelain match — see above)
+if [[ "$FORCE_NEW" -eq 0 ]] && git -C "$PROJECT_DIR" worktree list --porcelain | grep -qxF "worktree $WORKTREE_PATH"; then
   echo "RESUME: Worktree already exists at $WORKTREE_PATH" >&2
   echo "$WORKTREE_PATH" > "$GATE_PASS"
+  echo "$WORKTREE_PATH" > "$CURRENT_GATE_PASS"
   echo "$WORKTREE_PATH"
   exit 0
 fi
@@ -354,14 +656,23 @@ fi
 
 echo "[gate] Acquiring worktree via treehouse pool..." >&2
 TREEHOUSE_LEASE_HOLDER="execute-upsert/${STORY_SLUG}"
-ACQUIRED_PATH="$(treehouse_acquire "execute-upsert/${STORY_SLUG}" 2>&1)" || {
+# Invoke directly (no command substitution) — the helper exports
+# TREEHOUSE_LEASE_ID for the lease-<slug> record, and a subshell would
+# discard it. Stderr goes to a file so diagnostics never corrupt the path.
+ACQUIRE_OUT="$(mktemp "${TMPDIR:-/tmp}/exec-gate-acquire.XXXXXX")"
+ACQUIRE_ERR="$(mktemp "${TMPDIR:-/tmp}/exec-gate-acquire-err.XXXXXX")"
+if treehouse_acquire "execute-upsert/${STORY_SLUG}" >"$ACQUIRE_OUT" 2>"$ACQUIRE_ERR"; then
+  ACQUIRED_PATH="$(cat "$ACQUIRE_OUT")"
+else
   echo "[gate] Treehouse acquire failed" >&2
-  echo "$ACQUIRED_PATH" >&2
+  cat "$ACQUIRE_ERR" >&2
+  rm -f "$ACQUIRE_OUT" "$ACQUIRE_ERR"
   exit 2
-}
+fi
+rm -f "$ACQUIRE_OUT" "$ACQUIRE_ERR"
 
 if [[ -n "$ACQUIRED_PATH" ]]; then
-  WORKTREE_PATH="$ACQUIRED_PATH"
+  WORKTREE_PATH="$(canon_path "$ACQUIRED_PATH")"
   TREEHOUSE_USED=1
   echo "[gate] Treehouse worktree leased: $WORKTREE_PATH" >&2
   echo "[gate] Lease ID: ${TREEHOUSE_LEASE_ID:-unknown}" >&2
@@ -405,8 +716,12 @@ fi
 CHECKPOINT_SHA=$(git -C "$WORKTREE_PATH" rev-parse HEAD)
 echo "$CHECKPOINT_SHA" > "$GATE_DIR/checkpoint-$STORY_SLUG"
 
-# --- Write gate pass file ---
+# --- Write gate pass files ---
+# Per-story file (authoritative — drives resume for this slug) and the legacy
+# current-gate-pass compat pointer (most recent live worktree — keeps older
+# check-subagent-gate.sh hook versions working).
 echo "$WORKTREE_PATH" > "$GATE_PASS"
+echo "$WORKTREE_PATH" > "$CURRENT_GATE_PASS"
 
 # Record whether treehouse was used (for land-on-env-dev to know whether to return the lease)
 echo "$TREEHOUSE_USED" > "$GATE_DIR/treehouse-used-${STORY_SLUG}"

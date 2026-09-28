@@ -1268,8 +1268,8 @@ flowchart TD
     P5 --> P6["Phase 6: Scrum Update<br/>craft what I did /<br/>what's next / blockers"]
     P6 --> P7["Phase 7: Calendar Review<br/>review tomorrow's calendar<br/>identify prep + conflicts"]
     P7 --> P8["Phase 8: Next-Day Planning<br/>prioritize tomorrow's work<br/>via task-triage"]
-    P8 --> P9["Phase 9: Long-Running Work<br/>identify overnight candidates<br/>prompt to launch on approval"]
-    P9 --> P10["Phase 10: Sign-Off Document<br/>write summary to<br/>.agents/handoffs/human/summary/"]
+    P8 --> P9["Phase 9: Long-Running Work<br/>identify overnight candidates<br/>launch via gnhf (local) on approval"]
+    P9 --> P10["Phase 10: Sign-Off Document<br/>write summary to<br/>.agents/handoffs/human/summary/<br/>+ Morning Review block"]
     P10 --> Done([Signed off])
 ```
 
@@ -1316,6 +1316,14 @@ archived at
   Pushing is a separate explicit action the user must approve.
 - **Never auto-launch overnight work.** Long-running tasks are identified
   and presented for approval. Launch only on explicit per-task yes.
+- **Never use `cloud_handoff` or any remote/cloud agent service for
+  overnight work.** All overnight work runs locally via gnhf. The user's
+  code never leaves their machine. If gnhf is unavailable, note
+  candidates as "identified but not launched" — do not fall back to
+  cloud services.
+- **Never use `--push` for overnight gnhf runs.** The user pushes in the
+  morning after review. `--current-branch --push` is forbidden for
+  sign-off-launched runs.
 - **Never skip the daily summary.** Even if the day was light, the summary
   must list what happened — "light day, only X" is valid.
 - **Never fabricate accomplishments.** The summary is compiled from git
@@ -1348,7 +1356,10 @@ archived at
 - **Long-running work threshold**: A task is a candidate for overnight
   execution if it is: (a) long-running (>30 min estimated), (b)
   independent (no user input needed), (c) safe to run unattended (no
-  destructive operations). When in doubt, don't suggest it.
+  destructive operations, produces branches not irreversible changes).
+  When in doubt, don't suggest it. Every candidate must have an
+  observable stop condition and verification commands — see
+  `references/process.md` Phase 9.
 
 ## Available Resources
 
@@ -1393,7 +1404,7 @@ with reasoning. Never silently skip a step.
 | 6. Scrum Update | (AI-driven, see `references/scrum-update.md`) | Scrum update text |
 | 7. Calendar Review | (AI-driven) | Tomorrow's schedule + prep notes |
 | 8. Next-Day Planning | (AI-driven, see `references/next-day-planning.md`) | Prioritized task list |
-| 9. Long-Running Work | (AI-driven) | Candidates + approval prompts |
+| 9. Long-Running Work | (AI-driven, gnhf CLI) | Candidates + launched gnhf runs |
 | 10. Sign-Off Document | (AI-driven) | `.agents/handoffs/human/summary/YYYY/MM/YYYYMMDDHHmm-signoff-{slug}.md` |
 
 ## Task List
@@ -1408,7 +1419,7 @@ with reasoning. Never silently skip a step.
 - [ ] Phase 6: Craft scrum update
 - [ ] Phase 7: Review tomorrow's calendar
 - [ ] Phase 8: Plan and prioritize tomorrow's work
-- [ ] Phase 9: Identify and prompt for long-running work candidates
+- [ ] Phase 9: Identify and prompt for long-running work candidates (launch via gnhf on approval)
 - [ ] Phase 10: Write and commit sign-off document
 
 **Mark legend:**
@@ -1474,6 +1485,10 @@ verify.
   commitments (Phase 8)
 - [ ] **[manual]** Long-running work candidates surfaced (or "none
   identified") (Phase 9)
+- [ ] **[manual]** Every launched gnhf run has an observable stop
+  condition, verification commands, and token/iteration caps (Phase 9)
+- [ ] **[manual]** No `cloud_handoff` or remote/cloud agent service
+  used for overnight work (Phase 9)
 
 ### Sign-Off Document
 
@@ -1493,6 +1508,8 @@ If any of these are true, the run is NOT complete:
   act on it (Phase 6)
 - Sign-off document written but not committed → it won't survive a fresh
   session (Phase 10)
+- Overnight work launched via `cloud_handoff` or any cloud service →
+  violates the local-only guardrail (Phase 9)
 
 ## References
 

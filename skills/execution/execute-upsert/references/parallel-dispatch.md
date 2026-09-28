@@ -47,23 +47,35 @@ not require padding to 5.
 
 ## Worktree Setup
 
-For each runnable story:
+Run the execution gate **once per story** — each run acquires a distinct
+worktree and writes a per-story gate-pass file:
 
 ```bash
-# 1. Create a worktree on a new story branch from the integration branch
-git worktree add -b <story-branch> /tmp/<project>-worktrees/<story-slug> <base-sha>
+# Per story — acquires a treehouse worktree, creates the story branch,
+# records the checkpoint, and writes gate-pass-<story-slug>
+WORKTREE_PATH=$(bash .devin/scripts/execution-gate.sh <story-slug> <base-sha> --story-type standard)
+```
 
-# 2. Symlink shared dependencies so the worktree can build and test
-#    without re-installing. Adapt to the project's package manager:
-ln -sfn <main-repo>/node_modules <worktree>/node_modules
+Gate-pass files are per-story
+(`/tmp/devin-execution-gates/gate-pass-<story-slug>`), so a second story's
+gate run never resumes the first story's worktree — it acquires a new one.
+Re-running the gate for the *same* slug resumes that story's worktree; pass
+`--new` to force a fresh acquisition.
 
-# 3. For monorepos with workspace packages, symlink those too:
+The gate already symlinks `node_modules` into the worktree when the main
+checkout has it. For monorepos with workspace packages, symlink those too:
+
+```bash
 ln -sfn <main-repo>/node_modules/@<scope> <worktree>/node_modules/@<scope>
 ```
 
 For non-JavaScript projects, adapt the dependency symlink (e.g., `target/`
 for Rust, `.venv/` for Python). The goal is: the worktree can run the
 project's test/lint/build commands without a full install.
+
+Do NOT create parallel worktrees with bare `git worktree add` — the gate is
+the machine-enforced path (binding contract rule 4) and it also records the
+checkpoint SHA and lease metadata that rollback and cleanup rely on.
 
 ## Dispatching Background Subagents
 
@@ -298,10 +310,27 @@ Skip the turn-end guard when:
 
 ## Cleanup
 
-After merge reconciliation is complete, remove the worktrees:
+After merge reconciliation is complete, release the worktrees. For
+treehouse-leased worktrees (the gate's normal path), return the lease —
+`land-on-env-dev.sh` does this automatically when run inside the worktree,
+or use `treehouse return <path>` directly. For manual worktrees:
 
 ```bash
 git worktree remove /tmp/<project>-worktrees/<story-slug>
+```
+
+Also remove the story's gate-state files so a later run doesn't resume a
+dead path:
+
+```bash
+rm -f /tmp/devin-execution-gates/gate-pass-<story-slug> \
+      /tmp/devin-execution-gates/lease-<story-slug> \
+      /tmp/devin-execution-gates/checkpoint-<story-slug> \
+      /tmp/devin-execution-gates/treehouse-used-<story-slug> \
+      /tmp/devin-execution-gates/story-type-<story-slug>
+# If the compat pointer still references this worktree, clear it too:
+[[ "$(cat /tmp/devin-execution-gates/current-gate-pass 2>/dev/null)" == "<worktree-path>" ]] \
+  && rm -f /tmp/devin-execution-gates/current-gate-pass
 ```
 
 Do this only after the merge is committed and validated — if the merge

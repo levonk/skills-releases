@@ -13,7 +13,7 @@ must:
     clause: "Every write-capable subagent dispatch MUST go through execution-gate.sh FIRST. Read-only subagent_explore dispatches are exempt (profile-enforced read-only tool access — they cannot mutate the working directory, so the worktree protection rationale does not apply)."
     severity: block
     enforcement: machine
-    check: ".devin/scripts/check-subagent-gate.sh (PreToolUse hook on run_subagent — exempts subagent_explore, blocks write-capable profiles without gate-pass)"
+    check: ".devin/scripts/check-subagent-gate.sh (PreToolUse hook on run_subagent — exempts subagent_explore, blocks write-capable profiles without a live gate-pass file under /tmp/devin-execution-gates/)"
     fallback: "Read-only subagent_explore dispatches are exempt (profile-enforced read-only tool access)"
 
   - id: worktree-only-work
@@ -51,7 +51,7 @@ must not:
     clause: "NEVER work on stories directly in the main checkout — every story gets its own worktree"
     severity: block
     enforcement: machine
-    check: "execution-gate.sh creates per-story worktree; check-subagent-gate.sh blocks dispatch without gate-pass"
+    check: "execution-gate.sh creates per-story worktree + per-story gate-pass (gate-pass-<slug>); check-subagent-gate.sh blocks dispatch without a live gate-pass"
 
 may:
   - id: max-parallel-subagents

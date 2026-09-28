@@ -50,6 +50,9 @@ see-also:
   - skill: "ai-guidance-improver"
     relationship: "complement"
     description: "Acts on AI session review findings — sign-off identifies improvement opportunities, ai-guidance-improver implements them"
+  - external: "gnhf"
+    relationship: "dependency"
+    description: "Local autonomous-loop orchestrator for overnight work — sign-off Phase 9 launches approved candidates via gnhf (never cloud_handoff). gnhf runs a coding agent CLI in the user's own checkout, commits to a local gnhf/ branch, and emits a permanent exit summary. See https://github.com/kunchenguid/gnhf"
 ---
 
 ---

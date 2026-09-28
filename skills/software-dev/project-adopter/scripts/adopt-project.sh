@@ -512,6 +512,16 @@ EOF
 				log_warn "dev-env-upsert reconcile failed on existing devbox.json, skipping"
 			}
 		fi
+
+		# Add standard security & workflow packages (policy decision from project-adopter;
+		# dev-env-upsert handles the mechanics). These are universal — every adopted project
+		# gets secret scanning (git-secrets, gitleaks), incremental merge (git-imerge), and
+		# worktree-per-feature workflow tooling (treehouse). See SKILL.md step 3b.
+		log_info "Adding standard security & workflow packages via dev-env-upsert..."
+		$uv_runner run --script "$dev_env_upsert_dir/scripts/dev_env_upsert.py" add-packages \
+			--packages git-secrets,gitleaks,git-imerge,treehouse \
+			--target "$PROJECT_PATH" ||
+			log_warn "dev-env-upsert add-packages for security/workflow tools failed — add manually if needed"
 	else
 		# Fallback: existing logic (dev-env-upsert not installed)
 		if [[ ! -f "$PROJECT_PATH/devbox.json" ]]; then
@@ -1155,6 +1165,10 @@ generate_devbox_json() {
 	# Base packages always included
 	local packages='["just"]'
 	local language_packages=""
+	# Standard security & workflow packages — every adopted project gets secret scanning
+	# (git-secrets, gitleaks), incremental merge (git-imerge), and worktree-per-feature
+	# workflow tooling (treehouse). See SKILL.md step 3b.
+	local security_workflow='["git-secrets", "gitleaks", "git-imerge", "treehouse"]'
 	local ai_tools='["yq-go", "jq", "ripgrep", "fd", "bat"]'
 
 	# Add language-specific packages based on detection
@@ -1222,9 +1236,9 @@ generate_devbox_json() {
 	fi
 
 	# Combine all packages
-	local all_packages="[$packages, $ai_tools"
+	local all_packages="[$packages, $security_workflow, $ai_tools"
 	if [[ -n "$language_packages" ]]; then
-		all_packages="[$packages, $ai_tools, $language_packages]"
+		all_packages="[$packages, $security_workflow, $ai_tools, $language_packages]"
 	fi
 
 	# Create devbox.json

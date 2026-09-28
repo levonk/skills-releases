@@ -100,42 +100,75 @@ and the flake passes the right one per system. See
 
 **Release-please marker**: The `# x-release-please-version` comment on the
 `version` default lets release-please update the version in `package.nix`
-automatically. Add `package.nix` and `default.nix` to the `extra-files` list
-in `release-please-config.json` so the version bump propagates to both files.
-Without the marker, the default stays at the initial version after a release
-and standalone `nix-build` / `callPackage` builds report a stale version.
+automatically. Add `package.nix` to the `extra-files` list in
+`release-please-config.json` so the version bump propagates. Without the
+marker, the default stays at the initial version after a release and
+standalone `nix-build` / `callPackage` builds report a stale version.
 
 ### `default.nix` — the non-flake entry point
 
-Enables `nix-build` and `callPackage` workflows without a flake:
+Enables `nix-build` without a flake by bridging to the flake's locked
+nixpkgs via [flake-compat](https://github.com/edolstra/flake-compat). This
+requires adding `flake-compat` as a flake input (see `flake.nix` below):
 
 ```nix
-{ pkgs ? import <nixpkgs> { }
-, version ? "2.3.0" # x-release-please-version
-}:
-
-pkgs.callPackage ./package.nix { inherit version; }
+(import (
+  let
+    lock = builtins.fromJSON (builtins.readFile ./flake.lock);
+  in
+  fetchTarball {
+    url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+    sha256 = lock.nodes.flake-compat.locked.narHash;
+  }
+) {
+  src = ./.;
+}).defaultNix
 ```
 
 Users can now build without flakes:
 
 ```bash
-nix-build default.nix
-nix-build default.nix --arg version '"1.0.0"'
-nix-shell -p callPackage --run 'callPackage ./default.nix {}'
+nix-build                # uses the flake's locked nixpkgs and version
+nix-build default.nix    # explicit
 ```
+
+**CRITICAL — never use `import <nixpkgs> {}` in `default.nix`**: The
+ambient `<nixpkgs>` channel is outside the flake's control and may lack
+the toolchain version the flake deliberately pins (e.g., Go 1.25.5
+requires nixpkgs-unstable; stable branches only ship Go 1.22.x/1.23.x).
+It may also have dropped platforms the flake supports — nixpkgs 26.11+
+removes `x86_64-darwin` entirely, so a user on a current stable channel
+gets a silent build failure instead of the darwin-legacy pin the flake
+configured. The flake-compat shim reads the locked nixpkgs from
+`flake.lock`, guaranteeing the traditional `nix-build` path uses the
+same toolchain and platform support as the flake — including the
+darwin-legacy pin for `x86_64-darwin`. See
+[`advanced/flake-patterns.md`](../advanced/flake-patterns.md) →
+"Flake-Compat Shims (Legacy Nix)" for the full shim pattern.
+
+**Version propagation**: The `default.nix` shim does not carry a
+`version` parameter or `# x-release-please-version` marker — the version
+comes from the flake's `let version = ...` binding (which has the
+marker). Release-please updates the flake's version line, and the shim
+picks up the new value on the next `nix-build`. Add `default.nix` to
+`release-please-config.json` `extra-files` only if it carries its own
+version marker; with the flake-compat shim it does not, so `extra-files`
+needs only `flake.nix` and `package.nix`.
 
 ### `flake.nix` — system wiring only
 
-The flake imports `default.nix` per system, keeping the system-specific
-wiring (legacy pin, `forAllSystems`, `apps`) separate from the package
-definition:
+The flake calls `package.nix` directly via `callPackage`, keeping the
+system-specific wiring (legacy pin, `forAllSystems`, `apps`) separate
+from the package definition. The `flake-compat` input enables the
+`default.nix` shim for non-flake `nix-build`:
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+    flake-compat.url = "github:edolstra/flake-compat";
+    flake-compat.flake = false;
   };
 
   outputs =
@@ -163,7 +196,7 @@ definition:
               import nixpkgs-darwin-legacy { inherit system; }
             else
               nixpkgs.legacyPackages.${system};
-          treehouse = import ./default.nix { inherit pkgs version; };
+          treehouse = pkgs.callPackage ./package.nix { inherit version; };
         in
         {
           default = treehouse;
@@ -190,21 +223,36 @@ definition:
 }
 ```
 
+**Why `callPackage ./package.nix` instead of `import ./default.nix`**: The
+flake already has the correct per-system `pkgs` (including the
+darwin-legacy selection for `x86_64-darwin`). Routing through
+`default.nix` is unnecessary coupling — `default.nix` exists for
+non-flake users, not for the flake to call. Calling `package.nix`
+directly via `callPackage` also avoids a circular dependency: if
+`default.nix` uses flake-compat to import the flake, the flake cannot
+also import `default.nix`.
+
 ## Release-Please Configuration
 
-Add `package.nix` and `default.nix` to `release-please-config.json` so the
-version bump propagates to all three files. Each file needs the
-`# x-release-please-version` marker on its version line:
+Add `package.nix` to `release-please-config.json` `extra-files` so the
+version bump propagates. Both `flake.nix` and `package.nix` carry the
+`# x-release-please-version` marker. The `default.nix` flake-compat shim
+does not carry a version parameter (it inherits the version from the
+flake), so it does not need to be in `extra-files`:
 
 ```json
 {
   "extra-files": [
     "flake.nix",
-    "package.nix",
-    "default.nix"
+    "package.nix"
   ]
 }
 ```
+
+If the project keeps `default.nix` in `extra-files` (e.g., for
+release-please to track it as a changed file), release-please will
+still update it — but since it has no `# x-release-please-version`
+marker, no version string is changed. This is harmless but unnecessary.
 
 ## Workflow Updates
 
@@ -219,6 +267,11 @@ extracted files instead of (or in addition to) `flake.nix`:
   `nix-build default.nix` to validate the non-flake path
 - **Release-please path filters**: include `package.nix` and `default.nix`
   in the paths that trigger the release workflow
+- **Flake lock update**: after adding the `flake-compat` input, run
+  `nix flake lock` to populate `flake.lock` with the `flake-compat` node.
+  The `default.nix` shim reads `lock.nodes.flake-compat.locked.rev` and
+  `narHash` from `flake.lock` — without the lock entry, `nix-build
+  default.nix` fails with a missing-node error.
 
 ## Connection to nixpkgs Upstreaming (Step 28b)
 

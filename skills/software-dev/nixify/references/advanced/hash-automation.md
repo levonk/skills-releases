@@ -22,31 +22,59 @@ https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#trigger
 1. Inspect the project's release workflow (e.g. `.github/workflows/release.yml`). Find the
    `gh release create` step and check its `GH_TOKEN` / `GITHUB_TOKEN` env.
 2. If it uses a **PAT or GitHub App token** -> `release: published` works. Use the
-   `release: published` template below.
+   `release: published` template below (Template B).
 3. If it uses **`secrets.GITHUB_TOKEN`** (the common case, including all cargo-dist setups) ->
-   `release: published` will NOT fire. Use the **scheduled lag-check** template below instead. It
-   runs daily, compares `flake.nix`'s `version` to the latest GitHub release, and only acts when
-   they differ. Fully decoupled from how releases are created; needs no PAT and no edits to the
-   release pipeline.
+   `release: published` will NOT fire. Check whether the project **owns its release workflow**
+   (the release workflow file is in the project's own `.github/workflows/`):
+   - **Yes, the project owns the release workflow** -> use **Template C** (release-workflow
+     job) below. Add the hash-update as a job in the existing release workflow, running after
+     the release is created. This is strictly better than the scheduled lag-check: it fires
+     immediately after the release (no 24h delay), avoids the GITHUB_TOKEN trap (it's a job
+     in the same workflow run, not triggered by a release *event*), and can cross-check
+     against `SHA256SUMS.txt` that the release job just generated. **Also add Template A
+     as a safety net** — it catches Template C job failures, manual releases, and releases
+     from other workflows. The two do not conflict: if Template C already updated the
+     hashes, Template A's hash check matches and it exits with "nothing to do."
+   - **No, releases are created externally** (e.g. cargo-dist's own workflow, or a release
+     pipeline the nixify PR cannot modify) -> use **Template A** (scheduled lag-check) as
+     the primary mechanism. It runs daily, compares the first asset's SRI hash against
+     what's in `flake.nix`, and only acts when they differ. Fully decoupled from how
+     releases are created; needs no PAT and no edits to the release pipeline.
 
-### Template A: scheduled lag-check (recommended for `GITHUB_TOKEN`-created releases)
+### Template A: scheduled lag-check (safety net for `GITHUB_TOKEN`-created releases)
 
-Runs daily (and on manual dispatch). When the latest GitHub release outpaces `flake.nix`'s pinned
-`version`, prefetches new SRI hashes and opens a PR. No dependency on the release event, no PAT, no
-edits to the release pipeline.
+Runs daily (and on manual dispatch). Prefetches the first release asset and compares its SRI hash
+against what's in `flake.nix`. If the hash differs, prefetches all assets, rewrites the hashes,
+and opens a PR. No dependency on the release event, no PAT, no edits to the release pipeline.
+
+**Use as a safety net alongside Template C** (or as the primary mechanism when the project does
+not own its release workflow). When Template C is also in use, Template A catches the cases
+Template C cannot: Template C job failures (transient network/Nix errors), manual releases via
+`gh release create` from a laptop, and releases from a different workflow. If Template C already
+updated the hashes, Template A's hash check matches and it exits with "nothing to do" — no
+redundant PR.
 
 **Create `.github/workflows/nix-release.yml`:**
 
 ```yaml
 name: Update Nix flake
 
-# Checks whether flake.nix lags behind the latest GitHub release. If it does,
-# prefetches the new release's per-platform SRI hashes, rewrites flake.nix,
+# Checks whether flake.nix's hashes lag behind the latest GitHub release.
+# Prefetches the first asset and compares its SRI hash against what's in
+# flake.nix. If they differ, prefetches all assets, rewrites the hashes,
 # and opens a PR.
+#
+# Uses hash comparison (not version comparison) because dynamic-version
+# flakes (version read from Cargo.toml/package.json) have no `version = "..."`
+# in flake.nix, and even static-version flakes may have the version already
+# bumped by a release-prep PR while the hashes are still stale.
 #
 # Runs on a schedule instead of release: published because releases are created
 # with GITHUB_TOKEN, which does not start new workflow runs. A daily lag-check
 # is fully decoupled from how releases are created and needs no PAT.
+# When used alongside Template C, this is the safety net — if Template C
+# already updated the hashes, the hash check matches and this exits with
+# "nothing to do."
 
 on:
   schedule:
@@ -63,7 +91,7 @@ concurrency:
 
 jobs:
   update-flake:
-    name: Bump flake version + hashes if lagging
+    name: Bump flake hashes if lagging
     runs-on: ubuntu-latest
     if: github.repository == '<owner>/<repo>'
     steps:
@@ -103,20 +131,6 @@ jobs:
               release = json.load(r)
           tag = release["tag_name"]
           version = tag.lstrip("v")
-          src = open("flake.nix").read()
-          m = re.search(r'version = "([^"]*)";', src)
-          if not m:
-              raise SystemExit('could not find version = "..." in flake.nix')
-          current = m.group(1)
-          print(f"flake.nix version: {current}  |  latest release: {version} (tag {tag})")
-          if current == version:
-              print("flake.nix is up to date; nothing to do.")
-              with open(os.environ["GITHUB_ENV"], "a") as f:
-                  f.write("LAGGING=no\n")
-              raise SystemExit(0)
-          with open(os.environ["GITHUB_ENV"], "a") as f:
-              f.write("LAGGING=yes\n")
-              f.write(f"VERSION={version}\n")
           # Drop sibling checksum files (.sha256) so a tarball substring does
           # not also match its "<tarball>.sha256" companion (cargo-dist etc.).
           names = {a["name"] for a in release["assets"]
@@ -156,10 +170,67 @@ jobs:
                   f"go stale while the URL gets the version bump — users on the "
                   f"omitted platform get a hash mismatch. ASSET_MAP currently "
                   f"covers: {sorted(asset_map.keys())}")
+
+          # --- Hash-based staleness check ---
+          # Compare the first asset's SRI hash against what's in flake.nix.
+          # We use hash comparison instead of version comparison because:
+          # 1. Dynamic-version flakes (version read from Cargo.toml/package.json)
+          #    have no `version = "..."` in flake.nix to compare against.
+          # 2. Even for static-version flakes, the version may already be
+          #    bumped by a release-prep PR while the hashes are still stale
+          #    (e.g. if Template C failed after the version bump but before
+          #    the hash update).
+          # 3. Hash comparison catches both cases: if the hash matches, the
+          #    flake is up to date for this release regardless of what the
+          #    version field says.
+          # The cost is one download per day (the first asset) — negligible.
+          first_sys = next(iter(asset_map))
+          first_sub = asset_map[first_sys]
+          first_match = next((n for n in names if first_sub in n), None)
+          if not first_match:
+              raise SystemExit(f"no asset for {first_sys} ({first_sub}) in {tag}; have: {sorted(names)}")
+          first_url = f"https://github.com/{repo}/releases/download/{tag}/{first_match}"
+          first_out = json.loads(subprocess.check_output(
+              ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", first_url]))
+          first_sri = first_out["hash"]
+
           src = open("flake.nix").read()
+          # Extract the current hash for the first system. Try the `assets`
+          # block shape first, then the flat `hashes` shape.
+          pat_assets = re.compile(
+              r'("' + re.escape(first_sys) + r'" = \{[^}]*sha256 = ")([^"]*)(")', re.S)
+          pat_hashes = re.compile(
+              r'("' + re.escape(first_sys) + r'" = ")([^"]*)(")')
+          current_hash = None
+          m = pat_assets.search(src)
+          if m:
+              current_hash = m.group(2)
+          else:
+              m = pat_hashes.search(src)
+              if m:
+                  current_hash = m.group(2)
+          if current_hash is None:
+              raise SystemExit(f"could not find hash for {first_sys} in flake.nix")
+
+          print(f"flake.nix hash for {first_sys}: {current_hash}")
+          print(f"latest release {tag} hash for {first_sys}: {first_sri}")
+          if current_hash == first_sri:
+              print("flake.nix is up to date; nothing to do.")
+              with open(os.environ["GITHUB_ENV"], "a") as f:
+                  f.write("LAGGING=no\n")
+              raise SystemExit(0)
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write("LAGGING=yes\n")
+              f.write(f"VERSION={version}\n")
+
+          # Stale — prefetch all assets and rewrite all hashes.
+          # Also rewrite `version = "..."` if the flake has a hardcoded version
+          # field (dynamic-version flakes read from Cargo.toml/package.json
+          # and have no `version = "..."` in flake.nix — the version rewrite
+          # is skipped, n=0).
           src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
-          if n != 1:
-              raise SystemExit('could not find version = "..." in flake.nix')
+          if n > 0:
+              print(f"bumped version to {version}")
           for sys_, sub in asset_map.items():
               match = next((n for n in names if sub in n), None)
               if not match:
@@ -178,11 +249,16 @@ jobs:
                   with urllib.request.urlopen(f"{url}.sha256") as r:
                       hexd = r.read().decode().split()[0]
                   expected = "sha256:" + hexd
-              out = json.loads(subprocess.check_output(
-                  ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256"]
-                  + (["--expected-hash", expected] if expected else [])
-                  + [url]))
-              sri = out["hash"]
+              # Reuse the first asset's prefetched hash (already downloaded).
+              if sys_ == first_sys:
+                  sri = first_sri
+              else:
+                  out = json.loads(subprocess.check_output(
+                      ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256"]
+                      + (["--expected-hash", expected] if expected else [])
+                      + [url]))
+                  sri = out["hash"]
+              # Try the `assets` block shape first, then the flat `hashes` shape.
               pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
               def repl(m):
                   b = m.group(1)
@@ -191,7 +267,11 @@ jobs:
                   return b
               src, n = pat.subn(repl, src, count=1)
               if n != 1:
-                  raise SystemExit(f"could not find assets block for {sys_} in flake.nix")
+                  # Try the flat `hashes` shape (nixpkgs-override-attrs.md).
+                  pat2 = re.compile(r'("' + re.escape(sys_) + r'" = ")[^"]*(";)')
+                  src, n = pat2.subn(lambda m: m.group(1) + sri + m.group(2), src, count=1)
+                  if n != 1:
+                      raise SystemExit(f"could not find hash entry for {sys_} in flake.nix")
           open("flake.nix", "w").write(src)
           print(f"bumped flake.nix to {version}: {list(asset_map)}")
           PYEOF
@@ -206,14 +286,51 @@ jobs:
           base: master
           body: |
             Auto-generated by the `Update Nix flake` workflow (daily lag-check).
-            The latest GitHub release is v{{{ printf "%s" "${{{ env.VERSION }}}" }}} but `flake.nix` was
-            pinned to an older version. This PR bumps `version` and refreshes the per-platform SRI
-            hashes by prefetching the new release assets.
+            The latest GitHub release is v{{{ printf "%s" "${{{ env.VERSION }}}" }}} but `flake.nix`'s
+            hashes are stale. This PR refreshes the per-platform SRI hashes (and
+            `version` if the flake has a hardcoded version field) by prefetching
+            the new release assets.
 
             Note: PRs opened by `GITHUB_TOKEN` do not trigger downstream workflow runs (e.g. CI),
             so this PR will show no checks. Review the diff before merging — it should be a
             version bump plus per-platform hash refresh with no source changes.
 ```
+
+**Running Template A alongside Template C (recommended):** When the project owns its release
+workflow (Template C is in use), also deploy Template A as a daily safety net. The two do not
+conflict:
+- Template C fires immediately after the release and updates the hashes.
+- Template A runs daily, prefetches the first asset, and compares its SRI hash against
+  `flake.nix`. If Template C already updated the hashes, the hash matches and Template A
+  exits with "nothing to do" — no redundant PR.
+- If Template C failed (transient network/Nix error), or the release was created manually
+  via `gh release create` from a laptop (bypassing the release workflow), or the release
+  came from a different workflow, Template A catches it within 24 hours.
+
+**Why hash comparison, not version comparison:** Template A compares the first asset's SRI
+hash against what's in `flake.nix`, not the `version` field. This is because:
+1. **Dynamic-version flakes** (version read from `Cargo.toml`/`package.json`) have no
+   `version = "..."` in `flake.nix` — there's nothing to compare against.
+2. **Stale hashes after version bump**: even for static-version flakes, the version may
+   already be bumped by a release-prep PR while the hashes are still stale (e.g. if
+   Template C failed after the version bump but before the hash update). Version
+   comparison would say "up to date" and miss the stale hashes.
+3. **Hash comparison is authoritative**: if the hash matches, the flake is up to date
+   for this release regardless of what the version field says. The cost is one download
+   per day (the first asset) — negligible.
+
+**The "version bumped but no release" edge case:** If the project bumps the version in
+`Cargo.toml`/`package.json` (via a release-prep PR) but the release hasn't been cut yet,
+the latest GitHub release is still the old version. Template A's hash check compares
+against the old release's assets — the hashes match, and Template A correctly does
+nothing (the flake serves the latest release's hashes). However, the prebuilt URL in
+the flake now points to a non-existent tarball (the version was bumped but the tarball
+doesn't exist yet). This means `nix build .#prebuilt` will fail with a 404 in the window
+between the release-prep merge and the release cut. This is inherent to the
+dynamic-version approach and cannot be fixed by hash automation — there's no release
+to fetch hashes from. The mitigation is to guard prebuilt CI steps with
+`if: github.event_name != 'pull_request'` (so release-prep PRs don't fail CI) and
+accept that the prebuilt output is temporarily broken on `main` until the release is cut.
 
 ### Template B: `release: published` (only if releases are created with a PAT/App token)
 
@@ -340,15 +457,182 @@ jobs:
             prefetching the new release assets. No manual editing required.
 ```
 
-**Customization notes (both templates):**
+### Template C: release-workflow job (when the project owns its release workflow)
+
+Use this when the project's release workflow uses `secrets.GITHUB_TOKEN` (so `release: published`
+won't fire) AND the project owns the release workflow file (so the nixify PR can add a job to it).
+This is the preferred template for `GITHUB_TOKEN`-created releases when the project owns its
+release pipeline — it fires immediately after the release (no 24h lag-check delay), avoids the
+GITHUB_TOKEN trap (it's a job in the same workflow run, not a separate workflow triggered by a
+release *event*), and can cross-check hashes against `SHA256SUMS.txt` that the release job just
+generated.
+
+**Add a job to the existing release workflow** (e.g. `.github/workflows/release.yml`), with
+`needs: <release-job-name>` so it runs after the release is published:
+
+```yaml
+  update-nix-hashes:
+    name: Update Nix prebuilt hashes
+    needs: release  # the job that creates the GitHub release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@<checkout-sha> # v<N>
+        with:
+          ref: ${{{ "{{" }}} github.event.repository.default_branch {{{ "}}" }}}
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@<install-nix-sha> # v<N>
+
+      - name: Prefetch hashes and update flake.nix
+        env:
+          GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}
+          RELEASE_TAG: ${{{ "{{" }}} env.RELEASE_TAG {{{ "}}" }}}
+        run: |
+          set -euo pipefail
+          python3 <<'PYEOF'
+          import json, os, re, subprocess, urllib.request
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          tag = os.environ["RELEASE_TAG"]
+          version = tag.lstrip("v")
+          print(f"Updating prebuilt hashes for {tag} (version {version})")
+
+          # Fetch the release to get asset names + checksum files for cross-check
+          token = os.environ["GH_TOKEN"]
+          req = urllib.request.Request(
+              f"https://api.github.com/repos/{repo}/releases/tags/{tag}",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              })
+          with urllib.request.urlopen(req) as r:
+              release = json.load(r)
+
+          # Map Nix system -> release tarball target substring
+          asset_map = {
+              "x86_64-linux":    "x86_64-unknown-linux-gnu",
+              "aarch64-linux":   "aarch64-unknown-linux-gnu",
+              "x86_64-darwin":   "x86_64-apple-darwin",
+              "aarch64-darwin":  "aarch64-apple-darwin",
+          }
+
+          asset_names = {a["name"] for a in release["assets"]}
+
+          # Parse SHA256SUMS.txt for cross-check (catches corrupted/replaced artifacts).
+          # Many release workflows generate a single SHA256SUMS.txt file containing all
+          # checksums. This is an alternative to per-file <asset>.sha256 siblings —
+          # both are supported, see the Customization notes below.
+          sha256sums_url = next(
+              (a["browser_download_url"] for a in release["assets"]
+               if a["name"] == "SHA256SUMS.txt"), None)
+          expected_hashes = {}
+          if sha256sums_url:
+              with urllib.request.urlopen(sha256sums_url) as r:
+                  for line in r.read().decode().splitlines():
+                      parts = line.split(None, 1)
+                      if len(parts) == 2:
+                          expected_hashes[parts[1].strip()] = "sha256:" + parts[0]
+
+          src = open("flake.nix").read()
+          for sys_, sub in asset_map.items():
+              match = next(
+                  (n for n in asset_names if sub in n and n.endswith(".tar.gz")), None)
+              if not match:
+                  raise SystemExit(
+                      f"no asset matching '{sub}' in release {tag}; "
+                      f"have: {sorted(asset_names)}")
+              url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
+
+              # Cross-check against SHA256SUMS.txt (or per-file .sha256 sibling)
+              # before pinning. See Customization notes for both formats.
+              expected = expected_hashes.get(match)
+              if not expected:
+                  # Fall back to per-file <asset>.sha256 sibling
+                  if f"{match}.sha256" in {a["name"] for a in release["assets"]}:
+                      with urllib.request.urlopen(f"{url}.sha256") as r:
+                          hexd = r.read().decode().split()[0]
+                      expected = "sha256:" + hexd
+              cmd = [
+                  "nix", "store", "prefetch-file", "--json", "--hash-type", "sha256",
+              ]
+              if expected:
+                  cmd += ["--expected-hash", expected]
+              cmd += [url]
+              out = json.loads(subprocess.check_output(cmd))
+              sri = out["hash"]
+              print(f"  {sys_}: {match} -> {sri}")
+
+              # Update the hash entry for this system.
+              # For the `assets` block shape (prebuilt-tarball.md):
+              pat = re.compile(r'("' + re.escape(sys_) + r'" = \{[^}]*\})', re.S)
+              def repl(m):
+                  b = m.group(1)
+                  b = re.sub(r'file = "[^"]*";', f'file = "{match}";', b, count=1)
+                  b = re.sub(r'sha256 = "[^"]*";', f'sha256 = "{sri}";', b, count=1)
+                  return b
+              # For the flat `hashes` shape (nixpkgs-override-attrs.md), use:
+              # pat = re.compile(r'("' + re.escape(sys_) + r'" = ")[^"]*(";)')
+              # def repl(m): return m.group(1) + sri + m.group(2)
+              src, n = pat.subn(repl, src, count=1)
+              if n != 1:
+                  raise SystemExit(
+                      f"could not find hash entry for {sys_} in flake.nix")
+
+          open("flake.nix", "w").write(src)
+          print(f"Updated prebuilt hashes for {version}: {list(asset_map)}")
+          PYEOF
+
+      - name: Open PR
+        uses: peter-evans/create-pull-request@<create-pr-sha> # v<N>
+        with:
+          commit-message: "chore(nix): update prebuilt hashes for ${{{ "{{" }}} env.RELEASE_TAG {{{ "}}" }}"
+          title: "chore(nix): update prebuilt hashes for ${{{ "{{" }}} env.RELEASE_TAG {{{ "}}" }}"
+          branch: chore/nix-hashes-${{{ "{{" }}} env.RELEASE_TAG {{{ "}}" }}
+          body: |
+            Auto-generated by the release workflow after publishing ${{{ "{{" }}} env.RELEASE_TAG {{{ "}}" }}}.
+
+            Prefetches the per-platform SHA-256 hashes for the new release tarballs
+            and updates the hash entries in `flake.nix`. The hashes are cross-checked
+            against `SHA256SUMS.txt` (or per-file `.sha256` siblings) before pinning.
+
+            Note: PRs opened by `GITHUB_TOKEN` do not trigger downstream CI runs.
+            Review the diff before merging — it should be a hash refresh only.
+```
+
+**Key differences from Templates A and B:**
+- **No separate workflow file** — the job is added to the existing release workflow (e.g. `release.yml`), not a new `nix-release.yml`.
+- **`needs: <release-job-name>`** — the job runs after the release is created, not on a schedule or a release event. This is what avoids the GITHUB_TOKEN trap: it's a downstream job in the same workflow run, not a separate workflow triggered by a release *event*.
+- **`ref: github.event.repository.default_branch`** — the checkout targets the default branch (where `flake.nix` lives), not the release tag. The release tag may not have `flake.nix` if the flake was added after the tag was cut.
+- **`RELEASE_TAG` from the workflow env** — the tag is already available as `env.RELEASE_TAG` (or `github.ref_name` for tag-push triggers). No need to query the GitHub API for the latest release.
+- **SHA256SUMS.txt cross-check** — the release job that creates the release also generates `SHA256SUMS.txt`. The hash-update job can fetch and parse it for cross-checking, catching corrupted or replaced artifacts before pinning. See the Customization notes below for both checksum formats.
+- **No version bump** — when the flake reads `version` from `Cargo.toml`/`package.json` (the recommended pattern), the version is already correct after the release-prep PR bumped the manifest. The hash-update job only refreshes the per-platform hashes, not the version. If the flake uses a hardcoded `version` field, add a `re.subn` for `version = "..."` as in Templates A and B.
+
+**When to prefer Template C over Template A:**
+- The project owns its release workflow (the nixify PR can add a job to it)
+- Immediate hash updates are desired (no 24h lag-check delay)
+- The release workflow generates `SHA256SUMS.txt` or per-file `.sha256` siblings for cross-checking
+
+**When to fall back to Template A:**
+- Releases are created by an external pipeline the nixify PR cannot modify (e.g. cargo-dist's own workflow)
+- The project does not have a release workflow (releases are created manually)
+- The maintainer prefers a decoupled workflow that doesn't touch the release pipeline
+
+**Customization notes (all templates):**
 - `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects platform archives (`.tar.gz`/`.zip`) not covered by any ASSET_MAP substring — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch). The guard has an explicit ignore list (`musl`, `pnpr-`, `-source`, `source-code`) for non-platform archives that should not trigger the check.
-- **`.sha256` cross-check**: Both templates fetch the published `<asset>.sha256` sibling file (when present), convert the hex digest to SRI format (`sha256:` + hex), and pass it as `--expected-hash` to `nix store prefetch-file`. This fails the workflow if the downloaded artifact's hash does not match the published checksum — catching corrupted or replaced release artifacts before the hash is pinned to `flake.nix`.
+- **`.sha256` cross-check**: Templates A and B fetch the published `<asset>.sha256` sibling file (when present), convert the hex digest to SRI format (`sha256:` + hex), and pass it as `--expected-hash` to `nix store prefetch-file`. Template C supports both this format and `SHA256SUMS.txt` (see below). This fails the workflow if the downloaded artifact's hash does not match the published checksum — catching corrupted or replaced release artifacts before the hash is pinned to `flake.nix`.
+- **`SHA256SUMS.txt` cross-check** (Template C): Many release workflows generate a single `SHA256SUMS.txt` file (via `sha256sum -- *.tar.gz > SHA256SUMS.txt`) containing all checksums in the standard `<hex>  <filename>` format, rather than per-file `<asset>.sha256` siblings. Template C's script parses this file into a `{filename: "sha256:<hex>"}` map and uses it for the `--expected-hash` cross-check. Both formats are supported — the script tries `SHA256SUMS.txt` first, then falls back to per-file `.sha256` siblings. If neither is present, the hash is pinned without a cross-check (same as Templates A and B when no `.sha256` siblings exist).
 - `base: master`: change to `main` if the project's default branch is `main`.
 - `if: github.repository == '<owner>/<repo>'` (Template A): prevents the scheduled job from running on forks. Replace with the upstream owner/repo.
 - The script targets the `assets = { "<system>" = { file = ...; sha256 = ...; }; }` shape from the Prebuilt Tarball Flake template. For other flake shapes, adapt the regex.
 - Hashes are written in SRI form (`sha256-...=`), which modern Nix accepts in the `sha256` field.
 - `nix store prefetch-file` requires Nix >= 2.20; `cachix/install-nix-action` (SHA-pinned) installs a recent release.
-- PRs opened by `GITHUB_TOKEN` (both templates) do not trigger downstream CI workflows. The diff is a version bump plus per-platform hash refresh with no source changes. **Review the diff before merging** — do not self-declare "safe to merge as-is" in the PR body. If CI on the bump PR is required, use a PAT for `peter-evans/create-pull-request` (but that reintroduces secret-management burden).
+- PRs opened by `GITHUB_TOKEN` (all templates) do not trigger downstream CI workflows. The diff is a version bump plus per-platform hash refresh with no source changes. **Review the diff before merging** — do not self-declare "safe to merge as-is" in the PR body. If CI on the bump PR is required, use a PAT for `peter-evans/create-pull-request` (but that reintroduces secret-management burden).
 - To make it fully hands-off, add a final `gh pr merge --merge --auto` step (with `env: GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}`) or enable auto-merge on the branch via repository settings. **Only do this if the project explicitly accepts auto-merged hash bumps** — some maintainers consider unreviewed merges a security concern (Archon PR #2131 feedback cited the `contents: write` + `pull-requests: write` self-declared unreviewed-merge path as a declining reason).
 - **MANDATORY — pin all third-party actions to commit SHAs**: Same rule as the nix.yml template above. Replace every `<*-sha>` placeholder and `# v<N>` comment with the actual commit SHA and version tag. These workflows grant `contents: write` and `pull-requests: write` — a mutable ref compromise could push arbitrary commits or open PRs against the repo. Resolve SHAs via `gh api repos/<owner>/<repo>/git/refs/tags/<tag> --jq '.object.sha'`.
 

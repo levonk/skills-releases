@@ -28,4 +28,4 @@ Create new workflows, modify and improve existing workflows, and convert between
 
 - **Full skill**: [`skills/ai/ai-workflow-upsert/SKILL.md`](skills/ai/ai-workflow-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-10T02:50:59Z
+- **Generated**: 2026-09-28T10:26:51Z

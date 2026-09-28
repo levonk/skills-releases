@@ -6,8 +6,17 @@
 #
 # The GITHUB_TOKEN trap: if releases are created with secrets.GITHUB_TOKEN,
 # a release: published workflow will NEVER fire (GitHub does not start new
-# runs from GITHUB_TOKEN-authored events). In that case, recommend the
-# scheduled lag-check template instead.
+# runs from GITHUB_TOKEN-authored events). In that case, recommend either:
+#   - release_workflow_job (Template C): add a job to the existing release
+#     workflow. Preferred when the project owns its release workflow — fires
+#     immediately after the release, no 24h delay, no separate workflow file.
+#     When Template C is selected, also deploy Template A as a daily safety
+#     net (catches Template C job failures, manual releases, and releases
+#     from other workflows — the two do not conflict since Template A uses
+#     hash comparison and exits with "nothing to do" if Template C already
+#     updated the hashes).
+#   - scheduled_lag_check (Template A): daily lag-check in a separate
+#     workflow. Fallback when the release workflow is external/untouchable.
 
 set -euo pipefail
 
@@ -57,8 +66,13 @@ fi
 
 case "$TOKEN_TYPE" in
 github_token)
-	TRIGGER="scheduled_lag_check"
-	REASON="releases created with secrets.GITHUB_TOKEN; release:published events from GITHUB_TOKEN do not start new workflow runs — use scheduled lag-check instead"
+	# The project owns its release workflow (we found it in .github/workflows/).
+	# Template C (release-workflow job) is preferred: fires immediately after
+	# the release, no 24h delay, can cross-check against SHA256SUMS.txt.
+	# The agent may fall back to Template A (scheduled lag-check) if the
+	# project's contribution guidelines prohibit modifying the release workflow.
+	TRIGGER="release_workflow_job"
+	REASON="releases created with secrets.GITHUB_TOKEN in a project-owned workflow; add a hash-update job to the existing release workflow (Template C) and also deploy Template A as a daily safety net. Falls back to Template A alone if the release workflow is external or the project prohibits modifying it"
 	;;
 pat_or_app)
 	TRIGGER="release_published"

@@ -305,33 +305,145 @@ conflicts.
 ## Phase 9: Long-Running Work Identification
 
 **Goal**: Identify tasks suitable for overnight background execution and
-prompt the user to approve launching them.
+prompt the user to approve launching them via **gnhf** (Good Night, Have
+Fun) — a local autonomous-loop orchestrator that runs a coding agent CLI
+in the user's own checkout, commits each successful iteration to a local
+`gnhf/` branch, rolls back failures, and emits a permanent exit summary.
 
-### Steps
+**Never use `cloud_handoff` or any remote/cloud agent service.** Overnight
+work runs locally on the user's machine. The user's code never leaves
+their hardware.
 
-1. Scan the task pool for candidates that meet all three criteria:
-   - **Long-running**: estimated >30 minutes of autonomous work.
-   - **Independent**: no user input needed during execution.
-   - **Safe to run unattended**: no destructive operations, no
-     irreversible changes, no external side effects (emails, payments,
-     API calls with real-world impact).
-2. For each candidate, prepare a summary:
-   - Task description.
-   - Estimated duration.
-   - Why it's safe to run unattended.
-   - What repo/branch it would work on.
-   - What the expected output is (PR, test results, report).
-3. Present candidates to the user one at a time with a yes/no prompt.
-4. For each approved candidate:
-   - Launch via cloud Devin handoff (`cloud_handoff` tool) or background
-     subagent.
-   - Note the launch in the sign-off document.
-5. For rejected candidates: note them as "identified but not launched."
+### Prerequisite
+
+gnhf must be installed (`npm install -g gnhf` or built from source). If
+gnhf is not available, **do not fall back to cloud services** — note the
+candidates as "identified but not launched (gnhf unavailable)" and let
+the user launch them manually in the morning.
+
+### Candidate Criteria
+
+Scan the task pool for candidates that meet all three criteria:
+
+- **Long-running**: estimated >30 minutes of autonomous work.
+- **Independent**: no user input needed during execution.
+- **Safe to run unattended**: no destructive operations, no
+  irreversible changes, no external side effects (emails, payments,
+  API calls with real-world impact). Prefer candidates that **produce
+  branches and a status report, not irreversible changes** — the user
+  reviews and merges in the morning.
+
+### Candidate Summary (per approved task)
+
+For each candidate, prepare a summary with these fields before
+presenting it for approval:
+
+- **Task description**: one concrete outcome.
+- **Repo and branch**: where the work happens (gnhf creates a `gnhf/`
+  branch by default; `--current-branch` is opt-in only and never the
+  default for overnight runs).
+- **Agent**: which coding agent CLI to use (`claude`, `codex`,
+  `copilot`, `cursor`, or `acp:<target>`). Default to whichever the
+  user has configured and authenticated.
+- **Observable stop condition**: a concrete, verifiable condition —
+  not "looks good." Bad: "the code is cleaner." Good: "the target
+  workflow succeeds, `just test` passes, and no unrelated files
+  changed."
+- **Verification commands**: the exact commands the agent must run
+  after each slice (e.g., `just test`, `just typecheck`, `just lint`).
+- **Token budget**: a `--max-tokens` cap (e.g., 5,000,000). Never
+  unlimited for overnight runs.
+- **Iteration cap**: a `--max-iterations` cap (e.g., 10-20). Never
+  unlimited for overnight runs.
+- **Rate-limit wait leash**: `--max-rate-limit-wait` (default 24h is
+  fine for overnight; lower it if the user prefers).
+- **Expected output**: what the user will find in the morning (branch
+  with N commits, test results, report file).
+- **Sleep prevention**: confirm `--prevent-sleep on` (default) so the
+  machine doesn't sleep and kill the run.
+
+### Prompt Skeleton
+
+Build the gnhf worker prompt from this skeleton (adapted from the gnhf
+skill's Hands-Off mode):
+
+```text
+Objective: <one concrete outcome>.
+
+Use <agent/model requirement>. Work in this repo. Treat this as a
+long-running GNHF task.
+
+Before coding, inspect the current repo, relevant docs, and recent
+commits. Preserve user changes. Do not make unrelated refactors.
+
+After each meaningful slice, run: <verification commands>.
+
+If blocked, commit no fake success; leave notes with the blocker and
+evidence.
+
+Stop only when: <observable completion condition>.
+```
+
+### Launch
+
+1. Before launch, verify a clean working tree:
+   ```bash
+   git status --short
+   git branch --show-current
+   git log --oneline --max-count=5
+   ```
+2. Check the installed CLI's flags (don't hardcode the roster):
+   ```bash
+   gnhf --help
+   ```
+3. Launch gnhf in Hands-Off mode. General shape:
+   ```bash
+   gnhf \
+     --agent <agent> \
+     --max-iterations <n> \
+     --max-tokens <n> \
+     --stop-when "<observable completion condition>" \
+     --prevent-sleep on \
+     "<worker prompt>"
+   ```
+4. **Parallel candidates on the same repo**: use `--worktree` so each
+   runs in an isolated git worktree without interfering with the
+   others or the main checkout. Never run multiple gnhf instances on
+   the same branch without `--worktree`.
+5. **Never use `--push` for overnight runs.** The user pushes in the
+   morning after review. `--current-branch --push` is forbidden for
+   sign-off-launched runs (it pushes while the user sleeps, violating
+   the "never auto-push" guardrail).
+6. Record the launch in the sign-off document (see Phase 10):
+   - Branch name (`gnhf/<slug>` or the worktree path).
+   - Run metadata location (`.gnhf/runs/<runId>/` — gitignored, local
+     only).
+   - Agent, iteration cap, token cap, stop condition.
+   - The exact gnhf command used.
+
+### Boundaries
+
+- **The host agent orchestrates; gnhf executes.** Do not manually
+  implement inside the same scope while a gnhf worker is responsible
+  for it.
+- **Intervene only for**: hard failure, runaway scope, destructive
+  behavior, or impossible prerequisites. Otherwise let the run
+  proceed.
+- **gnhf completion is not user acceptance.** "Stop condition met"
+  only means the worker stopped — the user still reviews the result
+  in the morning.
+
+### Rejected Candidates
+
+For rejected candidates: note them as "identified but not launched"
+with the reason for rejection.
 
 ### Output
 
-- A list of overnight work candidates with their approval status and
-  launch details (if launched).
+- A list of overnight work candidates with their approval status.
+- For launched candidates: branch name, run metadata path, agent,
+  caps, stop condition, and the exact gnhf command.
+- For rejected candidates: the candidate summary and rejection reason.
 
 ## Phase 10: Sign-Off Document
 
@@ -387,9 +499,22 @@ outputs.
    ## Next-Day Plan
    <prioritized task list>
 
-   ## Long-Running Work
-   - Launched: <list with details>
-   - Identified but not launched: <list>
+   ## Long-Running Work (gnhf)
+   - Launched: <list with branch, run metadata path, agent, caps, stop
+     condition, exact gnhf command>
+   - Identified but not launched: <list with reason>
+
+   ## Morning Review
+   <if any gnhf runs were launched, tell tomorrow's first session
+   exactly what to check. Include:>
+   - Branches to inspect: <gnhf/<slug> branches or worktree paths>
+   - Run metadata: <.gnhf/runs/<runId>/ paths>
+   - Verification to re-run: <commands>
+   - Stop conditions to check: <did the run meet them?>
+   - Still-running processes: `pgrep -fl 'gnhf|claude|codex|copilot|cursor-agent' || true`
+   - Review decision needed: merge / follow-up run / discard
+   - Never summarize an overnight run from memory — reconstruct from
+     git log, notes, and verification output
 
    ## Notes
    <any additional notes for tomorrow>

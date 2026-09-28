@@ -1751,6 +1751,7 @@ When adopting best practices for a project (per ADR 20260131001 Standard Develop
 2. **Detect** project type and existing configuration (using project-detection skill)
 3. **Configure** devbox.json with appropriate packages — delegate to **dev-env-upsert** `reconcile` (uses project-detection) for stack-matched packages, or `add-packages` for batch additions (per ADR 20251226001).
 3a. **Add indexed AST tool** — Based on file-type-aware detection (source code → CodeGraph; multi-repo workspace → GitNexus with license procurement; non-code docs/PDFs/video → Graphify), delegate to **dev-env-upsert** in ONE call: `uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py setup --packages <tool>,direnv,just --prime-steps "<tool> index .:<tool>" --envrc-async-prime --target .`. Do NOT install all three by default — the detection logic picks one. Do NOT create new `index`/`index_impl` targets — indexing folds into the existing `prime_impl` per the Standard Developer UX Flow. See `references/indexed-ast-tool-setup.md` in the dev-env-upsert skill.
+3b. **Add standard security & workflow packages** — After dev-env-upsert `reconcile` (step 3), add universal security and workflow tooling via `add-packages`: `uv run --script <dev-env-upsert>/scripts/dev_env_upsert.py add-packages --packages git-secrets,gitleaks,git-imerge,treehouse --target .`. These are policy decisions from project-adopter (dev-env-upsert handles the mechanics): `git-secrets` and `gitleaks` for secret scanning, `git-imerge` for incremental merge, and `treehouse` for the worktree-per-feature workflow that the pre-commit hook (step 19a) enforces. The fallback `generate_devbox_json` includes these packages when dev-env-upsert is not installed. See [Developer UX Flow](references/developer-ux-flow.md) → Standard security & workflow packages.
 4. **Set up** justfile with standard targets (build, test, lint, etc. — auto-detecting devbox via `_devbox` helper; implementation in `*_impl` targets)
 5. **Configure** .envrc for direnv integration — delegate to **dev-env-upsert** `update-envrc` (runs `devbox generate direnv --print-envrc` and appends the async prime_impl trigger per `async-prime-internal.md`). Do NOT hand-write .envrc — that duplicates dev-env-upsert and diverges over time (per ADR 20251226001).
 6. **Set up** technology-specific build tools (cargo, nx, pytest, etc. per ADR 20260131001). For TypeScript/Node.js projects, follow the `build-tool-selection` knowledge concept: `tsc --noEmit` for type-checking (always in CI), **tsup** for library bundling, **Rolldown** for app/CLI bundling — never use `tsc` for bundling, never use a bundler for type-checking. `configure-nodejs.sh` wires tsup automatically for `library` app_type.
@@ -1904,6 +1905,7 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Detect project type and existing configuration via project-detection (Step 2)
 - [ ] Configure devbox.json with stack-matched packages via dev-env-upsert `reconcile` or `add-packages` (Step 3)
 - [ ] Add the indexed AST tool via a single dev-env-upsert call (CodeGraph/GitNexus/Graphify based on detection) (Step 3a)
+- [ ] Add standard security & workflow packages (git-secrets, gitleaks, git-imerge, treehouse) via dev-env-upsert `add-packages` (Step 3b)
 - [ ] Set up justfile with standard targets (build, test, lint) auto-detecting devbox via `_devbox` helper (Step 4)
 - [ ] Configure .envrc via dev-env-upsert `update-envrc` — not hand-written (Step 5)
 - [ ] Set up technology-specific build tools per ADR 20260131001 (Step 6)
@@ -1939,6 +1941,7 @@ the agent to check something the scripts cannot verify.
 - [ ] **[manual]** Project type and existing configuration were detected via project-detection (Step 2)
 - [ ] **[manual]** devbox.json was configured with stack-matched packages via dev-env-upsert `reconcile` or `add-packages` (Step 3)
 - [ ] **[manual]** The indexed AST tool was added via a single dev-env-upsert call (CodeGraph/GitNexus/Graphify based on detection) — not all three (Step 3a)
+- [ ] **[manual]** Standard security & workflow packages (git-secrets, gitleaks, git-imerge, treehouse) were added via dev-env-upsert `add-packages` (or included in the fallback `generate_devbox_json`) (Step 3b)
 - [ ] **[manual]** justfile has standard targets (build, test, lint) with `*_impl` implementations auto-detecting devbox via `_devbox` helper (Step 4)
 - [ ] **[manual]** .envrc was configured via dev-env-upsert `update-envrc` — not hand-written (Step 5)
 - [ ] **[manual]** Technology-specific build tools were set up per ADR 20260131001 (Step 6)

@@ -104,14 +104,32 @@ fi
 1. Enter project directory: `cd /path/to/project`
 2. Activate direnv: `direnv allow && source .envrc`
 3. Bootstrap environment: `just bootstrap`
-4. Create `feature/{feature-name}`, `fix/{issue-name}`, or `chore/{task-name}` branch from `main`
+4. **Create a worktree via treehouse** before making changes — the
+   `git-repository-management` skill enforces worktree-per-feature and blocks
+   commits on `main` without one:
+   ```bash
+   treehouse get --lease --lease-holder "<short-task-description>"
+   cd <printed-worktree-path>
+   git checkout -b feature/{feature-name}   # or fix/{issue-name}, chore/{task-name}
+   ```
 5. Write failing test first (TDD)
 6. Implement feature
 7. Run quality gates: `just test && just lint`
 8. Fix any failing tests or lint issues
-9. Commit changes with conventional commit message
-10. Rebase on `main` if diverged
-11. Open PR with description
+9. Commit changes via the `git-repository-management` skill (run the project's
+   git workflow if one exists, or invoke the skill directly) — it handles
+   batching, tagging, and pushing from the worktree
+10. Open PR with description
+11. **Merge the PR** (squash or merge via GitHub), then **sync local main**:
+    ```bash
+    cd /path/to/project
+    git checkout main
+    git pull origin main
+    ```
+12. **Release the worktree lease**:
+    ```bash
+    treehouse return <worktree-path>
+    ```
 
 **Testing in /tmp (for boilerplate/features)**
 1. Materialize project to `/tmp`: `cd /tmp && copier copy <boilerplate-path> test-project`
