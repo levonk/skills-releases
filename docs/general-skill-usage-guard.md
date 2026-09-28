@@ -34,4 +34,4 @@ Detect when a user is copying or heavily reusing skills from the levonk skills e
 
 - **Full skill**: [`skills/general/skill-usage-guard/SKILL.md`](skills/general/skill-usage-guard/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-28T10:26:51Z
+- **Generated**: 2026-09-28T23:14:49Z
