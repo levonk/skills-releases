@@ -25,4 +25,4 @@ Add Nix flake support to a project so it can be installed via nix run github:...
 
 - **Full skill**: [`skills/software-dev/nixify/SKILL.md`](skills/software-dev/nixify/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-28T23:42:56Z
+- **Generated**: 2026-09-28T23:51:10Z
