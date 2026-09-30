@@ -12,7 +12,7 @@ sources:
     resource: https://github.com/levonk/seodata/commit/2c23734
     title: 'seodata-execute.md: parallel dispatch, merge reconciliation, and export collision guidance'
   - id: execute-upsert-parallel-dispatch
-    resource: https://github.com/levonk/skills-src/blob/main/src/current/skills/execution/execute-upsert/references/parallel-dispatch.md
+    resource: https://github.com/levonk/skills-src/blob/main/src/current/skills/execution/execute-upsert/references/parallel-dispatch.md.tmpl
     title: 'execute-upsert skill: parallel-dispatch reference (merge reconciliation protocol)'
 ---
 

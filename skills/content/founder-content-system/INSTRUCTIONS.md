@@ -943,6 +943,14 @@ Choose deliberately, not by default:
 
 When unsure, ask: "does task B need to read what task A produced?" If yes, serialize. If no, parallelize.
 
+#### Concurrency Cap
+
+**Never run more than 2 subagents simultaneously.** Each subagent makes its own API calls (model inference, tool calls, package/registry lookups); unbounded fan-out multiplies API load and triggers rate-limit and secondary-rate-limit bans that can block the session's token for hours.
+
+When more than 2 independent tasks are ready, dispatch in **waves**: launch the first 2, and as each subagent completes, dispatch the next queued task into the freed slot. Do not launch the whole batch at once — a roster of N agents (advisors, committee members, per-item workers) defines *how much work* is delegated, not *how much runs at once*.
+
+This cap applies to every parallel dispatch in this artifact — `[fork]` steps, per-item processing, multi-reviewer panels, committee deliberation. A skill that names a fixed roster larger than the cap still dispatches in waves of at most 2.
+
 #### Anti-Patterns
 
 - **Vague dispatch**: "investigate the auth flow" with no file paths. The subagent re-explores what the orchestrator already knows.
@@ -1810,9 +1818,10 @@ voice.
 
 This skill runs on subagents. The deep web crawl in Phase 1, the papers
 enumeration in Phase 1.2, and above all the isolated drafting in Phase 4.3 —
-one clean context per post — all depend on spawning agents in parallel, in one
-message. A batch of five posts can mean a dozen or more agent runs, which
-costs real tokens and real time.
+one clean context per post — all depend on spawning agents in parallel (at
+most 2 simultaneously per the shared
+concurrency cap; queue the rest into freed slots). A batch of five posts can
+mean a dozen or more agent runs, which costs real tokens and real time.
 
 **The first time this skill runs for a client, say so and ask once.** State
 roughly how many agents the requested work implies, then get a yes. After that

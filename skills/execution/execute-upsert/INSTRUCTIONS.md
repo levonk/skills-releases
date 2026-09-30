@@ -943,6 +943,14 @@ Choose deliberately, not by default:
 
 When unsure, ask: "does task B need to read what task A produced?" If yes, serialize. If no, parallelize.
 
+#### Concurrency Cap
+
+**Never run more than 2 subagents simultaneously.** Each subagent makes its own API calls (model inference, tool calls, package/registry lookups); unbounded fan-out multiplies API load and triggers rate-limit and secondary-rate-limit bans that can block the session's token for hours.
+
+When more than 2 independent tasks are ready, dispatch in **waves**: launch the first 2, and as each subagent completes, dispatch the next queued task into the freed slot. Do not launch the whole batch at once — a roster of N agents (advisors, committee members, per-item workers) defines *how much work* is delegated, not *how much runs at once*.
+
+This cap applies to every parallel dispatch in this artifact — `[fork]` steps, per-item processing, multi-reviewer panels, committee deliberation. A skill that names a fixed roster larger than the cap still dispatches in waves of at most 2.
+
 #### Anti-Patterns
 
 - **Vague dispatch**: "investigate the auth flow" with no file paths. The subagent re-explores what the orchestrator already knows.
@@ -2335,7 +2343,8 @@ instruction.
    its own worktree — sequential AND parallel. The gate enforces this by
    creating the worktree before the dispatch is allowed.
 
-9. **Max 5 simultaneous subagents** (API rate-limit safety). See
+9. **Max 2 simultaneous subagents** (API rate-limit safety — canonical
+   value: `limits.max_parallel_subagents` in `context.yaml`). See
    `references/parallel-dispatch.md` for the concurrency cap and queue
    management.
 
@@ -4104,7 +4113,7 @@ For each task story that isn't completed yet:
    **Parallel dispatch**: If two or more `[ ] Todo` stories have all
    dependencies `[x] Done` and the stories do not modify the same files,
    dispatch them as parallel background subagents — one per story, each in
-   its own git worktree. Cap at 5 simultaneous subagents (API rate-limit
+   its own git worktree. Cap at 2 simultaneous subagents (API rate-limit
    safety); see `references/parallel-dispatch.md` for the worktree setup,
    concurrency cap, merge reconciliation protocol, and collision handling.
    The sequential loop below applies to stories that must run one at a
@@ -5178,6 +5187,14 @@ Choose deliberately, not by default:
 
 When unsure, ask: "does task B need to read what task A produced?" If yes, serialize. If no, parallelize.
 
+#### Concurrency Cap
+
+**Never run more than 2 subagents simultaneously.** Each subagent makes its own API calls (model inference, tool calls, package/registry lookups); unbounded fan-out multiplies API load and triggers rate-limit and secondary-rate-limit bans that can block the session's token for hours.
+
+When more than 2 independent tasks are ready, dispatch in **waves**: launch the first 2, and as each subagent completes, dispatch the next queued task into the freed slot. Do not launch the whole batch at once — a roster of N agents (advisors, committee members, per-item workers) defines *how much work* is delegated, not *how much runs at once*.
+
+This cap applies to every parallel dispatch in this artifact — `[fork]` steps, per-item processing, multi-reviewer panels, committee deliberation. A skill that names a fixed roster larger than the cap still dispatches in waves of at most 2.
+
 #### Anti-Patterns
 
 - **Vague dispatch**: "investigate the auth flow" with no file paths. The subagent re-explores what the orchestrator already knows.
@@ -5985,6 +6002,14 @@ Choose deliberately, not by default:
 - **Serial** when one task's output is another's input, or when tasks write to the same files/state. Running them in parallel produces conflicts or wasted work. Example: implement, then test the implementation, then refactor based on test results.
 
 When unsure, ask: "does task B need to read what task A produced?" If yes, serialize. If no, parallelize.
+
+#### Concurrency Cap
+
+**Never run more than 2 subagents simultaneously.** Each subagent makes its own API calls (model inference, tool calls, package/registry lookups); unbounded fan-out multiplies API load and triggers rate-limit and secondary-rate-limit bans that can block the session's token for hours.
+
+When more than 2 independent tasks are ready, dispatch in **waves**: launch the first 2, and as each subagent completes, dispatch the next queued task into the freed slot. Do not launch the whole batch at once — a roster of N agents (advisors, committee members, per-item workers) defines *how much work* is delegated, not *how much runs at once*.
+
+This cap applies to every parallel dispatch in this artifact — `[fork]` steps, per-item processing, multi-reviewer panels, committee deliberation. A skill that names a fixed roster larger than the cap still dispatches in waves of at most 2.
 
 #### Anti-Patterns
 

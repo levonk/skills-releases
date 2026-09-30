@@ -180,15 +180,52 @@ scan_file() {
 	esac
 
 	local basename="${file##*/}"
-	local ext="${basename##*.}"
+	# *.sh.tmpl files ARE shell scripts — strip a trailing .tmpl before the
+	# extension check so templated scripts get the shell-file exemptions
+	# (literal $HOME/$USER are legitimate runtime variables there).
+	local ext_file="${basename%.tmpl}"
+	local ext="${ext_file##*.}"
 	local is_shell=0
 	case "$ext" in
 	sh | bash | zsh | fish) is_shell=1 ;;
 	esac
 
-	local lineno=0
-	while IFS= read -r line; do
-		lineno=$((lineno + 1))
+	# Collect candidate line numbers once per file — one grep per pattern
+	# instead of ~7 forked greps per line. The check chain below then runs
+	# only on lines that can match something, preserving the original
+	# first-match-wins ordering and per-finding output exactly.
+	local hits
+	# Every grep is `|| true`: a no-match exit 1 is the common case, and under
+	# `set -euo pipefail` it would otherwise propagate through the pipe into
+	# this assignment and kill the scan silently.
+	hits="$(
+		{
+			[ -n "$HOME_VAL" ] && grep -nF -- "$HOME_VAL" "$file" 2>/dev/null | cut -d: -f1 || true
+			if [ -n "$USER_VAL" ]; then
+				grep -nE -- "/(Users|home)/${USER_VAL}([/[:space:]\"']|$)|C:\\\\Users\\\\${USER_VAL}" "$file" 2>/dev/null | cut -d: -f1 || true
+			fi
+			[ -n "$WIFI_SSID" ] && grep -nF -- "$WIFI_SSID" "$file" 2>/dev/null | cut -d: -f1 || true
+			if [ -n "$HOST_VAL" ]; then
+				grep -nE -- "\b${HOST_VAL}\b" "$file" 2>/dev/null | cut -d: -f1 || true
+			fi
+			if [ -n "$LOCAL_HOST_VAL" ] && [ "$LOCAL_HOST_VAL" != "$HOST_VAL" ]; then
+				grep -nE -- "\b${LOCAL_HOST_VAL}\b" "$file" 2>/dev/null | cut -d: -f1 || true
+			fi
+			if [ -n "$DNS_DOMAIN" ]; then
+				grep -nE -- "\b${DNS_DOMAIN}\b" "$file" 2>/dev/null | cut -d: -f1 || true
+			fi
+			if [ "$is_shell" -eq 0 ]; then
+				grep -nE '\$(HOME|USER)\b' "$file" 2>/dev/null | cut -d: -f1 || true
+			fi
+		} | sort -n -u
+	)"
+
+	# Clean file (the common case) — nothing to report.
+	[ -z "$hits" ] && return 0
+
+	local lineno line
+	while IFS= read -r lineno; do
+		line="$(sed -n "${lineno}p" "$file")"
 
 		# 1. Resolved $HOME path — HARD leak in any file
 		check_value "HARD" "$file" "$lineno" "$line" "resolved \$HOME path ($HOME_VAL)" "$HOME_VAL" "F" && continue
@@ -228,7 +265,7 @@ scan_file() {
 			fi
 		fi
 
-	done <"$file"
+	done <<<"$hits"
 }
 
 # --- Run scan ---

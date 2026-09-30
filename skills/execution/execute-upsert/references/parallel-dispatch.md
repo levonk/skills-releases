@@ -24,26 +24,29 @@ sequential execution loop described in SKILL.md Phase 4.
 
 ## Concurrency Cap
 
-**Cap parallel background subagents at 5 simultaneous.** Each subagent
+**Cap parallel background subagents at
+2 simultaneous** (canonical value:
+`limits.max_parallel_subagents` in `context.yaml`). Each subagent
 makes its own API calls (model inference, git operations, package
 registry lookups); unbounded concurrency multiplies API load and
 triggers rate-limit and secondary-rate-limit bans that block the
 orchestrator's token for hours.
 
-When more than 5 stories are dependency-ready at the same time:
+When more than 2 stories are dependency-ready at the same time:
 
-1. **Dispatch the first 5** as background subagents (one per worktree).
+1. **Dispatch the first 2** as background subagents (one per worktree).
 2. **Queue the rest** in dependency order. Track the queue in the
    progress update so the user can see what is pending.
 3. **As each running subagent completes**, dispatch the next queued
-   story into the freed slot — do not wait for all 5 to finish before
-   starting the next batch.
+   story into the freed slot — do not wait for all running subagents to
+   finish before starting the next one.
 4. **Report both counts** in every progress emission: how many are
    running and how many are queued (see "Progress Emission" below).
 
-The cap is a ceiling, not a target — if fewer than 5 stories are
+The cap is a ceiling, not a target — if fewer than
+2 stories are
 runnable, dispatch only those. The cap prevents API exhaustion; it does
-not require padding to 5.
+not require padding to the cap.
 
 ## Worktree Setup
 
@@ -79,9 +82,11 @@ checkpoint SHA and lease metadata that rollback and cleanup rely on.
 
 ## Dispatching Background Subagents
 
-Dispatch one background subagent per worktree, **up to the 5-subagent
-concurrency cap** (see "Concurrency Cap" above). When more than 5 stories
-are ready, dispatch the first 5 and queue the rest; as each running
+Dispatch one background subagent per worktree, **up to the
+2-subagent
+concurrency cap** (see "Concurrency Cap" above). When more than
+2 stories
+are ready, dispatch the first 2 and queue the rest; as each running
 subagent completes, dispatch the next queued story into the freed slot.
 Each subagent receives the same inputs as a sequential dispatch (see
 SKILL.md Phase 4 step 3), plus:

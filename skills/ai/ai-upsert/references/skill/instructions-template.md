@@ -78,9 +78,11 @@ it here and remove the references/process.md pointer.]
 2. **Start the next available task.** Pick the first `[ ]` task in
    priority order. Mark it `[~]` immediately before starting work on it.
 3. **Prefer subagents for parallel work.** When two or more `[ ]` tasks
-   are independent, launch them as parallel subagents. Mark each `[~]`
-   before launching. Do not parallelize tasks that share files or depend
-   on each other's output.
+   are independent, launch them as parallel subagents — at most the
+   shared concurrency cap (see Subagent Delegation) simultaneously; queue
+   extras and dispatch them as slots free. Mark each `[~]` before
+   launching. Do not parallelize tasks that share files or depend on each
+   other's output.
 4. **Mark done only when verified.** Flip `[~]` → `[x]` only after the
    task's success criteria are met and verified. Never mark `[x]` on
    intent alone.

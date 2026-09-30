@@ -152,7 +152,7 @@ python3 scripts/start_deliberation.py --brief product_launch_brief.md --output-d
 
 - **Structured Input**: All briefs follow template format
 - **Research First**: Committee has relevant data before deliberating
-- **Parallel Processing**: All agents deliberate simultaneously
+- **Parallel Processing**: Agents deliberate in parallel — dispatched in waves of at most 2 simultaneous subagents (shared concurrency cap)
 - **Adversarial Design**: Conflicting perspectives expose all angles
 - **Post-Decision Review**: Cultural/social/environmental impacts assessed separately
 

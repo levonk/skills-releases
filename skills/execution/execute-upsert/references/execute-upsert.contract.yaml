@@ -55,10 +55,10 @@ must not:
 
 may:
   - id: max-parallel-subagents
-    clause: "Up to 5 simultaneous subagents (API rate-limit safety)"
+    clause: "Up to 2 simultaneous subagents (API rate-limit safety)"
     severity: warn
     enforcement: llm-judged
-    check: "Orchestrator tracks active subagent count; warns at 5, blocks above"
+    check: "Orchestrator tracks active subagent count; warns at 2, blocks above"
 
   - id: bypass-gate
     clause: "Gate may be bypassed with SKILL_BYPASS_GATE=1 (user-only, session-level env var)"

@@ -943,6 +943,14 @@ Choose deliberately, not by default:
 
 When unsure, ask: "does task B need to read what task A produced?" If yes, serialize. If no, parallelize.
 
+#### Concurrency Cap
+
+**Never run more than 2 subagents simultaneously.** Each subagent makes its own API calls (model inference, tool calls, package/registry lookups); unbounded fan-out multiplies API load and triggers rate-limit and secondary-rate-limit bans that can block the session's token for hours.
+
+When more than 2 independent tasks are ready, dispatch in **waves**: launch the first 2, and as each subagent completes, dispatch the next queued task into the freed slot. Do not launch the whole batch at once — a roster of N agents (advisors, committee members, per-item workers) defines *how much work* is delegated, not *how much runs at once*.
+
+This cap applies to every parallel dispatch in this artifact — `[fork]` steps, per-item processing, multi-reviewer panels, committee deliberation. A skill that names a fixed roster larger than the cap still dispatches in waves of at most 2.
+
 #### Anti-Patterns
 
 - **Vague dispatch**: "investigate the auth flow" with no file paths. The subagent re-explores what the orchestrator already knows.
@@ -1400,8 +1408,11 @@ Each advisor's method is in `references/`:
    [context-enrichment.md](references/context-enrichment.md) for the scan
    pattern and framing rules. Save the framed question for the transcript.
 
-2. [fork] **Spawn 5 advisors in parallel.** Dispatch all 5 simultaneously as
-   sub-agents. Each gets: its advisor identity, the framed question, and an
+2. [fork] **Spawn 5 advisors in parallel.** Dispatch them as parallel
+   sub-agents — at most 2 simultaneously
+   (the shared concurrency cap); dispatch the remaining advisors into freed
+   slots as responses return. Each gets: its advisor identity, the framed
+   question, and an
    instruction to lean fully into its assigned perspective — no hedging, no
    balance, no "consider both sides." 150-300 words each. Go straight into
    analysis.
@@ -1419,7 +1430,8 @@ Each advisor's method is in `references/`:
    ```
 
 3. [fork] **Blind peer review.** Use the `peer-review` skill to anonymize the 5
-   responses, spawn 5 reviewers (one per response), and collect reviews
+   responses, spawn 5 reviewers (one per response — same wave dispatch: at most
+   2 at once), and collect reviews
    answering the three fixed questions (strongest / biggest blind spot / what
    all missed). See
    [../peer-review/references/review-protocol.md](../../peer-review/references/review-protocol.md)
@@ -1456,8 +1468,11 @@ council-transcript-[timestamp].md    # full transcript for reference
 
 ## Important Notes
 
-- **Always spawn all 5 advisors in parallel.** Sequential spawning wastes time
-  and lets earlier responses bleed into later ones.
+- **Spawn all 5 advisors via parallel dispatch.** At most
+  2 run at once (the shared concurrency
+  cap); the rest queue and start as slots free. Fully sequential spawning
+  wastes time — wave dispatch keeps the round bounded without exceeding the
+  cap.
 - **Always anonymize for peer review.** If reviewers know which advisor said
   what, they defer to certain thinking styles instead of evaluating on merit.
   Use the `peer-review` skill's `scripts/anonymize.py`.
@@ -1489,7 +1504,7 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Apply the method — produce the output specified by the method's output template (Single-Method Step 3)
 - [ ] Consolidate multiple methods (if applicable) — synthesize common themes, contradictions, and prioritized actions (Single-Method Step 4)
 - [ ] Enrich context and frame the question — scan the workspace and reframe the raw question into a neutral prompt with stakes (Council Step 1)
-- [ ] Spawn 5 advisors in parallel — dispatch all 5 simultaneously, each leaning fully into its assigned perspective (Council Step 2)
+- [ ] Spawn 5 advisors via parallel dispatch — at most 2 at once per the concurrency cap, rest dispatched into freed slots; each leans fully into its assigned perspective (Council Step 2)
 - [ ] Blind peer review — use the `peer-review` skill to anonymize responses, spawn reviewers, and collect reviews (Council Step 3)
 - [ ] Chairman synthesis — produce the 5-part verdict including the single concrete "one thing to do first" (Council Step 4)
 - [ ] Generate the HTML report — run `scripts/generate_report.py` to produce the self-contained report (Council Step 5)
@@ -1518,7 +1533,7 @@ require the agent to check something the scripts cannot verify.
 ### Council Mode — Framing and Advisors
 
 - [ ] **[manual]** Context enrichment scanned the workspace (CLAUDE.md, memory/, referenced files, past transcripts) and the question was reframed into a neutral prompt with stakes + context (Council Step 1)
-- [ ] **[manual]** All 5 advisors were spawned in parallel — not sequentially (Council Step 2)
+- [ ] **[manual]** All 5 advisors were spawned via parallel dispatch (waves of at most 2) — not fully sequentially (Council Step 2)
 - [ ] **[manual]** Each advisor leaned fully into its assigned perspective — no hedging, no "consider both sides," 150-300 words, no preamble (Council Step 2)
 
 ### Council Mode — Blind Peer Review

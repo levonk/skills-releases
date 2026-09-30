@@ -28,10 +28,11 @@
 # older hook versions that check only that file.
 #
 # Worktree acquisition uses treehouse (https://github.com/kunchenguid/treehouse)
-# when available — a pool manager that reuses worktrees with dependencies and
-# build cache intact. When treehouse is not installed, falls back to manual
-# `git worktree add`. After acquiring a worktree (either way), a named story
-# branch is created inside it with `git checkout -b`.
+# — a pool manager that reuses worktrees with dependencies and build cache
+# intact; the gate BLOCKS when treehouse is not installed. After acquiring a
+# worktree, a named story branch is created inside it with `git checkout -b`
+# and `worktree_prime` runs (submodule init, devbox env health check + repair,
+# nix tarball-cache validation) — best-effort, warns but never blocks.
 #
 # Usage:
 #   bash .devin/scripts/execution-gate.sh <story-id-slug> [base-sha] [--story-type <trivial|standard|research>] [--new] [--allow-dirty]
@@ -67,6 +68,7 @@ WORKTREE_BASE="$(canon_path /tmp)/${PROJECT_NAME}-worktrees"
 # treehouse helpers: treehouse_available, treehouse_acquire, treehouse_return,
 #   treehouse_is_managed
 # arg-parse helpers: reject_unknown_flag, parse_value_flag, parse_bool_flag
+# worktree-prime helpers: worktree_prime, nix_tarball_cache_check
 # treehouse-helpers.sh — shared helpers for treehouse worktree pool management
 #
 # Treehouse (https://github.com/kunchenguid/treehouse) manages a pool of
@@ -470,6 +472,177 @@ parse_format_flag() {
 	esac
 }
 
+# worktree-prime.sh — shared helpers for preparing a leased/reused worktree
+#
+# A treehouse worktree is a warm, reusable checkout: gitignored state like
+# `.devbox/`, `vendor/` submodule contents, and package caches persist across
+# leases. That warmth is the point of the pool — but it means a slot can carry
+# stale environment state (month-old devbox virtenvs, uninitialized submodules,
+# a corrupted global nix cache). Priming at lease time surfaces those problems
+# early instead of mid-commit inside a pre-commit hook.
+#
+# Functions provided:
+#   nix_tarball_cache_check — validate the shared nix flake tarball cache;
+#                             move it aside when corrupt (it is pure cache —
+#                             nix rebuilds it on next resolve)
+#   worktree_prime <path>   — prime a worktree: submodule init, devbox env
+#                             health check + repair, nix cache validation,
+#                             optional stamp file
+#
+# Tool-availability contract: every step checks for the tool it needs
+# (`command -v git`, `devbox`, `nix`) and for repo opt-in signals
+# (`.gitmodules`, `devbox.json`) before doing anything. In a repo or
+# environment where a tool is not part of the dev process, the step is
+# skipped with a [prime] SKIP/WARN line — never an error. Priming is
+# best-effort by design: it must never block worktree acquisition, so all
+# functions return 0 even when they warn.
+#
+# Output contract: all diagnostics go to stderr prefixed with `[prime]`.
+# These helpers are inlined into execution-gate.sh, whose stdout is the
+# worktree path the orchestrator consumes — nothing may write to stdout.
+#
+# Environment variables:
+#   WORKTREE_PRIME=0        — skip priming entirely
+#   WORKTREE_PRIME_STAMP    — when set, write a stamp file (JSON) at this path
+#                             recording primed_at / path / devbox.json hash
+#   NIX_TARBALL_CACHE_DIR   — override the tarball-cache location
+#                             (default: $XDG_CACHE_HOME/nix/tarball-cache or
+#                             ~/.cache/nix/tarball-cache)
+#
+# Materialization: inlined into consumer scripts via the include directive
+# (`include "includes/worktree-prime.sh"`). The file is pure bash with no
+# template directives, so repo-local tooling may also `source` it directly.
+#
+# Consumers:
+#   - execution/execute-upsert/scripts/execution-gate.sh.tmpl
+#   - skills-src: scripts/treehouse-pool-warm.sh (sourced directly)
+
+# nix_tarball_cache_check — validate the nix flake tarball cache.
+#
+# The tarball cache ($XDG_CACHE_HOME/nix/tarball-cache or
+# ~/.cache/nix/tarball-cache) is a bare git repo nix uses for
+# github:NixOS/nixpkgs/... flake refs. When it is corrupted (e.g. only an
+# objects/ dir with no repo metadata), EVERY cold package resolve fails with
+# "could not find repository" — but warm .devbox caches never re-resolve, so
+# the corruption hides until a fresh/stale worktree triggers a cold resolve.
+#
+# The cache is regenerable, so a corrupt copy is moved aside (not deleted —
+# keeps a forensic copy) and nix rebuilds it on the next fetch.
+nix_tarball_cache_check() {
+	# Needs git to validate the cache repo; without git there is nothing
+	# we can verify or the caller could not have cloned anyway.
+	command -v git >/dev/null 2>&1 || return 0
+
+	local cache_dir="${NIX_TARBALL_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME:-}/.cache}/nix/tarball-cache}"
+	[[ -n "$cache_dir" && -d "$cache_dir" ]] || return 0
+
+	if git -C "$cache_dir" rev-parse --git-dir >/dev/null 2>&1; then
+		return 0
+	fi
+
+	local backup="${cache_dir}.corrupt-$(date +%Y%m%d-%H%M%S 2>/dev/null || echo unknown)"
+	if mv "$cache_dir" "$backup" 2>/dev/null; then
+		echo "[prime] WARN: nix tarball-cache was corrupt — moved aside to $backup (nix will rebuild it)" >&2
+	else
+		echo "[prime] WARN: nix tarball-cache at $cache_dir looks corrupt but could not be moved aside" >&2
+	fi
+	return 0
+}
+
+# _worktree_prime_devbox_ok — health check: can devbox resolve the env?
+# `devbox run -- true` forces env resolution without doing real work. No
+# timeout wrapper: macOS lacks GNU `timeout` by default, and a cold nix
+# fetch legitimately takes minutes — at lease time slowness is acceptable
+# (it is exactly the work pool-warm/front-loading exists to absorb).
+_worktree_prime_devbox_ok() {
+	(cd "$1" && devbox run -- true >/dev/null 2>&1)
+}
+
+# worktree_prime <path> — prime a worktree for development.
+#
+# Steps, each independently guarded:
+#   1. git submodule update --init   (only when .gitmodules exists)
+#   2. nix tarball-cache validation  (only when devbox.json exists —
+#      devbox is the nix consumer here; the check itself only needs git)
+#   3. devbox env health check       (only when devbox.json exists AND
+#      devbox is installed) — on failure, remove the stale .devbox and retry
+#      once; a second failure warns but does not block.
+#   4. stamp file                    (only when WORKTREE_PRIME_STAMP is set)
+worktree_prime() {
+	local path="${1:-}"
+
+	if [[ "${WORKTREE_PRIME:-1}" == "0" ]]; then
+		echo "[prime] SKIP: WORKTREE_PRIME=0 — skipping $path" >&2
+		return 0
+	fi
+
+	if [[ -z "$path" || ! -d "$path" ]]; then
+		echo "[prime] WARN: worktree_prime called with missing/invalid path '${path:-<empty>}'" >&2
+		return 0
+	fi
+
+	if ! command -v git >/dev/null 2>&1; then
+		echo "[prime] SKIP: git not on PATH — cannot prime $path" >&2
+		return 0
+	fi
+
+	# --- Submodules: only when the repo declares them ---
+	if [[ -f "$path/.gitmodules" ]]; then
+		if git -C "$path" submodule update --init >/dev/null 2>&1; then
+			echo "[prime] submodules initialized: $path" >&2
+		else
+			echo "[prime] WARN: 'git submodule update --init' failed in $path — anything reading vendored dirs may fail later" >&2
+		fi
+	fi
+
+	# --- Devbox env: only when the repo opts in via devbox.json ---
+	if [[ -f "$path/devbox.json" ]]; then
+		if ! command -v devbox >/dev/null 2>&1; then
+			echo "[prime] SKIP: $path has devbox.json but devbox is not installed — env check skipped" >&2
+		else
+			# Pre-validate the shared nix cache so a corrupt global cache
+			# is repaired before devbox trips over it on a cold resolve.
+			nix_tarball_cache_check
+
+			if _worktree_prime_devbox_ok "$path"; then
+				echo "[prime] devbox env healthy: $path" >&2
+			else
+				echo "[prime] WARN: devbox env check failed in $path — removing stale .devbox and retrying" >&2
+				if [[ -d "$path/.devbox" ]]; then
+					rm -rf "$path/.devbox" 2>/dev/null || \
+						echo "[prime] WARN: could not remove $path/.devbox" >&2
+				fi
+				# The stale env is gone; a corrupt shared cache may have
+				# been the real culprit — re-check before the retry.
+				nix_tarball_cache_check
+				if _worktree_prime_devbox_ok "$path"; then
+					echo "[prime] devbox env repaired and healthy: $path" >&2
+				else
+					echo "[prime] WARN: devbox env still failing in $path after repair — devbox commands in this worktree may fail" >&2
+				fi
+			fi
+		fi
+	fi
+
+	# --- Stamp: record that priming ran (for gate-pass observability) ---
+	if [[ -n "${WORKTREE_PRIME_STAMP:-}" ]]; then
+		local stamp_dir stamp_sha="none"
+		stamp_dir="$(dirname "$WORKTREE_PRIME_STAMP")"
+		[[ -f "$path/devbox.json" ]] && stamp_sha="$(git hash-object "$path/devbox.json" 2>/dev/null || echo unknown)"
+		mkdir -p "$stamp_dir" 2>/dev/null || true
+		{
+			printf '{'
+			printf '"primed_at":"%s",' "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
+			printf '"path":"%s",' "$path"
+			printf '"devbox_json_sha":"%s"' "$stamp_sha"
+			printf '}\n'
+		} >"$WORKTREE_PRIME_STAMP" 2>/dev/null || \
+			echo "[prime] WARN: could not write prime stamp to $WORKTREE_PRIME_STAMP" >&2
+	fi
+
+	return 0
+}
+
 
 # --- Args ---
 # Parse positional args + optional --story-type, --new, and --allow-dirty flags.
@@ -540,6 +713,8 @@ WORKTREE_PATH="$WORKTREE_BASE/$STORY_SLUG"
 STORY_BRANCH="feature/current/execute-upsert/$STORY_SLUG"
 # Per-story gate-pass file — resume is keyed to THIS story's slug only.
 GATE_PASS="$GATE_DIR/gate-pass-${STORY_SLUG}"
+# Where worktree_prime records that it ran for this story (observability only).
+export WORKTREE_PRIME_STAMP="$GATE_DIR/prime-${STORY_SLUG}"
 
 mkdir -p "$GATE_DIR"
 
@@ -613,6 +788,9 @@ if [[ "$FORCE_NEW" -eq 0 ]] && [[ -f "$GATE_PASS" ]]; then
     # substring grep (a slug like "foo" must not match "foo-bar"'s worktree).
     if git -C "$PROJECT_DIR" worktree list --porcelain 2>/dev/null | grep -qxF "worktree $EXISTING_PATH"; then
       echo "RESUME: Worktree already exists at $EXISTING_PATH" >&2
+      # Re-prime on resume: the env may have gone stale since the lease began.
+      worktree_prime "$EXISTING_PATH" || \
+        echo "[gate] WARNING: worktree_prime reported problems — see [prime] lines above" >&2
       echo "$EXISTING_PATH" > "$CURRENT_GATE_PASS"
       echo "$EXISTING_PATH"
       exit 0
@@ -620,6 +798,8 @@ if [[ "$FORCE_NEW" -eq 0 ]] && [[ -f "$GATE_PASS" ]]; then
     # Treehouse worktree — check if lease is still active
     if [[ "$(treehouse_available)" == "1" ]] && [[ "$(treehouse_is_managed "$EXISTING_PATH")" == "1" ]]; then
       echo "RESUME: Treehouse worktree still leased at $EXISTING_PATH" >&2
+      worktree_prime "$EXISTING_PATH" || \
+        echo "[gate] WARNING: worktree_prime reported problems — see [prime] lines above" >&2
       echo "$EXISTING_PATH" > "$CURRENT_GATE_PASS"
       echo "$EXISTING_PATH"
       exit 0
@@ -630,6 +810,8 @@ fi
 # Also check legacy manual worktree path (anchored porcelain match — see above)
 if [[ "$FORCE_NEW" -eq 0 ]] && git -C "$PROJECT_DIR" worktree list --porcelain | grep -qxF "worktree $WORKTREE_PATH"; then
   echo "RESUME: Worktree already exists at $WORKTREE_PATH" >&2
+  worktree_prime "$WORKTREE_PATH" || \
+    echo "[gate] WARNING: worktree_prime reported problems — see [prime] lines above" >&2
   echo "$WORKTREE_PATH" > "$GATE_PASS"
   echo "$WORKTREE_PATH" > "$CURRENT_GATE_PASS"
   echo "$WORKTREE_PATH"
@@ -709,6 +891,15 @@ fi
 if [[ -d "$PROJECT_DIR/node_modules" ]] && [[ ! -e "$WORKTREE_PATH/node_modules" ]]; then
   ln -sfn "$PROJECT_DIR/node_modules" "$WORKTREE_PATH/node_modules" 2>/dev/null || true
 fi
+
+# --- Prime the worktree environment ---
+# Submodule init, devbox env health check (+ stale .devbox repair), and shared
+# nix tarball-cache validation run at lease time so environment problems
+# surface here — not mid-commit inside a pre-commit hook. Best-effort:
+# worktree_prime warns via [prime] stderr lines but never blocks the gate —
+# the story may not need every tool it checks.
+worktree_prime "$WORKTREE_PATH" || \
+  echo "[gate] WARNING: worktree_prime reported problems — see [prime] lines above" >&2
 
 # --- Create checkpoint commit in the worktree ---
 # (The worktree starts clean from BASE_SHA, so the checkpoint is implicit.

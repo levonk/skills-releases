@@ -40,4 +40,4 @@ Open a well-formed pull request against a third-party/upstream repository OR you
 
 - **Full skill**: [`skills/software-dev/github-pr/SKILL.md`](skills/software-dev/github-pr/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-28T23:51:10Z
+- **Generated**: 2026-09-30T01:54:09Z

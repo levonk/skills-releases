@@ -82,7 +82,7 @@ AgentContract clauses:
 | 4. Commit + merge + remove worktree after story | `commit-after-story` | must | block | llm-judged |
 | 5. Never commit dirty main | `no-commit-dirty-main` | must not | block | machine |
 | 6. Never work on stories in main checkout | `no-work-on-main` | must not | block | machine |
-| 7. Max 5 simultaneous subagents | `max-parallel-subagents` | may | warn | llm-judged |
+| 7. Max 2 simultaneous subagents | `max-parallel-subagents` | may | warn | llm-judged |
 | 8. Roll back on failure | `rollback-on-failure` | must | rollback | llm-judged |
 
 One additional `may` clause (`bypass-gate`) was added to document the existing

@@ -7,8 +7,12 @@ that review.
 
 ## The 3-Lens Reflect Review
 
-Instead of a single memory-capture subagent, spawn **3 parallel
-reviewers** each examining the work from a different lens:
+Instead of a single memory-capture subagent, spawn **3 reviewers**
+each examining the work from a different lens. The roster is three
+lenses, but dispatch respects the subagent concurrency cap — at most
+2 reviewers run at once, with the
+remainder dispatched as slots free (see `parallel-dispatch.md` →
+"Concurrency Cap"):
 
 1. **Judgment lens** — what decisions were made, and which ones should
    not be repeated? Looks for decisions that were wrong, slow, or

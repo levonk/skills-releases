@@ -97,9 +97,11 @@ re-collection), the bundled script's configuration, and security notes.
 When a batch contains **N≥3 independent logical change groups**, drafting
 commit messages sequentially (one group at a time in the orchestrator's
 context) is slow and pollutes the orchestrator context with per-group diff
-details. Instead, dispatch one background subagent per change group in
-parallel, then assemble the results into a single batch file and run
-`git-commit-batch.sh` once.
+details. Instead, dispatch one background subagent per change group —
+subject to the subagent concurrency cap of
+2 simultaneous (queue the rest and
+refill slots as subagents complete) — then assemble the results into a
+single batch file and run `git-commit-batch.sh` once.
 
 **When to use:**
 - Batches with N≥3 independent logical change groups
