@@ -32,4 +32,4 @@ Create new AI prompts, modify and improve existing prompts, and scaffold reusabl
 
 - **Full skill**: [`skills/ai/prompt-upsert/SKILL.md`](skills/ai/prompt-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-30T01:54:09Z
+- **Generated**: 2026-10-01T16:27:07Z

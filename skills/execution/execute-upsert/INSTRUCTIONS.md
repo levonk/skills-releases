@@ -3301,7 +3301,8 @@ Phase 5: Tasks ──────── exist? ──→ skip breakdown
     │ missing
     ▼
 Phase 6: Execute ────── loop: subagent per runnable story
-    │                     dev subagent → review subagent → fix loop → commit
+    │                     dev subagent → review subagent → fix loop
+    │                     (max 2 rounds, then [!] Blocked) → commit
     │                     (blocked stories marked [!] Blocked, skipped)
     │                     ┌── no more tasks you can do ──→ Disruption Handoff
     │                     │   AND more tasks to do?
@@ -4319,9 +4320,16 @@ For each task story that isn't completed yet:
     grm final commit.
    - `NEEDS_FIXES` — re-dispatch the dev subagent with the review findings
      as feedback. The dev subagent fixes the issues, commits, and the
-     orchestrator re-runs the review. Loop until `CLEAN` or the dev
-     subagent returns `BLOCKED` (then mark the story `[!] Blocked` with the
-     review findings in the `## Blocker` section).
+     orchestrator re-runs the review.
+     **The fix loop is capped at two rounds.** Each `NEEDS_FIXES` verdict
+     that triggers a dev re-dispatch counts as one round. If the review
+     still returns `NEEDS_FIXES` after the second fix round, stop looping —
+     a persistent reviewer/developer disagreement spends tokens without
+     converging. Mark the story `[!] Blocked` with the outstanding review
+     findings in the `## Blocker` section and continue to the next
+     runnable story. The cap also ends early if the dev subagent returns
+     `BLOCKED` (same handling). Human-in-the-loop mode is exempt — the
+     user is already in the loop and decides when to stop.
    - `BLOCKED` — the review found issues requiring human input or a design
      decision. Mark the story `[!] Blocked` with the review findings in the
      `## Blocker` section, and continue to the next runnable story.

@@ -53,4 +53,4 @@ Create and maintain three types of compounding AI artifacts — skills, OKF know
 
 - **Full skill**: [`skills/ai/ai-upsert/SKILL.md`](skills/ai/ai-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-09-30T01:54:09Z
+- **Generated**: 2026-10-01T16:27:07Z
