@@ -1,5 +1,16 @@
 # Directory Update Log
 
+## 2026-10-13
+
+* **Creation**: [need-gated-handoff.md](need-gated-handoff.md) — new concept:
+  the managed-host instance of
+  [pre-prime-and-probe](https://github.com/levonk/skills-releases/blob/main/knowledge/software-architecture-essentials/pre-prime-and-probe.md) —
+  probe each install requirement's satisfaction state (TCC.db, `launchctl
+  print`), automate satisfiable needs, hand off only the demonstrably unmet
+  delta to the human, and provide an inventory escape flag for
+  known-incomplete probing. Reference implementation:
+  `roles/rustdesk-client/tasks/darwin.yml` in infrahub.
+
 ## 2026-07-26
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.

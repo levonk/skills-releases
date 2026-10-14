@@ -11,8 +11,9 @@
 # and the flake_type from Step 12, and emits a garnix.yaml with:
 #   - builds.include scoped to the project's target_platforms (not Garnix's
 #     linux-only default — Mac and ARM-linux are opt-in)
-#   - fodChecks: true when the flake has FOD outputs (source-build and
-#     prebuilt-tarball flakes with a #source output)
+#   - fodChecks: true when the flake has FOD outputs (source-build flakes,
+#     prebuilt-tarball flakes with a #source output, and npm-registry-tarball
+#     flakes with their fetchurl + npmDepsHash FODs)
 #
 # The maintainer-opt-in constraint: the contributor cannot install the Garnix
 # GitHub App on a repo they don't own. The garnix.yaml is inert until the
@@ -72,7 +73,7 @@ while [ $# -gt 0 ]; do
 		echo ""
 		echo "Required:"
 		echo "  --target-platforms '<json>'  JSON array from detect-platform-scope.sh (Step 4a)"
-		echo "  --flake-type <type>          'source_build' or 'prebuilt_tarball' (Step 12)"
+		echo "  --flake-type <type>          'source_build', 'prebuilt_tarball', 'npm_registry_tarball', or 'nixpkgs_override_attrs' (Step 12)"
 		echo ""
 		echo "Optional:"
 		echo "  --output <path>              Write garnix.yaml to this path (default: <project-dir>/garnix.yaml)"
@@ -93,7 +94,7 @@ if [ -z "$TARGET_PLATFORMS" ]; then
 fi
 
 if [ -z "$FLAKE_TYPE" ]; then
-	echo "error: --flake-type is required ('source_build' or 'prebuilt_tarball')" >&2
+	echo "error: --flake-type is required ('source_build', 'prebuilt_tarball', 'npm_registry_tarball', or 'nixpkgs_override_attrs')" >&2
 	exit 1
 fi
 
@@ -144,10 +145,11 @@ generate_includes() {
 # Determine whether to enable fodChecks
 # Source-build flakes always have FODs (fetchurl, fetchNpmDeps, bun2nix, etc.)
 # Prebuilt tarball flakes have FODs in the #source output (if it exists)
+# npm-registry-tarball flakes have FODs (the fetchurl tarball + npmDepsHash)
 should_enable_fod_checks() {
 	local flake_type="$1"
 	case "$flake_type" in
-	source_build | prebuilt_tarball) echo "true" ;;
+	source_build | prebuilt_tarball | npm_registry_tarball | nixpkgs_override_attrs) echo "true" ;;
 	nixpkgs_wrapper) echo "false" ;;
 	*) echo "true" ;; # conservative default — enable for unknown types
 	esac

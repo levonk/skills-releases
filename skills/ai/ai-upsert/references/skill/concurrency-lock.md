@@ -10,9 +10,9 @@ wasting compute.
 
 | Dimension | Policy |
 |-----------|--------|
-| Lock key | `sha256(target-repo-path + ":" + skill-name)[:16]` |
+| Lock key | `sha256(target-repo-path + ":" + scope-id)[:16]` |
 | Granularity | Phase 4 only (test/lint/build); Phases 0-3 and 5 run without the lock |
-| Storage | `${XDG_CACHE_HOME:-~/.cache}/skills/levonk/skills-releases/skills/ai/ai-upsert/locks/` |
+| Storage | `${XDG_CACHE_HOME:-~/.cache}/skills/locks/<namespace>/` (namespace default `shared`; ai-upsert passes `--namespace ai-upsert`) |
 | Config override | `skill-config.sh` key `concurrency.lock_dir` |
 | PID reuse guard | PID + process start-time (`ps -o lstart=`) |
 
@@ -46,12 +46,12 @@ Each lock file is an **executable bash script** that self-validates:
 ## Action Policy (when a lock is active)
 
 When a new run detects an active lock, the action depends on the
-`AI_UPSERT_LOCK_ACTION` env var or the `--action` flag:
+`QUALITY_LOCK_ACTION` env var or the `--action` flag:
 
 | Action | Behavior | Use when |
 |--------|----------|----------|
 | `skip` (default) | Skip Phase 4, commit to story branch, create PR, **do NOT merge**. The PR is left open for a later run to pick up tests. | Non-interactive (CI, scripted). Safe default — never silently double-runs. |
-| `wait` | Block up to `AI_UPSERT_LOCK_WAIT_TIMEOUT` seconds (default 600s) for the active run to finish, then acquire and run full Phase 4. | Short overlapping windows; interactive runs where the user can wait. |
+| `wait` | Block up to `QUALITY_LOCK_WAIT_TIMEOUT` seconds (default 600s) for the active run to finish, then acquire and run full Phase 4. | Short overlapping windows; interactive runs where the user can wait. |
 | `kill` | Send `TERM` (then `KILL` if needed) to the active lock's PID, take the lock, run full Phase 4. | The active run is hung or the user explicitly wants to preempt. |
 | `cancel` | Abort this run entirely. Do not acquire the lock. | The user decides not to proceed. |
 | `force` | Ignore the active lock, create a new one. Both runs proceed. | Debugging only — defeats the purpose of the lock. |
@@ -70,7 +70,7 @@ these options via the clarifying-questions protocol:
 
 ## Non-Interactive Default
 
-When `AI_UPSERT_LOCK_ACTION` is unset and no user is available (CI,
+When `QUALITY_LOCK_ACTION` is unset and no user is available (CI,
 scripted invocation), the default is `skip`:
 
 - Phase 4 (Review & Verify) is **skipped entirely** — no `just test`, `just
@@ -102,7 +102,8 @@ lock_dir = "~/.cache/skills/ai-upsert/locks"
 ```
 
 If the key is absent, the default is
-`${XDG_CACHE_HOME:-~/.cache}/skills/levonk/skills-releases/skills/ai/ai-upsert/locks/`.
+`${XDG_CACHE_HOME:-~/.cache}/skills/locks/<namespace>/` (namespace defaults
+to `shared`; callers scope locks per-skill via `--namespace <ns>`).
 
 ## Integration Points
 

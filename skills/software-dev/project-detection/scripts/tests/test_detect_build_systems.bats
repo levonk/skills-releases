@@ -198,7 +198,13 @@ devbox_is_functional() {
     local probe_dir; probe_dir="$(mktemp -d)"
     printf '{"packages":[]}\n' > "$probe_dir/devbox.json"
     local result
+    # Scrub ALL wrapper-state vars — inside `devbox run`/`devbox shell` the
+    # live markers are DEVBOX_SHELL_ENABLED and IN_NIX_SHELL (not DEVBOX_SHELL
+    # /IN_DEVBOX_SHELL). Leaving them set makes cli-tool-discovery take the
+    # "already inside a wrapper" branch and falsely report devbox as
+    # non-functional, which contradicts run_detect (which scrubs correctly).
     result="$(cd "$probe_dir" && env -u DEVBOX_SHELL -u IN_DEVBOX_SHELL \
+        -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL \
         DEVBOX_PROBE_TIMEOUT_SECS=5 bash "$CLI_TOOL_DISCOVERY" --detect-wrapper 2>/dev/null)" || true
     rm -rf "$probe_dir"
     [[ "$result" == "WRAPPER: devbox run --" ]]

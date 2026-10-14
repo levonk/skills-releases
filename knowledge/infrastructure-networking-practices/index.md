@@ -16,3 +16,4 @@ specific architectural decisions sourced from real infrahub ADRs.
 * [multi-exit-node-architecture](multi-exit-node-architecture.md) - Three exit nodes: Direct, NordVPN, Tor for different privacy levels
 * [infrastructure-variable-consolidation](infrastructure-variable-consolidation.md) - Centralized infrastructure topology variables with infra_ naming convention
 * [backup-connectivity-pattern](backup-connectivity-pattern.md) - SSH, mosh, and Tailscale as backup connectivity alongside primary VPN
+* [need-gated-handoff](need-gated-handoff.md) - Probe managed-host state per install requirement; automate satisfiable needs, open only the settings panes still missing a grant

@@ -109,15 +109,69 @@ TODAY=$(date +%Y-%m-%d)
 API_BASE="https://api.github.com/repos/$OWNER/$REPO/contents"
 
 # Helper: fetch file content from GitHub API
+#
+# Prints the decoded file body on stdout, or nothing when the path is not a
+# real file. A path counts as a file ONLY when the API returns HTTP 200 AND a
+# JSON object with .type == "file" and a non-empty .content payload. 404
+# bodies ({"message":"Not Found"}), directory listings (JSON arrays), error
+# objects, rate-limited responses, and non-UTF-8 decodes all yield empty
+# output — callers treat empty as "not found", so a nonexistent path can
+# never be reported as present.
 fetch_file() {
 	local path="$1"
-	curl -sL "$API_BASE/$path" 2>/dev/null | jq -r '.content' 2>/dev/null | base64 -d 2>/dev/null || echo ""
+	local response http_code body b64 decoded
+
+	# Single request: capture body and status line together (-w appends
+	# "\n<http_code>" after the body).
+	response=$(curl -sL -w $'\n%{http_code}' "$API_BASE/$path" 2>/dev/null || true)
+	[ -n "$response" ] || {
+		echo ""
+		return
+	}
+	http_code="${response##*$'\n'}"
+	body="${response%$'\n'*}"
+	[ "$http_code" = "200" ] || {
+		echo ""
+		return
+	}
+
+	# Extract the base64 payload only from a real file object. jq emits
+	# nothing for error objects, arrays, or non-file types.
+	b64=$(printf '%s' "$body" | jq -r 'select(type == "object" and .type == "file") | .content // empty' 2>/dev/null || true)
+	[ -n "$b64" ] || {
+		echo ""
+		return
+	}
+
+	decoded=$(printf '%s' "$b64" | base64 -d 2>/dev/null || true)
+	# Drop undecodable or non-UTF-8 content — binary garbage must not be
+	# cached as if it were a standards document.
+	if ! printf '%s' "$decoded" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1; then
+		echo ""
+		return
+	fi
+	printf '%s' "$decoded"
 }
 
 # Helper: list directory contents from GitHub API
+#
+# Prints one entry name per line, or nothing. Only a 200 response whose body
+# is a JSON array yields entries; 404/error objects produce empty output.
 list_dir() {
 	local path="$1"
-	curl -sL "$API_BASE/$path" 2>/dev/null | jq -r '.[].name' 2>/dev/null || echo ""
+	local response http_code body
+	response=$(curl -sL -w $'\n%{http_code}' "$API_BASE/$path" 2>/dev/null || true)
+	[ -n "$response" ] || {
+		echo ""
+		return
+	}
+	http_code="${response##*$'\n'}"
+	body="${response%$'\n'*}"
+	[ "$http_code" = "200" ] || {
+		echo ""
+		return
+	}
+	printf '%s' "$body" | jq -r 'if type == "array" then .[] | objects | .name // empty else empty end' 2>/dev/null || true
 }
 
 # Start building the cache file

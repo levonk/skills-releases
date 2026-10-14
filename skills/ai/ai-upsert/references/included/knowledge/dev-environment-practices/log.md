@@ -1,5 +1,24 @@
 # Directory Update Log
 
+## 2026-10-13
+
+* **Update**: Expanded [shell-scripting-best-practices.md](shell-scripting-best-practices.md)
+  with two trap sections distilled from a real bug-fix pass: (1) command-
+  substitution + `||` traps — `x=$(cmd) || true` masking `$?`, `cmd || echo`
+  appending to counting commands that print-and-fail (`grep -c`), and
+  `|| var=` wiping output when a tool uses non-zero success codes (rtk
+  `rewrite` exits 3 on success); and (2) a GNU-vs-BSD portability table
+  (sed `{}` blocks, `\s`, `-i`, `grep -P`, `date -d`, `readlink -f`). Also
+  added testing guidance: pinning `protocol.file.allow=always` for git
+  fixtures using local-path remotes (git ≥2.39 denies the file transport),
+  and the interface-drift rule that flag/env renames must update callers,
+  tests, and docs in the same change.
+* **Update**: Expanded [wrapper-probe-caching.md](wrapper-probe-caching.md)
+  Prevention with environment-scrub consistency — `env -u` probe paths must
+  unset the vars the wrapper actually exports (`devbox run` sets
+  `DEVBOX_SHELL_ENABLED` + `IN_NIX_SHELL`, not `DEVBOX_SHELL`), or the probe
+  and the code under test reach opposite conclusions about the same env.
+
 ## 2026-09-02
 
 * **Add**: [devbox-per-platform-packages.md](devbox-per-platform-packages.md) —

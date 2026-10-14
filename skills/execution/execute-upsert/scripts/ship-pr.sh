@@ -604,7 +604,7 @@ if [[ "$BODY_SIZE" -lt 10 ]]; then
 fi
 
 # 1b: gh-posting-guard sanity checks
-LITERAL_NEWLINES="$(grep -c '\\n' "$PR_BODY_FILE" 2>/dev/null || echo 0)"
+LITERAL_NEWLINES="$(grep -c '\\n' "$PR_BODY_FILE" 2>/dev/null || true)"
 if [[ "$LITERAL_NEWLINES" -gt 0 ]]; then
   log "WARNING: PR body file contains $LITERAL_NEWLINES literal '\\n' sequences"
   log "These will appear as two characters, not newlines. Consider fixing before posting."
@@ -819,9 +819,12 @@ POSTED_BODY="$(gh pr view "$PR_NUMBER" --json body --jq '.body' 2>/dev/null || e
 if [[ -z "$POSTED_BODY" ]]; then
   log "WARNING: could not fetch posted PR body — skipping verification"
 else
-  # Normalize both for comparison: strip trailing whitespace per line and trailing newlines
-  NORMALIZED_FILE="$(sed 's/[[:space:]]*$//' "$PR_BODY_FILE" | sed -e :a -e '/^\n*$/{$d;N;ba}' )"
-  NORMALIZED_POSTED="$(printf '%s' "$POSTED_BODY" | sed 's/[[:space:]]*$//' | sed -e :a -e '/^\n*$/{$d;N;ba}')"
+  # Normalize both for comparison: strip trailing whitespace per line and
+  # trailing newlines. The $( ) substitution strips trailing newlines on its
+  # own — no second sed needed (the classic GNU-only -e :a -e '{$d;N;ba}'
+  # idiom fails on BSD sed, which requires newlines inside { } blocks).
+  NORMALIZED_FILE="$(sed 's/[[:space:]]*$//' "$PR_BODY_FILE")"
+  NORMALIZED_POSTED="$(printf '%s' "$POSTED_BODY" | sed 's/[[:space:]]*$//')"
 
   if [[ "$NORMALIZED_FILE" != "$NORMALIZED_POSTED" ]]; then
     log "PR body verification FAILED: posted body differs from file"

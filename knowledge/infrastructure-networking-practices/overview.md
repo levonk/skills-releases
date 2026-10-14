@@ -154,6 +154,7 @@ zero-trust-platform → exit-nodes → backup-connectivity → variable-consolid
 | Exit | [Multi-Exit Node Architecture](multi-exit-node-architecture.md) | Single exit point, no privacy options, no high-anonymity path |
 | Backup | [Backup Connectivity Pattern](backup-connectivity-pattern.md) | Complete lockout when primary VPN fails |
 | Config | [Infrastructure Variable Consolidation](infrastructure-variable-consolidation.md) | Port collisions, IP conflicts, domain fragmentation, inconsistent naming |
+| Provisioning | [Need-Gated Human Handoff](need-gated-handoff.md) | Full-wizard handoffs for partial needs, blind re-prompting of already-met requirements, silent skips on unverifiable probes |
 
 ## Scope
 

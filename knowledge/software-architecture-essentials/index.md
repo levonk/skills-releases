@@ -21,6 +21,7 @@ specific architectural concern with the practice that addresses it.
 * [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) - Ordered risk hierarchy for evaluating technology decisions (novel work > end-user impact > ... > new constant); dependency-update and functional-style axes
 * [Technology Selection Pattern](technology-selection-pattern.md) - Convention for authoring technology-selection concept pages — state the requirement, list candidates, apply the risk hierarchy, recommend one, document why-not, state when to reconsider
 * [AI + Human Timeline Estimates](ai-human-timeline-estimates.md) - Estimate as human review + AI execution pairs on four axes; pre-AI "human days" are no longer valid units
+* [Pre-Prime and Probe](pre-prime-and-probe.md) - Automate every satisfiable install requirement, probe the authoritative state for needs already met, and interrupt the human only for the demonstrably unmet delta
 * [Architecture Philosophy](philosophy.md) - Domain-based modular architecture with clear separation of concerns and thin top-level entry points
 * [Project Structure](project-structure.md) - Domain-first hierarchical package structure with vertical slicing for scalable monorepos
 * [Data Access Layer](data-access-layer.md) - Centralize data fetching, caching, and mutation; single source of truth; security checkpoint

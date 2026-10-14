@@ -4,6 +4,7 @@
 
 - [Inherent Platform Scope](#inherent-platform-scope)
 - [Check for Prebuilt Release Tarballs](#check-for-prebuilt-release-tarballs)
+- [npm Registry Tarball (Published Package Route)](#npm-registry-tarball-published-package-route)
 - [Partial Platform Coverage](#partial-platform-coverage)
 - [Complex Distribution Requirements](#complex-distribution-requirements)
 - [Multi-Toolchain Desktop Apps](#multi-toolchain-desktop-apps)
@@ -135,6 +136,87 @@ curl -s "https://api.github.com/repos/<owner>/<repo>/releases" | jq -r '.[].asse
 - A bare `cargo build` / `go build` / `npm run build` produces a binary that passes `--version` but fails real workloads because the runtime tree is absent.
 
 A from-source `buildRustPackage` for such a project produces a binary that passes `nix run . -- --version` in CI but is non-functional for real use. Prefer the prebuilt tarball even when source builds are possible. (Reference: nubjs/nub#169 — prebuilt chosen precisely because from-source omits the vendored `runtime/` tree.)
+
+---
+
+## npm Registry Tarball (Published Package Route)
+
+For Node.js projects there is a third artifact source between GitHub release
+binaries and a from-source build: **the published npm tarball**. The tarball
+the maintainer already ships to `npm install -g` users frequently contains
+the compiled output (`dist/`, staged `daemon/`/`ui/` trees) — and when it
+does, a `buildNpmPackage` over `fetchurl` of `registry.npmjs.org` reproduces
+the installable artifact without replicating the project's build pipeline in
+the derivation.
+
+**How to detect**: Run `scripts/check-npm-registry.sh <project-dir>` for
+Node.js projects (Step 5, after `classify-node-complexity.sh`). The script
+reads `package.json`, queries the registry (`npm view <name> version` /
+`dist.tarball` / `engines.node`), downloads the tarball, and lists its
+contents. It reports:
+
+- `is_published` — the package is on npm (`private: true` or unpublished
+  packages are not eligible).
+- `bin_targets_exist` — every `bin` entry resolves to a file inside the
+  tarball. **The load-bearing check**: if the tarball only ships `src/` and
+  `bin` points at a build output it omits, the route cannot work.
+- `bin_targets_are_typescript` — bin targets are `.ts` files shipped but not
+  runnable (source-publish projects like some Deno-first tools).
+- `tarball_has_compiled_output` — `dist/`/`lib/`/`build/`/`out/` present.
+- `tarball_has_lockfile` — `package-lock.json`/`npm-shrinkwrap.json` shipped
+  (uncommon — npm excludes lockfiles by default; only `npm shrinkwrap`
+  produces one that ships).
+- `tarball_has_gypfile` — `binding.gyp` shipped (install compiles a native
+  addon — sandbox failure).
+- `native_deps` — deps known to carry native addons. Each must ship N-API
+  prebuilds inside its own npm package (e.g. `better-sqlite3` >= 13 bundles
+  `prebuilds/`) — a dep that falls back to `node-gyp` compile or a
+  `prebuild-install` download at install time fails offline in the sandbox.
+  Verify before choosing this route.
+- `node_engine` — the published `engines.node` constraint (use it to select
+  `nodejs_<major>` in the template).
+- `npm_registry_tarball_eligible` — `is_published && bin_targets_exist &&
+  !bin_targets_are_typescript`.
+
+**Decision tree — choosing among the three packaging sources:**
+
+- **GitHub prebuilt release binaries exist** (Step 4b `has_tarballs` /
+  `has_binary_releases`): use `flake-templates/prebuilt-tarball.md` — the
+  preferred path. Platform-native compiled binaries beat a wrapped Node app.
+  The registry route is only for projects that publish to npm but ship no
+  binary release assets.
+- **`npm_registry_tarball_eligible=true` AND `is_complex=true`**
+  (`classify-node-complexity.sh`): use `flake-templates/npm-registry-tarball.md`.
+  This is the case the route exists for — a from-source flake would have to
+  replicate monorepo staging / custom build orchestration / codegen inside
+  the derivation, while the published tarball already contains the result.
+  (Reference: mvschwarz/openrig#1089 — the from-source build would replicate
+  `build-package.sh`'s daemon → ui → tui → cli staging plus a `node-gyp`
+  compile; the registry tarball is `buildNpmPackage` + `dontNpmBuild` and
+  "much less to maintain.")
+- **`npm_registry_tarball_eligible=true` AND `is_complex=false`**: prefer
+  `source-build/node.md`. Same `buildNpmPackage` builder, but
+  `src = cleanSource ./.` keeps tag-pinning working and needs no generated
+  lockfile. The registry route still works — choose it only if the
+  maintainer prefers tracking the released artifact over building it.
+- **`force_source_build=true`**: source build, regardless of eligibility.
+  A maintainer's explicit request wins.
+- **Not eligible** (unpublished, `private`, src-only tarball, `.ts` bins):
+  source build routing as before — this option simply doesn't exist.
+
+**Trade-off summary (quote in the PR/issue body when recommending):**
+
+| | npm registry tarball | source build |
+|---|---|---|
+| Per-release maintenance | `version` + tarball `hash` + `npmDepsHash` + regenerated `package-lock.json` (all automated by the Step 16 variant) | none — `src = ./.` or git tag |
+| Tag-pinning (`github:.../vX.Y.Z`) | NO — version pinned in `flake.nix`, bumped post-release | YES — builds at every tag |
+| Derivation complexity | low — `dontNpmBuild`, wrap `bin`s | replicates the project's build pipeline |
+| Sandbox compile risk | only if a native dep lacks prebuilds | every native/postinstall step must be reproduced |
+
+**What this route is NOT**: it is not a substitute for the GitHub release
+check (Step 4b still runs first), and it is not a fallback when the tarball
+omits the built output — `bin_targets_exist=false` means the published
+artifact is not installable and only a source build can produce it.
 
 ---
 

@@ -6,7 +6,7 @@ tags: [shell-scripting, caching, devbox, wrapper, probe, subprocess, parallel-ag
 date:
   created: "2026-08-16"
   knowledge-basis: "2026-08-16"
-  last-used: "2026-08-16"
+  last-used: "2026-10-13"
 sources:
   - id: rtk-helpers-uncached-probe-hang
     resource: src/current/includes/rtk-helpers.sh.tmpl
@@ -203,6 +203,16 @@ WRAPPER_DEVBOX_DISABLED=1 \
    single-session may take 30+ min under 10 parallel sessions if
    probes contend for the same lock (nix store, file lock, network).
    Test with `parallel -j10` or multiple terminal sessions.
+5. **Scrub the same wrapper-state vars in every probe path** — when
+   tests or fallback branches simulate "outside the wrapper" with
+   `env -u VAR ...`, they must unset the vars the wrapper actually
+   exports. `devbox run` sets `DEVBOX_SHELL_ENABLED=1` and
+   `IN_NIX_SHELL` — not `DEVBOX_SHELL`/`IN_DEVBOX_SHELL` (those are the
+   older `devbox shell` markers). A probe that unsets only the old
+   names takes the "already inside a wrapper" branch while the code
+   under test correctly reports "outside", and the two reach opposite
+   conclusions about the same environment. Keep the scrub list in one
+   shared place and audit it when the wrapper version changes.
 
 ## Related Concepts
 

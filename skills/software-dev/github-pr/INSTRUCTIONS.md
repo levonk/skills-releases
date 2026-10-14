@@ -1830,8 +1830,13 @@ in `own-repo` mode.
 
 2. **Set up branch**: Sync from upstream (fetch + rebase) to start from a
    fresh base. Create a descriptively-named feature branch
-   (e.g. `feat-chat-panel-api`). Verify git author is configured with a
-   public identity (not private info — use GitHub noreply email).
+   (e.g. `feat-chat-panel-api`). Create it without upstream tracking —
+   `git checkout --no-track -b <branch>` when branching from a remote ref —
+   so no tracking config can misroute the push in Step 11
+   (`push.default=tracking` would resolve the push destination from the
+   tracking ref, e.g. pushing the feature branch onto `main`). Verify git
+   author is configured with a public identity (not private info — use
+   GitHub noreply email).
 
 3. **Validate existing tests**: Run the project's test suite to establish a
    baseline. Document any pre-existing failures — do NOT fix unrelated bugs
@@ -1929,8 +1934,31 @@ in `own-repo` mode.
 11. **Push**: Push the branch to your fork (`upstream`) or to `origin`
     (`own-repo`). Never merge upstream into the feature branch — always
     rebase.
-    - **`upstream`**: `git push <fork-remote> <branch-name>`
-    - **`own-repo`**: `git push origin <branch-name>`
+
+    Always push with an **explicit refspec** — never a bare branch name.
+    `git push <remote> <branch>` lets `push.default` resolve the
+    destination, and with `push.default=tracking` (or `upstream`) the
+    branch's configured upstream decides the remote ref: a branch created
+    via `git checkout -b feat upstream/main` pushes `feat` onto `main`,
+    overwriting the fork's default branch. An explicit
+    `refs/heads/<branch>:refs/heads/<branch>` refspec removes all
+    ambiguity.
+
+    - **`upstream`**: `git push <fork-remote> refs/heads/<branch-name>:refs/heads/<branch-name>`
+    - **`own-repo`**: `git push origin refs/heads/<branch-name>:refs/heads/<branch-name>`
+
+    Prefer creating the branch **without upstream tracking**
+    (`git checkout --no-track -b <branch>`) so no tracking config exists
+    to misroute the push. If you want `-u`/`--set-upstream` for later
+    `git status`/`git pull` convenience, pass it together with the
+    explicit refspec
+    (`git push -u <remote> refs/heads/<branch>:refs/heads/<branch>`) —
+    never with a bare branch name.
+
+    Before the real push, run the same command with `--dry-run` and check
+    the output's destination ref — it must show `<branch> -> <branch>`.
+    If it shows a different destination (e.g. `<branch> -> main`), stop
+    and fix the command or the branch's tracking config.
 
 12. **Generate PR description**: Using the project's own PR template (if
     found during standards discovery for `upstream`, or in the local working
@@ -2168,6 +2196,7 @@ relevant concept pages before opening a PR:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `gh pr create` fails with no fork | Forgot to fork first | `gh repo fork <owner>/<repo> --clone` |
+| Push went to `main` instead of the feature branch | `push.default=tracking` resolved the destination from the branch's tracking config (`git checkout -b x upstream/main`) | Always push with an explicit refspec: `git push <remote> refs/heads/<branch>:refs/heads/<branch>`; recreate the branch with `--no-track` (Phase 4 Step 11) |
 | PR has merge commits | Merged upstream instead of rebasing | `git rebase upstream/main`, force-push the branch |
 | `validate-pr-issue.sh` exits non-zero | Body corrupted (literal `\n` or stripped backticks) | Re-draft, write to file, `gh pr edit --body-file`, re-validate |
 | Tests fail on the PR but passed at baseline | Your change broke something | Fix the change; do not disable tests |
@@ -2192,7 +2221,7 @@ starting, `[x]` when verified done, `[!]` if blocked.
 - [ ] Phase 3: Run `scan-artifacts.sh` on created files and fix HARD identity leaks (Phase 3 Step 8)
 - [ ] Phase 4: If `upstream`: CLA gate (pre-push) — consult the CLA ledger, surface terms/sign link if missing or expired, record the ledger entry, get explicit user acknowledgment. If `own-repo`: skip CLA gate (Phase 4 Step 9)
 - [ ] Phase 4: Validate PR cleanliness — no merge commits, no unrelated changes, clean linear history, at most two commits (Phase 4 Step 10)
-- [ ] Phase 4: Push the branch — to fork (`upstream`) or to `origin` (`own-repo`); never merge upstream into the feature branch (Phase 4 Step 11)
+- [ ] Phase 4: Push the branch with an explicit `refs/heads/<branch>:refs/heads/<branch>` refspec — to fork (`upstream`) or to `origin` (`own-repo`); `--dry-run` output checked for the correct destination ref; never merge upstream into the feature branch (Phase 4 Step 11)
 - [ ] Phase 4: Generate the PR description using the project's PR template with `Resolves #N` (or one-line justification if `own-repo` and no issue), placeholders substituted by text replacement (Phase 4 Step 12)
 - [ ] Phase 4: Determine draft mode — if `upstream`: read `posting.upstream_draft_pr` config (default `true`); if `own-repo`: `$DRAFT_PR` is always `false` (Phase 4 Step 13)
 - [ ] Phase 4: If `$DRAFT_PR` is `true`: skip chat review, post directly as draft; if `false`: present complete PR content to the user for review before posting (Phase 4 Step 13)

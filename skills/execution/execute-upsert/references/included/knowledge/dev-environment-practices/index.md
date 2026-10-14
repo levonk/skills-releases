@@ -25,7 +25,7 @@ project migrations.
 * [Devbox Broken Override](devbox-broken-override.md) - When devbox cannot build the environment at all (nixpkgs pin missing a package on a platform), override devbox-wrapped commands with direct package-manager equivalents rather than blocking
 * [Per-Platform Devbox Package Entries](devbox-per-platform-packages.md) - When a package builds on most platforms but fails on one (e.g., x86_64-darwin), use per-platform object entries in devbox.json — @latest with excluded_platforms for working platforms, pinned github:nixos/nixpkgs/<channel>#pkg with platforms for the broken one
 * [Mandatory Testing Workflow](mandatory-testing-workflow.md) - TDD, regression tests for bug fixes, quality gates before completion; enforced via pre-commit and CI
-* [Shell Scripting Best Practices](shell-scripting-best-practices.md) - Strict mode, PATH guards, git gates, dry-runs, logging, and shellcheck/shfmt/bats verification for safe shell scripts
+* [Shell Scripting Best Practices](shell-scripting-best-practices.md) - Strict mode, PATH guards, command-substitution fallback traps, GNU-vs-BSD portability, git gates, dry-runs, logging, and shellcheck/shfmt/bats verification for safe shell scripts
 * [Branch & Tag Hygiene](branch-tag-hygiene.md) - Archive stale branches and tags into a structured namespace; ownership exception for upstream repos; periodic pruning with retention windows
 * [Just Recipes for Rust](just-recipes-for-rust.md) - Standard justfile recipes for Rust: build, test, clippy, fmt, doc, bench, feature flags, cross-compilation, workspace-aware
 * [Devbox Rust Versions](devbox-rust-versions.md) - Pinning Rust toolchain in devbox.json, rustup integration, multi-version management, component selection

@@ -261,6 +261,77 @@ with direct `process.env` reads, or adding `dotenv` with
 packages and deploys the project as-is. Document the request in the
 orientation issue as a follow-up suggestion for the upstream project.
 
+## Daemon-specific notes (self-registering, agent-spawning daemons)
+
+For projects whose service is a *daemon* — especially ones that spawn or
+hold open other processes (agent harnesses, tmux sessions, worker
+subprocesses) — the generic template above needs these adjustments. These
+are field notes from packaging a daemon-style agent orchestrator
+(mvschwarz/openrig#1089) — each one was a "module builds but the service
+misbehaves" failure:
+
+- **Run the daemon's own subcommand, not the plain entry point** —
+  `ExecStart = "${cfg.package}/bin/<cli> daemon run"`. Some projects
+  self-register on daemon start (write a PID/state file like
+  `~/.<project>/daemon.json`, bind sockets, attach to tmux). Invoking the
+  bare CLI skips that self-registration and exits — the unit "runs" but
+  the daemon never comes up. Check the project docs for the correct
+  daemon subcommand.
+- **`Type = "forking"` + `PIDFile` when the daemon double-forks** — if the
+  daemon command forks to background and writes its PID to a state file,
+  point `serviceConfig.PIDFile` at that file (e.g.
+  `${cfg.dataDir}/daemon.json`) so systemd tracks the real process. A
+  `Type=simple` unit on a forking daemon reports the service as failed or
+  tracks a dead PID.
+- **`KillMode = "process"` — REQUIRED for agent-spawning daemons.** The
+  default `KillMode=control-group` kills the daemon's whole cgroup on
+  stop/restart — including every spawned agent, worker, and tmux session
+  the daemon is holding open. A routine `systemctl restart` would
+  mass-kill the fleet. `KillMode = "process"` signals only the main PID.
+- **Give the unit a real PATH.** systemd units get a minimal PATH, but a
+  daemon that shells out to `tmux`/`git`/`ssh`/`rsync` (or invokes other
+  CLIs the user expects on their login PATH) needs them visible. Two
+  layers: (1) the flake's `postFixup` `wrapProgram --suffix PATH` covers
+  tools the project itself requires (see
+  `flake-templates/npm-registry-tarball.md` — Runtime tool wrapping), and
+  (2) the module should set `environment.PATH` or `serviceConfig.path`-style
+  PATH to include the login profile plus any runtime tools. Do NOT wrap
+  user-supplied harness CLIs — those stay on the user's own PATH.
+- **Expose bind address as an option** — if the daemon listens on a
+  socket/port, add `bind`/`port` module options and pass them explicitly.
+  A hardcoded loopback vs `0.0.0.0` silently changes whether remote
+  clients can reach the service.
+- **Do NOT run the project's setup/provisioning commands from the
+  module.** If the project ships a `setup`/`init`/`doctor` command that
+  self-installs global tools (`npm install -g ...`, writes outside the
+  store), it will fail on NixOS — there is no writable global npm prefix —
+  and block service start if run in `ExecStartPre`. Provision
+  declaratively instead (`users.users`, `systemd.tmpfiles`,
+  `environment.etc`) and document in the orientation issue that users run
+  the project's setup command manually.
+- **Post-boot restore as a oneshot with `restartIfChanged = false`** — if
+  the project needs a "restore state after boot" step (re-attaching
+  sessions, restoring daemon state), model it as a separate
+  `Type = "oneshot"` + `RemainAfterExit = true` unit `wantedBy` the daemon
+  unit, and set `restartIfChanged = false` so a `nixos-rebuild switch`
+  does not re-run the restore against a live fleet.
+
+```nix
+# Daemon-flavored serviceConfig delta — merge over the generic template
+serviceConfig = {
+  Type = "forking";
+  PIDFile = "${cfg.dataDir}/daemon.json";   # wherever the daemon writes its pid/state
+  ExecStart = "${cfg.package}/bin/<cli> daemon run";
+  KillMode = "process";                     # don't kill spawned agents on restart
+  Restart = "on-failure";
+  RestartSec = "5s";
+};
+environment.PATH = lib.mkForce (
+  lib.makeBinPath [ pkgs.tmux pkgs.git pkgs.openssh pkgs.rsync ]
+    + ":/run/current-system/sw/bin:/etc/profiles/per-user/${cfg.user}/bin"
+);
+```
+
 ## Skip if
 
 - The project is a CLI tool, not a long-running service (use the

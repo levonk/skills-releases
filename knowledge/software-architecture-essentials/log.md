@@ -1,5 +1,19 @@
 # Directory Update Log
 
+## 2026-10-13
+
+* **Creation**: [pre-prime-and-probe.md](pre-prime-and-probe.md) — new concept:
+  classify each install/provisioning requirement as automatable,
+  probed-and-skipped, or human-required; probe the authoritative state store
+  before interrupting, treat unverifiable probes as unmet (degrade toward the
+  human, never toward silent skip), and open only the UI surfaces for the
+  unmet delta. Instance of the principle landed in infrahub's
+  `rustdesk-client` role Darwin path (TCC.db probe gating privacy-pane
+  opening); cross-linked counterpart:
+  [need-gated-handoff](https://github.com/levonk/skills-releases/blob/main/knowledge/infrastructure-networking-practices/need-gated-handoff.md).
+  Companion to make-operations-idempotent — probing is what makes
+  convergence honest.
+
 ## 2026-08-30
 
 * **Ingest**: Added

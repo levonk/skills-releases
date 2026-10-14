@@ -6,7 +6,7 @@ tags: [shell, bash, scripting, safety, testing, shellcheck, shfmt, bats, dry-run
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-18"
-  last-used: "2026-07-18"
+  last-used: "2026-10-13"
 ---
 
 # Shell Scripting Best Practices
@@ -38,6 +38,60 @@ Use when: editing or creating shell scripts, CI jobs, or local helpers.
   ```sh
   exec npm run dev
   ```
+
+## Command-Substitution and Fallback Traps
+
+`$( )` combined with `||` produces three recurring silent bugs — all three
+shipped in this repo's own scripts before being caught by bats:
+
+1. **`x="$(cmd)" || true; rc=$?` records rc=0 always.** `||` runs *after*
+   the assignment completes, so `$?` reflects `true`, not `cmd`. The real
+   exit code must be captured on the same line:
+   ```sh
+   rc=0; x="$(cmd)" || rc=$?
+   ```
+2. **`x="$(cmd || echo fallback)"` appends instead of substituting.**
+   Counting commands that print a result AND exit non-zero on "no match"
+   (`grep -c` is the classic) turn `grep -c pat f || echo 0` into the
+   literal `"0\n0"` — which `[[ $x -gt 0 ]]` rejects with "arithmetic
+   syntax error". To keep the command's own output, use
+   `x="$(cmd)" || true` — `||` neutralizes the exit status without adding
+   output. (`wc -l` always exits 0, and `grep -o` prints nothing on no
+   match, so neither triggers this trap — `grep -c` and `grep -o … |
+   wc -l` patterns that need a numeric fallback do.)
+3. **`x="$(cmd)" || x=""` wipes valid output when a tool uses non-zero
+   exit codes for non-failure outcomes.** `rtk rewrite` is the example in
+   this repo: it exits 0 or 3 when it supports a command (3 = "ask"),
+   1 on "no equivalent" — both 0 and 3 carry the rewritten command on
+   stdout. Never reset a variable you just assigned from `$( )` — test
+   the value (`[[ -n "$x" ]]`) or the real captured rc instead, and read
+   the tool's exit-code contract before assuming "non-zero means
+   failure".
+
+Related: `$( )` strips **all** trailing newlines, so piping through a
+"delete trailing blank lines" pass inside command substitution is
+redundant.
+
+## GNU-vs-BSD Portability Traps (macOS, BusyBox)
+
+These idioms work under GNU coreutils (Linux, devbox/nix envs) and fail
+under macOS BSD tools — the same script can pass in `devbox run` and fail
+on a developer's login shell.
+
+| GNU-only | BSD/POSIX-safe alternative |
+|----------|----------------------------|
+| `sed -e :a -e '/^\n*$/{$d;N;ba}'` — branch/loop inside `{ }` | BSD sed requires literal newlines inside `{ }` blocks; usually unneeded — `$()` already strips trailing newlines |
+| `sed 's/\s*/…/'` — `\s` escape | `[[:space:]]` POSIX character class |
+| `sed -i 'expr'` | BSD wants `sed -i '' 'expr'`; the truly portable form is `sed 'expr' f > tmp && mv tmp f` |
+| `grep -P '\d+'` — PCRE | `grep -E` extended regex (no lookaround/backrefs) |
+| `date -d 'yesterday'` / `date -d @N` | BSD: `date -v-1d` / `date -r N`; prefer epoch arithmetic for cross-platform |
+| `readlink -f path` | BSD: `realpath path` or `cd "$(dirname path)" && pwd -P` |
+| `sed --version` / `cp --version` as capability probes | BSD tools exit non-zero on `--version`; presence of `--version` is itself a GNU tell |
+
+Rule of thumb: when both implementations must work, use POSIX constructs
+(character classes, `-E`, explicit temp files). When you genuinely need a
+GNU feature, detect it (`sed --version >/dev/null 2>&1` succeeds on GNU,
+fails on BSD) rather than assuming by platform name.
 
 ## PATH Guards and Tool Detection
 
@@ -168,6 +222,23 @@ fi
 - Run `bats -r scripts/tests` and ensure tests pass in the project’s harness. If
   tests fail or scripts error, do not claim completion; fix or report clearly.
 - Prefer adding a minimal stub or guard when tests expect optional utilities.
+- **Git file-transport in test fixtures**: git ≥2.38.1 restricts the
+  `file` transport (`protocol.file.allow=user`, CVE-2022-39253), and newer
+  builds deny it even for
+  pushes/fetches to configured local-path remotes (observed: git 2.55,
+  "transport 'file' not allowed"). Bats fixtures that exercise `git push`
+  or `git fetch` against a local-path remote must pin
+  `git config protocol.file.allow always` per fixture repo, or inject
+  `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=protocol.file.allow
+  GIT_CONFIG_VALUE_0=always` in the harness environment. Add a small
+  preflight probe that surfaces the denial directly — otherwise it
+  masquerades as "couldn't find remote ref" far from the cause.
+- **Interface drift is a failure, not an env issue**: when a script's CLI
+  surface changes (flags, env vars, output format, exit codes), update every
+  caller, test, and doc in the same change. A suite that calls
+  `--old-flag` and fails with "unknown arg" is stale code, and
+  "environmental" skips hide it. Treat a test that can't run as a defect
+  until proven otherwise.
 
 ## Verification Workflow Checklist
 

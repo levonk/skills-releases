@@ -49,6 +49,22 @@ Use `references/snippets/readme-nix-prebuilt-tarball.md`.
 
 **Note on `#source`:** The Prebuilt Tarball template now includes a `#source` output by default. If the project cannot be built from source in Nix and the `source` outputs were removed from the flake, also remove `#source` from the README/docs snippets above.
 
+### npm Registry Tarball Flake (`flake_type = npm_registry_tarball`)
+
+Use `references/snippets/readme-nix-prebuilt-tarball.md`, then **strip all
+`#prebuilt` and `#source` output references** — the registry-tarball flake
+exposes only `#default` and `#<project-name>`. The install commands are
+`nix run github:<owner>/<repo>` and `nix profile install github:<owner>/<repo>`
+(no output suffix). Reword any "wraps the release tarball"/"prebuilt binary"
+phrasing to "wraps the published npm package tarball".
+
+**Do NOT add** any of the following to an npm Registry Tarball README:
+- `nix run github:.../vX.Y.Z` (tag-pinning — `version` + tarball `hash` +
+  `npmDepsHash` are pinned in `flake.nix` and bumped after each npm release)
+- `nix develop github:...` (no devShell unless explicitly added)
+- Claims that the flake builds from source at a git tag — it packages the
+  published registry artifact
+
 ### Hybrid Fallback Prebuilt Tarball Flake (`flake_type = prebuilt_tarball`, `hybrid_fallback = true`)
 
 Use `references/snippets/readme-nix-hybrid-fallback.md`.
@@ -84,6 +100,12 @@ Use `references/snippets/docs-install-source-build.md`.
 
 Use `references/snippets/docs-install-prebuilt-tarball.md`.
 
+#### npm Registry Tarball Flake
+
+Use `references/snippets/docs-install-prebuilt-tarball.md`, then strip all
+`#prebuilt`/`#source` output references and reword "prebuilt binary" phrasing
+to "published npm package tarball" (same rules as the README section above).
+
 #### Hybrid Fallback Prebuilt Tarball Flake
 
 Use `references/snippets/docs-install-hybrid-fallback.md`.
@@ -99,6 +121,12 @@ Use `references/snippets/docs-index-source-build.md`.
 #### Prebuilt Tarball Flake
 
 Use `references/snippets/docs-index-prebuilt-tarball.md`.
+
+#### npm Registry Tarball Flake
+
+Use `references/snippets/docs-index-prebuilt-tarball.md` — the registry
+flake's install command is identical (`nix run github:<owner>/<repo>`); no
+output-suffix references should remain.
 
 #### Hybrid Fallback Prebuilt Tarball Flake
 
@@ -128,6 +156,14 @@ The `.github/workflows/nix-release.yml` workflow runs daily and automatically
 bumps `version` and per-platform `sha256` hashes in `flake.nix` when a new
 release is detected, then opens a PR. No manual action required — just merge
 the auto-generated bump PR after each release.
+
+### npm Registry Tarball Flake
+
+Same shape, different source — the scheduled lag-check workflow watches the
+npm registry (`npm view <pkg> version`) instead of GitHub releases. The bump
+PR carries `flake.nix` (version + tarball hash + `npmDepsHash`) AND the
+regenerated `package-lock.json`. No manual action required — just merge the
+auto-generated bump PR after each npm publish.
 
 ### Hybrid Fallback Prebuilt Tarball Flake
 

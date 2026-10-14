@@ -123,6 +123,13 @@ fi
                 ADDED_IMPLEMENTED=1
                 continue
             fi
+            # Drop a stale pre-existing implemented: value (e.g.
+            # 'implemented: ""' left blank in the todo) — the fresh value was
+            # already emitted right after date:, so keeping this line would
+            # duplicate the key
+            if [[ "$line" =~ ^[[:space:]]+implemented: && $ADDED_IMPLEMENTED -eq 1 ]]; then
+                continue
+            fi
         fi
         echo "$line"
     done < "$TODO_HISTORY_FILE"

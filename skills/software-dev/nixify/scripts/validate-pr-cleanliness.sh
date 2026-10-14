@@ -60,8 +60,12 @@ commits_json="["
 first=1
 issues=""
 
-# Expected nixify artifact patterns
-NIXIFY_FILES="flake\.nix|flake\.lock|devbox\.json|devbox\.lock|\.gitignore|\.github/workflows/nix\.yml|\.github/workflows/.*hash.*\.yml|garnix\.yaml|nix/|README.*\.md|CHANGELOG\.md|docs/.*install.*|default\.nix|shell\.nix"
+# Artifact allowlist: flake.nix/lock, devbox, gitignore, the nix CI workflow
+# AND the hash-automation workflow (named nix-release.yml — `nix.*\.yml`
+# covers both), garnix, nix/ modules, docs, README/CHANGELOG, non-flake entry
+# points, and the generated package-lock.json that npm-registry-tarball
+# flakes commit beside flake.nix (npm tarballs ship no lockfile).
+NIXIFY_FILES="flake\.nix|flake\.lock|devbox\.json|devbox\.lock|\.gitignore|\.github/workflows/nix.*\.yml|\.github/workflows/.*hash.*\.yml|garnix\.yaml|nix/|README.*\.md|CHANGELOG\.md|docs/.*install.*|default\.nix|shell\.nix|package-lock\.json|package-lock\.nix-generated\.json"
 
 while IFS= read -r line; do
 	sha=$(echo "$line" | cut -d'|' -f1)

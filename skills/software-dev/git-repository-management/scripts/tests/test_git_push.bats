@@ -34,6 +34,37 @@ assert_not_contains() {
     }
 }
 
+# Environmental preflight: these tests drive git through local-path remotes.
+# git >= 2.38.1 restricts the 'file' transport (protocol.file.allow=user), and
+# on newer versions pushes/fetches against a configured local-path remote can
+# be denied with "transport 'file' not allowed". setup_repo() pins
+# protocol.file.allow=always per fixture repo — this probe verifies that
+# pinning actually works here and prints an actionable diagnostic when it
+# does not, instead of letting tests fail with misleading "couldn't find
+# remote ref" errors.
+setup_file() {
+    local probe="$TEST_BASE/.preflight"
+    rm -rf "$probe"
+    mkdir -p "$probe"
+    git init -q "$probe/work" 2>/dev/null
+    git -C "$probe/work" config user.email "test@test.com"
+    git -C "$probe/work" config user.name "Test"
+    git -C "$probe/work" config protocol.file.allow always
+    git -C "$probe/work" commit -q --allow-empty -m "probe" 2>/dev/null
+    git init -q --bare "$probe/remote" 2>/dev/null
+    git -C "$probe/work" remote add origin "$probe/remote"
+    if ! git -C "$probe/work" push -q origin 'HEAD:refs/heads/probe' 2>"$probe/err"; then
+        echo "PREFLIGHT FAIL: git push to a local-path remote was denied even" >&3
+        echo "  with repo-local protocol.file.allow=always. Error:" >&3
+        sed 's/^/  /' "$probe/err" >&3
+        echo "  The fixture repos pin this config, but the failure means this" >&3
+        echo "  environment overrides it. Fix: run via 'just bats' (the recipe" >&3
+        echo "  injects protocol.file.allow=always via GIT_CONFIG_* env) or set" >&3
+        echo "  'git config --global protocol.file.allow always'." >&3
+    fi
+    rm -rf "$probe"
+}
+
 # Create a temp git repo with an initial commit. Echoes the dir path.
 # Usage: setup_repo scenario_name
 setup_repo() {
@@ -44,6 +75,10 @@ setup_repo() {
     git init -q "$dir"
     git -C "$dir" config user.email "test@test.com"
     git -C "$dir" config user.name "Test"
+    # Allow the 'file' transport for this fixture repo. git >= 2.38.1 defaults
+    # protocol.file.allow to 'user', which blocks pushes/fetches to remotes
+    # configured in .git/config on some builds (observed: git 2.55, macOS).
+    git -C "$dir" config protocol.file.allow always
     git -C "$dir" commit -q --allow-empty -m "initial"
     echo "$dir"
 }

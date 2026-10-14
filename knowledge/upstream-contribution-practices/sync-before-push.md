@@ -5,8 +5,8 @@ description: Fetch and rebase onto the latest upstream tip before pushing. Catch
 tags: [git, sync, rebase, upstream, fork, push]
 date:
   created: "2026-07-14"
-  knowledge-basis: "2026-07-14"
-  last-used: "2026-07-14"
+  knowledge-basis: "2026-10-13"
+  last-used: "2026-10-13"
 sources:
   - id: nixify-sync-upstream-sh
     resource: https://github.com/levonk/skills-src/tree/main/src/current/skills/software-dev/nixify/scripts/sync-upstream.sh
@@ -28,7 +28,7 @@ the work phase.
 git fetch upstream
 git rebase upstream/main
 # resolve conflicts if any, then:
-git push
+git push origin refs/heads/<branch>:refs/heads/<branch>
 ```
 
 ## Why
@@ -56,6 +56,36 @@ Both use the same operation (`git fetch` + `git rebase`). The first
 ensures you don't branch from a stale upstream HEAD. The second ensures
 you don't push a branch that drifted behind upstream during the work
 phase.
+
+## Push with an Explicit Refspec
+
+Never push with a bare branch name (`git push <remote> <branch>`). A bare
+push lets `push.default` resolve the destination ref, and with
+`push.default=tracking` (or `upstream`) the branch's tracking config decides
+where it lands. A feature branch created via `git checkout -b feat
+upstream/main` carries `main` as its tracking ref — a bare push then writes
+the feature branch onto `main`, overwriting the remote's default branch.
+This has been observed live: `git push -u origin feat-x` pushed
+`feat-x -> main`.
+
+```bash
+# Safe — the destination ref is explicit:
+git push <remote> refs/heads/<branch>:refs/heads/<branch>
+
+# If you want upstream tracking set, pass -u with the explicit refspec —
+# never with a bare branch name:
+git push -u <remote> refs/heads/<branch>:refs/heads/<branch>
+```
+
+Two defenses, use both:
+
+1. **Create the branch without tracking** — `git checkout --no-track -b
+   <branch>` when branching from a remote ref. With no tracking config,
+   `push.default=tracking` has nothing to misroute to.
+2. **Dry-run before the real push** — `git push --dry-run <remote>
+   refs/heads/<branch>:refs/heads/<branch>` prints the destination ref
+   (`<branch> -> <branch>`). If it shows a different destination, stop and
+   fix the command or the branch's tracking config.
 
 ## When to Skip
 

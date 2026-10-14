@@ -30,7 +30,7 @@ require the agent to check something the scripts cannot verify.
 
 ## Phase 4 Concurrency Lock
 
-- [ ] **[script]** `scripts/lock/acquire-lock.sh --repo <root> --skill <slug> --slug <run-slug>` ran and returned exit 0 (acquired) or exit 2 (locked — skip policy applied) (Phase 4)
+- [ ] **[script]** `scripts/lock/acquire-lock.sh --repo <root> --scope <slug> --slug <run-slug>` ran and returned exit 0 (acquired) or exit 2 (locked — skip policy applied) (Phase 4)
 - [ ] **[manual]** If lock was acquired (exit 0), `scripts/lock/release-lock.sh --lock-file <path>` ran after Phase 4.6 passed (Phase 4)
 - [ ] **[manual]** If lock was active (exit 2), Phase 4 sub-phases (4.1-4.6) were skipped and the run log records `Phase 4: SKIP` with the lock file path (Phase 4)
 - [ ] **[manual]** If Phase 4 was skipped, the workflow auto-merge step was skipped — the PR stays open for a later run to run Phase 4 and merge (Phase 4)

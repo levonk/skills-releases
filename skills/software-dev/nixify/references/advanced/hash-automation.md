@@ -636,6 +636,160 @@ generated.
 - To make it fully hands-off, add a final `gh pr merge --merge --auto` step (with `env: GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}`) or enable auto-merge on the branch via repository settings. **Only do this if the project explicitly accepts auto-merged hash bumps** — some maintainers consider unreviewed merges a security concern (Archon PR #2131 feedback cited the `contents: write` + `pull-requests: write` self-declared unreviewed-merge path as a declining reason).
 - **MANDATORY — pin all third-party actions to commit SHAs**: Same rule as the nix.yml template above. Replace every `<*-sha>` placeholder and `# v<N>` comment with the actual commit SHA and version tag. These workflows grant `contents: write` and `pull-requests: write` — a mutable ref compromise could push arbitrary commits or open PRs against the repo. Resolve SHAs via `gh api repos/<owner>/<repo>/git/refs/tags/<tag> --jq '.object.sha'`.
 
+### npm Registry Tarball Variant (`flake_type=npm_registry_tarball`)
+
+For the **npm Registry Tarball Flake** (`flake-templates/npm-registry-tarball.md`),
+the release source is the npm registry, not GitHub releases — a version bump
+must update **four** artifacts: `version` and the tarball `hash` in
+`flake.nix`, the generated `package-lock.json`, and `npmDepsHash`. Use this
+variant instead of Templates A–C when the flake wraps `registry.npmjs.org`.
+
+The trigger is always a **scheduled lag-check** — npm publishes do not fire a
+reliable GitHub release event (the registry push is decoupled from
+`gh release create`), so Templates B/C do not apply. The lag-check compares
+`npm view <pkg> version` against the `version` pinned in `flake.nix`:
+version comparison is correct here (unlike the GitHub-asset case) because
+the flake *always* has a hardcoded `version` and a published npm version is
+immutable — a published version can never point at different bytes.
+
+**Create `.github/workflows/nix-release.yml`:**
+
+```yaml
+name: Update Nix flake
+
+# Lag-checks the npm registry: when `npm view <pkg> version` is newer than
+# the version pinned in flake.nix, prefetches the new registry tarball,
+# regenerates package-lock.json, recomputes npmDepsHash, and opens a PR
+# carrying flake.nix + package-lock.json.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: nix-flake-release
+  cancel-in-progress: true
+
+jobs:
+  update-flake:
+    name: Bump flake if npm has a newer release
+    runs-on: ubuntu-latest
+    if: github.repository == '<owner>/<repo>'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@<checkout-sha> # v<N>
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@<install-nix-sha> # v<N>
+
+      - name: Set up Node.js
+        uses: actions/setup-node@<setup-node-sha> # v<N>
+        with:
+          node-version: "<node-major>"  # match the flake's nodejs_<major>
+
+      - name: Check for lag and rewrite flake.nix + package-lock.json
+        env:
+          GH_TOKEN: ${{{ "{{" }}} secrets.GITHUB_TOKEN {{{ "}}" }}}
+          NPM_PKG: "<pkg>"              # e.g. "@openrig/cli"
+        run: |
+          set -euo pipefail
+          latest="$(npm view "$NPM_PKG" version)"
+          current="$(grep -oE 'version = "[^"]*";' flake.nix | head -1 \
+                      | sed -E 's/version = "([^"]*)";/\1/')"
+          echo "flake: $current  npm: $latest"
+          if [ "$latest" = "$current" ]; then
+            echo "flake.nix is up to date; nothing to do."
+            echo "LAGGING=no" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "LAGGING=yes" >> "$GITHUB_ENV"
+          echo "VERSION=$latest" >> "$GITHUB_ENV"
+
+          # Prefetch the new registry tarball hash.
+          url="$(npm view "$NPM_PKG@$latest" dist.tarball)"
+          tar_hash="$(nix store prefetch-file --json --hash-type sha256 "$url" \
+                      | python3 -c 'import json,sys; print(json.load(sys.stdin)["hash"])')"
+
+          # Regenerate the lockfile inside the unpacked tarball — npm
+          # tarballs ship no lockfile, but fetchNpmDeps needs one.
+          tmp="$(mktemp -d)"
+          curl -fsSL "$url" | tar xz -C "$tmp"
+          (cd "$tmp/package" && npm install --package-lock-only --ignore-scripts)
+          cp "$tmp/package/package-lock.json" package-lock.json
+
+          # Recompute npmDepsHash from the regenerated lockfile.
+          npm_deps_hash="$(nix run nixpkgs#prefetch-npm-deps -- package-lock.json)"
+
+          # Rewrite flake.nix: version, tarball hash, npmDepsHash. The
+          # fetchurl URL is version-templated via ${finalAttrs.version}, so
+          # only the hash fields need rewriting.
+          python3 - "$latest" "$tar_hash" "$npm_deps_hash" <<'PYEOF'
+          import re, sys
+          version, tar_hash, deps_hash = sys.argv[1], sys.argv[2], sys.argv[3]
+          src = open("flake.nix").read()
+          src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
+          assert n == 1, "could not find version in flake.nix"
+          src, n = re.subn(r'hash = "[^"]*";', f'hash = "{tar_hash}";', src, count=1)
+          assert n == 1, "could not find fetchurl hash in flake.nix"
+          src, n = re.subn(r'npmDepsHash = "[^"]*";', f'npmDepsHash = "{deps_hash}";', src, count=1)
+          assert n == 1, "could not find npmDepsHash in flake.nix"
+          open("flake.nix", "w").write(src)
+          PYEOF
+          echo "bumped flake.nix to $latest + regenerated package-lock.json"
+
+      - name: Open PR
+        if: env.LAGGING == 'yes'
+        uses: peter-evans/create-pull-request@<create-pr-sha> # v<N>
+        with:
+          commit-message: "chore(nix): bump flake to v{{{ printf "%s" "${{{ env.VERSION }}}" }}}"
+          title: "chore(nix): bump flake to v{{{ printf "%s" "${{{ env.VERSION }}}" }}}"
+          branch: chore/nix-flake-v{{{ printf "%s" "${{{ env.VERSION }}}" }}}
+          body: |
+            Auto-generated by the `Update Nix flake` workflow (npm lag-check).
+            npm has `{{{ printf "%s" "${{{ env.VERSION }}}" }}}` but `flake.nix` pins an older
+            release. This PR bumps `version` + the registry tarball `hash`,
+            regenerates `package-lock.json` from the published tarball, and
+            recomputes `npmDepsHash` — the four artifacts a registry-tarball
+            flake bumps per release.
+
+            Note: PRs opened by `GITHUB_TOKEN` do not trigger downstream CI runs.
+            Review the diff before merging — it should be the version/hash bump
+            plus a regenerated lockfile with no source changes.
+```
+
+**Key differences from Templates A–C:**
+
+- **Lag-check source is the registry, not GitHub** — `npm view <pkg> version`
+  vs the pinned `version`. There is no GitHub release-event involvement, so
+  the `GITHUB_TOKEN` trap does not apply; scheduling is the only mechanism.
+- **Version comparison, not hash comparison** — the flake always has a
+  hardcoded `version = "..."` and npm versions are immutable, so a version
+  mismatch means "stale" unambiguously (no dynamic-version or half-bumped
+  edge cases).
+- **Four artifacts updated, not two** — `version`, tarball `hash`,
+  `package-lock.json`, `npmDepsHash`. The lockfile is regenerated inside the
+  unpacked tarball (`npm install --package-lock-only --ignore-scripts`) and
+  committed in the same PR; `prefetch-npm-deps` recomputes `npmDepsHash`
+  from it. Skipping the lockfile regen leaves `npmDepsHash` pointing at the
+  old dep set — the build breaks.
+- **PR carries two files** — `flake.nix` AND `package-lock.json`. Reviewers
+  should see a version/hash diff plus a lockfile refresh, nothing else.
+- **`setup-node` step** — needed because `npm` must be on PATH for the
+  `npm view` / `npm install --package-lock-only` calls. Pin `node-version`
+  to the same major the flake's `nodejs` attr uses — the lockfile's resolved
+  versions can differ across Node majors (`engines` gating).
+- **`tarball_has_lockfile=true` case** — when the published tarball ships
+  `npm-shrinkwrap.json`, drop the `cp package-lock.json` + lockfile regen
+  steps and only bump `version`/`hash`/`npmDepsHash` (the shrinkwrap is
+  read in place).
+
 **Hybrid fallback interaction (partial platform coverage):** When the flake uses the Hybrid Fallback Variant from `../flake-templates/prebuilt-tarball.md` (`hybrid_fallback=true` from Step 12), the hash automation workflow only bumps hashes for platforms in `ASSET_MAP` — the platforms that have prebuilt release assets. The `#source` output on fallback platforms (platforms without a prebuilt binary) is NOT hash-automated: it builds from source at the git tag, so it tracks the commit, not release assets. This is correct and requires no special handling — the `ASSET_MAP` simply lists only the prebuilt platforms, and the reverse-check guard ensures no prebuilt platform is omitted. The `#source` outputs on fallback platforms are validated by the Nix CI workflow (`nix build .#source`), not by the hash automation. If a project later adds a prebuilt binary for a previously-missing platform, add that platform to `ASSET_MAP` and to the flake's `assets` attrset — the next hash automation run will populate its hash.
 
 **CI blind spot — cross-platform hash validation:** `nix flake check --all-systems --no-build` evaluates every system's outputs without realising fetchurl derivations, so a fetch-hash mismatch is invisible at evaluation time. `nix build .#default` only runs on the runner's own system (typically `ubuntu-latest`), so it cannot catch a hash mismatch on `x86_64-darwin` or `aarch64-darwin`. nix-update's `--build` flag catches hash mismatches for the runner's own platform (linux), but not for darwin. For projects that need stronger cross-platform validation, add a matrix build to `nix.yml` that runs `nix build .#default` on `macos-26` (ARM) and `macos-26-intel` (Intel) in addition to `ubuntu-latest`. This catches hash mismatches and Darwin-specific build failures that `--all-systems --no-build` and nix-update's `--build` cannot see.

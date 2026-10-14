@@ -11,7 +11,14 @@ upstream contribution.
 Use this pattern when ALL of the following are true:
 
 1. `flake_type` is `source_build` (the package is built from source, not a
-   prebuilt tarball or nixpkgs wrapper)
+   prebuilt tarball or nixpkgs wrapper) — **or** `npm_registry_tarball`, where
+   extraction is optional rather than recommended: the `buildNpmPackage`
+   derivation is already a single build definition in the exact shape
+   nixpkgs uses for npm packages, so it maps cleanly onto a `package.nix`
+   (replace `src = lib.cleanSource ./.` with the `fetchurl` registry tarball,
+   keep `dontNpmBuild`/`postPatch`/`postFixup`). Keeping it inline is also
+   fine — the Step 16 registry-tarball hash automation targets `flake.nix`
+   either way.
 2. `check-nixpkgs.sh` (Step 10) reported `project_in_nixpkgs: false` — the
    project is a nixpkgs upstreaming candidate (Step 28b)
 3. The project has a single build definition (no multi-output `#prebuilt` /

@@ -93,7 +93,13 @@ devbox_is_functional() {
     local probe_dir; probe_dir="$(mktemp -d)"
     printf '{"packages":[]}\n' > "$probe_dir/devbox.json"
     local result
+    # Scrub ALL wrapper-state vars — inside `devbox run`/`devbox shell` the
+    # live markers are DEVBOX_SHELL_ENABLED and IN_NIX_SHELL (not DEVBOX_SHELL
+    # /IN_DEVBOX_SHELL). Leaving them set makes cli-tool-discovery take the
+    # "already inside a wrapper" branch and falsely report devbox as
+    # non-functional, which contradicts run_resolve (which scrubs correctly).
     result="$(cd "$probe_dir" && env -u DEVBOX_SHELL -u IN_DEVBOX_SHELL \
+        -u DEVBOX_SHELL_ENABLED -u IN_NIX_SHELL \
         DEVBOX_PROBE_TIMEOUT_SECS=5 bash "$CLI_TOOL_DISCOVERY" --detect-wrapper 2>/dev/null)" || true
     rm -rf "$probe_dir"
     [[ "$result" == "WRAPPER: devbox run --" ]]
@@ -124,13 +130,16 @@ skip_unless_devbox_functional() {
     assert_equals "devbox run -- vim file.txt" "$out"
 }
 
-@test "devbox only: just build (rtk unsupported)" {
+@test "devbox only: watch ls (rtk excluded)" {
+    # rtk's supported-command set grows over releases — `just` became
+    # supported in rtk 0.45, which is why this test moved to `watch`
+    # (interactive pager, permanently on rtk's exclusion list).
     skip_unless_devbox_functional
     local dir
     dir="$(setup_scenario devbox-unsupported devbox.json)"
     local out
-    out="$(run_resolve "$dir" just build)"
-    assert_equals "just build" "$out"
+    out="$(run_resolve "$dir" watch ls)"
+    assert_equals "devbox run -- watch ls" "$out"
 }
 
 @test "--raw: git status (no rtk)" {

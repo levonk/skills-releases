@@ -474,10 +474,35 @@ if has_shell_operators "${CMD_ARGS[@]}"; then
 	# inserts `rtk ` before each supported command, respects exclusions, and
 	# only rewrites the first command in a pipe (per rtk's design).
 	if [[ "${WRAP_RAW:-0}" -ne 1 ]] && [[ -n "$(rtk_available)" ]]; then
-		rewritten="$(rtk rewrite -- "${CMD_ARGS[@]}" 2>/dev/null)" || true
-		rewrite_rc=$?
-		if [[ $rewrite_rc -eq 0 || $rewrite_rc -eq 3 ]]; then
+		rewritten=""
+		rewrite_rc=0
+		rewritten="$(rtk rewrite -- "${CMD_ARGS[@]}" 2>/dev/null)" || rewrite_rc=$?
+		# rtk exits 3 on a successful rewrite and 1 (empty output) when the
+		# command has no RTK equivalent — pipes in particular are declined
+		# (rtk 0.45). Never overwrite CMD_STRING with empty output.
+		if [[ "$rewrite_rc" =~ ^(0|3)$ && -n "$rewritten" ]]; then
 			CMD_STRING="$rewritten"
+		else
+			# Fallback: rewrite only the first command of a leading pipe
+			# segment — rtk's own design rewrites the first command in a
+			# pipe, so `git log | head` still becomes `rtk git log | head`.
+			pipe_head=()
+			pipe_idx=-1
+			for i in "${!CMD_ARGS[@]}"; do
+				if [[ "${CMD_ARGS[$i]}" =~ $SHELL_OPERATOR_RE ]]; then
+					pipe_idx=$i
+					break
+				fi
+				pipe_head+=("${CMD_ARGS[$i]}")
+			done
+			if [[ $pipe_idx -gt 0 && "${CMD_ARGS[$pipe_idx]}" == "|" && ${#pipe_head[@]} -gt 0 ]]; then
+				# `|| true` (not `|| var=`) — rtk exits 3 on a successful
+				# rewrite, so a post-assignment reset would wipe the output
+				head_rewritten="$(rtk rewrite -- "${pipe_head[@]}" 2>/dev/null)" || true
+				if [[ -n "$head_rewritten" ]]; then
+					CMD_STRING="$head_rewritten $(reconstruct_cmd_string "${CMD_ARGS[@]:$pipe_idx}")"
+				fi
+			fi
 		fi
 	fi
 

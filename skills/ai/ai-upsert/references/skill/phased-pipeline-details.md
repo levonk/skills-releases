@@ -176,7 +176,8 @@ RUN_SLUG="{run-slug}"            # from the run log filename
 
 LOCK_FILE="$(devbox run -- bash scripts/lock/acquire-lock.sh \
     --repo "$REPO_ROOT" \
-    --skill "$TARGET_SKILL" \
+    --scope "$TARGET_SKILL" \
+    --namespace ai-upsert \
     --slug "$RUN_SLUG")"
 ACQUIRE_STATUS=$?
 ```
@@ -192,7 +193,7 @@ ACQUIRE_STATUS=$?
   error to the user.
 
 **Skip policy (non-interactive default):** when the lock is active and
-`AI_UPSERT_LOCK_ACTION` is unset (or set to `skip`), skip Phase 4 entirely:
+`QUALITY_LOCK_ACTION` is unset (or set to `skip`), skip Phase 4 entirely:
 
 1. Do NOT run 4.1-4.6.
 2. Append `Phase 4: SKIP — concurrent run holds lock ($LOCK_FILE)` to the

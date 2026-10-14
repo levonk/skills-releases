@@ -82,9 +82,14 @@ setup() {
         cp "$src" "$TEST_BASE/scripts/lock/$script"
         chmod +x "$TEST_BASE/scripts/lock/$script"
     done
-    # Use a per-test lock dir via env var
-    export LOCK_TEST_DIR="$TEST_BASE/locks"
-    export AI_UPSERT_LOCK_ACTION=""
+    # Lock dir is resolved as ${XDG_CACHE_HOME}/skills/locks/<namespace>/
+    # (default namespace: "shared") — see includes/lock/acquire-lock.sh.
+    export QUALITY_LOCK_ACTION=""
+}
+
+# Resolved lock dir for the default namespace in test runs.
+lock_dir() {
+    echo "$TEST_BASE/cache/skills/locks/shared"
 }
 
 teardown() {
@@ -109,34 +114,34 @@ start_holder_pid() {
 # Starts a detached background sleep as the locking PID so the lock stays
 # active across subprocess boundaries.
 acquire_lock() {
-    local repo="$1" skill="$2" slug="$3"
+    local repo="$1" scope="$2" slug="$3"
     shift 3
     local sleep_pid
     sleep_pid="$(start_holder_pid)"
     XDG_CACHE_HOME="$TEST_BASE/cache" \
-    AI_UPSERT_LOCK_ACTION="${AI_UPSERT_LOCK_ACTION:-}" \
+    QUALITY_LOCK_ACTION="${QUALITY_LOCK_ACTION:-}" \
     bash "$TEST_BASE/scripts/lock/acquire-lock.sh" \
-        --repo "$repo" --skill "$skill" --slug "$slug" \
+        --repo "$repo" --scope "$scope" --slug "$slug" \
         --pid "$sleep_pid" "$@"
 }
 
 # Helper: acquire a lock with an explicit PID (no background sleep).
 acquire_lock_pid() {
-    local repo="$1" skill="$2" slug="$3" pid="$4" start="$5"
+    local repo="$1" scope="$2" slug="$3" pid="$4" start="$5"
     shift 5
     XDG_CACHE_HOME="$TEST_BASE/cache" \
-    AI_UPSERT_LOCK_ACTION="${AI_UPSERT_LOCK_ACTION:-}" \
+    QUALITY_LOCK_ACTION="${QUALITY_LOCK_ACTION:-}" \
     bash "$TEST_BASE/scripts/lock/acquire-lock.sh" \
-        --repo "$repo" --skill "$skill" --slug "$slug" \
+        --repo "$repo" --scope "$scope" --slug "$slug" \
         --pid "$pid" --start "$start" "$@"
 }
 
 check_lock() {
-    local repo="$1" skill="$2"
+    local repo="$1" scope="$2"
     shift 2
     XDG_CACHE_HOME="$TEST_BASE/cache" \
     bash "$TEST_BASE/scripts/lock/check-lock.sh" \
-        --repo "$repo" --skill "$skill" "$@"
+        --repo "$repo" --scope "$scope" "$@"
 }
 
 release_lock() {
@@ -159,7 +164,7 @@ cleanup_sleeps() {
     assert_contains "current/" "$output"
     assert_contains "test-run" "$output"
     # Lock file exists in current/
-    assert_file_exists "$TEST_BASE/cache/skills/levonk/skills-releases/skills/ai/ai-upsert/locks/current/$(basename "$output")"
+    assert_file_exists "$(lock_dir)/current/$(basename "$output")"
 }
 
 @test "acquire-lock: active lock blocks — exit 2 with LOCKED: prefix" {
@@ -167,7 +172,7 @@ cleanup_sleeps() {
     local first_lock
     first_lock="$(acquire_lock "/tmp/my-repo" "my-skill" "run-1")"
     # Second acquire with skip action (default)
-    export AI_UPSERT_LOCK_ACTION="skip"
+    export QUALITY_LOCK_ACTION="skip"
     run acquire_lock "/tmp/my-repo" "my-skill" "run-2"
     [ "$status" -eq 2 ]
     assert_contains "LOCKED:" "$output"
@@ -179,8 +184,8 @@ cleanup_sleeps() {
     lock2="$(acquire_lock "/tmp/my-repo" "skill-b" "run-2")"
     # Both acquired — different keys
     [ "$lock1" != "$lock2" ]
-    assert_file_exists "$TEST_BASE/cache/skills/levonk/skills-releases/skills/ai/ai-upsert/locks/current/$(basename "$lock1")"
-    assert_file_exists "$TEST_BASE/cache/skills/levonk/skills-releases/skills/ai/ai-upsert/locks/current/$(basename "$lock2")"
+    assert_file_exists "$(lock_dir)/current/$(basename "$lock1")"
+    assert_file_exists "$(lock_dir)/current/$(basename "$lock2")"
 }
 
 @test "acquire-lock: different repo does not collide" {
@@ -207,9 +212,9 @@ cleanup_sleeps() {
 @test "check-lock: stale lock self-archives" {
     # Acquire with a dead PID
     acquire_lock_pid "/tmp/my-repo" "my-skill" "dead-run" 999999 "Mon Aug 17 09:45:00 2026"
-    local lock_dir="$TEST_BASE/cache/skills/levonk/skills-releases/skills/ai/ai-upsert/locks"
+    local locks_base; locks_base="$(lock_dir)"
     local lock_file
-    lock_file="$(ls "$lock_dir/current/"*-dead-run-*.sh 2>/dev/null | head -1)"
+    lock_file="$(ls "$locks_base/current/"*-dead-run-*.sh 2>/dev/null | head -1)"
     [ -n "$lock_file" ]
     # check-lock should trigger self-archive (PID 999999 is dead)
     run check_lock "/tmp/my-repo" "my-skill"
@@ -218,7 +223,7 @@ cleanup_sleeps() {
     # Lock file moved to archive
     assert_file_not_exists "$lock_file"
     local archive_file
-    archive_file="$(find "$lock_dir/archive" -name "$(basename "$lock_file")" 2>/dev/null | head -1)"
+    archive_file="$(find "$locks_base/archive" -name "$(basename "$lock_file")" 2>/dev/null | head -1)"
     [ -n "$archive_file" ]
 }
 
@@ -236,7 +241,7 @@ cleanup_sleeps() {
 @test "acquire-lock: force action ignores active lock" {
     local first_lock
     first_lock="$(acquire_lock "/tmp/my-repo" "my-skill" "run-1")"
-    export AI_UPSERT_LOCK_ACTION="force"
+    export QUALITY_LOCK_ACTION="force"
     run acquire_lock "/tmp/my-repo" "my-skill" "run-2"
     [ "$status" -eq 0 ]
     assert_contains "run-2" "$output"
@@ -245,7 +250,7 @@ cleanup_sleeps() {
 @test "acquire-lock: cancel action exits 2 with CANCELLED: prefix" {
     local first_lock
     first_lock="$(acquire_lock "/tmp/my-repo" "my-skill" "run-1")"
-    export AI_UPSERT_LOCK_ACTION="cancel"
+    export QUALITY_LOCK_ACTION="cancel"
     run acquire_lock "/tmp/my-repo" "my-skill" "run-2"
     [ "$status" -eq 2 ]
     assert_contains "CANCELLED:" "$output"
@@ -280,9 +285,9 @@ cleanup_sleeps() {
 @test "lock file self-archives when PID is dead" {
     # Acquire with a dead PID
     acquire_lock_pid "/tmp/my-repo" "my-skill" "dead-exec" 999998 "Mon Aug 17 09:45:00 2026"
-    local lock_dir="$TEST_BASE/cache/skills/levonk/skills-releases/skills/ai/ai-upsert/locks"
+    local locks_base; locks_base="$(lock_dir)"
     local lock_file
-    lock_file="$(ls "$lock_dir/current/"*-dead-exec-*.sh 2>/dev/null | head -1)"
+    lock_file="$(ls "$locks_base/current/"*-dead-exec-*.sh 2>/dev/null | head -1)"
     [ -n "$lock_file" ]
     # Running the lock file should self-archive and exit 1
     run bash "$lock_file"

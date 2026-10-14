@@ -161,6 +161,7 @@ philosophy → project-structure → data-access → configuration → distribut
 | Profiling | [Measure Before Optimizing](measure-before-optimizing.md) | Hunch-driven speed hacks, optimizing the wrong level, caching without measuring, speculative fast paths for hypothetical large n |
 | Data Model | [Data Structures First](data-structures-first.md) | Clever algorithms over mis-shaped structures, smart code over dumb data, parallel indexes, representable illegal states |
 | Latency Target | [Perceived-Latency-Driven Design](perceived-latency-driven-design.md) | Round-number SLOs detached from human perception, request-response without prefetch, optimizing the backend past the perception threshold, reporting p50 instead of p99 |
+| Provisioning | [Pre-Prime and Probe](pre-prime-and-probe.md) | Full-wizard handoffs for partial needs, blind re-prompting of already-met requirements, silent skips on unverifiable probes |
 | Decisions | [Tech Decision Risk Assessment](tech-decision-risk-assessment.md) | Gut-feel choices, single-axis arguments, treating a new constant and a new public API as equally scary |
 | Selection | [Technology Selection Pattern](technology-selection-pattern.md) | Undocumented "we chose X" decisions, cargo-cult inheritance, re-litigation, stale decisions, missing why-not |
 | Estimates | [AI + Human Timeline Estimates](ai-human-timeline-estimates.md) | Pre-AI "human days" estimates that overstate AI-cheap work and understate unbounded tail risk |

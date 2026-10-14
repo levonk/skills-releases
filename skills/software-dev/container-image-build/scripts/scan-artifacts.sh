@@ -40,6 +40,7 @@
 # Consumers:
 #   - nixify (scripts/scan-artifacts.sh.tmpl materializes this)
 #   - container-image-build (scripts/scan-artifacts.sh.tmpl materializes this)
+#   - github-pr (scripts/scan-artifacts.sh.tmpl materializes this)
 #   - Any skill that generates files — add via scripts/scan-artifacts.sh.tmpl
 #
 # Published to skills-releases/includes/scan-artifacts.sh for skills without

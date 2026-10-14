@@ -6,10 +6,13 @@ tags: [log, history]
 date:
   created: "2026-07-14"
   knowledge-basis: "2026-07-14"
-  last-used: "2026-07-14"
+  last-used: "2026-10-13"
 ---
 
 # Bundle Update Log
+
+## 2026-10-13
+* **Update**: Expanded `sync-before-push.md` with a "Push with an Explicit Refspec" section — bare `git push <remote> <branch>` lets `push.default=tracking` resolve the destination from the branch's tracking config, which pushed a feature branch onto a fork's `main` in the wild (observed 2026-10-13). Documents explicit `refs/heads/<branch>:refs/heads/<branch>` refspecs, `--no-track` branch creation, `-u` only alongside an explicit refspec, and `git push --dry-run` destination verification.
 
 ## 2026-07-26
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md, migrated `# Citations` body sections to `sources` frontmatter with footnote attribution per §13.1, (migrated `timestamp` to `generated` if applicable).
