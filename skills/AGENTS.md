@@ -61,6 +61,7 @@ just validate
 | `commerce/` | Commerce skills |
 | `content/` | Content creation skills |
 | `execution/` | Execution skills |
+| `finance/` | Personal finance and wealth-planning skills (wealth-planning) |
 | `general/` | General-purpose skills |
 | `health/` | Health and serious-illness navigation skills (cancer-patient) |
 | `tech-maturity/` | Tech maturity assessment |

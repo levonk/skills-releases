@@ -201,7 +201,6 @@ for cmd in "${COMMANDS[@]}"; do
   set -e
 
   # Escape command for JSON
-  local esc_cmd
   esc_cmd="$(printf '%s' "$cmd" | sed 's/"/\\"/g')"
   RESULTS+=("{\"command\":\"$esc_cmd\",\"exit_code\":$CMD_EXIT}")
 

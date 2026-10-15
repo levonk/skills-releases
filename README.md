@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `94ffd0d298225490a7755e67bad8f1deee4b8e82` · Branch: `main` · Generated: 2026-10-15T22:00:13Z
+> Commit: `8de4faeda3bbb9d9a7f3a74beb8566e39236dee8` · Branch: `main` · Generated: 2026-10-15T22:27:56Z
 
 ## Overview
 
@@ -68,6 +68,12 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | execute-upsert | Generic project execution controller that drives feature implementation from request to completio... | [Synopsis](execution-execute-upsert.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](execution-project-detection.md) |
 | requirements-upsert | Create, update, and maintain a durable requirements ledger that tracks the evolving statement of ... | [Synopsis](execution-requirements-upsert.md) |
+
+### finance
+
+| Skill | Description | Details |
+|-------|-------------|---------|
+| wealth-planning | Personal wealth navigation guide — what to do next with your money at every net-worth stage. Lo... | [Synopsis](finance-wealth-planning.md) |
 
 ### general
 
