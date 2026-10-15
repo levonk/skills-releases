@@ -32,4 +32,4 @@ Create new expert agents, modify and improve existing agents, and audit agent de
 
 - **Full skill**: [`skills/ai/agent-upsert/SKILL.md`](skills/ai/agent-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-15T22:27:56Z
+- **Generated**: 2026-10-15T22:43:20Z
