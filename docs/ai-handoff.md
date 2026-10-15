@@ -21,6 +21,7 @@ Capture and restore AI conversation context for seamless work continuation acros
 - **base-ai-guidance** (template, base-framework) — Shared framework for creating all AI guidance types
 - **base-frontmatter** (template, structure-standard) — Standard frontmatter template for AI guidance files
 - **work-lifecycle** (template, dependency) — Shared two-stage lifecycle protocol (todo → archive) for handoff documents — inlined so handoff archives from todo/ to archive/YYYY/MM/ via git mv when all DoD tasks are [x], with frontmatter dates (created, completed, last-activity). Supports audience variants (agent vs human) — human handoffs route to .agents/handoffs/human/ when a task is blocked on human-only action
+- **acceptance-gate-protocol** (template, dependency) — Shared machine-checked acceptance gate protocol — inlined so the handoff's Definition of Done section writes gates in the ledger format (CHECK/EXPECT/EVIDENCE) instead of prose. The receiving session runs gate-check.py --reverify to verify completion with evidence after execute-upsert returns
 - **** (, complement) — Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram
 - **git-repository-management** (skill, dependency) — Commits pending work before context capture and commits the handoff document after save, so the handoff's git commit hash pins a clean, reproducible repo state
 - **execute-upsert** (skill, dependency) — The execution skill that handoff always defers to. The handoff's Execution Plan block maps each task to an execute-upsert story with a type tag (trivial/standard/research), base SHA, and per-story DoD. execute-upsert enforces worktree-per-story, checkpoint commits, story branches, PRs, and clean-tree-before-stop uniformly across all task types
@@ -31,4 +32,4 @@ Capture and restore AI conversation context for seamless work continuation acros
 
 - **Full skill**: [`skills/ai/handoff/SKILL.md`](skills/ai/handoff/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-14T20:30:34Z
+- **Generated**: 2026-10-15T13:57:42Z

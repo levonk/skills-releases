@@ -34,4 +34,4 @@ Systematic development workflow for AI agents with ticket management, reflection
 
 - **Full skill**: [`skills/software-dev/ai-development-loop/SKILL.md`](skills/software-dev/ai-development-loop/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-14T20:30:34Z
+- **Generated**: 2026-10-15T13:57:42Z

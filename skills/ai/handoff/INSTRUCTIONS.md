@@ -1782,6 +1782,262 @@ requirements-upsert skill for the full convention.
   project's actual constraints.
 
 
+---
+description: Shared protocol for machine-checked acceptance gates — write the gate ledger before the work, run the checks after, reverify returned work, and report only what the evidence supports. Inspired by unlazy's GATES.md model, adapted to our slug-based story system
+---
+
+### Acceptance Gate Protocol
+
+A story's Definition of Done is a **machine-checked gate ledger**, not prose.
+The dev subagent writes the ledger before implementing. The orchestrator runs
+the gates after the subagent returns, then re-runs them before reporting
+completion. A story is `[x] Done` only when every runnable gate has current
+evidence and every manual gate has reviewed evidence.
+
+#### Why Machine-Checked Gates
+
+Our previous DoD was prose the review subagent read. A subagent that claims
+"tests pass" is self-certifying. A review subagent that reads the diff is
+checking the change, not re-running the acceptance criteria. Machine-checked
+gates close that gap: the orchestrator executes the `[script]` items itself
+and records the exit status + output fingerprint as evidence. Old evidence is
+not re-execution — the orchestrator re-runs every gate before reporting.
+
+#### Gate Ledger Format
+
+Each story carries a `GATES.md` file at
+`internal-docs/feature/todo/{slug}/tasks/GATES-{story-slug}.md` (or beside the
+story file — wherever the story's DoD lived). The format:
+
+```markdown
+# Gates: {story-slug}
+
+OWNS: {repository-relative globs this story may write, e.g. src/api/**, tests/api/**}
+
+Scope: {one sentence describing the complete deliverable}
+
+- [ ] G1: {observable outcome measured directly from the artifact}
+  CHECK: {shell command that exits 0 and prints the EXPECT marker only on success}
+  EXPECT: {success-only marker the command prints after all assertions pass}
+  CWD: {optional repository-relative working directory}
+  EVIDENCE: pending
+
+- [ ] G2: {integration outcome}
+  CHECK: {command}
+  EXPECT: {marker}
+  CWD: packages/{module}
+  EVIDENCE: pending
+
+- [ ] G3: {manual outcome that no command can decide}
+  EVIDENCE: pending
+```
+
+**Strict format rules:**
+
+- Start a gate with `- [ ] {ID}: {outcome}` or `- [x] {ID}: {outcome}`. The ID
+  is `G{N}` — unique within the file. The outcome is a single observable
+  result, not a task description.
+- Indent `CHECK:`, `EXPECT:`, `CWD:`, and `EVIDENCE:` beneath their gate.
+- A **runnable gate** has both `CHECK:` and `EXPECT:`. A **manual gate** has
+  neither. A partial runnable gate (CHECK without EXPECT, or vice versa) is
+  malformed.
+- `CHECK:` is shell code. It runs with the project's ambient environment
+  (devbox, PATH, credentials). It MUST exit nonzero on any failure and print
+  the `EXPECT:` marker only after every assertion passes.
+- `EXPECT:` is either plain text (substring match) or `/pattern/flags`
+  (JavaScript-style regex). The wrapping slashes always win —
+  `EXPECT: /etc/app/conf/` is the pattern `etc/app/conf`, not that literal
+  path.
+- `EVIDENCE:` is `pending` until the checker runs the gate. The checker
+  records: resolved shell, resolved CWD, exit status, match result, and a
+  SHA-256/byte-count fingerprint of combined output. Raw successful output is
+  not persisted.
+- `OWNS:` is optional but required for parallel-dispatched stories (see the
+  parallel-dispatch reference). Paths are repository-relative globs; absolute
+  paths and `..` traversal are invalid.
+- `ABANDON: {ID} {non-empty reason}` is a file-level statement (column 1, not
+  indented) that marks a gate as terminally impossible. Abandonment is never
+  successful completion — the checker exits 1 with `HANDOFF REQUIRED`. See
+  "Abandonment" below.
+
+#### Writing Gates Before the Work
+
+The dev subagent writes `GATES-{story-slug}.md` as its **first** action,
+before implementing anything. This forces the acceptance criteria to be
+explicit before code exists — the same principle as writing a failing test
+before the implementation.
+
+1. Read the story file's "Definition of Done" section.
+2. Translate each DoD bullet into a gate. Prefer runnable gates (`CHECK:` +
+   `EXPECT:`). Use a manual gate only when no command can decide the outcome.
+3. Run `gate-lint.py` on the ledger to catch mechanically weak gates (see
+   "Gate Linting" below). Fix every error; treat warnings as prompts to
+   sharpen the gate.
+4. Only after the ledger is clean, begin implementation.
+
+#### Gate Linting (Authoring-Time Quality Gate)
+
+`gate-lint.py` catches gates that cannot fail honestly — before work starts,
+not at report time. Run it on every new or modified ledger:
+
+```bash
+uv run --script scripts/gate-lint.py GATES-{story-slug}.md
+```
+
+It flags:
+
+- **Oracle that cannot fail** — `CHECK: echo ok` with `EXPECT: ok` always
+  passes regardless of the artifact. The check must read the artifact or
+  service named by the outcome.
+- **Absence check without a negative control** — a gate that asserts
+  something is absent (e.g., "no console errors") must be tested against a
+  known positive fixture first. Without a control, a missing file or wrong
+  path can look like valid absence.
+- **Supplied number copied into EXPECT** — if the brief says "throughput
+  should be 500 req/s", the check must measure throughput from source data
+  and print a success marker. Copying `500` into `EXPECT:` as its own proof
+  proves nothing.
+- **Partial runnable gate** — CHECK without EXPECT or vice versa.
+- **Duplicate IDs** — two gates with the same `G{N}`.
+- **Zero-gate ledger** — a ledger with no gates is a parse error, not
+  `ALL MET`.
+- **Malformed abandonment** — `ABANDON:` with an unknown ID, blank reason,
+  or indented (it must be at column 1).
+
+Use `--strict` to make warnings fail (for CI or pre-commit gates).
+
+#### Running Gates (gate-check.py)
+
+The orchestrator runs the checker after a subagent returns. Three modes:
+
+```bash
+# Status — parse and report ledger state without executing anything.
+# Use this on inherited/resumed ledgers to see what is met, unmet, or
+# abandoned before running any command.
+uv run --script scripts/gate-check.py --status GATES-{story-slug}.md
+
+# Run — execute every runnable gate that is not yet met, record evidence.
+# A gate passes only when the process exits 0 AND EXPECT matches combined
+# stdout+stderr.
+uv run --script scripts/gate-check.py GATES-{story-slug}.md
+
+# Reverify — re-execute EVERY runnable gate, including gates already marked
+# met. Use this for parent verification after a subagent returns. Old
+# evidence is not re-execution; --status alone is not reverification.
+uv run --script scripts/gate-check.py --reverify GATES-{story-slug}.md
+```
+
+The checker:
+
+1. Parses the ledger (rejects zero-gate ledgers, duplicate IDs, partial
+   runnable gates, malformed abandonment).
+2. For each runnable gate: resolves `CWD:` relative to the repo root, runs
+   `CHECK:` in the resolved shell, captures combined output (capped at 1 MiB),
+   checks exit status + `EXPECT:` match.
+3. Records evidence: resolved shell, resolved CWD, exit status, match result,
+   SHA-256 fingerprint of output. Updates the `EVIDENCE:` line in place
+   (preserving the file's LF/CRLF style).
+4. Emits a JSON summary on stdout (last line):
+   `{"status":"ALL_MET|UNMET|HANDOFF_REQUIRED","met":N,"unmet":N,"abandoned":N,"gates":[...]}`
+
+`ALL_MET` requires every gate met with current evidence. `HANDOFF_REQUIRED`
+means at least one gate is abandoned — the story is not complete.
+
+#### Abandonment (Terminal Handoff, Not Silent Removal)
+
+When a gate is genuinely impossible to satisfy, do NOT silently remove it
+from the ledger. Add:
+
+```markdown
+ABANDON: G3 decision owner unavailable; handoff recorded in issue 123
+```
+
+Abandonment is:
+
+- **Terminal** — the gate is never re-attempted.
+- **Never successful** — the checker exits 1 with `HANDOFF_REQUIRED`. A
+  story with an abandoned gate is `[!] Blocked`, not `[x] Done`.
+- **Surfaced in the final report** — the Phase 8.6 audit (below) lists every
+  abandoned gate with its qualified ID (`{story-slug}:G3`) and reason.
+- **Non-empty reason required** — a blank reason is a parse error. The
+  reason must explain what was attempted and what is needed.
+
+This replaces the old pattern of marking a story `[!] Blocked` without
+recording which specific DoD item was impossible. The gate-level abandonment
+makes the blocker precise and auditable.
+
+#### Orchestrator Verification Flow
+
+After a dev subagent returns from a story:
+
+1. **Do not trust the subagent's "done" claim.** Run `gate-check.py --reverify`
+   on the story's gate ledger. This re-executes every runnable gate — old
+   evidence is not re-execution.
+2. If `--reverify` returns `ALL_MET`: mark the story `[x] Done`, proceed to
+   the next story.
+3. If `--reverify` returns `UNMET`: the subagent's work did not satisfy the
+   acceptance criteria. Re-dispatch the subagent with the unmet gates as
+   feedback. Loop until `ALL_MET` or the subagent returns `BLOCKED`.
+4. If `--reverify` returns `HANDOFF_REQUIRED`: a gate was abandoned. Mark the
+   story `[!] Blocked` with the abandoned gate IDs and reasons. Proceed to
+   the next runnable story; surface the abandonment in the Phase 7 Blocker
+   Report and the Phase 8.6 audit.
+
+#### Phase 8.6: Final Report Audit
+
+Before Phase 9 (Ship), re-read the original request and reconcile it against
+the PRD and task index. Then:
+
+1. **Re-measure every completion claim.** Run `gate-check.py --reverify` on
+   every story marked `[x] Done` in this session. A story that was `[x] Done`
+   earlier may have been broken by a later story's merge — reverification
+   catches integration regressions.
+2. **Reconcile the inventory.** Every story in the task index must be
+   `[x] Done` or `[!] Blocked` (with an abandonment record). A story that is
+   still `[ ] Todo` or `[~] In-Progress` is unfinished work — do not ship.
+3. **Surface every abandonment.** List every abandoned gate with its
+   qualified ID (`{story-slug}:G{N}`) and reason in the final report. An
+   abandoned gate is a visible handoff, not a silent skip.
+4. **Do not compose a done report while any required gate is unmet,
+   abandoned, deferred, or awaiting an owner decision.** If any gate is
+   unmet, return to Phase 6 (Execute) to fix it. If any gate is abandoned,
+   present the abandonment in the Phase 7 Blocker Report before shipping.
+
+The audit uses qualified IDs (`{story-slug}:G3`) in all reports so the
+gate is traceable to the story and the ledger file.
+
+#### Relationship to Existing Mechanisms
+
+- **DoD in handoff documents**: the handoff's `## Definition of Done` section
+  now writes gates in the ledger format above, not prose. The handoff's
+  `[script]` / `[manual]` tags map directly to runnable vs manual gates.
+- **Review subagent**: still reviews the diff for quality, integration, and
+  scope. The gate check is orthogonal — it verifies the acceptance criteria,
+  not the code quality. Both must pass before commit.
+- **Doubt-driven review**: still runs for non-trivial stories. The gate check
+  does not replace adversarial review; it replaces the "does the DoD pass?"
+  self-certification.
+- **Quality gate (`quality-gate.sh`)**: runs the project's build/validate/
+  test/catalog commands. Acceptance gates run the story-specific checks.
+  Both must pass — the quality gate is the project-wide floor, the
+  acceptance gates are the story-specific contract.
+- **Disruption handoff**: when a story is abandoned, the abandonment record
+  (gate ID + reason) is included in the handoff document so the receiving
+  session knows exactly which DoD item was impossible.
+
+#### When NOT to Use Gate Ledgers
+
+Do not create a gate ledger for a trivial edit or factual reply. The
+discipline is justified when the cost of quiet incompleteness exceeds the
+cost of authoring the ledger. For a one-line typo fix, the story's DoD can
+be a single gate (`G1: typo is fixed, CHECK: git diff, EXPECT: ...`). For
+a multi-story feature, every story gets its own ledger.
+
+Use judgment: a story with a vague DoD ("make it better") cannot be
+gate-checked — sharpen the DoD first, then write gates. If the DoD cannot be
+made observable, the story itself may be ill-defined.
+
+
 references/included/skills/software-dev/requirements-upsert/
 
 references/included/knowledge/agent-orchestration-practices/
@@ -2207,8 +2463,19 @@ task is blocked, mark it `[!]` with the blocker in parentheses.
 
 **Definition of Done section**: Populate the `## Definition of Done` verification
 gate with checks that confirm the Task List was completed correctly, not just
-marked complete. Tag each item `[script]` (deterministic check — script exits
-non-zero if not done) or `[manual]` (judgment call the agent must verify).
+marked complete. Write the DoD as a **machine-checked gate ledger** in the
+format defined by the Acceptance Gate Protocol included above — each DoD
+item becomes a gate with `CHECK:` + `EXPECT:` (for `[script]` items) or a
+manual gate with neither (for `[manual]` items). The handoff document's
+`## Definition of Done` section embeds the gate ledger verbatim so the
+receiving session can run `gate-check.py --reverify` after execution to
+verify completion with evidence, not self-certification.
+
+The per-story DoD in the Execution Plan (below) also uses the gate ledger
+format — each story's DoD column references its gate ledger file
+(`GATES-{story-slug}.md`) so execute-upsert can reverify after the story's
+subagent returns.
+
 Include a "Not Done (common false-completion signals)" anti-checklist. See
 `references/handoff-template.md` for the standard DoD items.
 

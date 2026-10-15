@@ -3,37 +3,40 @@ name: execute-upsert
 description: >-
   Generic project execution controller that drives feature implementation from
   request to completion through a self-update → assess → establish-tech →
-  PRD → tasks → execute → document → holistic-review → ship → retrospective
-  pipeline. Self-updates all skills to the latest version before starting,
-  establishes the project's tech stack as a binding constraint for all
-  subagents (so they never use npm when the project uses pnpm, never use npx
-  when the project uses pnpm dlx, etc.), assesses request size, creates a PRD
-  if one doesn't exist (for large requests), breaks the PRD into
-  parallelizable task stories, executes each story via subagents with a
-  per-story code review before commit, runs a doubt-driven adversarial review
-  gate on non-trivial stories before commit, applies a standing project
-  quality floor to every change, enforces simplicity and scope discipline on
-  subagents, follows a systematic debugging protocol when tests fail, updates
-  the PRD and task files when scope changes, updates project documentation,
-  runs a holistic feature review in a fresh context after all stories
-  complete (checking cross-story integration, PRD goal alignment, and
-  emergent behavior that per-story reviews miss), ships the completed work
-  via a deterministic push → create-PR → verify-body → auto-merge →
+  PRD → tasks → execute → document → holistic-review → audit → ship →
+  retrospective pipeline. Self-updates all skills to the latest version
+  before starting, establishes the project's tech stack as a binding
+  constraint for all subagents (so they never use npm when the project uses
+  pnpm, never use npx when the project uses pnpm dlx, etc.), assesses
+  request size, creates a PRD if one doesn't exist (for large requests),
+  breaks the PRD into parallelizable task stories, executes each story via
+  subagents with a per-story code review before commit, runs a doubt-driven
+  adversarial review gate on non-trivial stories before commit, applies a
+  standing project quality floor to every change, enforces simplicity and
+  scope discipline on subagents, follows a systematic debugging protocol
+  when tests fail, writes machine-checked acceptance gate ledgers before
+  implementation and reverify them after subagent return, updates the PRD
+  and task files when scope changes, updates project documentation, runs a
+  holistic feature review in a fresh context after all stories complete
+  (checking cross-story integration, PRD goal alignment, and emergent
+  behavior that per-story reviews miss), runs a final report audit that
+  re-measures every completion claim before shipping, ships the completed
+  work via a deterministic push → create-PR → verify-body → auto-merge →
   return-to-main script that handles all git and gh operations, and runs a
-  structured retrospective after shipping (process, technical, documentation,
-  tooling, and opportunity reflection that feeds improvements back into
-  skills and knowledge bundles). Runs as much as possible: when a story is
-  blocked, marks it [!] Blocked with the reason in the index and proceeds to
-  the next runnable story, then presents a final blocker report with the
-  question, the options, the recommendation, and why it was recommended. Use
-  when users want to implement a feature or change that is large enough to
-  warrant structured planning, when they say "execute", "implement this
-  feature", "build this project", "run the project executor", "drive this to
-  completion", or reference a PRD or task list they want executed. Do NOT
-  trigger on quick fixes, single-file edits, bug fixes with a known root
-  cause, or questions about how something works — this skill is for
-  multi-step project execution, not trivial changes.
-version: 1.15.0
+  structured retrospective after shipping (process, technical,
+  documentation, tooling, and opportunity reflection that feeds improvements
+  back into skills and knowledge bundles). Runs as much as possible: when a
+  story is blocked, marks it [!] Blocked with the reason in the index and
+  proceeds to the next runnable story, then presents a final blocker report
+  with the question, the options, the recommendation, and why it was
+  recommended. Use when users want to implement a feature or change that is
+  large enough to warrant structured planning, when they say "execute",
+  "implement this feature", "build this project", "run the project
+  executor", "drive this to completion", or reference a PRD or task list
+  they want executed. Do NOT trigger on quick fixes, single-file edits, bug
+  fixes with a known root cause, or questions about how something works —
+  this skill is for multi-step project execution, not trivial changes.
+version: 1.16.0
 user-invocable: true
 disable-model-invocation: true
 date:
@@ -60,6 +63,9 @@ tags:
   - "concurrency-lock"
   - "base-sync"
   - "git-imerge"
+  - "acceptance-gates"
+  - "gate-reverify"
+  - "final-report-audit"
 see-also:
   - template: "base-ai-guidance"
     relationship: "base-framework"
@@ -88,6 +94,9 @@ see-also:
   - template: "project-modes"
     relationship: "dependency"
     description: "Shared configurable delivery posture include — documents the project modes (no-mistakes, direct-PR, local-only, +yolo) that Phase 9 (Ship) branches on. Inlined so execute-upsert carries the mode table, detection priority, and safety notes without a separate install"
+  - template: "acceptance-gate-protocol"
+    relationship: "dependency"
+    description: "Shared machine-checked acceptance gate protocol — inlined so execute-upsert writes gate ledgers before work, reverify gates after subagent return, and audits all gates before shipping. Inspired by unlazy's GATES.md model, adapted to our slug-based story system. Phase 6 step 4 reverify and Phase 8.6 audit both depend on this include"
   - workflow: "greenfield-prd"
     relationship: "complement"
     description: "Source workflow for PRD creation — content inlined at build time into references/greenfield-prd.md (not a runtime dependency; workflows are not published to distribution repos)"

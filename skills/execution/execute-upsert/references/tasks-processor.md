@@ -322,6 +322,12 @@ This workflow processes tasks that were already created by `tasks-from-prd.md` (
       - **Mark as checked**: Update the story file to change `[ ]` to `[x]` for that criterion
       - **If a criterion fails**: Fix the implementation, re-run tests, and retry verification before marking as checked
     - **Critical Requirement**: Do NOT mark the story as complete until ALL acceptance criteria are verified and checked `[x]`. This is a mandatory gate before proceeding to commit.
+  - **Four-pass completion discipline**: Before staging changes, apply four passes to the implementation:
+    1. **Implement** — the complete deliverable, no placeholders or deferred remainders.
+    2. **Expert reread** — re-read the implementation as a domain expert and replace the cheap version of each part. A first-pass implementation often has the right shape but the wrong depth — this pass upgrades shallow logic, vague names, and copy-pasted patterns to the version a specialist would write.
+    3. **Defect hunt** — hunt for correctness, integration, portability, performance, and evidence defects. Fix what you find. This is fault-finding, not feature-addition.
+    4. **Polish** — apply low-cost polish (naming, comments that explain why not what, removing dead code), then repeat until a full improvement pass finds nothing.
+    Finish the story only after the pass is clean and every acceptance criterion is verified. A story with a skipped pass is not done — the four passes are the work, not optional refinement.
   - **Only if all tests pass AND all acceptance criteria are verified and checked `[x]`**: Stage changes (`git add .`)
     - **Important**: The staged changes MUST include both the code implementation changes AND the updated task file (with acceptance criteria marked as checked). These must be committed together in a single commit, not as separate commits.
   - **Clean up**: Remove any temporary files and temporary code before committing

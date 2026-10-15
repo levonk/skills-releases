@@ -11,16 +11,54 @@ Parallel dispatch is appropriate when ALL of the following hold:
 
 1. **Two or more `[ ] Todo` stories** have all dependencies in `[x] Done`
    (or `[!] Blocked` but the story can proceed without them).
-2. **The stories do not modify the same files** — check each story's
-   "Relevant Files" section (or the PRD's module breakdown). Stories that
-   touch shared files (barrel exports, config files, shared utilities) will
-   conflict on merge and should be serialized.
+2. **The stories declare disjoint `OWNS:` paths** — each story's gate ledger
+   has an `OWNS:` header listing the repository-relative globs it may write.
+   Two stories dispatched concurrently must not have overlapping `OWNS:`
+   globs. If they overlap, serialize them. See "Ownership Claims" below.
 3. **The project's test suite supports per-worktree execution** — the
    worktree must be able to run tests independently (symlinked dependencies,
    separate build output).
 
-If only one story is runnable, or stories share files, fall back to the
-sequential execution loop described in SKILL.md Phase 4.
+If only one story is runnable, or stories share `OWNS:` paths, fall back to
+the sequential execution loop described in SKILL.md Phase 4.
+
+## Ownership Claims (OWNS:)
+
+Each parallel-dispatched story's gate ledger (`GATES-{story-slug}.md`)
+declares the repository-relative paths it may write via the `OWNS:` header:
+
+```markdown
+# Gates: add-auth-module
+
+OWNS: src/auth/**, tests/auth/**
+
+Scope: JWT authentication module with login and signup endpoints
+...
+```
+
+**Rules:**
+
+- Paths are repository-relative globs. Absolute paths and `..` traversal are
+  invalid.
+- Every concurrently dispatched story must declare all paths it may modify.
+- Two concurrently dispatched stories must not have overlapping `OWNS:` globs.
+  Overlap detection is conservative — if two globs *might* intersect, treat
+  them as conflicting and serialize.
+- `OWNS:` coordinates writers; it does not sandbox. A story's `CHECK:`
+  commands still run with ambient filesystem access. Use separate worktrees
+  for worktree-local output isolation.
+
+**Overlap examples:**
+
+| First declaration | Second declaration | Result |
+|---|---|---|
+| `src/api/**` | `src/web/**` | disjoint — parallel-safe |
+| `src/shared/**` | `src/shared/util.ts` | conflict — serialize |
+| `src/a*.ts` | `src/ab*.ts` | conflict (intersection possible) — serialize |
+| `**` | `docs/**` | conflict — serialize |
+
+When in doubt, serialize. The cost of a merge conflict from overlapping
+writes exceeds the wall-clock savings of parallel dispatch.
 
 ## Concurrency Cap
 
@@ -97,6 +135,34 @@ SKILL.md Phase 4 step 3), plus:
   outside the worktree. Do NOT modify shared barrel/export files (e.g.,
   `src/index.ts`, `src/lib.ts`) — the orchestrator reconciles those during
   merge.
+
+### Dispatch Wave Protocol
+
+Dispatch all ready stories in one **wave** before reading any result. The
+wave protocol catches the serial anti-pattern (launch one, wait for it,
+launch the next) that defeats the purpose of parallel dispatch:
+
+1. **Open a wave** for the set of ready stories (up to the concurrency cap).
+2. **Launch every subagent** in the wave — call `run_subagent` for each
+   story, recording the agent ID returned. Do not wait between launches.
+3. **Seal the wave** — once all subagents in the wave are launched, the
+   wave is sealed. No new stories join this wave.
+4. **Wait for results** — only after the wave is sealed, wait for
+   subagents to complete. As each completes, record the result, reverify
+   its acceptance gates (see the Acceptance Gate Protocol), and mark the
+   story `[x] Done` or `[!] Blocked`.
+5. **Roll forward** — when a completed story unblocks a queued story,
+   dispatch the newly-ready story into the next wave without waiting for
+   unrelated in-flight subagents.
+
+The key invariant: **all launches in a wave happen before any wait.** If
+you catch yourself launching a subagent, waiting for it to finish, then
+launching the next, you are serializing — stop and batch the launches.
+
+A wave does not require all subagents to finish simultaneously. It requires
+that all launches complete before the first result is read. This is the
+semantic barrier that proves the orchestrator committed to the parallel
+work before seeing any of it succeed.
 
 ## Progress Emission (Critical)
 

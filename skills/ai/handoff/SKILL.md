@@ -11,6 +11,7 @@ tags:
   - "handoff"
   - "context-continuity"
   - "session-management"
+  - "acceptance-gates"
 aliases:
   - conversation-continuity
 see-also:
@@ -23,6 +24,9 @@ see-also:
   - template: "work-lifecycle"
     relationship: "dependency"
     description: "Shared two-stage lifecycle protocol (todo → archive) for handoff documents — inlined so handoff archives from todo/ to archive/YYYY/MM/ via git mv when all DoD tasks are [x], with frontmatter dates (created, completed, last-activity). Supports audience variants (agent vs human) — human handoffs route to .agents/handoffs/human/ when a task is blocked on human-only action"
+  - template: "acceptance-gate-protocol"
+    relationship: "dependency"
+    description: "Shared machine-checked acceptance gate protocol — inlined so the handoff's Definition of Done section writes gates in the ledger format (CHECK/EXPECT/EVIDENCE) instead of prose. The receiving session runs gate-check.py --reverify to verify completion with evidence after execute-upsert returns"
   - knowledge: "documentation-diagram-practices"
     relationship: "complement"
     description: "Mermaid syntax conventions (quoted decision labels, <br/> inside quotes) followed by this skill's workflow diagram"

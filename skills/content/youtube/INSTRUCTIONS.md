@@ -1328,6 +1328,164 @@ The script supports:
 - `--lang`: language code for the transcript (default: en)
 - `--help`: full usage info
 
+## Bulk Fetch Mode
+
+`scripts/bulk-fetch.py` is the **primary entry point for all video fetching**
+— single videos, bulk channel/list downloads, or any mix of both. The script
+accepts any combination of YouTube URLs/IDs as positional arguments and
+deterministically classifies each one:
+
+- **Video URLs** (`youtu.be/<id>`, `watch?v=<id>`, `/shorts/<id>`, `/embed/<id>`,
+  bare 11-char ID): added directly to the fetch queue.
+- **Channel URLs** (`/@handle`, `/c/<name>`, `/channel/UC...`, `/user/<name>`):
+  expanded via `yt-dlp --flat-playlist` into all their videos.
+- **Playlist URLs** (`playlist?list=...`): expanded the same way.
+- **Unknown URLs**: yt-dlp --flat-playlist tries to expand them; if that
+  yields nothing, they're treated as video IDs as a fallback.
+
+All expanded videos are **deduplicated by video ID** — so if two channels
+share a video, or a channel URL and a direct video URL overlap, the video is
+fetched only once. Then all unique videos are fetched in one batched pass.
+
+- **Single video** (1 unique video after expansion): skips batching/sleeps,
+  goes straight to fetch. Same output structure as bulk.
+- **Bulk** (2+ unique videos): batched fetch with configurable sleeps to
+  respect Google rate limits.
+
+This eliminates AI back-and-forth token waste — the script fetches everything
+in one call, then optionally produces a compact word-river summary so the AI
+can decide where to place the content without reading every transcript.
+
+### When to Use
+
+**Always.** Use `bulk-fetch.py` for every YouTube transcript fetch — single
+video, channel, playlist, or mixed. The old two-path workflow (yt-dlp direct
+for single, separate script for bulk) is replaced by this single entry point.
+
+The only exception is when you need a format other than the Obsidian TOON
+transcript that `vid-transcripts.py --format obsidian` produces — in that
+case, run `vid-transcripts.py` directly on a VTT you already have (see
+[VTT Post-Processing](#vtt-post-processing-transcript-deduplication)).
+
+### URL Classification
+
+The script classifies each input URL deterministically (no network needed)
+based on its pattern:
+
+| Pattern | Classified as |
+|---------|--------------|
+| `youtu.be/<11>` | video |
+| `youtube.com/watch?v=<11>` | video |
+| `youtube.com/shorts/<11>` | video |
+| `youtube.com/embed/<11>` | video |
+| bare 11-char string | video ID |
+| `youtube.com/@handle` | channel |
+| `youtube.com/c/<name>` | channel |
+| `youtube.com/channel/UC...` | channel |
+| `youtube.com/user/<name>` | channel |
+| `youtube.com/playlist?list=...` | playlist |
+| anything else | unknown (try yt-dlp --flat-playlist, fallback to video) |
+
+### Usage
+
+```bash
+# Single video
+python3 scripts/bulk-fetch.py "https://youtu.be/dQw4w9WgXcQ" --output-dir ./out
+
+# Channel — fetch all videos with defaults (batch=5, sleep=3s, jitter=1s)
+python3 scripts/bulk-fetch.py "https://youtube.com/@channel" --output-dir ./out
+
+# Mixed: two channels + a specific video + a playlist, with word river
+python3 scripts/bulk-fetch.py \
+  "https://youtube.com/@channel1" \
+  "https://youtube.com/@channel2" \
+  "https://youtu.be/dQw4w9WgXcQ" \
+  "https://youtube.com/playlist?list=PLxxxx" \
+  --output-dir ./out --word-river
+
+# File of URLs (one per line, # comments allowed) + word river
+python3 scripts/bulk-fetch.py --videos-file urls.txt --output-dir ./out --word-river
+
+# Combine positional URLs + file, cap at 10 videos
+python3 scripts/bulk-fetch.py "https://youtube.com/@channel" \
+  --videos-file extra-urls.txt --output-dir ./out --max-videos 10
+
+# Custom batching: 3 per batch, 5s sleep, 2s jitter
+python3 scripts/bulk-fetch.py "https://youtube.com/@channel" --output-dir ./out \
+  --batch-size 3 --sleep 5 --sleep-jitter 2
+
+# Force re-fetch (ignore resume)
+python3 scripts/bulk-fetch.py "https://youtube.com/@channel" --output-dir ./out --force
+
+# Preview what would happen (classifies + shows input types, no network)
+python3 scripts/bulk-fetch.py "https://youtube.com/@channel" --output-dir ./out --dry-run
+```
+
+### Output Structure
+
+```
+<output-dir>/
+  index.yaml          # Manifest: all videos with status + paths
+  word-river.json     # (only with --word-river) weighted term-over-time matrix
+  <video-slug>/
+    metadata.json     # Full yt-dlp metadata (title, uploader, description, etc.)
+    transcript.md     # Deduplicated TOON transcript (via vid-transcripts.py)
+    captions.en.vtt   # Raw VTT (kept for reference)
+    video.info.json   # (if metadata was fetched) for chapter resolution
+```
+
+### Batching + Rate Limiting (bulk mode only)
+
+In bulk mode, the script processes videos in batches with configurable sleeps
+to avoid triggering YouTube rate limits or IP blocks:
+
+- `--batch-size N` (default 5) — process N videos, then sleep
+- `--sleep SECONDS` (default 3) — base sleep between batches
+- `--sleep-jitter SECONDS` (default 1) — random jitter added to sleep
+- Failed downloads retry once with 2x the base sleep
+
+In single-video mode, batching/sleeps are a no-op (only 1 video, no batch
+boundary hit).
+
+This also eliminates AI API provider rate limits — instead of the AI calling
+the tool 50 times (one per video), the script does all 50 in one invocation.
+
+### Resume
+
+The script checks `index.yaml` for already-fetched videos and skips them by
+default. Use `--force` to re-fetch everything. This means a 50-video fetch
+that fails at video 30 can be re-run and it picks up where it left off.
+
+### Word River (`--word-river`)
+
+After fetching, the script can compute a **weighted term-over-time matrix** —
+a ThemeRiver / streamgraph data structure that lets the AI understand the
+channel's topical evolution in one compact read (~2KB) instead of opening
+every transcript.
+
+**Structure** (`word-river.json`):
+
+- `periods` — sorted time buckets (weekly if ≤24 videos, monthly otherwise)
+  - Each bucket: `date`, `video_count`, `total_frequency`, `relative_frequency`
+    (bucket's contribution to the whole), `terms` (top terms with `weight` =
+    term freq / bucket total = relative contribution within the period)
+- `overall_top_terms` — top terms across all periods with appearance counts
+- `per_video` — one-line per video: id, title, upload_date, period, word_count,
+  top 3 terms
+- `date_range`, `total_videos`, `total_words`, `bucket_granularity`
+
+The AI reads this single JSON to:
+1. Understand what topics the channel covers and how focus shifted over time
+2. Decide where to organize/place the content for its final destination
+3. Identify which individual videos to open for deeper analysis (via `per_video`)
+
+### Error Handling
+
+- Videos without captions: logged as `no_transcript` in `index.yaml`, don't
+  fail the run
+- Failed downloads: retried once with 2x sleep, then marked `failed`
+- End summary: N fetched, N skipped, N failed (exit 1 if any failed, 0 otherwise)
+
 ## Missing Visual Content Detection
 
 When analyzing a transcript, the speaker may reference visual content that is
@@ -1595,8 +1753,9 @@ The logic is implemented in `index.mts` and executed via a shebang script. It le
 Each item is a checkbox the agent marks as it progresses. Mark `[~]` before
 starting, `[x]` when verified done, `[!]` if blocked.
 
-- [ ] Retrieve the transcript — prefer `yt-dlp`, fall back to the built-in MCP tool (Tool Selection)
-- [ ] Deduplicate the VTT transcript via `scripts/vid-transcripts.py` before further processing (VTT Post-Processing)
+- [ ] Retrieve the transcript — run `scripts/bulk-fetch.py` (single or bulk, auto-detected) (Bulk Fetch Mode)
+- [ ] Deduplicate the VTT transcript via `scripts/vid-transcripts.py` before further processing (VTT Post-Processing — only needed if not using bulk-fetch.py, which runs it internally)
+- [ ] If `--word-river` was used: read `word-river.json` to understand topical evolution before placing content (Bulk Fetch Mode — Word River)
 - [ ] Scan the transcript for missing visual content references and attempt good-faith recovery (Missing Visual Content)
 - [ ] Inline description-linked assets (GitHub raw, Gists, Google Docs) and link-only the rest (Description Asset Inlining)
 - [ ] Generate the Obsidian note directory — `transcript.md` (TOON table) and `notes.md` (synthesis) (Obsidian Note Generation)
@@ -1624,6 +1783,14 @@ require the agent to check something the scripts cannot verify.
 
 - [ ] **[manual]** `scripts/vid-transcripts.py` was run on the downloaded VTT before passing the transcript to any note-generation workflow (VTT Post-Processing)
 - [ ] **[manual]** The deduplicated transcript does not contain ~2x word count from progressive display overlap (VTT Post-Processing)
+
+### Bulk Fetch
+
+- [ ] **[script]** `scripts/bulk-fetch.py` was used for all video fetching — single or bulk (Bulk Fetch Mode — When to Use)
+- [ ] **[script]** `index.yaml` exists in the output dir with per-video status fields (Bulk Fetch Mode — Output Structure)
+- [ ] **[script]** Each fetched video has `metadata.json` + `transcript.md` + `captions.en.vtt` in its slug directory (Bulk Fetch Mode — Output Structure)
+- [ ] **[manual]** In bulk mode: batching was configured with sleeps to respect Google rate limits — `--batch-size`, `--sleep`, `--sleep-jitter` (Bulk Fetch Mode — Batching + Rate Limiting)
+- [ ] **[manual]** If `--word-river` was requested: `word-river.json` exists and was read by the AI before deciding content placement (Bulk Fetch Mode — Word River)
 
 ### Missing Visual Content Detection
 
@@ -1655,6 +1822,10 @@ If any of these are true, the run is NOT complete:
 - The chat summary includes speculated content → the user sees guesses presented as findings (Missing Visual Content — Chat Response)
 - A description-linked asset is mentioned in the transcript but not inlined or linked → Description Asset Inlining was skipped (Description Asset Inlining)
 - `notes.md` is generated but has no timestamp links → the Obsidian note cannot deep-link into the video (Obsidian Note Generation — notes.md)
+- A channel or multi-video input was given but videos were fetched one at a time instead of using `bulk-fetch.py` → token waste from AI back-and-forth (Bulk Fetch Mode)
+- A single video was fetched via raw yt-dlp instead of `bulk-fetch.py` → inconsistent output structure, missing index.yaml (Bulk Fetch Mode — When to Use)
+- `bulk-fetch.py` was run in bulk mode without sleeps/batching → Google rate limits were not respected (Bulk Fetch Mode — Batching + Rate Limiting)
+- `--word-river` was requested but the AI did not read `word-river.json` before placing content → the summary was generated but not used (Bulk Fetch Mode — Word River)
 
 
 ## Context Declaration
@@ -1663,6 +1834,8 @@ If any of these are true, the run is NOT complete:
 - Main skill: `src/current/skills/content/youtube/SKILL.md` (in the `skills-src` repo)
 - Tool: `index.mts` (MCP server, executed via shebang)
 - Package: `package.json`
+- Transcript processor: `scripts/vid-transcripts.py` (VTT dedup + format conversion)
+- Bulk fetcher: `scripts/bulk-fetch.py` (channel/list batch fetch + word river)
 
 ### Related Skills
 - base-ai-guidance (base-framework)
