@@ -62,6 +62,7 @@ just validate
 | `content/` | Content creation skills |
 | `execution/` | Execution skills |
 | `general/` | General-purpose skills |
+| `health/` | Health and serious-illness navigation skills (cancer-patient) |
 | `tech-maturity/` | Tech maturity assessment |
 
 ## Touch Points

@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `8a6d9cc2cc9f7d90fb75db95a4ceeb4130303317` · Branch: `main` · Generated: 2026-10-15T19:46:21Z
+> Commit: `94ffd0d298225490a7755e67bad8f1deee4b8e82` · Branch: `main` · Generated: 2026-10-15T22:00:13Z
 
 ## Overview
 
@@ -78,6 +78,12 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | sign-off | End-of-day workspace orchestrator that runs maintenance, review, and planning before signing off.... | [Synopsis](general-sign-off.md) |
 | skill-usage-guard | Detect when a user is copying or heavily reusing skills from the levonk skills ecosystem and reco... | [Synopsis](general-skill-usage-guard.md) |
 | think-assist | Thinking-method library and light multi-advisor council for pressure-testing decisions, ideas, an... | [Synopsis](general-think-assist.md) |
+
+### health
+
+| Skill | Description | Details |
+|-------|-------------|---------|
+| cancer-patient | Patient-side navigation guide for a new or advancing cancer diagnosis — what to do next at each... | [Synopsis](health-cancer-patient.md) |
 
 ### software-dev
 
