@@ -5134,10 +5134,13 @@ rebuild before running the quality gate.
   quality gate is green. Ship without asking.
 - **Stories `[!] Blocked` (deferred)**: ship if the user did not say "wait
   for my review." The PR will contain the completed work; blocked stories
-  are noted as deferred in the PRD. Use `--no-merge` if the user wants to
-  review before merging.
+  are noted as deferred in the PRD. Pass `--user-requested-no-merge` with
+  the user's verbatim request only if the user asked to review before
+  merging.
 - **User said "do not auto-merge" or "wait for my review"**: create the PR
-  with `--no-merge`. Present the PR URL and stop.
+  with `--user-requested-no-merge "<user's exact words>"`. The flag
+  requires quoting the user's request verbatim — never pass it unless the
+  user explicitly asked. Present the PR URL and stop.
 - **Quality gate was skipped** (lock active, exit 2): create the PR with
   `--quality-gate-skipped`. The PR is not verified — present the URL and
   stop. A later run can check out the story branch, acquire the lock, run
@@ -5185,7 +5188,7 @@ file, and project/feature slugs:
   --pr-body-file /tmp/pr-body.md \
   --project-slug "$PROJECT_SLUG" \
   --feature-slug "$FEATURE_SLUG" \
-  [--no-merge] \
+  [--user-requested-no-merge "<user's exact words>"] \
   [--no-sync] \
   [--admin] \
   [--quality-gate-skipped] \
@@ -5260,8 +5263,8 @@ authoritative `gh pr view` result.
 ## Phase 10: Retrospective
 
 After Phase 9 (Ship) is complete and the PR is merged (or created with
-`--no-merge`), run a structured retrospective covering the full feature
-cycle. This is the full version of what `post-task-reflection` covers
+`--user-requested-no-merge`), run a structured retrospective covering the
+full feature cycle. This is the full version of what `post-task-reflection` covers
 narrowly — that include asks three questions after a guidance-file edit;
 this phase covers the whole feature across process, technical,
 documentation, tooling, and opportunity dimensions.

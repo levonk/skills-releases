@@ -53,7 +53,10 @@
 #     --pr-body-file /tmp/pr-body.md \
 #     --project-slug "my-project" \
 #     --feature-slug "my-feature" \
-#     [--no-merge]                # skip auto-merge (user said "do not auto-merge")
+#     [--user-requested-no-merge "<user's exact words>"]
+#                               # skip auto-merge — ONLY when the user
+#                               # explicitly asked not to merge. The value
+#                               # must quote the user's request verbatim.
 #     [--no-sync]                 # skip base-branch sync (user said "don't sync")
 #     [--admin]                   # use --admin flag for branch protection
 #     [--quality-gate-skipped]    # quality gate did not run — don't auto-merge
@@ -482,7 +485,7 @@ PR_TITLE=""
 PR_BODY_FILE=""
 PROJECT_SLUG=""
 FEATURE_SLUG=""
-NO_MERGE=0
+USER_REQUESTED_NO_MERGE=""
 NO_SYNC=0
 ADMIN_FLAG=0
 QUALITY_GATE_SKIPPED=0
@@ -502,8 +505,17 @@ while [[ $# -gt 0 ]]; do
       PROJECT_SLUG="$2"; shift 2 ;;
     --feature-slug)
       FEATURE_SLUG="$2"; shift 2 ;;
+    --user-requested-no-merge)
+      if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
+        echo "ERROR: --user-requested-no-merge requires the user's verbatim request as a value" >&2
+        echo "Usage: --user-requested-no-merge \"<user's exact words asking not to merge>\"" >&2
+        exit 5
+      fi
+      USER_REQUESTED_NO_MERGE="$2"; shift 2 ;;
     --no-merge)
-      NO_MERGE=1; shift ;;
+      echo "ERROR: --no-merge was renamed to --user-requested-no-merge and now requires the user's verbatim request as a value" >&2
+      echo "Usage: --user-requested-no-merge \"<user's exact words asking not to merge>\"" >&2
+      exit 5 ;;
     --no-sync)
       NO_SYNC=1; shift ;;
     --admin)
@@ -641,8 +653,9 @@ log "Step 2: checking auto-merge conditions"
 
 AUTO_MERGE=1
 
-if [[ "$NO_MERGE" -eq 1 ]]; then
-  log "Auto-merge DISABLED: --no-merge flag"
+if [[ -n "$USER_REQUESTED_NO_MERGE" ]]; then
+  log "Auto-merge DISABLED: user explicitly requested no merge"
+  log "User's request: $USER_REQUESTED_NO_MERGE"
   AUTO_MERGE=0
 fi
 
