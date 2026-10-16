@@ -33,4 +33,4 @@ Deterministic, non-destructive configuration file modifications using a tiered t
 
 - **Full skill**: [`skills/software-dev/surgical-config/SKILL.md`](skills/software-dev/surgical-config/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-15T22:43:20Z
+- **Generated**: 2026-10-16T00:10:26Z

@@ -1852,7 +1852,8 @@ bash scripts/install-push-guard.sh --uninstall
 
 **Bypass:** If `flake.nix` exists but this is not a nixify-managed project,
 set `NIXIFY_SKIP_GUARD=1` in the environment or delete the marker file at
-`/tmp/devin-nixify-guards/<hash>-<branch>-validated`.
+`/tmp/devin-nixify-guards/<hash>-<branch>-validated` (`/` in branch names is
+sanitized to `-` so the marker stays a flat filename).
 
 ### Why hooks are needed in addition to scripts
 

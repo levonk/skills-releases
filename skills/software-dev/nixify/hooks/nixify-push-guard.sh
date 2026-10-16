@@ -81,7 +81,11 @@ fi
 
 # Check if validate-pre-push.sh was run (marker file)
 # The marker is scoped to the current branch + project to avoid stale markers
+# Branch names can contain '/' (e.g. feature/foo) — sanitize '/' to '-' so
+# the marker filename stays flat. Must match marker_path() in
+# scripts/validate-pre-push.sh exactly or the guard will never see the marker.
 BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+BRANCH="${BRANCH//\//-}"
 PROJECT_HASH=$(echo "$PROJECT_DIR" | shasum -a 256 | cut -c1-16)
 MARKER_DIR="/tmp/devin-nixify-guards"
 MARKER_FILE="$MARKER_DIR/${PROJECT_HASH}-${BRANCH}-validated"

@@ -90,6 +90,19 @@ add_issue() {
 	FAILED=1
 }
 
+# Marker path for this project+branch. Branch names can contain '/' (e.g.
+# feature/foo), which would make the marker a nested path under MARKER_DIR
+# and break touch/rm — sanitize '/' to '-' so the filename stays flat.
+# nixify-push-guard.sh computes the identical path; keep the schemes in sync.
+MARKER_DIR="/tmp/devin-nixify-guards"
+marker_path() {
+	local branch project_hash
+	branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+	branch="${branch//\//-}"
+	project_hash=$(echo "$PROJECT_DIR" | shasum -a 256 | cut -c1-16)
+	echo "$MARKER_DIR/${project_hash}-${branch}-validated"
+}
+
 run_check() {
 	local name="$1"
 	shift
@@ -359,10 +372,7 @@ if [ "$FAILED" -eq 0 ]; then
 	echo "[validate-pre-push] ALL $CHECKS_RUN CHECKS PASSED — safe to push."
 	# Create the marker file that nixify-push-guard.sh checks before allowing
 	# a git push. Scoped to this project + branch so it doesn't leak.
-	BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
-	PROJECT_HASH=$(echo "$PROJECT_DIR" | shasum -a 256 | cut -c1-16)
-	MARKER_DIR="/tmp/devin-nixify-guards"
-	MARKER_FILE="$MARKER_DIR/${PROJECT_HASH}-${BRANCH}-validated"
+	MARKER_FILE=$(marker_path)
 	mkdir -p "$MARKER_DIR"
 	touch "$MARKER_FILE"
 	cat <<EOF
@@ -372,10 +382,7 @@ EOF
 else
 	echo "[validate-pre-push] $FAILED CHECK(S) FAILED — fix before pushing." >&2
 	# Remove any stale marker so the push guard blocks
-	BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
-	PROJECT_HASH=$(echo "$PROJECT_DIR" | shasum -a 256 | cut -c1-16)
-	MARKER_DIR="/tmp/devin-nixify-guards"
-	MARKER_FILE="$MARKER_DIR/${PROJECT_HASH}-${BRANCH}-validated"
+	MARKER_FILE=$(marker_path)
 	rm -f "$MARKER_FILE" 2>/dev/null || true
 	cat <<EOF
 {"passed": false, "checks_run": $CHECKS_RUN, "issues": [$ISSUES]}
