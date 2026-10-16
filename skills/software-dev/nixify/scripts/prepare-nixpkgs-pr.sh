@@ -105,7 +105,46 @@ elif grep -qsE '^[[:space:]]*license(-file)?[[:space:]]*=' "$PROJECT_DIR/Cargo.t
 fi
 
 if [ -z "$LICENSE_PRESENT" ]; then
-	BLOCKERS="${BLOCKERS}  - no license detected on ${UPSTREAM_OWNER}/${UPSTREAM_REPO} — nixpkgs requires an identifiable meta.license, and an unlicensed project is all-rights-reserved (not redistributable). Open an upstream issue requesting a LICENSE (or a manifest license field) before submitting.\n"
+	# Look for an existing upstream issue requesting a license before
+	# filing one — a duplicate request is noise, a tracked one is signal.
+	LICENSE_ISSUE_URL=""
+	EXISTING=$(gh issue list --repo "${UPSTREAM_OWNER}/${UPSTREAM_REPO}" \
+		--search "license in:title" --state all --limit 5 \
+		--json number,title,state,url 2>/dev/null || echo "[]")
+	OPEN_URL=$(echo "$EXISTING" | jq -r '[.[] | select(.state == "OPEN")][0].url // empty' 2>/dev/null || echo "")
+	if [ -n "$OPEN_URL" ]; then
+		LICENSE_REMEDY="an upstream issue already requests a license: ${OPEN_URL} — track it and re-run once a LICENSE lands."
+	else
+		CLOSED_URL=$(echo "$EXISTING" | jq -r '.[0].url // empty' 2>/dev/null || echo "")
+		if [ -n "$CLOSED_URL" ]; then
+			LICENSE_REMEDY="upstream closed a license request without adding one: ${CLOSED_URL} — nixpkgs packaging is likely not possible; check that thread before proceeding."
+		elif [ "$MODE" != "--dry-run" ]; then
+			# Nothing exists — file the request. This mirrors the manual
+			# remediation step: the nixpkgs PR cannot land until upstream
+			# adds a LICENSE anyway, so opening it here saves a round-trip.
+			LICENSE_ISSUE_BODY=$(
+				cat <<ISSUE_EOF
+Hi — I'd like to package ${UPSTREAM_REPO} for nixpkgs, but the repo currently has no license. Without an explicit license the code is "all rights reserved," which means downstream redistributors like nixpkgs can't legally carry it.
+
+Could you add a LICENSE? Common choices for projects like this are MIT, Apache-2.0, or dual MIT OR Apache-2.0.
+
+What it unblocks on our side: pkgs/by-name requires an identifiable meta.license, plus a tagged release for fetchFromGitHub. A package.nix is ready to PR once a license is in place.
+
+Happy to open a PR adding the license file(s) if that helps — just let me know which license you'd like.
+ISSUE_EOF
+			)
+			LICENSE_ISSUE_URL=$(gh issue create --repo "${UPSTREAM_OWNER}/${UPSTREAM_REPO}" \
+				--title "Please add a license" --body "$LICENSE_ISSUE_BODY" 2>/dev/null || echo "")
+			if [ -n "$LICENSE_ISSUE_URL" ]; then
+				LICENSE_REMEDY="no upstream license request existed — opened one: ${LICENSE_ISSUE_URL}. Re-run once a LICENSE lands."
+			else
+				LICENSE_REMEDY="open an upstream issue requesting a LICENSE (or a manifest license field) — issue creation failed, file it manually."
+			fi
+		else
+			LICENSE_REMEDY="open an upstream issue requesting a LICENSE (dry-run: not created)."
+		fi
+	fi
+	BLOCKERS="${BLOCKERS}  - no license detected on ${UPSTREAM_OWNER}/${UPSTREAM_REPO} — ${LICENSE_REMEDY}\n"
 elif [ -z "$LICENSE_ATTR" ]; then
 	echo "WARNING: a license is present but GitHub could not map it to a SPDX id — set meta.license in package.nix manually." >&2
 fi
