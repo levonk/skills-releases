@@ -28,4 +28,4 @@ Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI
 
 - **Full skill**: [`skills/software-dev/cicd-upsert/SKILL.md`](skills/software-dev/cicd-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-16T00:10:26Z
+- **Generated**: 2026-10-16T04:50:26Z

@@ -3,6 +3,15 @@
 # nixpkgs. Scaffolds a package.nix file following the pkgs/by-name convention,
 # forks NixOS/nixpkgs, creates a branch, and prepares the PR body.
 #
+# Preflights the upstream repo for the two acceptance requirements that block
+# a pkgs/by-name PR before doing any forking:
+#   1. An identifiable license — meta.license must map to a real license; an
+#      unlicensed upstream is all-rights-reserved and cannot be redistributed.
+#   2. A git tag matching the project version — fetchFromGitHub needs a rev.
+# When either is missing the script exits 1 with remediation guidance (the
+# draft package.nix is still generated for reference). Under --dry-run the
+# blockers are reported but do not fail.
+#
 # This script is called at Step 28b AFTER the in-repo flake has been validated
 # and the main PR (Step 27) has been created. The nixpkgs PR references the
 # working in-repo flake as evidence the package builds and runs.
@@ -59,6 +68,70 @@ elif [ -f "$PROJECT_DIR/pyproject.toml" ]; then
 	DESCRIPTION=$(grep -m1 '^description' "$PROJECT_DIR/pyproject.toml" | sed 's/.*= *"\(.*\)".*/\1/' || echo "")
 fi
 
+# --- Upstream preflight: nixpkgs acceptance requirements --------------------
+# (a) License — prefer GitHub's detected SPDX id; fall back to manifest
+# license fields and LICENSE/COPYING files in the checkout.
+BLOCKERS=""
+LICENSE_ATTR=""
+GH_LICENSE=$(gh api "repos/${UPSTREAM_OWNER}/${UPSTREAM_REPO}" --jq '.license.spdx_id // empty' 2>/dev/null || echo "")
+case "$(echo "$GH_LICENSE" | tr '[:upper:]' '[:lower:]')" in
+mit) LICENSE_ATTR="lib.licenses.mit" ;;
+apache-2.0) LICENSE_ATTR="lib.licenses.asl20" ;;
+gpl-3.0-only) LICENSE_ATTR="lib.licenses.gpl3Only" ;;
+gpl-3.0 | gpl-3.0-or-later) LICENSE_ATTR="lib.licenses.gpl3Plus" ;;
+gpl-2.0*) LICENSE_ATTR="lib.licenses.gpl2Only" ;;
+lgpl-3.0*) LICENSE_ATTR="lib.licenses.lgpl3Plus" ;;
+agpl-3.0*) LICENSE_ATTR="lib.licenses.agpl3Plus" ;;
+mpl-2.0) LICENSE_ATTR="lib.licenses.mpl20" ;;
+bsd-2-clause) LICENSE_ATTR="lib.licenses.bsd2" ;;
+bsd-3-clause) LICENSE_ATTR="lib.licenses.bsd3" ;;
+0bsd) LICENSE_ATTR="lib.licenses.bsd0" ;;
+isc) LICENSE_ATTR="lib.licenses.isc" ;;
+unlicense) LICENSE_ATTR="lib.licenses.unlicense" ;;
+cc0-1.0) LICENSE_ATTR="lib.licenses.cc0" ;;
+esac
+
+LICENSE_PRESENT=""
+if [ -n "$LICENSE_ATTR" ]; then
+	LICENSE_PRESENT="1"
+elif compgen -G "${PROJECT_DIR}/LICENSE"* >/dev/null 2>&1 ||
+	compgen -G "${PROJECT_DIR}/LICENCE"* >/dev/null 2>&1 ||
+	compgen -G "${PROJECT_DIR}/COPYING"* >/dev/null 2>&1; then
+	LICENSE_PRESENT="1"
+elif grep -qsE '^[[:space:]]*license(-file)?[[:space:]]*=' "$PROJECT_DIR/Cargo.toml" 2>/dev/null ||
+	grep -qsE '^[[:space:]]*license[[:space:]]*=' "$PROJECT_DIR/pyproject.toml" 2>/dev/null ||
+	[ -n "$(jq -r '.license // empty' "$PROJECT_DIR/package.json" 2>/dev/null)" ]; then
+	LICENSE_PRESENT="1"
+fi
+
+if [ -z "$LICENSE_PRESENT" ]; then
+	BLOCKERS="${BLOCKERS}  - no license detected on ${UPSTREAM_OWNER}/${UPSTREAM_REPO} — nixpkgs requires an identifiable meta.license, and an unlicensed project is all-rights-reserved (not redistributable). Open an upstream issue requesting a LICENSE (or a manifest license field) before submitting.\n"
+elif [ -z "$LICENSE_ATTR" ]; then
+	echo "WARNING: a license is present but GitHub could not map it to a SPDX id — set meta.license in package.nix manually." >&2
+fi
+
+# (b) fetchFromGitHub rev — needs a git tag on upstream matching the version.
+UPSTREAM_TAGS=$(git ls-remote --tags "https://github.com/${UPSTREAM_OWNER}/${UPSTREAM_REPO}" 2>/dev/null | awk -F/ '{print $NF}' | sed 's/\^{}//' | sort -u || true)
+REV_EXPR='"v${version}"'
+TAG_MATCH=""
+if [ -n "$VERSION" ]; then
+	for cand in "v${VERSION}" "${VERSION}"; do
+		if printf '%s\n' "$UPSTREAM_TAGS" | grep -qx "$cand"; then
+			TAG_MATCH="$cand"
+			break
+		fi
+	done
+fi
+if [ -z "$TAG_MATCH" ]; then
+	if [ -n "$VERSION" ]; then
+		BLOCKERS="${BLOCKERS}  - no git tag matching 'v${VERSION}' or '${VERSION}' on ${UPSTREAM_OWNER}/${UPSTREAM_REPO} — fetchFromGitHub needs a rev. Tag a release upstream first (or pin rev to a commit SHA).\n"
+	else
+		BLOCKERS="${BLOCKERS}  - could not detect a version from project manifests — fetchFromGitHub needs a tag or rev to fetch.\n"
+	fi
+elif [ "$TAG_MATCH" != "v${VERSION}" ]; then
+	REV_EXPR='"${version}"'
+fi
+
 # --- Generate package.nix ---------------------------------------------------
 # The package.nix follows the pkgs/by-name convention from the nixpkgs manual.
 # It is a function that takes dependencies as arguments and returns a derivation.
@@ -103,7 +176,7 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "UPSTREAM_OWNER_PLACEHOLDER";
     repo = "UPSTREAM_REPO_PLACEHOLDER";
-    rev = "v${version}";
+    rev = REV_PLACEHOLDER;
     hash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
     # TODO: Set the correct hash — use `nix hash to-sri --type sha256 <hash>`
     # after the first build attempt with a fake hash gives the correct one.
@@ -115,13 +188,13 @@ stdenv.mkDerivation {
   meta = {
     description = "DESCRIPTION_PLACEHOLDER";
     homepage = "https://github.com/UPSTREAM_OWNER_PLACEHOLDER/UPSTREAM_REPO_PLACEHOLDER";
-    # TODO: Set the correct license — use lib.licenses.<name>
-    # See https://nixos.org/manual/nixpkgs/stable/#sec-meta-license
-    license = lib.licenses.mit;
-    # TODO: Set maintainers — add yourself to maintainers/maintainer-list.nix
-    # in a separate commit, then reference here:
-    # maintainers = [ lib.maintainers.<your-handle> ];
-    maintainers = [ ];
+    # TODO: Verify this matches the upstream LICENSE — auto-detected from
+    # the GitHub SPDX id when possible. See
+    # https://nixos.org/manual/nixpkgs/stable/#sec-meta-license
+    license = LICENSE_ATTR_PLACEHOLDER;
+    # Requires a maintainer-list.nix entry in a separate commit — the script
+    # emits a suggested entry.
+    maintainers = MAINTAINERS_PLACEHOLDER;
     # TODO: Set platforms — use lib.platforms.unix or a specific subset
     mainProgram = "PROJECT_NAME_PLACEHOLDER";
     platforms = lib.platforms.unix;
@@ -135,13 +208,25 @@ sed -i.bak "s/VERSION_PLACEHOLDER/${VERSION}/g" "$PACKAGE_NIX_PATH"
 sed -i.bak "s/UPSTREAM_OWNER_PLACEHOLDER/${UPSTREAM_OWNER}/g" "$PACKAGE_NIX_PATH"
 sed -i.bak "s/UPSTREAM_REPO_PLACEHOLDER/${UPSTREAM_REPO}/g" "$PACKAGE_NIX_PATH"
 sed -i.bak "s|DESCRIPTION_PLACEHOLDER|${DESCRIPTION:-A package for ${PROJECT}}|g" "$PACKAGE_NIX_PATH"
-rm -f "${PACKAGE_NIX_PATH}.bak"
+sed -i.bak "s/REV_PLACEHOLDER/${REV_EXPR}/g" "$PACKAGE_NIX_PATH"
+sed -i.bak "s/LICENSE_ATTR_PLACEHOLDER/${LICENSE_ATTR:-lib.licenses.mit}/g" "$PACKAGE_NIX_PATH"
 
 # --- Generate maintainer entry suggestion -----------------------------------
 # The contributor must add themselves to maintainers/maintainer-list.nix
-# in a separate commit before this PR.
+# in a separate commit before this PR. Resolve the githubId now — reviewers
+# reject entries with placeholder ids.
 CURRENT_USER=$(gh api user --jq '.login' 2>/dev/null || echo "YOUR_GITHUB_HANDLE")
-MAINTAINER_ENTRY="{ name = \"${CURRENT_USER}\"; email = \"YOUR_EMAIL\"; github = \"${CURRENT_USER}\"; githubId = YOUR_GITHUB_ID; }"
+CURRENT_USER_ID=""
+if [ "$CURRENT_USER" != "YOUR_GITHUB_HANDLE" ]; then
+	CURRENT_USER_ID=$(gh api "users/${CURRENT_USER}" --jq '.id' 2>/dev/null || echo "")
+fi
+MAINTAINER_ENTRY="{ name = \"${CURRENT_USER}\"; email = \"YOUR_EMAIL\"; github = \"${CURRENT_USER}\"; githubId = ${CURRENT_USER_ID:-YOUR_GITHUB_ID}; }"
+MAINTAINERS_EXPR="[ ]"
+if [ "$CURRENT_USER" != "YOUR_GITHUB_HANDLE" ]; then
+	MAINTAINERS_EXPR="[ lib.maintainers.${CURRENT_USER} ]"
+fi
+sed -i.bak "s/MAINTAINERS_PLACEHOLDER/${MAINTAINERS_EXPR}/g" "$PACKAGE_NIX_PATH"
+rm -f "${PACKAGE_NIX_PATH}.bak"
 
 # --- Generate PR body -------------------------------------------------------
 PR_BODY_PATH="${PACKAGE_NIX_DIR}/pr-body.md"
@@ -183,6 +268,19 @@ The package was tested by:
 
 I have added myself to maintainers/maintainer-list.nix in a separate commit.
 PR_BODY_EOF
+
+# --- Preflight gate ---------------------------------------------------------
+# Everything above is draft artifact generation; blockers only stop the
+# fork/PR step so the scaffolded package.nix stays available for reference.
+if [ -n "$BLOCKERS" ]; then
+	echo "" >&2
+	echo "UPSTREAM BLOCKERS — resolve before a nixpkgs PR can land:" >&2
+	printf '%b' "$BLOCKERS" >&2
+	echo "Draft package.nix: ${PACKAGE_NIX_PATH}" >&2
+	if [ "$MODE" != "--dry-run" ]; then
+		exit 1
+	fi
+fi
 
 # --- Fork nixpkgs and create branch (unless --dry-run) ---------------------
 NIXPKGS_FORK=""
