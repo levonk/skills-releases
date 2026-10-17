@@ -39,7 +39,7 @@ makes it impossible to attribute changes to this upsert cleanly.
 4. **If the working tree is clean** (no uncommitted changes): append
    `Phase 0: CLEAN` to the run log, proceed to Phase 1.
 5. **If the working tree is dirty**: do NOT abort. The
-   `skill-src-upsert.md` workflow stages only the files touched by this
+   `skills-src-upsert.md` workflow stages only the files touched by this
    upsert, so unrelated dirty files are not swept in. Instead:
    - Note the pre-existing dirty files for the user.
    - Append `Phase 0: WARN — dirty tree, {N} pre-existing files noted` to the
@@ -200,7 +200,7 @@ ACQUIRE_STATUS=$?
    run log.
 3. Proceed to Phase 5 (Commit) — commit the upsert changes to the story
    branch.
-4. The workflow (skill-src-execute.md) will create the PR but will NOT
+4. The workflow (skills-src-upsert.md) will create the PR but will NOT
    auto-merge. The PR body must include the note:
    "Phase 4 skipped due to concurrent run — tests deferred."
 5. A later run can check out the story branch, acquire the lock, run

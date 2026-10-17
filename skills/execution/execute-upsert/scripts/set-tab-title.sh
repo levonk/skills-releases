@@ -12,18 +12,18 @@
 #   x  done          — story or pipeline completed successfully
 #
 # Tab title format: "<indicator> <workflow-slug> <project-slug>"
-# Example: "~ skill-src-upsert dotfiles-include"
+# Example: "~ skills-src-upsert dotfiles-include"
 #
 # Usage:
-#   ./set-tab-title.sh --status in-progress --workflow skill-src-upsert --project dotfiles-include
-#   ./set-tab-title.sh --status blocked --workflow skill-src-upsert --project dotfiles-include
-#   ./set-tab-title.sh --status done --workflow skill-src-upsert --project dotfiles-include
-#   ./set-tab-title.sh --status in-progress --workflow skill-src-upsert --project dotfiles-include --story 04-002-add-jwt
-#   ./set-tab-title.sh "~ skill-src-upsert dotfiles-include"  # raw title passthrough
+#   ./set-tab-title.sh --status in-progress --workflow skills-src-upsert --project dotfiles-include
+#   ./set-tab-title.sh --status blocked --workflow skills-src-upsert --project dotfiles-include
+#   ./set-tab-title.sh --status done --workflow skills-src-upsert --project dotfiles-include
+#   ./set-tab-title.sh --status in-progress --workflow skills-src-upsert --project dotfiles-include --story 04-002-add-jwt
+#   ./set-tab-title.sh "~ skills-src-upsert dotfiles-include"  # raw title passthrough
 #
 # Sourcing: can also be sourced to get the set_tab_title function:
 #   source ./set-tab-title.sh
-#   set_tab_title "~" "skill-src-upsert" "dotfiles-include"
+#   set_tab_title "~" "skills-src-upsert" "dotfiles-include"
 
 set -euo pipefail
 
@@ -1190,7 +1190,7 @@ set_tab_title() {
 # format_tab_title — build a tab title from indicator + workflow + project
 #
 # Usage: format_tab_title "<indicator>" "<workflow-slug>" "<project-slug>" [story-slug]
-# Returns: "~ skill-src-upsert dotfiles-include" or "~ skill-src-upsert dotfiles-include 04-002-add-jwt"
+# Returns: "~ skills-src-upsert dotfiles-include" or "~ skills-src-upsert dotfiles-include 04-002-add-jwt"
 # ─────────────────────────────────────────────────────────────────────
 format_tab_title() {
   local indicator="${1:-}"
@@ -1257,14 +1257,14 @@ Status values (mapped to indicators):
 You can also pass an indicator directly (--status ~, --status !, --status x).
 
 Examples:
-  set-tab-title.sh --status in-progress --workflow skill-src-upsert --project dotfiles-include
-  → sets tab title to: ~ skill-src-upsert dotfiles-include
+  set-tab-title.sh --status in-progress --workflow skills-src-upsert --project dotfiles-include
+  → sets tab title to: ~ skills-src-upsert dotfiles-include
 
-  set-tab-title.sh --status blocked --workflow skill-src-upsert --project dotfiles-include --story 04-002-add-jwt
-  → sets tab title to: ! skill-src-upsert dotfiles-include 04-002-add-jwt
+  set-tab-title.sh --status blocked --workflow skills-src-upsert --project dotfiles-include --story 04-002-add-jwt
+  → sets tab title to: ! skills-src-upsert dotfiles-include 04-002-add-jwt
 
-  set-tab-title.sh --raw "~ skill-src-upsert dotfiles-include"
-  → sets tab title to: ~ skill-src-upsert dotfiles-include
+  set-tab-title.sh --raw "~ skills-src-upsert dotfiles-include"
+  → sets tab title to: ~ skills-src-upsert dotfiles-include
 HELP
       exit 0 ;;
     *)

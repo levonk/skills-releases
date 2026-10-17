@@ -77,8 +77,8 @@ scripted invocation), the default is `skip`:
   bats`, `just validate`, `just catalog`.
 - Phase 5 (Commit) proceeds — the upsert changes are committed to the
   story branch.
-- The PR is created (workflow step 7).
-- The PR is **not auto-merged** (workflow step 8 is skipped). The PR body
+- The PR is created (workflow step 9, Ship).
+- The PR is **not auto-merged** (the auto-merge in step 9 is skipped). The PR body
   includes a note: "Phase 4 skipped due to concurrent run — tests deferred."
 - A later run (or the concurrent run that held the lock) can re-run Phase 4
   on the same branch and merge.
@@ -110,9 +110,9 @@ to `shared`; callers scope locks per-skill via `--namespace <ns>`).
 - **ai-upsert INSTRUCTIONS.md Phase 4**: acquire lock before 4.1/4.2/4.3;
   release after 4.6 gate. If acquisition returns exit 2 (locked), skip to
   Phase 5 with a run-log note.
-- **skill-src-execute workflow step 5b**: the quality gate (`just build
-  test validate bats catalog`) runs under the lock. If locked, skip 5b.
-- **skill-src-execute workflow step 8**: if Phase 4 was skipped, do not
+- **skills-src-upsert workflow step 6**: the quality gate (`just build
+  test validate bats catalog`) runs under the lock. If locked, skip it.
+- **skills-src-upsert workflow step 9**: if Phase 4 was skipped, do not
   auto-merge. The PR stays open.
 
 ## Security

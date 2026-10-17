@@ -3019,7 +3019,7 @@ references/included/skills/content/diagram-upsert/
 references/included/skills/software-dev/requirements-upsert/
 
 ---
-description: Shared PR body template for planned enhancement PRs — feature, story (and task if appropriate), and current story status counts. Used by workflows that create PRs for structured enhancement work (skill-src-upsert, execute-upsert, etc.). Not for unrelated or ad-hoc changes
+description: Shared PR body template for planned enhancement PRs — feature, story (and task if appropriate), and current story status counts. Used by workflows that create PRs for structured enhancement work (skills-src-upsert, execute-upsert, etc.). Not for unrelated or ad-hoc changes
 ---
 
 ### Planned Enhancement PR Body Template
@@ -3034,7 +3034,7 @@ human-readable summary with a link to the work artifacts.
 #### When to Use This Template
 
 - The PR contains work from a **structured execution pipeline** (execute-upsert
-  story branch, skill-src-upsert enhancement branch, etc.)
+  story branch, skills-src-upsert enhancement branch, etc.)
 - The work is tracked in markdown files (feature PRD, task index, per-story
   files) under `internal-docs/feature/` or `.agents/`
 - The work addresses a **feature**, **story**, and (if appropriate) **task**

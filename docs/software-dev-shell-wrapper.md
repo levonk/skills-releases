@@ -29,4 +29,4 @@ Wrap bash tool calls with an environment wrapper (devbox, mise, flox, direnv, or
 
 - **Full skill**: [`skills/software-dev/shell-wrapper/SKILL.md`](skills/software-dev/shell-wrapper/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-16T05:04:49Z
+- **Generated**: 2026-10-17T20:02:01Z

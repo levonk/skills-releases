@@ -2632,7 +2632,7 @@ makes it impossible to attribute changes to this upsert cleanly.
 3. **If the working tree is clean** (no uncommitted changes): append
    `Phase 0: CLEAN` to the run log, proceed to Phase 1.
 4. **If the working tree is dirty**: do NOT abort. The
-   `skill-src-upsert.md` workflow stages only the files touched by this
+   `skills-src-upsert.md` workflow stages only the files touched by this
    upsert, so unrelated dirty files are not swept in. Instead:
    - Note the pre-existing dirty files for the user.
    - Append `Phase 0: WARN — dirty tree, {N} pre-existing files noted` to the
@@ -3082,7 +3082,7 @@ records the OKF version this skill was built against. The canonical spec lives a
 3. **Compare**: If the fetched version is greater than `okf-supported-version`
    (from this skill's frontmatter), stop the knowledge bundle workflow and update
    this skill first.
-4. **Self-update**: Follow `.agents/workflows/skill-src-upsert.md` to update
+4. **Self-update**: Follow `.agents/workflows/skills-src-upsert.md` to update
    `ai-upsert` with the new OKF spec, then bump `okf-supported-version` in
    `src/current/skills/ai/ai-upsert/SKILL.md.tmpl`. Run `just validate`
    and `just build current` before continuing. Re-read the updated

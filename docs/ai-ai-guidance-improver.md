@@ -29,4 +29,4 @@ Analyze and improve existing AI guidance files (skills, workflows, agents, promp
 
 - **Full skill**: [`skills/ai/ai-guidance-improver/SKILL.md`](skills/ai/ai-guidance-improver/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-16T05:04:49Z
+- **Generated**: 2026-10-17T20:02:01Z

@@ -56,7 +56,7 @@ fetch the current spec, and compare before proceeding.
 5. **Self-update when a newer version exists.**
    1. Alert the user: "OKF `X.Y` is newer than the `ai-upsert` skill's supported
       `okf-supported-version`. Updating the skill first."
-   2. Follow `.agents/workflows/skill-src-upsert.md`:
+   2. Follow `.agents/workflows/skills-src-upsert.md`:
       - Read `AGENTS.md` for the repository.
       - Update `references/knowledge/okf-spec.md` and other knowledge-bundle
         reference files with the new spec contents.

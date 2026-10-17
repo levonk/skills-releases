@@ -35,4 +35,4 @@ Patient-side navigation guide for a new or advancing cancer diagnosis — what t
 
 - **Full skill**: [`skills/health/cancer-patient/SKILL.md`](skills/health/cancer-patient/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-16T05:04:49Z
+- **Generated**: 2026-10-17T20:02:01Z
