@@ -168,6 +168,100 @@ run_push() {
     assert_not_contains "REMOTE_STATUS:NEW_BRANCH" "$out"
 }
 
+@test "poisoned upstream: checkout -b from origin/main + push.default=upstream does not push to main" {
+    local dir; dir="$(setup_repo poisoned-upstream)"
+    setup_remote "$dir"
+
+    # Publish main so the remote has a ref, then branch from it. This records
+    # branch.feature/x.merge=refs/heads/main — upstream points at origin/main.
+    git -C "$dir" push -q origin 'HEAD:refs/heads/main'
+    git -C "$dir" fetch -q origin
+    local main_sha; main_sha="$(git -C "$dir" rev-parse origin/main)"
+    git -C "$dir" checkout -q -b feature/x origin/main
+    git -C "$dir" config push.default upstream
+    git -C "$dir" commit -q --allow-empty -m "feature work"
+
+    local out
+    out="$(run_push "$dir" origin feature/x --slug poisoned-upstream-test 2>&1)" || true
+
+    # The push must land on feature/x via explicit refspec — never on main.
+    assert_contains "REMOTE_STATUS:NEW_BRANCH" "$out"
+    assert_contains "UPSTREAM_MISMATCH:configured=origin/main expected=origin/feature/x" "$out"
+    assert_contains "PUSH_SUCCESS:origin/feature/x" "$out"
+
+    # Remote-tracking main must be untouched — a bare push would have moved it.
+    [[ "$(git -C "$dir" rev-parse origin/main)" == "$main_sha" ]] || {
+        echo "origin/main moved — push escaped to the upstream branch" >&3
+        return 1
+    }
+
+    # Upstream should be repaired to origin/feature/x.
+    local upstream
+    upstream="$(git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "")"
+    [[ "$upstream" == "origin/feature/x" ]] || {
+        echo "expected upstream repaired to origin/feature/x, got: $upstream" >&3
+        return 1
+    }
+}
+
+@test "existing branch with poisoned upstream gets upstream repaired on push" {
+    local dir; dir="$(setup_repo repair-upstream)"
+    setup_remote "$dir"
+    git -C "$dir" push -q origin 'HEAD:refs/heads/main'
+    git -C "$dir" fetch -q origin
+    git -C "$dir" checkout -q -b feature/y origin/main
+    git -C "$dir" config push.default upstream
+    git -C "$dir" commit -q --allow-empty -m "feature work"
+
+    # First push creates the remote ref (and repairs upstream).
+    run_push "$dir" origin feature/y --slug repair-first >/dev/null 2>&1 || true
+
+    # Re-poison the upstream to simulate a stale config on an existing branch.
+    git -C "$dir" branch --set-upstream-to origin/main feature/y
+    git -C "$dir" commit -q --allow-empty -m "more work"
+
+    local out
+    out="$(run_push "$dir" origin feature/y --slug repair-second 2>&1)" || true
+
+    assert_contains "REMOTE_STATUS:UP_TO_DATE" "$out"
+    assert_contains "UPSTREAM_MISMATCH:configured=origin/main expected=origin/feature/y" "$out"
+    assert_contains "PUSH_SUCCESS:origin/feature/y" "$out"
+
+    local upstream
+    upstream="$(git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "")"
+    [[ "$upstream" == "origin/feature/y" ]] || {
+        echo "expected upstream repaired to origin/feature/y, got: $upstream" >&3
+        return 1
+    }
+}
+
+@test "non-HEAD branch with poisoned upstream is detected and repaired" {
+    local dir; dir="$(setup_repo nonhead-upstream)"
+    setup_remote "$dir"
+    git -C "$dir" push -q origin 'HEAD:refs/heads/main'
+    git -C "$dir" fetch -q origin
+
+    # Create feature/z WITHOUT checking it out (HEAD stays on the default
+    # branch), poison its upstream, then push it by name.
+    git -C "$dir" branch feature/z origin/main
+    git -C "$dir" config branch.feature/z.remote origin
+    git -C "$dir" config branch.feature/z.merge refs/heads/main
+    git -C "$dir" config push.default upstream
+
+    local out
+    out="$(run_push "$dir" origin feature/z --slug nonhead-test 2>&1)" || true
+
+    assert_contains "UPSTREAM_MISMATCH:configured=origin/main expected=origin/feature/z" "$out"
+    assert_contains "PUSH_SUCCESS:origin/feature/z" "$out"
+
+    local upstream
+    upstream="$(git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name 'feature/z@{u}' 2>/dev/null || echo "")"
+    [[ "$upstream" == "origin/feature/z" ]] || {
+        echo "expected feature/z upstream repaired to origin/feature/z, got: $upstream" >&3
+        return 1
+    }
+}
+
 @test "fetch failure on existing remote ref still reports FETCH_ERROR" {
     local dir; dir="$(setup_repo fetch-error)"
     # Point origin at a non-existent path so fetch fails, but the remote ref

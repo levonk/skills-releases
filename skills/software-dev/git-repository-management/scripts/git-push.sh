@@ -778,11 +778,35 @@ main() {
 	fi
 
 	# Step 5: Push (with --follow-tags to push auto-tags created by git-commit-batch.sh)
-	# For new branches, use -u to set upstream tracking so future fetches work.
+	# Always push an explicit <branch>:<branch> refspec — never a bare
+	# `git push` / `git push -u`. Under push.default=upstream (deprecated
+	# synonym: tracking) a refspec-less push resolves the destination from
+	# the branch's configured upstream, and `checkout -b <branch> origin/main`
+	# records origin/main as that upstream — a bare push then lands directly
+	# on main. An explicit refspec makes the destination unambiguous.
+	local needs_u=0
+	[[ "$is_new_branch" -eq 1 ]] && needs_u=1
+
+	# Detect a poisoned upstream: a branch created via
+	# `checkout -b <branch> origin/main` inherits upstream=<remote>/main.
+	# A mismatch on the same remote means a later bare `git push` under
+	# push.default=upstream|tracking would target the wrong branch — repair
+	# it now by pushing with -u so upstream is reset to <remote>/<branch>.
+	local upstream_ref upstream_branch
+	upstream_ref=$(git_cmd rev-parse --abbrev-ref --symbolic-full-name "${branch}@{u}" 2>/dev/null || echo "")
+	if [[ "$upstream_ref" == "$remote/"* ]]; then
+		upstream_branch="${upstream_ref#$remote/}"
+		if [[ "$upstream_branch" != "$branch" ]]; then
+			echo "UPSTREAM_MISMATCH:configured=$upstream_ref expected=$remote/$branch"
+			echo "UPSTREAM_REPAIR:pushing -u with explicit refspec to reset upstream"
+			needs_u=1
+		fi
+	fi
+
 	echo "PUSHING:"
 	local push_args=(--follow-tags)
-	[[ "$is_new_branch" -eq 1 ]] && push_args+=(-u)
-	if git_cmd push "${push_args[@]}" "$remote" "$branch" 2>&1; then
+	[[ "$needs_u" -eq 1 ]] && push_args+=(-u)
+	if git_cmd push "${push_args[@]}" "$remote" "$branch:$branch" 2>&1; then
 		echo "PUSH_SUCCESS:$remote/$branch"
 		echo "BACKUP_BRANCH:$backup_branch"
 		echo "BACKUP_NOTE:Remove with: git branch -D $backup_branch"

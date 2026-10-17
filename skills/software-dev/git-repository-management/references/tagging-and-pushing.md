@@ -68,6 +68,35 @@ git tag -a "${TAG_PREFIX}-${SLUG}-post" -m "Post-run checkpoint: ${SLUG}"
 - **Slug derivation**: The slug should summarize all commits in the run (e.g., if commits are "Add nixify features" and "Update workflow rules", the slug could be `nixify-features-workflow-rules`)
 - **Annotated tags**: Always use `git tag -a` (annotated tags) with a descriptive message
 
+## Push Safety: Explicit Refspecs
+
+**Prevention note (learned 2026-10-17):** `push.default=tracking` (the
+deprecated synonym for `upstream`) caused a silent direct push to `main`.
+The failure sequence:
+
+1. `git checkout -b <branch> origin/main` creates `<branch>` **and records
+   `origin/main` as its upstream** (`branch.<branch>.merge=refs/heads/main`).
+2. A bare `git push` or `git push -u` — no refspec — resolves the push
+   destination from that upstream under `push.default=upstream|tracking`,
+   landing the commits on `main` instead of a new remote branch.
+
+Rules:
+
+- **Always push with an explicit source:destination refspec**:
+  `git push origin <branch>:<branch>`. Never `git push`, `git push -u`, or
+  `git push <remote>` without a refspec — destination resolution then depends
+  on `push.default` and the branch's configured upstream, which may point
+  somewhere unintended.
+- When creating a branch from a remote-tracking ref you do NOT want to track,
+  use `git checkout -b <branch> --no-track origin/main` (or `git switch -c
+  --no-track <branch> origin/main`). If the branch already exists with a
+  wrong upstream, fix it with `git branch --unset-upstream <branch>` or let
+  the next `git push -u origin <branch>:<branch>` repoint it.
+- `git-push.sh` enforces this: it always pushes `<remote> <branch>:<branch>`
+  explicitly, detects a configured upstream on the same remote that points at
+  a different branch (`UPSTREAM_MISMATCH:`), and repairs it by pushing with
+  `-u` so upstream is reset to `<remote>/<branch>`.
+
 ## Usage Patterns
 
 ### Complete Repository Management (3 Handoffs)
@@ -158,8 +187,15 @@ Only 3 scripts needed to minimize AI-script handoffs:
 - **Brand-new-branch handling**: if the fetch fails because the remote ref
   doesn't exist yet (first push of a new branch), the script reports
   `REMOTE_STATUS:NEW_BRANCH`, skips the rebase/merge steps, and pushes with
-  `git push -u --follow-tags` to set upstream tracking. This is the only case
-  where the script uses `-u` — existing branches push without it.
+  `git push -u --follow-tags` to set upstream tracking.
+- **Explicit refspec always**: every push uses `<remote> <branch>:<branch>`
+  — never a refspec-less push — so `push.default` can never redirect commits
+  to a different remote branch (see Push Safety above).
+- **Upstream-mismatch repair**: if the branch's configured upstream on the
+  same remote points at a different branch (e.g. `origin/main` inherited from
+  `checkout -b <branch> origin/main`), the script emits `UPSTREAM_MISMATCH:`
+  and pushes with `-u` to reset upstream to `<remote>/<branch>`. New-branch
+  pushes and mismatch repairs are the only cases that use `-u`.
 - If rebase conflicts remain, aborts and tries merge with `-X=auto` as fallback
 - If merge also has conflicts, **leaves the merge in conflicted state** and reports:
   - `CONFLICTED_FILES:` — list of files with conflicts

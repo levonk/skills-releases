@@ -241,12 +241,20 @@ remote before the main repo references them.
     escalation flow.
   - **New branches are not a decision point either**: If the branch has never
     been pushed (no remote ref exists), `git-push.sh` detects the missing ref
-    during fetch, reports `REMOTE_STATUS:NEW_BRANCH`, and pushes with `-u` to
-    set upstream tracking. No need to fall back to a manual `git push -u`.
+    during fetch, reports `REMOTE_STATUS:NEW_BRANCH`, and pushes with `-u`
+    and an explicit `<branch>:<branch>` refspec to set upstream tracking. No
+    need to fall back to a manual `git push -u` — and do not: a refspec-less
+    `git push -u` resolves the destination via `push.default`, and under
+    `upstream`/`tracking` it targets the branch's configured upstream ref
+    (e.g. `origin/main` left over from `checkout -b <branch> origin/main`),
+    causing a silent direct push. See
+    [Push Safety](tagging-and-pushing.md#push-safety-explicit-refspecs).
   - **Never manually rebase or pull before pushing**: `git-push.sh` handles
     fetch-rebase-push with a backup branch for safety. Running `git rebase` or
     `git pull` manually bypasses that backup and defeats the rollback safety
-    the script provides. The only correct way to push is through the script.
+    the script provides. The only correct way to push is through the script —
+    it always uses an explicit `<branch>:<branch>` refspec, so neither
+    `push.default` nor a stale upstream can redirect the destination.
 
 ### Phase 5: Documentation & Summary (AI Agent)
 - **Step 12**: Update project documentation (changelog, architecture, status)
