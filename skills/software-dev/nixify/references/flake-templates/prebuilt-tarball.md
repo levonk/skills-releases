@@ -2,6 +2,12 @@
 
 Use when the project publishes prebuilt release tarballs. Preserves exact layout and avoids complex builds. Exposes prebuilt as `#default` and from-source as `#source` so users get the fast path by default and the reproducible-from-source path on demand.
 
+## Contents
+
+- Standard variant (below) — bare-binary tarballs; the default
+- [Darwin .app Zip Variant (Signed/Notarized GUI Apps)](#darwin-app-zip-variant-signednotarized-gui-apps) — `.zip` assets containing signed `.app` bundles; `dontFixup` preserves the Developer ID signature
+- [Hybrid Fallback Variant (Partial Platform Coverage)](#hybrid-fallback-variant-partial-platform-coverage) — `#default` falls back to a source build on platforms without a prebuilt asset
+
 ```nix
 {
   description = "<project description>";
@@ -148,6 +154,172 @@ Key details:
 - **Platform scope narrowing**: When Step 4a's `detect-platform-scope.sh` reports `platform_scope=darwin_only` or `linux_only`, remove the `assets` entries and `systems` for the excluded OS family. Do NOT add outputs for platforms the project doesn't support by design — a macOS menu-bar app's flake should only have `x86_64-darwin` and `aarch64-darwin` entries. The `meta.platforms` list should match `target_platforms`. See `references/architecture-analysis.md` — Inherent Platform Scope.
 - **Named outputs**: The flake exposes four outputs: `#prebuilt` (prebuilt binary, fast), `#source` (from-source build, reproducible), `#default` (alias for `#prebuilt`), and `#<project-name>` (alias for `#prebuilt`). Users can `nix run .#prebuilt` or `nix run .#source` explicitly, or just `nix run .` for the default (prebuilt). Fill in `sourceFor` using the appropriate language-specific template from `references/flake-templates/source-build-*.md`. The `checks` attrset exercises both `prebuilt` and `source` so CI catches breakage in either path.
 - **If source build is not feasible** (e.g. complex native addon setup with no nixpkgs support), remove the `source` outputs from `packages`, `apps`, and `checks`, and document why in the PR body. The prebuilt-only flake is still acceptable when accompanied by hash automation + CI.
+- **Runtime self-mutation audit (Step 4c)**: The prebuilt artifact runs from the read-only store. If the packaged app ships an in-app updater, rollback, or self-repair path that writes beside the install location, the PR must include a source patch gating ALL such paths behind a store-path check. Run `scripts/detect-self-mutation.sh` and see `references/architecture-analysis.md` — Prebuilt Apps with In-Place Self-Mutation.
+
+---
+
+## Darwin .app Zip Variant (Signed/Notarized GUI Apps)
+
+Use when the release asset is a **`.zip` containing a signed, notarized macOS
+`.app` bundle** instead of a tarball of bare binaries — the common shape for
+macOS GUI apps (menu-bar apps, Tauri/SwiftUI apps, Electron `.app` zips).
+
+**When to use this variant:**
+- Step 4a's `detect-platform-scope.sh` reports `platform_scope=darwin_only`
+  (or the project's inherent scope is darwin-only — a macOS GUI app cannot
+  run elsewhere), AND
+- `check-releases.sh` finds a release asset that is a `.zip` unpacking to
+  `<App>.app` (a signed Developer ID bundle), AND
+- The app is signed/notarized — `xcodebuild`, signing, and entitlements
+  **cannot run in the Nix sandbox** (no keychain, no Apple notarization
+  service), so the prebuilt bundle is the only Gatekeeper-clean artifact.
+  There is no `#source` output.
+
+**Key differences from the standard template:**
+- `.zip` src → `sourceRoot = "."` + `nativeBuildInputs = [ pkgs.unzip ]`
+  (stdenv's unpackPhase needs unzip on PATH for zip archives).
+- **`dontFixup = true` — required.** stdenv's fixupPhase would `strip` the
+  Mach-O binaries and `patchShebangs` the bundle's scripts, rewriting bytes
+  inside the bundle and **invalidating the Developer ID signature** — the
+  installed app then fails Gatekeeper with "is damaged and can't be opened."
+  `dontFixup` preserves the signature byte-for-byte.
+- Install the bundle to `$out/Applications/<App>.app` (the canonical macOS
+  app location), and expose a `$out/bin/<name>` symlink into
+  `Contents/MacOS/<binary>` so `nix run github:...` and CLI invocation work.
+- **Two-input structure** — `x86_64-darwin` uses the `nixpkgs-26.05-darwin`
+  legacy pin (`nixpkgs-darwin-legacy` input); `aarch64-darwin` uses
+  `nixpkgs-unstable`. See `darwin-legacy-pin.md` for the rationale — Intel
+  Macs on older macOS break against unstable's SDK requirements.
+- `meta.sourceProvenance = [ sourceTypes.binaryNativeCode ]` — the bundle is
+  a prebuilt binary artifact, declared so consumers know it is not
+  source-derived.
+- **No `#source` / `#prebuilt` split** — only `#default` and `#<project>`
+  outputs. There is no reproducible-from-source path for a signed macOS app.
+- **Step 4c self-mutation audit applies doubly** — GUI apps commonly ship
+  Sparkle/bespoke updaters and rollback paths; every one of them writes
+  inside the `.app` bundle and fails on the read-only store. Run
+  `scripts/detect-self-mutation.sh` and see
+  `references/architecture-analysis.md` — Prebuilt Apps with In-Place
+  Self-Mutation.
+
+```nix
+{
+  description = "<project description>";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # x86_64-darwin legacy pin — Intel Macs on older macOS break against
+    # unstable's SDK requirements. See references/flake-templates/darwin-legacy-pin.md.
+    nixpkgs-darwin-legacy.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+  };
+
+  outputs = { self, nixpkgs, nixpkgs-darwin-legacy }: let
+    version = "<version>";
+
+    assets = {
+      "x86_64-darwin" = {
+        file = "<App>-<version>.zip";  # zip containing <App>.app
+        sha256 = "<sha256>";
+      };
+      "aarch64-darwin" = {
+        file = "<App>-<version>.zip";
+        sha256 = "<sha256>";
+      };
+    };
+
+    systems = builtins.attrNames assets;
+    forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
+
+    # x86_64-darwin uses the legacy pin; aarch64-darwin uses unstable.
+    pkgsFor = system:
+      if system == "x86_64-darwin"
+      then nixpkgs-darwin-legacy.legacyPackages.${system}
+      else nixpkgs.legacyPackages.${system};
+
+    appFor = system: let
+      pkgs = pkgsFor system;
+      asset = assets.${system};
+    in pkgs.stdenv.mkDerivation {
+      pname = "<project-name>";
+      inherit version;
+
+      src = pkgs.fetchurl {
+        url = "https://github.com/<owner>/<repo>/releases/download/v${version}/${asset.file}";
+        sha256 = asset.sha256;
+      };
+
+      sourceRoot = ".";
+      nativeBuildInputs = [ pkgs.unzip ];
+
+      dontConfigure = true;
+      dontBuild = true;
+      # CRITICAL: preserve the Developer ID signature byte-for-byte.
+      # stdenv fixup (strip, patchShebangs) rewrites bytes inside the bundle
+      # and invalidates the signature — the installed app then fails
+      # Gatekeeper with "<App> is damaged and can't be opened."
+      dontFixup = true;
+
+      installPhase = ''
+        runHook preInstall
+        mkdir -p "$out/Applications" "$out/bin"
+        cp -R "<App>.app" "$out/Applications/<App>.app"
+        ln -s "$out/Applications/<App>.app/Contents/MacOS/<binary-name>" \
+              "$out/bin/<project-name>"
+        runHook postInstall
+      '';
+
+      meta = with pkgs.lib; {
+        description = "<project description>";
+        homepage = "https://github.com/<owner>/<repo>";
+        downloadPage = "https://github.com/<owner>/<repo>/releases";
+        license = licenses.<license>;
+        mainProgram = "<project-name>";
+        platforms = systems;
+        sourceProvenance = [ sourceTypes.binaryNativeCode ];
+      };
+    };
+  in {
+    packages = forAllSystems (system: rec {
+      <project> = appFor system;
+      default = <project>;
+    });
+
+    apps = forAllSystems (system: let
+      appPkg = appFor system;
+    in {
+      <project> = {
+        type = "app";
+        program = "${appPkg}/bin/<project-name>";
+      };
+      default = {
+        type = "app";
+        program = "${appPkg}/bin/<project-name>";
+      };
+    });
+
+    checks = forAllSystems (system: {
+      default = appFor system;
+    });
+  };
+}
+```
+
+**PR body notes for this variant (pre-empt the expected reviewer questions):**
+- **Why no `#source` output**: `xcodebuild`, code signing, and entitlements
+  cannot run in the Nix sandbox — a source build would produce an unsigned,
+  un-notarized bundle that fails Gatekeeper. The prebuilt bundle is the only
+  Gatekeeper-clean artifact. Reviewers accept this when it's explained
+  proactively (FluidVoice PR #1160 shipped exactly this shape).
+- **Why darwin-only**: the app is inherently macOS-only (Step 4a platform
+  scope) — the flake does not claim Linux support.
+- **Version verification in CI**: the bundle has no `--version` flag, so
+  `nix.yml` must assert `CFBundleShortVersionString` equals the flake
+  `version` (and `codesign --verify --deep --strict` the installed bundle).
+  See `references/advanced/github-actions-nix.md` — Version Verification for
+  Artifacts Without a CLI Flag.
+- **Self-mutation caveat**: if Step 4c added a store-path guard patch, note
+  it only takes effect in the first release built after merge — the shipped
+  binary keeps the old behavior.
 
 ---
 

@@ -16,6 +16,7 @@
 - [Build-Time Network Fetches](#build-time-network-fetches)
 - [Gitignored Lockfiles](#gitignored-lockfiles)
 - [Postinstall Home-Directory Writes](#postinstall-home-directory-writes)
+- [Prebuilt Apps with In-Place Self-Mutation](#prebuilt-apps-with-in-place-self-mutation)
 
 ---
 
@@ -937,3 +938,84 @@ permission denied or ENOENT that doesn't obviously point to the
 postinstall script. (Reference: 9router PR #1405 — `better-sqlite3` /
 systray postinstall was skipped during the Nix build and fell back to
 bundled `sql.js` + no-tray behavior at runtime.)
+
+---
+
+## Prebuilt Apps with In-Place Self-Mutation
+
+**CRITICAL**: When the flake wraps a binary the project built elsewhere
+(`flake_type=prebuilt_tarball`, or `flake_type=nixpkgs_override_attrs` which
+wraps upstream binaries via nixpkgs' packaging) and the artifact is an
+*application* — not a bare library — audit the packaged code for paths that
+write beside the install location. The Nix store is read-only, so any
+self-updater, in-app rollback, or self-repair path fails at runtime —
+always, for every user.
+
+This is the third case in the "writes that fail under Nix" trio, and the
+only one that is a *runtime* property of the shipped artifact:
+
+- **Postinstall Home-Directory Writes** (above) — install-*time* writes
+  that fail inside the *build* sandbox.
+- **Tauri "updater artifacts"** (Multi-Toolchain Desktop Apps) — *build-time*
+  artifacts (`createUpdaterArtifacts`, signing) the derivation must not
+  produce.
+- **This section** — *runtime* self-mutation paths inside a prebuilt
+  artifact the flake fetches and installs verbatim.
+
+**How to detect**: Run `scripts/detect-self-mutation.sh <project-dir>` (Step
+4c). It greps the source tree for self-mutation signals — `updater`,
+`auto.?update`, `sparkle`, `squirrel`, `electron-updater`, `rollback`,
+`self.?replace`/`self.?updat`, `swap.*relaunch`/`relaunch`,
+`bundleURL`/`Bundle.main`/`installLocation` writes, `delta.?patch`/`bsdiff`/
+`bspatch`, `self.?repair`, `check.?for.?updates` — and reports
+`{ file, line, snippet, signals }` hits for triage. Dependency trees,
+lockfiles, and build output are excluded.
+
+**Triage each hit — not all writes are a problem.** For every reported hit,
+determine whether the write target resolves to the install prefix or a
+user-writable directory:
+
+- **Install prefix** (the bundle dir, the directory containing the
+  executable, `Contents/` paths inside a `.app`): **fails in `/nix/store`.**
+  Every self-update, rollback, in-place patch, or self-repair write here
+  breaks for every Nix-installed user.
+- **User-writable dirs** (`~/Library/Application Support`, `~/.config`,
+  `%APPDATA%`, platform caches): **fine.** Downloads of models, assets, or
+  state into home are NOT a problem — the store is read-only, the home
+  directory is not.
+
+**Enumerate ALL in-place mutation paths — not just the first one found.**
+Update check, install/apply, rollback, self-repair, delta patchers, and
+auto-update frameworks (Sparkle, Squirrel, electron-updater, bespoke
+`SimpleUpdater`-style classes) are separate entry points into the same
+broken behavior. Gate one funnel, not each call site. (Reference: FluidVoice
+PR #1160 — the first review fix gated only `startUpdateCheck`; a second
+review round found `rollbackToLatestBackup` → `performSwapAndRelaunch` had
+the identical failure mode. The final fix gated `latestRollbackBackup()` —
+one funnel covering `hasRollbackBackup()`, `latestRollbackVersion()`, and
+the throw path.)
+
+**When install-prefix mutation exists, the PR MUST include a minimal source
+patch** adding a store-path detection guard that suppresses ALL of them:
+
+- **macOS**:
+  `Bundle.main.bundleURL.resolvingSymlinksInPath().path.hasPrefix("/nix/store/")`.
+  The `resolvingSymlinksInPath()` call is load-bearing — it resolves Nix
+  profile and home-manager symlinks back to the real store path.
+- **Linux**: resolve `/proc/self/exe` (readlink) and check for a
+  `/nix/store/` prefix.
+
+When the guard is active, the app should no-op automatic update checks and
+show a "Managed by Nix" notice on manual checks, pointing users at
+`nix profile upgrade` / `nix run github:...` for updates — Nix owns the
+install lifecycle, not the app.
+
+**PR body caveat (required):** note that the guard only takes effect in the
+*first release built after merge*. Already-shipped binaries the flake wraps
+keep the old behavior — the wrapped artifact predates the patch. This
+pre-empts the reviewer question "does this fix the binary we're shipping?"
+
+**Skip when:** `force_source_build=true`, no prebuilt artifacts exist, or
+`detect-self-mutation.sh` reports `has_hits: false` (bare CLI/library
+artifacts with no updater signals). A clean scan needs no patch and no PR
+note — record `self_mutation_guard_added=false`.

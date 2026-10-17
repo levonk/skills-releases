@@ -226,6 +226,76 @@ If neither cache action is appropriate (e.g. the project uses Cachix already), u
 
 ---
 
+## Version Verification for Artifacts Without a CLI Flag
+
+`nix run .#default -- --version` is the template's only verification that the
+packaged artifact works — but GUI apps and other artifacts with no CLI smoke
+flag get **no version verification at all**. An older artifact uploaded under
+a newer release tag then passes CI silently (FluidVoice PR #1160 — Greptile
+P2 "wrong app version passes CI", fixed in `26a36a6d`).
+
+**Requirement:** when the packaged artifact cannot exec a `--version` /
+`--help` smoke command, the `nix.yml` verify step must assert the artifact's
+**embedded version metadata equals the flake package version**.
+
+**Derive the expected version from the built store path** — this avoids
+parsing `flake.nix` in CI. The store path basename is
+`<hash>-<pname>-<version>`:
+
+```bash
+OUT="$(nix build .#default --no-link --print-out-paths)"
+EXPECTED="$(basename "$OUT" | sed 's/^.*-<pname>-//')"
+```
+
+(`<pname>` is interpolated into a sed pattern — escape regex metacharacters
+if the project's pname could contain `.` or `+`.)
+
+Then compare `EXPECTED` against the artifact's embedded metadata, per
+ecosystem:
+
+| Artifact | Embedded version metadata | Command |
+|----------|---------------------------|---------|
+| macOS `.app` | `CFBundleShortVersionString` in `Contents/Info.plist` | `/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$OUT/Applications/<App>.app/Contents/Info.plist"` |
+| Android APK | `versionName` in the manifest | `aapt dump badging "$OUT/<app>.apk" \| grep "versionName"` (requires Android SDK build-tools on the runner) |
+| JAR | `Implementation-Version` in `META-INF/MANIFEST.MF` | `unzip -p "$OUT/<app>.jar" META-INF/MANIFEST.MF \| grep Implementation-Version` |
+
+**Example — darwin `.app` verify step** (replaces the `nix run` smoke for
+GUI apps; add alongside it for CLI+GUI projects):
+
+```yaml
+      - name: Verify app bundle version
+        run: |
+          set -euo pipefail
+          OUT="$(nix build .#default --no-link --print-out-paths)"
+          EXPECTED="$(basename "$OUT" | sed 's/^.*-<pname>-//')"
+          PLIST="$OUT/Applications/<App>.app/Contents/Info.plist"
+          ACTUAL="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::version mismatch — bundle reports $ACTUAL, flake packages $EXPECTED"
+            exit 1
+          fi
+          echo "bundle version $ACTUAL == flake version $EXPECTED"
+```
+
+For signed/notarized darwin artifacts, extend the same step with signature
+verification — it catches a corrupted or re-signed artifact the same way the
+version check catches a stale one:
+
+```yaml
+          codesign --verify --deep --strict "$OUT/Applications/<App>.app"
+          # Optional notarization check (slower; safe to skip when upstream
+          # already Gatekeeper-verified the shipped zip):
+          # spctl -a -t exec -vv "$OUT/Applications/<App>.app"
+```
+
+**PR-trigger safety:** metadata reads (`PlistBuddy`, `aapt`, `unzip`,
+`codesign --verify`, `spctl`) inspect the artifact without executing it, so
+they do NOT need the `if: github.event_name != 'pull_request'` guard that
+the `nix run` smoke requires — there is no PR-controlled code execution.
+Keep the guard only on steps that exec the packaged binary.
+
+---
+
 ## Self-Pruning on Runner Decommission
 
 When GitHub Actions decommissions the Intel macOS runner (`macos-26-intel`, estimated ~Nov 2028 per

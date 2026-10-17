@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# quality-gate.sh — Phase 6 quality gate: lock → build → validate → test → catalog → unlock
+# quality-gate.sh — Phase 9 quality gate: lock → build → validate → test → catalog → unlock
 #
-# Deterministic quality gate for execute-upsert Phase 6. Acquires a
+# Deterministic quality gate for execute-upsert Phase 9. Acquires a
 # concurrency lock (per-repo+scope), runs the project's quality commands
 # in sequence, and releases the lock. The AI only passes the commands and
 # scope — the script handles all lock lifecycle and command sequencing.
@@ -15,7 +15,7 @@
 # What this script does NOT do:
 #   - Decide which commands to run (the AI passes them via --command)
 #   - Fix failing commands (the AI handles fix loops)
-#   - Create worktrees (Phase 6 already created the worktree)
+#   - Create worktrees (Phase 2 already created the worktree)
 #
 # Exit codes:
 #   0  — all commands passed, lock released

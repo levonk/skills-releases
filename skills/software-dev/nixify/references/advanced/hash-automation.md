@@ -109,6 +109,8 @@ jobs:
           # system|asset-substring — one per line. The substring must uniquely
           # match the release asset filename for that system (including the
           # .tar.gz suffix so it does not match the sibling .sha256 files).
+          # Enforced in code below: match_one() fails the run when a selector
+          # matches 0 or >1 assets, instead of pinning a nondeterministic pick.
           ASSET_MAP: |
             x86_64-linux|x86_64-unknown-linux-musl
             aarch64-linux|aarch64-unknown-linux-musl
@@ -171,6 +173,22 @@ jobs:
                   f"omitted platform get a hash mismatch. ASSET_MAP currently "
                   f"covers: {sorted(asset_map.keys())}")
 
+          # match_one(): fail closed when an ASSET_MAP substring matches 0 or
+          # >1 release assets. A selector that matches more than one asset
+          # (e.g. a future win-x64.zip alongside the darwin zip) otherwise
+          # pins whichever name iterates first — nondeterministically, since
+          # `names` is a set — potentially into BOTH entries. See FluidVoice
+          # PR #1160 (Codex P2, fixed in 05b5bb2b).
+          def match_one(sys_, sub):
+              matches = sorted(n for n in names if sub in n)
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"asset selector '{sub}' for {sys_} matched "
+                      f"{len(matches)} assets in {tag}: "
+                      f"{matches or 'none'} — each ASSET_MAP substring "
+                      f"must match exactly one asset; make it more specific")
+              return matches[0]
+
           # --- Hash-based staleness check ---
           # Compare the first asset's SRI hash against what's in flake.nix.
           # We use hash comparison instead of version comparison because:
@@ -186,9 +204,7 @@ jobs:
           # The cost is one download per day (the first asset) — negligible.
           first_sys = next(iter(asset_map))
           first_sub = asset_map[first_sys]
-          first_match = next((n for n in names if first_sub in n), None)
-          if not first_match:
-              raise SystemExit(f"no asset for {first_sys} ({first_sub}) in {tag}; have: {sorted(names)}")
+          first_match = match_one(first_sys, first_sub)
           first_url = f"https://github.com/{repo}/releases/download/{tag}/{first_match}"
           first_out = json.loads(subprocess.check_output(
               ["nix", "store", "prefetch-file", "--json", "--hash-type", "sha256", first_url]))
@@ -232,9 +248,7 @@ jobs:
           if n > 0:
               print(f"bumped version to {version}")
           for sys_, sub in asset_map.items():
-              match = next((n for n in names if sub in n), None)
-              if not match:
-                  raise SystemExit(f"no asset for {sys_} ({sub}) in {tag}; have: {sorted(names)}")
+              match = match_one(sys_, sub)
               url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
               # Cross-check against the published .sha256 sibling asset before
               # pinning the hash. Without this, a corrupted or replaced release
@@ -409,15 +423,27 @@ jobs:
                   f"Add them to ASSET_MAP or the hash for those platforms will "
                   f"go stale while the URL gets the version bump. ASSET_MAP "
                   f"currently covers: {sorted(asset_map.keys())}")
+
+          # match_one(): fail closed when an ASSET_MAP substring matches 0 or
+          # >1 release assets. See Template A for the rationale (FluidVoice
+          # PR #1160 — a >1 match used to pin a nondeterministic pick).
+          def match_one(sys_, sub):
+              matches = sorted(n for n in names if sub in n)
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"asset selector '{sub}' for {sys_} matched "
+                      f"{len(matches)} assets in {tag}: "
+                      f"{matches or 'none'} — each ASSET_MAP substring "
+                      f"must match exactly one asset; make it more specific")
+              return matches[0]
+
           repo = os.environ["GITHUB_REPOSITORY"]
           src = open("flake.nix").read()
           src, n = re.subn(r'version = "[^"]*";', f'version = "{version}";', src, count=1)
           if n != 1:
               raise SystemExit('could not find version = "..." in flake.nix')
           for sys_, sub in asset_map.items():
-              match = next((n for n in names if sub in n), None)
-              if not match:
-                  raise SystemExit(f"no asset for {sys_} ({sub}) in {tag}; have: {sorted(names)}")
+              match = match_one(sys_, sub)
               url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
               # Cross-check against the published .sha256 sibling asset before
               # pinning the hash. See Template A for full rationale.
@@ -539,14 +565,26 @@ generated.
                       if len(parts) == 2:
                           expected_hashes[parts[1].strip()] = "sha256:" + parts[0]
 
+          # match_one(): fail closed when an asset-map substring matches 0 or
+          # >1 release assets (same rationale as Templates A/B — FluidVoice
+          # PR #1160). Keeps the archive-suffix filter (.tar.gz and .zip —
+          # .app zips ship as .zip): checksum siblings and non-archive
+          # assets never count as matches.
+          def match_one(sys_, sub):
+              matches = sorted(
+                  n for n in asset_names
+                  if sub in n and n.endswith((".tar.gz", ".zip")))
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"asset selector '{sub}' for {sys_} matched "
+                      f"{len(matches)} assets in {tag}: "
+                      f"{matches or 'none'} — each ASSET_MAP substring "
+                      f"must match exactly one asset; make it more specific")
+              return matches[0]
+
           src = open("flake.nix").read()
           for sys_, sub in asset_map.items():
-              match = next(
-                  (n for n in asset_names if sub in n and n.endswith(".tar.gz")), None)
-              if not match:
-                  raise SystemExit(
-                      f"no asset matching '{sub}' in release {tag}; "
-                      f"have: {sorted(asset_names)}")
+              match = match_one(sys_, sub)
               url = f"https://github.com/{repo}/releases/download/{tag}/{match}"
 
               # Cross-check against SHA256SUMS.txt (or per-file .sha256 sibling)
@@ -624,7 +662,7 @@ generated.
 - The maintainer prefers a decoupled workflow that doesn't touch the release pipeline
 
 **Customization notes (all templates):**
-- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects platform archives (`.tar.gz`/`.zip`) not covered by any ASSET_MAP substring — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch). The guard has an explicit ignore list (`musl`, `pnpr-`, `-source`, `source-code`) for non-platform archives that should not trigger the check.
+- `ASSET_MAP`: one `system|substring` per line. The substring must uniquely match the release asset filename for that system (e.g. `x86_64-unknown-linux-musl`). **Enforced in code** — the `match_one()` helper fails the workflow closed when a selector matches 0 or >1 assets, and the error message tells the maintainer to make the substring more specific. A `next()`-style first-match would pin a nondeterministic pick (the asset name collection is a set), so a selector that accidentally matches two assets could write the wrong hash into both entries — see FluidVoice PR #1160 (Codex P2, fixed in `05b5bb2b`). **Inspect the project's release assets to fill this in — it is the only project-specific input.** Sibling checksum files ending in `.sha256` are filtered out automatically, so a `foo.tar.gz` substring will not also match its `foo.tar.gz.sha256` companion (common with cargo-dist releases). **The ASSET_MAP MUST include every platform the project ships a binary asset for.** The script includes a reverse-check guard that fails the workflow if it detects platform archives (`.tar.gz`/`.zip`) not covered by any ASSET_MAP substring — this prevents the omission class of bug where a platform's hash goes stale while its URL gets the version bump (see Archon PR #2131 feedback: omitting `x86_64-darwin` from ASSET_MAP broke Intel Macs with a hash mismatch that CI could not catch). The guard has an explicit ignore list (`musl`, `pnpr-`, `-source`, `source-code`) for non-platform archives that should not trigger the check.
 - **`.sha256` cross-check**: Templates A and B fetch the published `<asset>.sha256` sibling file (when present), convert the hex digest to SRI format (`sha256:` + hex), and pass it as `--expected-hash` to `nix store prefetch-file`. Template C supports both this format and `SHA256SUMS.txt` (see below). This fails the workflow if the downloaded artifact's hash does not match the published checksum — catching corrupted or replaced release artifacts before the hash is pinned to `flake.nix`.
 - **`SHA256SUMS.txt` cross-check** (Template C): Many release workflows generate a single `SHA256SUMS.txt` file (via `sha256sum -- *.tar.gz > SHA256SUMS.txt`) containing all checksums in the standard `<hex>  <filename>` format, rather than per-file `<asset>.sha256` siblings. Template C's script parses this file into a `{filename: "sha256:<hex>"}` map and uses it for the `--expected-hash` cross-check. Both formats are supported — the script tries `SHA256SUMS.txt` first, then falls back to per-file `.sha256` siblings. If neither is present, the hash is pinned without a cross-check (same as Templates A and B when no `.sha256` siblings exist).
 - `base: master`: change to `main` if the project's default branch is `main`.

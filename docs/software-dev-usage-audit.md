@@ -24,4 +24,4 @@ Diagnose coding-agent token usage — find out where tokens actually went, which
 
 - **Full skill**: [`skills/software-dev/usage-audit/SKILL.md`](skills/software-dev/usage-audit/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-17T20:02:01Z
+- **Generated**: 2026-10-17T20:17:19Z
