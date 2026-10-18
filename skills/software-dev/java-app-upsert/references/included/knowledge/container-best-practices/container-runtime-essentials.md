@@ -133,6 +133,10 @@ read-only filesystem, cap-drop), see
   model that the `su-exec`/`gosu` privilege-drop pattern complements.
 - [Multi-Stage Builds](multi-stage-builds.md) — Builder vs runtime stage
   separation; the Dockerfile pattern that pairs with the build strategy above.
+- [Container Runtime Detection](container-runtime-detection.md) — The
+  runtime-selection analog for scripts that run (not build) containers:
+  CONTAINER_RUNTIME override → docker → podman → Apple container, with
+  docker.io qualification and per-runtime argument adapters.
 - [Pin Image Digests](pin-image-digests.md) — Supply-chain integrity for the
   pre-built and multi-arch images referenced by this build strategy.
 

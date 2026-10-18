@@ -1,8 +1,8 @@
 ---
 type: Synthesis
 title: Container Best Practices Overview
-description: Synthesis of container best practices extracted from real failure modes — base image selection, layer caching, build context, multi-stage builds, process supervision, supply-chain pinning, linting, compose dependency ordering, runtime hardening, registry cache strategy, build-time secret hygiene, Node.js production hardening, Dockerfile package cleanup, deterministic image versioning from Git state, and volume ownership init for non-root containers.
-tags: [docker, containers, dockerfile, docker-compose, buildkit, security, nodejs, versioning, volume, ownership, best-practices, overview, synthesis]
+description: Synthesis of container best practices extracted from real failure modes — base image selection, layer caching, build context, multi-stage builds, process supervision, supply-chain pinning, linting, compose dependency ordering, runtime hardening, registry cache strategy, build-time secret hygiene, Node.js production hardening, Dockerfile package cleanup, deterministic image versioning from Git state, volume ownership init for non-root containers, and container runtime detection for multi-runtime scripts.
+tags: [docker, containers, dockerfile, docker-compose, buildkit, security, nodejs, versioning, volume, ownership, podman, runtime-detection, best-practices, overview, synthesis]
 date:
   created: "2026-07-17"
   knowledge-basis: "2026-07-17"
@@ -177,6 +177,7 @@ Each phase has practices that prevent specific failure modes:
 | Monorepo | [Nx Monorepo Docker Patterns](nx-monorepo-docker-patterns.md) | Per-app Dockerfiles reinstalling the full workspace; CI rebuilding every app image on every commit; Nx cache and Docker cache operating in isolation |
 | Versioning | [Deterministic Image Versioning](image-versioning.md) | Non-deterministic image tags (CI build numbers, timestamps, `latest`); no traceability from running image to source commit; multi-arch builds emitting different version strings per platform; Git smudge/clean filters silently failing in CI and shallow clones |
 | Volume init | [Volume Ownership Init for Non-Root Containers](volume-ownership-init.md) | Non-root container crash-loops on first deploy because Docker volumes are root-owned by default; chown appears to succeed but does not persist on Docker Desktop WSL2; volume recreated manually without Ansible re-run |
+| Runtime portability | [Container Runtime Detection](container-runtime-detection.md) | Helper scripts hardcoding `docker` and failing on podman/Apple `container` machines; podman short-name resolution prompting interactively; Docker-compatible runtimes (OrbStack, colima) needlessly special-cased |
 
 ## Scope
 
@@ -191,7 +192,10 @@ usage, entrypoint/healthcheck file naming), deterministic image versioning
 (Git-derived version strings, OCI labels, post-deployment override), and
 volume ownership initialization for non-root containers (three-phase chown +
 verify pattern, Docker Desktop WSL2 persistence failure diagnostics, and the
-entrypoint wrapper image pattern for self-healing containers). It does
+entrypoint wrapper image pattern for self-healing containers), and container
+runtime detection for multi-runtime scripts (CONTAINER_RUNTIME override,
+docker → podman → Apple container probe order, docker.io image
+qualification, per-runtime argument adapters). It does
 **not** cover:
 
 - Container orchestration (Kubernetes, Nomad) — separate bundle.

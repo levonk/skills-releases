@@ -1,5 +1,54 @@
 # Directory Update Log
 
+## 2026-10-17
+
+* **Ingest**: Created a new concept page
+  [container-runtime-detection.md](container-runtime-detection.md) covering
+  container runtime auto-detection and multi-runtime portability for
+  user-facing scripts, sourced from infrahub commit
+  [8c32a84b](https://github.com/levonk/infrahub/commit/8c32a84bb4eee9be6f60bd7afd5905668153ab5c)
+  ("vault: support podman and Apple container in edit-vault.sh",
+  `scripts/edit-vault.sh` + `AGENTS.md`, 2026-10-15). The page documents
+  practices not previously in the bundle:
+  1. **Detection order** — `CONTAINER_RUNTIME` env override (validated with
+     `command -v`) → `docker` → `podman` → `container` (Apple). Overrides are
+     validated, not silently ignored; the no-runtime error names what was
+     tried.
+  2. **Docker-compatible runtimes need no special-casing** — OrbStack,
+     Docker Desktop, and colima all install a `docker` CLI symlink, so the
+     `docker` probe already covers them. Only runtimes with a different
+     binary name belong in the probe list.
+  3. **`docker.io/` image qualification** — podman's short-name mode prompts
+     interactively for a registry on unqualified names (hangs headless
+     scripts) and Apple `container` doesn't assume docker.io; when the
+     image's first component has no `.`/':' and isn't `localhost`, prepend
+     `docker.io/`.
+  4. **Apple `container` adapter** — `container system status` →
+     `container system start --enable-kernel-install` bootstrap; `--mount
+     type=bind,source=…,target=…,readonly` syntax (its `-v` read-only suffix
+     is undocumented); **directory-only bind mounts** (mount the file's
+     parent dir, compute `<target>/<basename>`); no combined short flags
+     (`-i -t`, not `-it`).
+  5. **Abstraction shape** — resolve once, build a per-runtime argument
+     array, `exec "$CONTAINER_RUNTIME" run` once. Runtime quirks stay
+     confined to argument construction, not the whole command.
+  6. **Applicability boundary** — apply to user-facing handoff commands and
+     cross-machine repo scripts; do NOT apply inside containers, in CI with
+     a provisioned runtime, or where runtime-specific features (buildx,
+     compose) are the actual dependency.
+  Added 3 sources: the infrahub commit, the Apple container repo, and
+  containers/shortnames (podman short-name resolution). Cross-linked to
+  [container-runtime-essentials](container-runtime-essentials.md)
+  (runtime-selection analog of the build-strategy decision tree),
+  [volume-ownership-init](volume-ownership-init.md) (mount-directory-not-
+  file convergence with directory-only binds),
+  [container-runtime-hardening](container-runtime-hardening.md) (hardening
+  flags are portable across runtimes), and
+  [image-versioning](image-versioning.md) (cross-runtime portability). Also
+  added a See Also entry on container-runtime-essentials. Updated
+  [overview.md](overview.md.tmpl) lifecycle table, scope, description, and
+  tags, and [index.md](index.md) with the new entry.
+
 ## 2026-08-23
 
 * **Update**: Updated
