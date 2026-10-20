@@ -25,4 +25,4 @@ Apply the Agent Organization 26-tier prioritization framework to triage tasks, r
 
 - **Full skill**: [`skills/business/task-triage/SKILL.md`](skills/business/task-triage/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-18T02:39:36Z
+- **Generated**: 2026-10-20T00:50:07Z

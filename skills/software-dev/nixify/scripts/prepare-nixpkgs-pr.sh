@@ -22,10 +22,17 @@
 #   upstream-owner: the GitHub owner of the upstream project
 #   upstream-repo: the GitHub repo name of the upstream project
 #
+# The nixpkgs working copy is a git worktree off the existing local clone at
+# $NIXPKGS_BASE_CLONE (default ~/p/gh/levonk-3rd/nixpkgs), created under
+# $NIXPKGS_WORKTREE_ROOT (default ~/orca/workspaces/nixpkgs) — see
+# references/nixpkgs-requirements.md — Working Copy. When no base clone
+# exists it falls back to a --depth=1 clone in a temp dir.
+#
 # Output: JSON with:
 #   package_nix_path   — path to the generated package.nix
 #   nixpkgs_fork       — URL of the forked nixpkgs repo
 #   nixpkgs_branch     — branch name in the fork
+#   nixpkgs_checkout   — path of the nixpkgs worktree (or temp clone)
 #   pr_body_path       — path to the generated PR body file
 #   maintainer_entry   — suggested maintainer entry for maintainer-list.nix
 #   by_name_path       — the pkgs/by-name/<prefix>/<name>/ path in nixpkgs
@@ -284,15 +291,21 @@ project already has a working in-repo Nix flake
 (https://github.com/${UPSTREAM_OWNER}/${UPSTREAM_REPO}) which was used as the
 reference for this packaging.
 
-## Checklist
+## Things done
 
-- [ ] package.nix follows the pkgs/by-name convention
-- [ ] Built locally with \`nix-build -A ${PROJECT}\`
-- [ ] Ran \`nix-env -iA ${PROJECT} --option sandbox false\` and tested the binary
-- [ ] Added myself as a maintainer in maintainers/maintainer-list.nix (separate commit)
-- [ ] Set meta.license to the correct license
-- [ ] Set meta.platforms to the tested platforms
-- [ ] Ran \`nixpkgs-hammering\` and addressed findings (optional but recommended)
+<!-- Answer every checkbox truthfully — unchecked boxes signal untested work. -->
+
+- Built on platform:
+  - [ ] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- [ ] Tested, as applicable:
+  - [NixOS test(s)](https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests) in [nixos/tests](https://github.com/NixOS/nixpkgs/blob/master/nixos/tests)
+  - [Package tests](https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests) at \`passthru.tests\`
+- [ ] Ran \`nixpkgs-review\` on this PR
+- [ ] Tested basic functionality of all binary files (usually in \`./result/bin/\`)
+- [ ] Fits [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md), [pkgs/README.md](https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md), [maintainers/README.md](https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md) and other READMEs
 
 ## Testing
 
@@ -305,7 +318,16 @@ The package was tested by:
 
 ## Maintainer
 
-I have added myself to maintainers/maintainer-list.nix in a separate commit.
+I have added myself to maintainers/maintainer-list.nix in a separate commit
+(\`maintainers: add <handle>\`, before the package commit).
+
+## Disclosure
+
+<!-- Required by nixpkgs's Automation/AI policy — do not remove. -->
+<!-- Fill in the actual tool and model used; keep it accurate. -->
+Parts of this contribution were prepared with assistance from an AI coding
+tool (<tool> (<model>)). The changes were reviewed before submission; see the
+\`Assisted-by:\` trailers on the commits.
 PR_BODY_EOF
 
 # --- Preflight gate ---------------------------------------------------------
@@ -325,10 +347,27 @@ fi
 NIXPKGS_FORK=""
 NIXPKGS_BRANCH="add-${PROJECT}"
 
+# Preferred working copy: a git worktree off the existing local clone
+# (see references/nixpkgs-requirements.md — Working Copy). The base clone's
+# object store is shared with the worktree, so no multi-GB re-clone.
+NIXPKGS_BASE_CLONE="${NIXPKGS_BASE_CLONE:-$HOME/p/gh/levonk-3rd/nixpkgs}"
+NIXPKGS_WORKTREE_ROOT="${NIXPKGS_WORKTREE_ROOT:-$HOME/orca/workspaces/nixpkgs}"
+NIXPKGS_WORKTREE="${NIXPKGS_WORKTREE_ROOT}/${NIXPKGS_BRANCH}"
+NIXPKGS_CHECKOUT=""
+USE_WORKTREE=""
+if git -C "$NIXPKGS_BASE_CLONE" rev-parse --git-dir >/dev/null 2>&1; then
+	USE_WORKTREE="1"
+fi
+
 if [ "$MODE" = "--dry-run" ]; then
 	echo "DRY RUN — would perform:" >&2
 	echo "  1. Fork NixOS/nixpkgs to ${CURRENT_USER}/nixpkgs" >&2
-	echo "  2. Clone fork, create branch '${NIXPKGS_BRANCH}'" >&2
+	if [ -n "$USE_WORKTREE" ]; then
+		NIXPKGS_CHECKOUT="$NIXPKGS_WORKTREE" # planned — not created in dry-run
+		echo "  2. Worktree off ${NIXPKGS_BASE_CLONE} at ${NIXPKGS_WORKTREE}, branch '${NIXPKGS_BRANCH}' off upstream/master" >&2
+	else
+		echo "  2. Clone fork, create branch '${NIXPKGS_BRANCH}' (no base clone at ${NIXPKGS_BASE_CLONE})" >&2
+	fi
 	echo "  3. Create ${BY_NAME_PATH}/package.nix" >&2
 	echo "  4. Open PR to NixOS/nixpkgs with title: '${PROJECT}: init at ${VERSION}'" >&2
 	echo "" >&2
@@ -341,33 +380,58 @@ else
 	gh repo fork NixOS/nixpkgs --clone=false 2>/dev/null || true
 	NIXPKGS_FORK="https://github.com/${CURRENT_USER}/nixpkgs"
 
-	# Clone the fork to a temp directory
-	NIXPKGS_CLONE_DIR=$(mktemp -d)
-	git clone --depth=1 "$NIXPKGS_FORK" "$NIXPKGS_CLONE_DIR/nixpkgs" 2>/dev/null || {
-		# If clone fails (fork may not exist yet), try cloning upstream and adding fork remote
-		git clone --depth=1 "https://github.com/NixOS/nixpkgs" "$NIXPKGS_CLONE_DIR/nixpkgs"
-	}
-	cd "$NIXPKGS_CLONE_DIR/nixpkgs"
+	if [ -n "$USE_WORKTREE" ]; then
+		# Ensure the upstream remote exists and master is fresh
+		if ! git -C "$NIXPKGS_BASE_CLONE" remote get-url upstream >/dev/null 2>&1; then
+			git -C "$NIXPKGS_BASE_CLONE" remote add upstream https://github.com/NixOS/nixpkgs.git
+		fi
+		git -C "$NIXPKGS_BASE_CLONE" fetch upstream master
 
-	# Create branch
-	git checkout -b "$NIXPKGS_BRANCH"
+		mkdir -p "$NIXPKGS_WORKTREE_ROOT"
+		if git -C "$NIXPKGS_BASE_CLONE" worktree list --porcelain | grep -qx "worktree ${NIXPKGS_WORKTREE}"; then
+			# Worktree already exists (re-run) — reuse it
+			cd "$NIXPKGS_WORKTREE"
+		elif git -C "$NIXPKGS_BASE_CLONE" show-ref --verify --quiet "refs/heads/${NIXPKGS_BRANCH}"; then
+			# Branch exists but no worktree — check it out in a new worktree
+			git -C "$NIXPKGS_BASE_CLONE" worktree add "$NIXPKGS_WORKTREE" "$NIXPKGS_BRANCH"
+			cd "$NIXPKGS_WORKTREE"
+		else
+			git -C "$NIXPKGS_BASE_CLONE" worktree add -b "$NIXPKGS_BRANCH" "$NIXPKGS_WORKTREE" upstream/master
+			cd "$NIXPKGS_WORKTREE"
+		fi
+	else
+		# No local base clone — fall back to a shallow temp clone
+		NIXPKGS_CLONE_DIR=$(mktemp -d)
+		git clone --depth=1 "$NIXPKGS_FORK" "$NIXPKGS_CLONE_DIR/nixpkgs" 2>/dev/null || {
+			# If clone fails (fork may not exist yet), try cloning upstream and adding fork remote
+			git clone --depth=1 "https://github.com/NixOS/nixpkgs" "$NIXPKGS_CLONE_DIR/nixpkgs"
+		}
+		cd "$NIXPKGS_CLONE_DIR/nixpkgs"
+
+		# Create branch
+		git checkout -b "$NIXPKGS_BRANCH"
+	fi
+	NIXPKGS_CHECKOUT="$(pwd)"
 
 	# Create the package directory and copy package.nix
 	mkdir -p "$BY_NAME_PATH"
 	cp "$PACKAGE_NIX_PATH" "$BY_NAME_PATH/package.nix"
 	git add "$BY_NAME_PATH/package.nix"
 
-	echo "nixpkgs cloned at: $(pwd)" >&2
+	echo "nixpkgs checkout at: ${NIXPKGS_CHECKOUT}" >&2
 	echo "Branch: ${NIXPKGS_BRANCH}" >&2
 	echo "Package path: ${BY_NAME_PATH}/package.nix" >&2
 	echo "" >&2
 	echo "Next steps:" >&2
 	echo "  1. Edit ${BY_NAME_PATH}/package.nix — fill in the correct builder, deps, and hash" >&2
-	echo "  2. Add yourself to maintainers/maintainer-list.nix in a separate commit" >&2
+	echo "  2. Add yourself to maintainers/maintainer-list.nix (commit 'maintainers: add <handle>' BEFORE the package commit)" >&2
 	echo "  3. Build: nix-build -A ${PROJECT}" >&2
 	echo "  4. Test: result/bin/${PROJECT} --version" >&2
-	echo "  5. Commit and push: git push origin ${NIXPKGS_BRANCH}" >&2
-	echo "  6. Open PR: gh pr create --repo NixOS/nixpkgs --body-file ${PR_BODY_PATH}" >&2
+	echo "  5. Format: nix fmt (CI enforces nixfmt)" >&2
+	echo "  6. Commit '${PROJECT}: init at ${VERSION}' WITH an 'Assisted-by: <tool> (<model>)' trailer — required by nixpkgs's AI policy" >&2
+	echo "  7. Push to fork: git push --set-upstream origin ${NIXPKGS_BRANCH}" >&2
+	echo "  8. Open PR: gh pr create --repo NixOS/nixpkgs --body-file ${PR_BODY_PATH}" >&2
+	echo "  See references/nixpkgs-requirements.md for the full upstream requirements." >&2
 fi
 
 # --- Output -----------------------------------------------------------------
@@ -375,6 +439,7 @@ jq -n \
 	--arg package_nix_path "$PACKAGE_NIX_PATH" \
 	--arg nixpkgs_fork "${NIXPKGS_FORK:-https://github.com/${CURRENT_USER}/nixpkgs}" \
 	--arg nixpkgs_branch "$NIXPKGS_BRANCH" \
+	--arg nixpkgs_checkout "$NIXPKGS_CHECKOUT" \
 	--arg pr_body_path "$PR_BODY_PATH" \
 	--arg maintainer_entry "$MAINTAINER_ENTRY" \
 	--arg by_name_path "$BY_NAME_PATH" \
@@ -382,6 +447,7 @@ jq -n \
 	'{package_nix_path: $package_nix_path,
     nixpkgs_fork: $nixpkgs_fork,
     nixpkgs_branch: $nixpkgs_branch,
+    nixpkgs_checkout: $nixpkgs_checkout,
     pr_body_path: $pr_body_path,
     maintainer_entry: $maintainer_entry,
     by_name_path: $by_name_path,

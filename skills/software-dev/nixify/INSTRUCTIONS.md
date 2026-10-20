@@ -1688,12 +1688,14 @@ output is authoritative, not gut feel.
 
 28b. **Contribute package to nixpkgs (when project is not in nixpkgs)**: When `check-nixpkgs.sh` (Step 10) reported `project_in_nixpkgs: false` AND the in-repo flake has been validated (Step 22) and the main PR (Step 27) is created, automatically prepare and submit a nixpkgs contribution — unless the user explicitly opts out. The nixpkgs contribution makes the project available to all Nix users via `nix profile add nixpkgs#<project>`, not just those who know about the in-repo flake.
 
+    **Read `references/nixpkgs-requirements.md` FIRST (MANDATORY)** — nixpkgs enforces strict upstream requirements that deliberately override the repo's usual defaults, scoped to the nixpkgs worktree/PR only: a **required `Assisted-by: <tool> (<model>)` commit trailer** for LLM-generated work (a `Co-authored-by:` trailer does NOT satisfy the policy — missing disclosure can get the PR closed), an AI disclosure line in the PR body, a real-identity `maintainer-list.nix` entry (`maintainers: add <handle>` commit placed BEFORE the package commit), `nixfmt` formatting (CI gate), nixpkgs commit-message conventions (`<pkg>: init at <version>`, no trailing period), and MIT licensing of the contribution under nixpkgs's COPYING. Do NOT apply these to the upstream project's own repo — the exception is scoped to the nixpkgs PR files only.
+
     **Run `scripts/prepare-nixpkgs-pr.sh <project-name> <project-dir> <upstream-owner> <upstream-repo>`** — the script:
     1. **Preflights upstream acceptance requirements** — an identifiable license (GitHub SPDX detection, falling back to LICENSE/COPYING files and manifest `license` fields) and a git tag matching the project version for the `fetchFromGitHub` rev. When either is missing it prints the blocker with remediation and exits non-zero before forking — an unlicensed upstream is all-rights-reserved and nixpkgs cannot carry it. **When the license is missing, the script first searches upstream issues for an existing license request (`license in:title`)**: if an open one exists it is cited in the blocker; if only a closed one exists it warns that packaging may not be possible; if none exists it files a "Please add a license" issue on the upstream repo automatically (never under `--dry-run`) and links it in the blocker output. The draft `package.nix` is still generated for reference.
     2. Scaffolds a `package.nix` file following the `pkgs/by-name/<prefix>/<name>/` convention (see `references/nixpkgs-contribution.md` and the [nixpkgs Quick Start](https://nixos.org/manual/nixpkgs/stable/#chap-quick-start))
     3. Detects project metadata (version, description, license) from `Cargo.toml`/`package.json`/`pyproject.toml`
     4. Forks `NixOS/nixpkgs` to the user's GitHub account
-    5. Creates a branch `add-<project-name>`
+    5. **Creates a git worktree off the local nixpkgs base clone** at `~/p/gh/levonk-3rd/nixpkgs` (override via `NIXPKGS_BASE_CLONE`), placed at `~/orca/workspaces/nixpkgs/add-<project-name>` (override via `NIXPKGS_WORKTREE_ROOT`), branching `add-<project-name>` off `upstream/master` — never a fresh multi-GB clone. Falls back to a temp clone only when no base clone exists. The worktree path is reported as `nixpkgs_checkout` in the JSON output.
     6. Generates a PR body from `references/nixpkgs-pr.md.tmpl`
 
     **The `package.nix` is a scaffold — the agent MUST fill it in** using the in-repo flake.nix (from Step 12) as the reference:
@@ -1703,17 +1705,20 @@ output is authoritative, not gut feel.
     - Set the correct `hash` using the fake-hash method (set a fake hash, build, copy the correct hash from the error)
     - Fill in `meta` attributes (license, platforms, mainProgram, maintainers)
 
-    **Add a maintainer entry** to `maintainers/maintainer-list.nix` in a **separate commit** before the package commit. The script generates a suggested entry — fill in the user's name, email, and GitHub ID (`curl -s https://api.github.com/users/<handle> | jq .id`).
+    **Add a maintainer entry** to `maintainers/maintainer-list.nix` in a **separate commit** with message `maintainers: add <handle>`, ordered **before** the package commit and inserted alphabetically by handle. The script generates a suggested entry — fill in the user's name, email, and GitHub ID (`curl -s https://api.github.com/users/<handle> | jq .id`).
 
-    **Test the nixpkgs package** before opening the PR:
+    **Test the nixpkgs package** before opening the PR (from inside the worktree):
     ```bash
     nix-build -A <project-name>
     result/bin/<project-name> --version
+    nix fmt   # CI enforces nixfmt — run before committing
     ```
+
+    **Commit with nixpkgs conventions and the AI disclosure trailer**: the package commit message is `<project>: init at <version>` (no trailing period) and MUST carry an `Assisted-by: <tool> (<model>)` trailer — this is required by nixpkgs's Automation/AI policy and is the scoped exception to the global no-attribution rule. Do NOT use `Co-authored-by:` (does not satisfy the policy) and do NOT add the trailer to commits in the upstream project's repo.
 
     **Open the PR to NixOS/nixpkgs** with title `<project>: init at <version>` and the body from `references/nixpkgs-pr.md.tmpl`. Follow the "CRITICAL — How to post these bodies to GitHub" guard: substitute `$PROJECT`/`$VERSION`/`$DESCRIPTION`/`$UPSTREAM_OWNER`/`$UPSTREAM_REPO` placeholders by text replacement, write the body to a file, and post with `gh pr create --repo NixOS/nixpkgs --body-file`.
 
-    **Key departure from project-owner PRs**: The nixpkgs PR body does NOT explain Nix concepts. The audience is nixpkgs maintainers who already know Nix — they need the package definition, dependencies, meta attributes, and test results, not a tutorial on what Nix is. See `references/nixpkgs-contribution.md` and `references/nixpkgs-pr.md.tmpl`.
+    **Key departure from project-owner PRs**: The nixpkgs PR body does NOT explain Nix concepts. The audience is nixpkgs maintainers who already know Nix — they need the package definition, dependencies, meta attributes, and test results, not a tutorial on what Nix is. See `references/nixpkgs-requirements.md` (upstream rules), `references/nixpkgs-contribution.md` (packaging workflow), and `references/nixpkgs-pr.md.tmpl`.
 
     **When `add_nixpkgs_output=true` (Step 11b)**: Include the "Superset Note" conditional section from the nixpkgs PR template — it tells nixpkgs maintainers that the upstream project's flake also wraps this package via a `#nixpkgs` output.
 

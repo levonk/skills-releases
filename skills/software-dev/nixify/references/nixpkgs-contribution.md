@@ -11,6 +11,16 @@ also contribute the package upstream to nixpkgs. This makes the project
 available to all Nix users via `nix profile add nixpkgs#<project>`, not just
 those who know about the in-repo flake.
 
+> **Requirements first**: Read
+> [`nixpkgs-requirements.md`](nixpkgs-requirements.md) before preparing the
+> PR. Nixpkgs enforces strict upstream rules — mandatory `Assisted-by:` AI
+> disclosure trailers, real-identity maintainer entries, nixfmt formatting,
+> commit-message conventions, and MIT licensing of the contribution — several
+> of which deliberately override the repo's usual no-attribution defaults,
+> scoped to the nixpkgs worktree only. That page also documents the working
+> copy convention: a git worktree off `~/p/gh/levonk-3rd/nixpkgs`, never a
+> fresh clone.
+
 The nixpkgs contribution is prepared at Step 28b, **after** the in-repo flake
 has been validated and the main PR (Step 27) has been created. The nixpkgs PR
 references the working in-repo flake as evidence the package builds and runs.
@@ -164,7 +174,9 @@ maintainer entry (separate commit).
 ## Maintainer Entry
 
 Before the nixpkgs PR can be merged, you must add yourself to
-`maintainers/maintainer-list.nix` in a **separate commit**. The entry format:
+`maintainers/maintainer-list.nix` in a **separate commit** (message
+`maintainers: add <handle>`), ordered **before** the package commit and
+inserted alphabetically by handle. The entry format:
 
 ```nix
 your-handle = {

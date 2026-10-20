@@ -79,7 +79,32 @@ for the nixpkgs `package.nix`:
 ### Maintainer Entry
 
 Before the nixpkgs PR can be merged, the contributor must add themselves to
-`maintainers/maintainer-list.nix` in a separate commit.
+`maintainers/maintainer-list.nix` in a separate commit
+(`maintainers: add <handle>`), placed before the package commit. The entry
+requires real identity: `name`, `email`, `github`, `githubId` (numeric).
+
+### Upstream Acceptance Requirements
+
+Nixpkgs enforces strict rules that override the usual "no attribution"
+defaults — scoped to the nixpkgs worktree/PR only:
+
+- **AI disclosure (mandatory)**: commits containing LLM-generated content
+  must carry an `Assisted-by: <tool> (<model>)` trailer (`Co-authored-by:`
+  does not satisfy the policy); PR bodies and comments must disclose
+  separately. See nixpkgs CONTRIBUTING.md — Automation/AI policy.
+- **Licensing**: submitting implies licensing the contribution under
+  nixpkgs's MIT-like `COPYING` — the diff is MIT, the upstream project's own
+  files keep their license.
+- **Commit conventions**: `<pkg>: init at <version>`, no trailing period,
+  one logical unit per commit, `maintainers:` commit ordered first.
+- **Formatting**: CI enforces the official `nixfmt` — run `nix fmt` before
+  committing.
+- **Working copy**: work in a git worktree off the local clone
+  (`~/p/gh/levonk-3rd/nixpkgs`, worktrees under `~/orca/workspaces/nixpkgs/`) —
+  never fresh-clone multi-GB nixpkgs.
+
+The nixify skill's `references/nixpkgs-requirements.md` is the operational
+checklist for all of these.
 
 ### Hash Discovery
 

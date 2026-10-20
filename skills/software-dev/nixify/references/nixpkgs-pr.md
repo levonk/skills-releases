@@ -51,16 +51,21 @@ The upstream project already has a working in-repo Nix flake
 (https://github.com/$UPSTREAM_OWNER/$UPSTREAM_REPO) which was used as the
 reference for this packaging.
 
-## Checklist
+## Things done
 
-- [ ] `package.nix` follows the `pkgs/by-name` convention
-- [ ] Built locally with `nix-build -A $PROJECT`
-- [ ] Ran `result/bin/$PROJECT --version` and confirmed the binary works
-- [ ] Added myself as a maintainer in `maintainers/maintainer-list.nix` (separate commit)
-- [ ] Set `meta.license` to the correct license
-- [ ] Set `meta.platforms` to the tested platforms
-- [ ] Set `meta.mainProgram` to the binary name
-- [ ] Ran `nixpkgs-hammering` and addressed findings (optional but recommended)
+<!-- Mirrors nixpkgs's own PR template — answer every checkbox truthfully. -->
+
+- Built on platform:
+  - [ ] x86_64-linux
+  - [ ] aarch64-linux
+  - [ ] x86_64-darwin
+  - [ ] aarch64-darwin
+- [ ] Tested, as applicable:
+  - [NixOS test(s)](https://nixos.org/manual/nixos/unstable/index.html#sec-nixos-tests) in [nixos/tests](https://github.com/NixOS/nixpkgs/blob/master/nixos/tests)
+  - [Package tests](https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#package-tests) at `passthru.tests`
+- [ ] Ran `nixpkgs-review` on this PR
+- [ ] Tested basic functionality of all binary files (usually in `./result/bin/`)
+- [ ] Fits [CONTRIBUTING.md](https://github.com/NixOS/nixpkgs/blob/master/CONTRIBUTING.md), [pkgs/README.md](https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md), [maintainers/README.md](https://github.com/NixOS/nixpkgs/blob/master/maintainers/README.md) and other READMEs
 
 ## Testing
 
@@ -73,7 +78,17 @@ The package was tested by:
 
 ## Maintainer
 
-I have added myself to `maintainers/maintainer-list.nix` in a separate commit.
+I have added myself to `maintainers/maintainer-list.nix` in a separate commit
+(`maintainers: add <handle>`, before the package commit).
+
+## Disclosure
+
+<!-- REQUIRED by nixpkgs's Automation/AI policy — do NOT remove, even though -->
+<!-- the global no-attribution rule normally forbids this. The exception is -->
+<!-- scoped to the nixpkgs PR only. Fill in the actual tool and model. -->
+Parts of this contribution were prepared with assistance from an AI coding
+tool (<tool> (<model>)). The changes were reviewed before submission; see the
+`Assisted-by:` trailers on the commits.
 
 <!-- BEGIN conditional: Superset Note -->
 <!-- INCLUDE this section ONLY when the in-repo flake also exposes a #nixpkgs -->

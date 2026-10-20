@@ -32,4 +32,4 @@ Create new AI agent rules or audit and update existing rules. Scaffolds new rule
 
 - **Full skill**: [`skills/ai/rule-upsert/SKILL.md`](skills/ai/rule-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-18T02:39:36Z
+- **Generated**: 2026-10-20T00:50:07Z

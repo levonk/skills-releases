@@ -35,4 +35,4 @@ Personal wealth navigation guide — what to do next with your money at every ne
 
 - **Full skill**: [`skills/finance/wealth-planning/SKILL.md`](skills/finance/wealth-planning/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-18T02:39:36Z
+- **Generated**: 2026-10-20T00:50:07Z
