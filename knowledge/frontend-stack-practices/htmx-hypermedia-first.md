@@ -6,7 +6,7 @@ tags: [htmx, hypermedia, frontend, architecture, server-rendered, javascript]
 date:
   created: "2026-07-23"
   knowledge-basis: "2026-07-23"
-  last-used: "2026-07-23"
+  last-used: "2026-10-22"
 sources:
   - id: htmx-hypermedia-as-the-engine-of-application-state
     resource: "https://htmx.org/"
@@ -160,6 +160,11 @@ that actually needed it.
 
 ## Related Concepts
 
+- [Micro-Interactions](micro-interactions.md) — the local-feedback layer
+  beneath the page-level interaction model; the sub-100ms "Signal 1" case
+  lives in CSS/JS regardless of HTMX vs SPA
+- [Micro-Interaction Patterns](micro-interaction-patterns.md) — embedded
+  implementations for the feedback patterns HTMX pages still need
 - [Node.js Frontend Setup](nodejs-frontend-setup.md) — applies when an
   interaction genuinely requires a client-side JS/React subtree
 - [CSS Fundamentals](css-fundamentals.md) — styling layer HTMX swaps into

@@ -6,7 +6,7 @@ tags: [css, frontend, layout, responsive, bem, design-tokens, animations, scss]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-18"
-  last-used: "2026-07-18"
+  last-used: "2026-10-22"
 ---
 
 # CSS Fundamentals
@@ -590,6 +590,10 @@ div * { }
 
 ## See Also
 
+- [Micro-Interactions](micro-interactions.md) — Feedback-loop discipline that
+  applies the animation and transition rules from this page
+- [Micro-Interaction Patterns](micro-interaction-patterns.md) — Canonical
+  implementations built on these animation primitives
 - [Tailwind v4 Features](tailwind-v4-features.md) — Utility-first CSS framework
   built on these CSS foundations
 - [Node.js Frontend Setup](nodejs-frontend-setup.md) — Build tooling and project

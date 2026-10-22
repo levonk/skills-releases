@@ -1,5 +1,38 @@
 # Directory Update Log
 
+## 2026-10-22
+
+* **Ingest**: Added two concept pages covering micro-interaction design and
+  implementation, sourced from the
+  [TypeUI Micro Interactions catalog](https://www.typeui.sh/micro-interactions)
+  (113 named micro-interactions across 11 categories, launched 2026-10-22 per
+  the TypeUI changelog), Dan Saffer's micro-interaction anatomy model, and MDN
+  `prefers-reduced-motion`.
+  - [micro-interactions.md](micro-interactions.md) — the discipline: Saffer's
+    four-part anatomy (trigger, rules, feedback, loops & modes), when to add a
+    micro-interaction (acknowledgment, state change, wayfinding, error
+    prevention/recovery, waiting), implementation standards (100–300ms typical
+    durations, ≤500ms ceiling, easing rules, transform/opacity-only,
+    reduced-motion gate, keyboard parity), the 11-category TypeUI catalog map,
+    and anti-patterns.
+  - [micro-interaction-patterns.md](micro-interaction-patterns.md) — embedded
+    canonical implementations for all 11 categories (buttons, inputs,
+    selection, modals, drawers, toasts, cards, lists, sliders, tooltips, step
+    navigation) so the patterns work offline; TypeUI cited as the external
+    catalog for the full set, live previews, and implementation prompts.
+  - Updated [index.md](index.md) to list the two new concepts and broaden the
+    bundle description to include micro-interaction discipline and patterns.
+  - Updated [overview.md.tmpl](overview.md.tmpl): added `micro-interactions`
+    to the stack pipeline, added an `Interaction` phase-table row for the two
+    new pages, broadened the scope statement and frontmatter description/tags,
+    added the TypeUI source to frontmatter and the Sources section, and
+    updated `knowledge-basis` and `last-used` to 2026-10-22.
+  - Cross-linked from [htmx-hypermedia-first.md](htmx-hypermedia-first.md)
+    Related Concepts (micro-interactions are the local-feedback layer beneath
+    the page-level interaction model — the sub-100ms "Signal 1" case) and from
+    [css-fundamentals.md](css-fundamentals.md) See Also (animation primitives
+    the patterns build on); bumped `last-used` on both.
+
 ## 2026-08-21
 
 * **Ingest**: Added three new concept pages covering cross-platform client

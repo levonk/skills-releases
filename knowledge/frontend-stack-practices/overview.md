@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Frontend Stack Practices Overview
-description: Synthesis of frontend stack practices — explicit file extensions, path alias safety, ESLint composition API, Vitest testing, code style conventions, HTMX hypermedia-first interaction design, and cross-platform client image loading (Android, iOS, Web, Flutter, React Native, Desktop) for TypeScript/React and mobile projects.
-tags: [typescript, react, eslint, vitest, frontend, overview, synthesis]
+description: Synthesis of frontend stack practices — explicit file extensions, path alias safety, ESLint composition API, Vitest testing, code style conventions, HTMX hypermedia-first interaction design, micro-interaction feedback patterns, and cross-platform client image loading (Android, iOS, Web, Flutter, React Native, Desktop) for TypeScript/React and mobile projects.
+tags: [typescript, react, eslint, vitest, frontend, micro-interactions, overview, synthesis]
 date:
   created: "2026-07-17"
-  knowledge-basis: "2026-08-21"
-  last-used: "2026-08-21"
+  knowledge-basis: "2026-10-22"
+  last-used: "2026-10-22"
 sources:
   - id: adr-20251019001-explicit-file-extensions
     resource: "internal-docs/adr/adr-20251019001-explicit-file-extensions.md"
@@ -62,6 +62,9 @@ sources:
   - id: tauri-plugin-redb-cache
     resource: "https://github.com/tauri-apps/tauri-plugin-redb-cache"
     title: "tauri-plugin-redb-cache — v0.1.2"
+  - id: typeui-micro-interactions
+    resource: "https://www.typeui.sh/micro-interactions"
+    title: "TypeUI — Micro Interactions catalog (113 interactions, 11 categories)"
 ---
 
 ---
@@ -193,7 +196,7 @@ client platforms.
 ## The Frontend Stack
 
 ```
-file-extensions → path-aliases → eslint-config → testing → code-style → interaction-model → image-loading
+file-extensions → path-aliases → eslint-config → testing → code-style → interaction-model → micro-interactions → image-loading
 ```
 
 | Phase | Practice | Prevents |
@@ -204,6 +207,7 @@ file-extensions → path-aliases → eslint-config → testing → code-style �
 | Testing | [Vitest Testing Framework](vitest-testing-framework.md) | Slow tests, Jest config complexity, fragmented test runners |
 | Style | [Code Style Conventions](code-style-conventions.md) | Inconsistent formatting, style debates, mixed conventions |
 | Interaction | [HTMX Hypermedia-First](htmx-hypermedia-first.md) | SPA complexity for CRUD UIs, duplicated client state, heavier payloads |
+| Interaction | [Micro-Interactions](micro-interactions.md) + [Patterns](micro-interaction-patterns.md) | Dead-feeling UI, unclear state changes, gratuitous or missing feedback |
 | Images | [Android Image Loading](android-image-loading.md) | OOM crashes, janky scrolling, deprecated library usage |
 | Images | [iOS Image Loading](ios-image-loading.md) | Memory spikes, ObjC/Swift mismatch, missing SwiftUI support |
 | Images | [Cross-Platform Image Loading](cross-platform-image-loading.md) | Unmaintained libraries, missing native standards, memory leaks |
@@ -301,8 +305,10 @@ kept in sync via the templater at build time.
 This bundle covers **frontend TypeScript/React development practices and
 cross-platform client image loading** — file extensions, path aliases, ESLint
 configuration, testing, code style, hypermedia-first interaction design (HTMX
-over client-side JS), and image loading library selection for Android, iOS,
-Web, Flutter, React Native, and Desktop. It does **not** cover:
+over client-side JS), micro-interaction feedback discipline and embedded
+pattern implementations (sourced from the TypeUI catalog), and image loading
+library selection for Android, iOS, Web, Flutter, React Native, and Desktop.
+It does **not** cover:
 
 - Monorepo build orchestration — see
   [typescript-monorepo-best-practices](https://github.com/levonk/skills-releases/blob/main/knowledge/typescript-monorepo-best-practices/overview.md).
@@ -323,6 +329,9 @@ Web, Flutter, React Native, and Desktop. It does **not** cover:
 - Expo — expo-image SDK documentation
 - pub.dev — cached_network_image_ce v4.10.0
 - GitHub — tauri-plugin-redb-cache v0.1.2
+- TypeUI — [Micro Interactions catalog](https://www.typeui.sh/micro-interactions)
+  (113 interactions across 11 categories; free previews, paid implementation
+  prompts)
 
 ## Related Knowledge Bundles
 
