@@ -30,3 +30,12 @@ captures specific requirements and patterns sourced from real boilerplate ADRs.
 * [File Watcher Patterns](file-watcher-patterns.md) - notify crate event filtering, cross-platform watch limits, FS race conditions, async integration
 * [Cross-Platform Path Handling](cross-platform-path-handling.md) - std::path vs camino, normalization, symlinks, Windows UNC paths
 * [Anyhow + Thiserror Combination](anyhow-thiserror-combination.md) - Layered error handling: thiserror in libs, anyhow at application layer
+* [Import Organization](import-organization.md) - No glob imports, one module per use, locally-scoped trait imports, module-qualified function calls
+* [API Design Principles](api-design-principles.md) - Flexible reference parameters, iterators vs owned collections, impl Into, enum over bool
+* [Type and Trait Design](type-and-trait-design.md) - Newtypes vs aliases, derive over manual impls, generics vs dyn, extension traits, trait impl checklist
+* [Rust Naming Conventions](rust-naming-conventions.md) - as_/to_/into_ prefixes, getter/setter conventions, descriptive lifetimes, new()/try_new(), no obscure abbreviations
+* [Documentation Comments](documentation-comments.md) - /// and //! usage, panic and unsafe invariant documentation, omit signature-restating comments
+* [API Stability Attributes](api-stability-attributes.md) - #[non_exhaustive] enums/structs, #[must_use], const fn commitment, #[doc(hidden)], no unstable features
+* [Implementation Idioms](implementation-idioms.md) - Ownership over Rc/Arc, explicit types over inference, pattern matching over unwrap, for loops vs combinator chains
+* [Unsafe Code Practices](unsafe-code-practices.md) - Encapsulate unsafe, SAFETY: comments, no poisoned-mutex contents, no catch_unwind
+* [Macro Guidelines](macro-guidelines.md) - Escalation order: plain Rust, macro_rules!, codegen, proc macros; tooling and refactor costs

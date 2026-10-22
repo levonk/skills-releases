@@ -8,7 +8,7 @@ disable-model-invocation: true
 date:
   created: "2026-05-25"
   knowledge-basis: "2026-07-31"
-  last-used: "2026-09-03"
+  last-used: "2026-10-21"
 tags:
   - "ai/skill"
   - "skill-creation"

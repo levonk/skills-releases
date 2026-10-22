@@ -1,5 +1,59 @@
 # Directory Update Log
 
+## 2026-10-21
+
+* **Ingest**: Ingested the [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html)
+  — Google's style, API-design, and implementation rules for Rust across
+  google3, Android, ChromeOS, Fuchsia, and Chrome. General (untagged) rules
+  were extracted; codebase-tagged `[chrome]`/`[Fuchsia]` rules (Chromium
+  crate layout, `chromium::import!`, async/thread bans, `fuchsia_sync::Mutex`,
+  per-codebase test frameworks) were excluded as out of scope. Nine new
+  concept pages:
+  - [import-organization.md](import-organization.md) — no glob imports (with
+    exceptions), one module per `use`, locally-scoped trait imports,
+    module-qualified function calls, unqualified type names
+  - [api-design-principles.md](api-design-principles.md) — flexible
+    reference parameters (`&T`/`&[T]`/`&str`/`Option<&T>`), iterators vs
+    owned collections, `impl Into<T>` trade-offs, enum over bool, library
+    vs application rule strength
+  - [type-and-trait-design.md](type-and-trait-design.md) — newtypes vs
+    aliases, named fields, derive-first, std-traits-over-methods, generics
+    vs `dyn Trait`, extension traits (`~Ext`), trait impl checklist,
+    `From` + explicit constructors, options structs `Default`
+  - [rust-naming-conventions.md](rust-naming-conventions.md) — `as_`/`to_`/
+    `into_` prefixes, getter/setter conventions (`foo`/`foo_mut`/`take_`/
+    `set_`/`with_`/`replace_`), descriptive lifetimes, `new()`/`try_new()`/
+    `from_foo()`, avoid abbreviations
+  - [documentation-comments.md](documentation-comments.md) — `///` vs `//!`
+    vs `//`, panic and unsafe invariant documentation, omit
+    signature-restating comments, `missing_docs` lint
+  - [api-stability-attributes.md](api-stability-attributes.md) —
+    `#[non_exhaustive]` enums/structs (+ `non_exhaustive_omitted_patterns`
+    match style), `#[must_use]` on functions/types, `const fn` commitment,
+    `#[doc(hidden)]` is private, no unstable features, no pre-`main()` code
+  - [implementation-idioms.md](implementation-idioms.md) — avoid `Rc`/`Arc`,
+    borrows over clones, bounded type inference, pattern matching over
+    check-then-unwrap, `for` vs combinator chains, assertion context
+    strings, `format!`/`write!` over `+`
+  - [unsafe-code-practices.md](unsafe-code-practices.md) — last-resort
+    unsafe, encapsulate + `SAFETY:` + justification, no poisoned-mutex
+    contents, no `catch_unwind`
+  - [macro-guidelines.md](macro-guidelines.md) — escalation order (plain
+    Rust → `macro_rules!` → codegen → proc macros) and the tooling/dialect/
+    refactor costs
+* **Update**: [project-structure.md](project-structure.md) — leaf vs
+  non-leaf module rules (declarations + re-exports only), name files after
+  the primary item, prefer small crates.
+* **Update**: [rustfmt-clippy-config.md](rustfmt-clippy-config.md) —
+  optional Google rustfmt options (`hex_literal_case`,
+  `format_macro_matchers`, `imports_granularity`), invisible-character
+  escapes, `#[rustfmt::skip]` policy.
+* **Update**: [error-handling.md](error-handling.md) — `Option`/`Result`/
+  `panic!` selection, `expect` over `unwrap`, no `catch_unwind`.
+* **Update**: [index.md](index.md), [overview.md](overview.md),
+  [testing-strategy.md](testing-strategy.md) — new entries, table rows,
+  source entry, and cross-links.
+
 ## 2026-08-20
 
 * **Update**: Updated [security-auditing.md](security-auditing.md) with

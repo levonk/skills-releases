@@ -6,12 +6,15 @@ tags: [rust, testing, unit-tests, integration-tests, doc-tests, benchmarks, prop
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  last-used: "2026-10-21"
 
 sources:
   - id: levonk-base-boilerplate
     resource: "internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md"
     title: "levonk-base-boilerplate"
+  - id: google-rust-style-guide
+    resource: "https://google.github.io/styleguide/rustguide.html"
+    title: "Google Rust Style Guide"
 ---
 
 # Testing Strategy
@@ -74,3 +77,5 @@ pub fn setup_test_logger() {
 
 - [Quality Gates](quality-gates.md) — CI runs all test types
 - [Async Patterns](async-patterns.md) — Async test macro pattern
+- [Implementation Idioms](implementation-idioms.md) — context strings in
+  assertions

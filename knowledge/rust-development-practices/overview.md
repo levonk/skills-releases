@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Rust Development Practices Overview
-description: Synthesis of Rust development practices — project structure, Cargo config, formatting/linting, testing, error handling, async, serialization, CLI standards, container support, security, and quality gates.
+description: Synthesis of Rust development practices — project structure, Cargo config, formatting/linting, testing, error handling, async, serialization, CLI standards, container support, security, quality gates, plus API design, type/trait design, naming, documentation, stability attributes, implementation idioms, unsafe, and macros.
 tags: [rust, development, cargo, cli, overview, synthesis]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-07-17"
+  last-used: "2026-10-21"
 
 sources:
   - id: levonk-base-boilerplate
@@ -15,6 +15,9 @@ sources:
   - id: levonk-base-boilerplate-adr-20260607001-cli-tool-standards
     resource: "internal-docs/adr/adr-20260607001-cli-tool-standards.md"
     title: "levonk-base-boilerplate"
+  - id: google-rust-style-guide
+    resource: "https://google.github.io/styleguide/rustguide.html"
+    title: "Google Rust Style Guide"
 ---
 
 ---
@@ -168,6 +171,15 @@ project-structure → cargo-config → formatting → testing → error-handling
 | Watching | [File Watcher Patterns](file-watcher-patterns.md) | Watch limit exhaustion, FS race conditions, missed events on slow disks |
 | Paths | [Cross-Platform Path Handling](cross-platform-path-handling.md) | Path display corruption, symlink loops, Windows UNC path failures |
 | Errors | [Anyhow + Thiserror Combination](anyhow-thiserror-combination.md) | Library errors leaking into application context, untestable error variants |
+| Imports | [Import Organization](import-organization.md) | Hidden name origins, noisy diffs, unqualified non-local calls |
+| API | [API Design Principles](api-design-principles.md) | Concrete-container signatures, premature allocation, unreadable bool params |
+| Types | [Type and Trait Design](type-and-trait-design.md) | Ambiguous aliases, manual impls, dyn overhead, organizational traits |
+| Naming | [Rust Naming Conventions](rust-naming-conventions.md) | Misleading conversion names, unguessable constructors, obscure abbreviations |
+| Docs | [Documentation Comments](documentation-comments.md) | Undocumented APIs, signature-parroting comments, hidden panic conditions |
+| Stability | [API Stability Attributes](api-stability-attributes.md) | Breaking enum additions, dropped must-use results, unstable-feature lock-in |
+| Idioms | [Implementation Idioms](implementation-idioms.md) | Reflexive Rc/Arc, clone-driven design, unreadable inference and combinator chains |
+| Unsafe | [Unsafe Code Practices](unsafe-code-practices.md) | Scattered unsafe blocks, unjustified UB risk, poisoned state propagation |
+| Macros | [Macro Guidelines](macro-guidelines.md) | Language dialects, tooling degradation, refactor-hostile metaprogramming |
 
 ## Scope
 
@@ -185,6 +197,7 @@ testing, security, and deployment. It does **not** cover:
 
 - `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — boilerplate (756 lines)
 - `internal-docs/adr/adr-20260607001-cli-tool-standards.md` — boilerplate (v5.0.0, 2026-07-29; 437 lines)
+- [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html) — ingested 2026-10-21 (codebase-tagged `[chrome]`/`[Fuchsia]` rules excluded)
 
 ## Related Knowledge Bundles
 
