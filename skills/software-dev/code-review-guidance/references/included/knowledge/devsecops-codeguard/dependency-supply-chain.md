@@ -163,5 +163,6 @@ the full parity model.
 
 - [Security Audit Playbook](security-audit-playbook.md) — final validation that dependency checks ran and passed before deployment.
 - [tree-sitter-grammar-supply-chain](../secrets-egress-security/tree-sitter-grammar-supply-chain.md) — supply-chain controls specific to vendored tree-sitter grammars.
+- [Model Weights Supply Chain](../secrets-egress-security/model-weights-supply-chain.md) — fine-tuned/abliterated model weights as a supply-chain artifact that can carry dormant backdoors.
 - [Security-Aware Static Analysis](security-aware-static-analysis.md) — auditing the analysis tool's own dependencies with these practices.
 - [Pre-Commit CI Parity](../cicd-testing-practices/pre-commit-ci-parity.md) — the `workflow-security` CI job that runs zizmor + actionlint as part of the standard CI parity model.

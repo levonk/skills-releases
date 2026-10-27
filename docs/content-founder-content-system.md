@@ -29,4 +29,4 @@ Set up and operate a complete founder content system for a single founder or exe
 
 - **Full skill**: [`skills/content/founder-content-system/SKILL.md`](skills/content/founder-content-system/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-22T22:32:07Z
+- **Generated**: 2026-10-27T07:04:36Z

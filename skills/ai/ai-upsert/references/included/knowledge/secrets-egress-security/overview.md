@@ -159,6 +159,7 @@ hybrid-vault → shared-path-clean → ansible-distribution → egress-firewall 
 | Traversal | [Path Traversal in Scanners](path-traversal-in-scanners.md) | Path traversal in file scanning, symlink following, cross-platform risks |
 | Config Injection | [TOML Config Injection](toml-config-injection.md) | TOML injection via crafted values, world-writable config files, unsafe env expansion |
 | Grammar Supply | [Tree-Sitter Grammar Supply Chain](tree-sitter-grammar-supply-chain.md) | Unvetted C code in tree-sitter grammars, unpinned grammar versions |
+| Model Supply | [Model Weights Supply Chain](model-weights-supply-chain.md) | Backdoored fine-tuned/abliterated weights exfiltrating secrets via agent tool calls |
 
 ## Scope
 

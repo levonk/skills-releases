@@ -1,5 +1,13 @@
 # Directory Update Log
 
+## 2026-10-26
+
+* **Update**: Added cross-link in
+  [dependency-supply-chain.md](dependency-supply-chain.md) Related Concepts
+  to the new
+  [model-weights-supply-chain.md](https://github.com/levonk/skills-releases/blob/main/knowledge/secrets-egress-security/model-weights-supply-chain.md)
+  page in the secrets-egress-security bundle.
+
 ## 2026-08-27
 
 * **Update**: Updated [dependency-supply-chain.md](dependency-supply-chain.md)

@@ -1,5 +1,18 @@
 # Directory Update Log
 
+## 2026-10-26
+
+* **Ingest**: Authored
+  [model-weights-supply-chain.md](model-weights-supply-chain.md) —
+  backdoored fine-tuned/abliterated model weights, trigger-phrase
+  tool-call hijack, staged payload egress on trusted domains, weight
+  provenance and runtime egress controls — sourced from ProjectDiscovery
+  research (2026-10-06).
+* **Update**: Updated [index.md](index.md) and [overview.md](overview.md)
+  with the new concept; added cross-link from
+  [dependency-supply-chain.md](https://github.com/levonk/skills-releases/blob/main/knowledge/devsecops-codeguard/dependency-supply-chain.md)
+  in the devsecops-codeguard bundle.
+
 ## 2026-08-05
 
 * **Ingest**: Authored 4 new security concept pages sourced from the

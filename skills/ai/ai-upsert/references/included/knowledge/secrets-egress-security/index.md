@@ -22,3 +22,4 @@ practices.
 * [path-traversal-in-scanners](path-traversal-in-scanners.md) - Path traversal in file scanning, canonicalization, symlink validation, sandbox patterns
 * [toml-config-injection](toml-config-injection.md) - TOML injection vectors, safe serde parsing, config file permissions, env var expansion
 * [tree-sitter-grammar-supply-chain](tree-sitter-grammar-supply-chain.md) - Supply-chain risks in tree-sitter grammars, grammar validation, pinning, source review
+* [model-weights-supply-chain](model-weights-supply-chain.md) - Backdoored fine-tuned/abliterated model weights, trigger-phrase tool-call hijack, weight provenance, runtime egress controls
