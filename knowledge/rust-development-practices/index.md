@@ -39,3 +39,11 @@ captures specific requirements and patterns sourced from real boilerplate ADRs.
 * [Implementation Idioms](implementation-idioms.md) - Ownership over Rc/Arc, explicit types over inference, pattern matching over unwrap, for loops vs combinator chains
 * [Unsafe Code Practices](unsafe-code-practices.md) - Encapsulate unsafe, SAFETY: comments, no poisoned-mutex contents, no catch_unwind
 * [Macro Guidelines](macro-guidelines.md) - Escalation order: plain Rust, macro_rules!, codegen, proc macros; tooling and refactor costs
+* [Ownership and Borrowing](ownership-and-borrowing.md) - Clone-avoidance ladder, mem::take/replace, disjoint field borrows, freeze-after-setup, smart pointers out of signatures
+* [Builders and Constructors](builders-and-constructors.md) - new()/Default agreement, builder shape with infallible setters and build() -> Result, semantic parameter grouping
+* [Visibility and API Evolution](visibility-and-api-evolution.md) - Private by default, sealed traits, one path per public item, semver breaking-change list, MSRV
+* [Concurrency and Async Design](concurrency-and-async-design.md) - Send/Sync assertions, message passing over shared state, lock discipline, async fn shape, runtime-agnostic libraries
+* [Performance Practices](performance-practices.md) - Measure-first optimization, capacity hints, buffer reuse, fast hashers for trusted keys, mimalloc for apps
+* [Rust Code Review](rust-code-review.md) - Review methodology: scope, tools first, priority-ordered findings, must/should/consider report format
+* [Porting to Rust](porting-to-rust.md) - Port behavior not structure, tests first, per-language mapping tables, PORTING.md deliverable
+* [Bevy ECS Conventions](bevy-ecs-conventions.md) - Bevy-specific exceptions and compile-clean ECS bugs (query conflicts, deferred Commands, system ordering)

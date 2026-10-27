@@ -6,12 +6,15 @@ tags: [rust, imports, use-statements, glob-imports, module-organization, refacto
 date:
   created: "2026-10-21"
   knowledge-basis: "2026-10-21"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # Import and Use Statement Organization
@@ -35,8 +38,12 @@ Avoid `use module::*`. Exceptions where a glob import is acceptable:
   deal with that enum
 - `pub use submodule::*` in non-leaf re-export modules
 
-Avoid defining preludes. Reviewer discretion applies to third-party crates
-that encourage a prelude (e.g., `tracing::prelude`).
+Avoid defining preludes. A framework's documented prelude is fine —
+`use bevy::prelude::*` is Bevy's official import pattern (clippy's
+`wildcard_imports` already exempts `prelude` paths) — but reviewer
+discretion applies to third-party crates that merely encourage one
+(`tracing::prelude`), and never glob-import a crate you do not control
+without pinning it: a minor release can add a clashing name (error E0034).
 
 ### One Module Per `use` Statement
 

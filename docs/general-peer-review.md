@@ -26,4 +26,4 @@ Run an anonymous (blind) peer-review round over a set of responses, designs, doc
 
 - **Full skill**: [`skills/general/peer-review/SKILL.md`](skills/general/peer-review/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-27T07:04:36Z
+- **Generated**: 2026-10-27T22:07:53Z

@@ -6,7 +6,7 @@ tags: [rust, project-structure, directory-layout, modules, re-exports]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: levonk-base-boilerplate
@@ -15,6 +15,9 @@ sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # Project Structure
@@ -67,6 +70,17 @@ package/
   justified by trait-impl coherence or foundational-library scope. Needing
   subdirectories inside one crate is a smell indicating the crate has grown
   too large.
+- **Flat workspace layout**: crates live as siblings under `crates/` with
+  one workspace `Cargo.toml` — never nest a crate inside another crate or
+  its `src/`. Every crate is a workspace member; share versions and lints
+  through `[workspace.dependencies]`/`[workspace.lints]` (see
+  [Cargo Configuration](cargo-configuration.md)).
+- **Balance the root**: put the essential items at the crate root and group
+  the rest by use case (`account`, `network`), not by kind (`traits`,
+  `errors`). Do not define a prelude.
+- **One path per public item**: do not combine `pub mod db { pub struct
+  Connection; }` with `pub use db::Connection;` — see
+  [Visibility and API Evolution](visibility-and-api-evolution.md).
 
 ## Related Concepts
 

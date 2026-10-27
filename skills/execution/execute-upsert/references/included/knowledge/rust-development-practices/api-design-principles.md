@@ -6,12 +6,15 @@ tags: [rust, api-design, function-signatures, iterators, generics, library-desig
 date:
   created: "2026-10-21"
   knowledge-basis: "2026-10-21"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # API Design Principles
@@ -51,6 +54,39 @@ wrappers:
 Exception: non-linear character data (Rope/Cord). See clippy lints
 `borrowed_box` and `ptr_arg`.
 
+For read-only path, string, or byte-buffer parameters,
+`impl AsRef<Path>` / `impl AsRef<str>` / `impl AsRef<[u8]>` is fine —
+never on struct fields (store `PathBuf`, `String`). Accept
+`impl RangeBounds<T>` instead of `(low, high)` pairs so callers can write
+`1..3`, `1..`, `..`.
+
+### Take Ownership by Value When You Need It
+
+If a function stores or consumes its argument, take `T` — not `&T` plus an
+internal `.clone()`. If it only reads, `&T`; if it mutates in place,
+`&mut T`. Return multiple values as a tuple or struct, not through `&mut`
+out-parameters (reusing a caller-owned buffer, as `Read::read` does, is
+the exception — see
+[Performance Practices](performance-practices.md)).
+
+Generic `R: Read`/`W: Write` parameters are taken by value; `&mut R` also
+implements `Read`, so callers pass `&mut f` to keep using the handle — say
+so in the docs.
+
+### Use the Strongest Std Type
+
+`PathBuf`/`&Path` for paths, `Duration` for spans — not `String`/`u64`.
+Keep plain integers at API boundaries (`NonZeroU32`, `Saturating` are for
+internals). Independent flags use the `bitflags` crate; an enum models
+exactly one choice. `Option` for absence — never sentinels like `-1` or
+`""`.
+
+### Sans-IO Design
+
+Synchronous one-shot I/O takes `impl Read`/`impl Write`; runtime-agnostic
+async takes `futures::io::AsyncRead`. Keeping logic I/O-free makes it
+testable and runtime-independent.
+
 ### Iterators vs Owned Collections in Returns
 
 Library code should return iterators (concrete types or `impl Iterator`)
@@ -76,9 +112,16 @@ Application code should almost never use `impl Into<T>` parameters.
 
 ### Prefer `enum` Over `bool` in APIs
 
-Use an enum parameter where the purpose of a `bool` is not obvious at the
-call site. If a `bool` is used anyway, add an inline comment at the call
-site naming what it controls.
+No `bool` parameters in public or shared signatures — `report(true)` is
+unreadable at the call site and cannot grow a third mode. Use a
+two-variant enum (`Verbosity::Summary`/`Verbosity::Full`) or two methods
+(`report()`/`report_verbose()`). The only exception is a private helper
+whose call sites sit a few lines away; when refactoring, an existing
+`bool` parameter is a smell to remove, not preserve. For application code
+where a `bool` is used anyway, add an inline comment at the call site
+naming what it controls. `max-fn-params-bools = 0` in `clippy.toml`
+enforces this — see
+[Rustfmt and Clippy](rustfmt-clippy-config.md).
 
 ## Related Concepts
 
@@ -88,3 +131,7 @@ site naming what it controls.
   conversion method naming
 - [Error Handling](error-handling.md) — `Option` vs `Result` vs `panic!`
   return-type selection
+- [Builders and Constructors](builders-and-constructors.md) — grouping
+  loose parameters into semantic types
+- [Visibility and API Evolution](visibility-and-api-evolution.md) —
+  visibility and semver constraints on signatures

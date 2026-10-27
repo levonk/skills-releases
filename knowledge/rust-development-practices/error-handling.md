@@ -6,7 +6,7 @@ tags: [rust, error-handling, thiserror, anyhow, panic, result]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: levonk-base-boilerplate
@@ -15,6 +15,9 @@ sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # Error Handling
@@ -78,11 +81,58 @@ Pick the mechanism that fits the API contract:
 - **Prefer `expect` over `unwrap`** — when a panic is necessary because an
   invariant cannot be expressed in the type system, `expect("reason")`
   documents why the panic is impossible
-- **Never `catch_unwind`** — it is not an error-handling mechanism and does
-  not exist under `panic=abort`; see
-  [Unsafe Code Practices](unsafe-code-practices.md)
+- **Every intentional panic carries the relevant values** —
+  `assert!(buf.len() >= HEADER, "buffer too small: {} bytes", buf.len())`.
+  Do not restate the condition as the message; state why the invariant
+  should hold or log the offending value.
+- **Panics are not exceptions** — a panic means "stop now". Never use one
+  to report bad input a caller could act on, and never catch and continue
+  inside a library. Where a panicking convenience is justified, pair it
+  with a fallible API (`get`/`get_unchecked`, `new`/`try_new`) and document
+  it under `# Panics`.
+- **Lock poisoning is fatal** — `.lock().expect("lock poisoned")`; do not
+  recover with `into_inner`. See
+  [Unsafe Code Practices](unsafe-code-practices.md).
+- **Never `catch_unwind` for control flow** — it is not an error-handling
+  mechanism and does not exist under `panic=abort`; the FFI boundary is the
+  one legitimate use. See
+  [Unsafe Code Practices](unsafe-code-practices.md).
 - **Prefer pattern matching over check-then-unwrap** — see
   [Implementation Idioms](implementation-idioms.md)
+
+### Library Error Type Requirements
+
+Any `E` in a public `Result<T, E>`:
+
+- Implements `std::error::Error` (which requires `Debug` + `Display`), is
+  `Send + Sync + 'static`, and implements `source()` for wrapped causes.
+  Never `()`, `String`, or `Box<dyn Error>` as a public error type.
+- `Display` messages are lowercase, concise, no trailing punctuation:
+  `"invalid header length"`.
+- Implements `From<Upstream>` so `?` converts — `map_err` only for foreign
+  errors or to add context.
+- Two sound shapes: an enum with one variant per cause (`thiserror`
+  generates this well), or a situation-specific struct with a private
+  `kind`, a captured `Backtrace`, and `is_xxx()`/accessor methods. Do not
+  build one crate-wide enum listing every failure mode, and do not expose
+  details callers cannot act on.
+- If a fallible function consumes an argument, return it inside the error
+  so the caller can retry without cloning
+  (`FromUtf8Error::into_bytes`).
+
+Application code uses `anyhow`/`eyre` with `.context("...")` — one
+app-level error type, not several; `main` may return
+`Result<(), anyhow::Error>`. Never expose `anyhow::Error` in a library's
+public API — see
+[Anyhow + Thiserror Combination](anyhow-thiserror-combination.md).
+
+### Destructors Never Fail
+
+`Drop` impls never fail, panic, or block — a failure during unwinding
+aborts. Provide `close(self) -> Result<()>` for fallible teardown and let
+`Drop` do best-effort cleanup. Document failure modes: `# Errors` on any
+`Result`, `# Panics` on any reachable panic, `# Safety` on every
+`unsafe fn`.
 
 ## Related Concepts
 

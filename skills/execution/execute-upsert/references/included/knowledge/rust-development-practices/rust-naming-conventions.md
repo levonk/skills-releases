@@ -6,12 +6,15 @@ tags: [rust, naming, conventions, methods, lifetimes, generics, getters, setters
 date:
   created: "2026-10-21"
   knowledge-basis: "2026-10-21"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # Rust Naming Conventions
@@ -49,6 +52,34 @@ Closure accessors are the right choice when the property lives behind
 interior mutability (`Mutex`, `RefCell`) — the closure bounds the borrow
 scope without leaking `MutexGuard` — or when post-change validation is
 needed and `set_foo()` cannot express it (un-cloneable or expensive type).
+
+Checked accessors get `unsafe fn ..._unchecked` siblings
+(`get`/`get_unchecked`). If you implement `len()`, implement `is_empty()`.
+
+### Case and Acronym Conventions
+
+`UpperCamelCase` for types, traits, enum variants; `snake_case` for
+functions, methods, modules, locals; `SCREAMING_SNAKE_CASE` for consts and
+statics. An acronym counts as one word: `Uuid`, `HttpClient` (not `UUID`,
+`HTTPClient`), and is lowercased in `snake_case`. Crate names never carry a
+`-rs` or `-rust` affix. Prefer at most two short words per identifier.
+
+### Weasel Words and Redundancy
+
+No `Service`, `Manager`, `Factory`, `Helper`, `Util` suffixes — name the
+thing it is (`Bookings`, `Dispatcher`, `FooBuilder`); disposal is `Drop`,
+not a manager. Do not repeat the module name in the type — `foo::Id`, not
+`foo::FooId`.
+
+### Type and Trait Naming
+
+- Iterator types are named after the method that returns them:
+  `iter` → `Iter`, `iter_mut` → `IterMut`, `into_iter` → `IntoIter`,
+  `keys` → `Keys`, `percent_encode` → `PercentEncode`.
+- Error types read verb-object-error: `ParseBoolError`, `ParseAddrError` —
+  not `BoolParseError`, `AddrParseError`.
+- Feature names are bare — `std`, `serde`, `alloc`, never `use-std` or
+  `no-std`. See [Cargo Configuration](cargo-configuration.md).
 
 ### Lifetimes
 

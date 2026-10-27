@@ -28,4 +28,4 @@ Create, update, and optimize CLI programs and scripts for AI agent consumption. 
 
 - **Full skill**: [`skills/software-dev/cli-tool-upsert/SKILL.md`](skills/software-dev/cli-tool-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-27T07:04:36Z
+- **Generated**: 2026-10-27T22:07:53Z

@@ -1,5 +1,108 @@
 # Directory Update Log
 
+## 2026-10-27
+
+* **Ingest**: Ingested [BeautifulRust](https://github.com/morganlinton/BeautifulRust)
+  — three Agent Skills (write/review/port) plus a tested `[lints]` config,
+  synthesizing the Google Rust Style Guide, Rust API Guidelines, Effective
+  Rust, Rust Design Patterns, and Microsoft's Pragmatic Rust Guidelines.
+  Practice content extracted from `skills/*/SKILL.md`, `lints/lints.toml`,
+  `lints/clippy.toml`, and `references/*.md` (six source digests including
+  `bevy.md`). Excluded: `evals/` and `benchmarks/` (agent-harness eval
+  content, not practice knowledge), install instructions, and
+  `examples/review-inventory.md` (sample output). Eight new concept pages:
+  - [ownership-and-borrowing.md](ownership-and-borrowing.md) — unique
+    ownership first, six-step clone-avoidance ladder, `mem::take`/`replace`,
+    disjoint field borrows, owned data in structs, freeze-after-setup,
+    smart pointers out of public signatures, on-stack `dyn` dispatch
+  - [builders-and-constructors.md](builders-and-constructors.md) —
+    `new()`/`Default` agreement, ≤2 optional params inherent, builder shape
+    (infallible field-named setters, `build() -> Result`), ≥4 loose args
+    grouped into semantic types
+  - [visibility-and-api-evolution.md](visibility-and-api-evolution.md) —
+    private by default + `pub(crate)` ladder, sealed traits, one path per
+    public item, foreign re-export rules, semver breaking-change list,
+    deprecate-in-minor
+  - [concurrency-and-async-design.md](concurrency-and-async-design.md) —
+    `Send`/`Sync` const assertions, `Rc` across `.await`, message passing
+    over shared state, lock discipline, `async fn` shape, yield points,
+    runtime-agnostic libraries
+  - [performance-practices.md](performance-practices.md) — measure-first
+    order, `with_capacity`/`collect`, caller-owned buffers,
+    `Box<[T]>`/`Box<str>`/`Arc<str>`, `shrink_to_fit`, `foldhash`/`FxHash`
+    for trusted keys, batching, `mimalloc` for apps
+  - [rust-code-review.md](rust-code-review.md) — review methodology: scope
+    (library vs application, edition/MSRV, frameworks), tools first,
+    priority-ordered findings, must/should/consider + what's-good report
+    format with cited rules
+  - [porting-to-rust.md](porting-to-rust.md) — port behavior not structure,
+    tests first, per-language mapping tables (C/C++, Python, Go/JS/TS),
+    proportionality rules, `PORTING.md` deliverable
+  - [bevy-ecs-conventions.md](bevy-ecs-conventions.md) — Bevy 0.20
+    exceptions (by-value system params, prelude, public component fields)
+    and compile-clean ECS bugs (query conflicts B0001/B0002, deferred
+    `Commands`, unordered systems, unwrapped `single()`), headless `App`
+    testing
+* **Update**: [rustfmt-clippy-config.md](rustfmt-clippy-config.md) —
+  BeautifulRust drop-in `[lints]` table + `clippy.toml` (tested against
+  clippy; `rust-version` 1.81 for suppression lints), `#[expect]` vs
+  `#[allow]` policy, no `#![deny(warnings)]` in source.
+* **Update**: [error-handling.md](error-handling.md) — library error type
+  requirements (`Error + Send + Sync + 'static`, Display format,
+  `From<Upstream>`, two sound shapes, return-consumed-arg), panic message
+  content, destructors never fail.
+* **Update**: [type-and-trait-design.md](type-and-trait-design.md) — eager
+  derive checklist (+ `Debug`/`Display` secret redaction), conversion and
+  collection traits (`From`/`TryFrom` not `Into`, `FromStr`,
+  `FromIterator`/`Extend`, `IntoIterator`), `Deref` limits, no derivable
+  bounds on struct defs, `Ord`/`PartialEq`/`Hash` consistency contract,
+  object safety, methods vs free functions.
+* **Update**: [api-design-principles.md](api-design-principles.md) —
+  strongest std types (`PathBuf`/`Duration`, `bitflags`), `impl AsRef`/
+  `RangeBounds`/`Read`/`Write` parameters, take-by-value ownership, no
+  `&mut` out-params, sans-IO design, `bool` parameters banned in public
+  signatures.
+* **Update**: [rust-naming-conventions.md](rust-naming-conventions.md) —
+  acronym-as-one-word, weasel-word ban (`Service`/`Manager`/`Factory`/
+  `Helper`/`Util`), no module-name-in-type, iterator/error type naming,
+  `_unchecked` siblings, bare feature names.
+* **Update**: [documentation-comments.md](documentation-comments.md) —
+  15-word first sentence, `# Examples`/`# Errors`/`# Panics`/`# Safety`
+  order, `?`-in-examples with hidden scaffolding, intra-doc links,
+  `//` comments explain why, no design journals.
+* **Update**: [implementation-idioms.md](implementation-idioms.md) —
+  `let ... else`, `Option` as iterator, drop guards bound to a name,
+  closure capture rebind-then-`move`, magic numbers → named `const`s,
+  combinator-vs-`match` judgment.
+* **Update**: [unsafe-code-practices.md](unsafe-code-practices.md) — three
+  allowed reasons for `unsafe`, mark `unsafe` only when misuse = UB,
+  banned `transmute`/`unsafe impl Send`, Miri testing, FFI section
+  (`#[repr(C)]`, `CString`/`CStr`, RAII wrappers, `bindgen` in `-sys`
+  crates, `catch_unwind` required at the FFI boundary — the one exception
+  to the no-`catch_unwind` rule).
+* **Update**: [macro-guidelines.md](macro-guidelines.md) — `macro_rules!`
+  etiquette (input resembles output, attributes pass through, any scope,
+  private by default, visible control flow), proc-macro three-crate layout
+  (`foo`/`foo_proc`/`foo_proc_impl`), `insta`/`trybuild` testing.
+* **Update**: [testing-strategy.md](testing-strategy.md) — prefer `tests/`
+  when either works, test properties not constants (tautological tests),
+  `new_mocked()`/`test-util` for I/O, `cargo fuzz`, `black_box` benchmarks,
+  Miri, fail-first.
+* **Update**: [cargo-configuration.md](cargo-configuration.md) — version
+  ranges over `*`/`=` pins, `Cargo.lock` for binaries, dependency cost
+  audit tooling, additive bare-named features, `[workspace.lints]`,
+  `default-features = false`, MSRV/edition policy.
+* **Update**: [project-structure.md](project-structure.md) — flat
+  `crates/` workspace, essential items at root, group by use case not
+  kind, no prelude, one path per public item.
+* **Update**: [async-patterns.md](async-patterns.md),
+  [structured-logging-tracing.md](structured-logging-tracing.md),
+  [import-organization.md](import-organization.md) — cross-links to new
+  pages; async design additions, message-template logging, framework
+  prelude exception.
+* **Update**: [index.md](index.md), [overview.md](overview.md) — eight new
+  entries/table rows and source entry.
+
 ## 2026-10-21
 
 * **Ingest**: Ingested the [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html)

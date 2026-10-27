@@ -6,12 +6,15 @@ tags: [rust, idioms, ownership, borrowing, type-inference, pattern-matching, ite
 date:
   created: "2026-10-21"
   knowledge-basis: "2026-10-21"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # Implementation Idioms
@@ -37,7 +40,9 @@ logic a `for` loop states directly.
   copy, never as a borrow-checker workaround; if borrow relationships
   become excessively complex, a clone is the pragmatic choice. Weigh
   performance. (Cloning an `Rc`/`Arc` pointer is a cheap refcount bump, not
-  a deep copy — expected usage.)
+  a deep copy — expected usage.) See
+  [Ownership and Borrowing](ownership-and-borrowing.md) for the six-step
+  ladder to try before cloning.
 
 ### Type Inference
 
@@ -64,6 +69,16 @@ if option.is_some() {
 }
 ```
 
+For early-exit paths prefer `let ... else`, which binds the value and keeps
+the failure branch visually separate:
+
+```rust
+let Some(value) = option else { return default_result(); };
+```
+
+`Option` is itself an iterator of zero or one items — `vec.extend(opt)`,
+`iter.chain(opt.iter())` — when that is clearer than `if let`.
+
 ### Iterator Chains vs `for` Loops
 
 Combinators are preferable for short chains and where the combinator itself
@@ -82,11 +97,51 @@ executing queries"`). Do not restate the condition in the message.
 
 Prefer `format!`/`write!` over `+` concatenation (fewer allocations) for
 more than two strings, and over `str::replace` for substitution — standard
-format strings beat ad-hoc templating.
+format strings beat ad-hoc templating. Use inline args
+(`format!("{name}: {count}")`); `write!` into an existing buffer in hot
+paths.
+
+### `Option`/`Result` Combinators vs `match`
+
+Use combinators (`map`, `and_then`, `ok_or_else`, `unwrap_or_else`,
+`as_ref`, `as_deref`) when they read clearer than `match`, and `match`
+when they do not. Collect fallible iterator steps into
+`Result<Vec<_>, E>` and apply `?` — the first error propagates.
+
+### Drop Guards Bind to a Name
+
+Cleanup that must run on early `?` return or unwind belongs in a `Drop`
+guard bound to a named variable — `let _guard = ..`. `let _ = ..` drops
+immediately. Destructors run on early returns and unwinding but can be
+skipped by abort, an infinite loop, or a panic during unwinding — do not
+rely on them for essential work.
+
+### Closures Capturing Mixed Ownership
+
+When a closure needs some captures cloned or borrowed and others moved,
+rebind in an inner block, then `move`:
+
+```rust
+let job = {
+    let cfg = cfg.clone();      // cloned
+    let data = data.as_ref();   // borrowed
+    move || run(cfg, data)      // everything else moves
+};
+```
+
+### Magic Numbers Become Named Constants
+
+Replace magic numbers with named `const`s carrying a doc comment: where
+the value comes from and what changing it affects (external systems
+involved, protocol limits, tuning trade-offs).
 
 ## Related Concepts
 
 - [Error Handling](error-handling.md) — `expect` vs `unwrap`, panic policy
+- [Ownership and Borrowing](ownership-and-borrowing.md) — the
+  borrow-checker clone-avoidance ladder
 - [API Design Principles](api-design-principles.md) — iterator vs collection
   choices at the signature level
 - [Testing Strategy](testing-strategy.md) — assertions in test code
+- [Import Organization](import-organization.md) — the `use`-level idioms
+  these build on

@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Rust Development Practices Overview
-description: Synthesis of Rust development practices — project structure, Cargo config, formatting/linting, testing, error handling, async, serialization, CLI standards, container support, security, quality gates, plus API design, type/trait design, naming, documentation, stability attributes, implementation idioms, unsafe, and macros.
+description: Synthesis of Rust development practices — project structure, Cargo config, formatting/linting, testing, error handling, async, serialization, CLI standards, container support, security, quality gates, plus API design, type/trait design, naming, documentation, stability attributes, implementation idioms, unsafe, macros, ownership, builders, visibility, concurrency, performance, review, porting, and Bevy ECS.
 tags: [rust, development, cargo, cli, overview, synthesis]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-10-21"
+  last-used: "2026-10-27"
 
 sources:
   - id: levonk-base-boilerplate
@@ -18,6 +18,9 @@ sources:
   - id: google-rust-style-guide
     resource: "https://google.github.io/styleguide/rustguide.html"
     title: "Google Rust Style Guide"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 ---
@@ -180,6 +183,14 @@ project-structure → cargo-config → formatting → testing → error-handling
 | Idioms | [Implementation Idioms](implementation-idioms.md) | Reflexive Rc/Arc, clone-driven design, unreadable inference and combinator chains |
 | Unsafe | [Unsafe Code Practices](unsafe-code-practices.md) | Scattered unsafe blocks, unjustified UB risk, poisoned state propagation |
 | Macros | [Macro Guidelines](macro-guidelines.md) | Language dialects, tooling degradation, refactor-hostile metaprogramming |
+| Ownership | [Ownership and Borrowing](ownership-and-borrowing.md) | Borrow-checker clones, runtime borrow failures, lifetime-propagating structs |
+| Construction | [Builders and Constructors](builders-and-constructors.md) | Constructor proliferation, call-site validation, swappable loose arguments |
+| Evolution | [Visibility and API Evolution](visibility-and-api-evolution.md) | Locked representations, duplicate API paths, accidental breaking changes |
+| Concurrency | [Concurrency and Async Design](concurrency-and-async-design.md) | `!Send` futures, leaked lock guards, runtime-assuming libraries |
+| Performance | [Performance Practices](performance-practices.md) | Blind optimization, per-item allocation and locking, unreclaimed capacity |
+| Review | [Rust Code Review](rust-code-review.md) | Style-nit noise hiding soundness holes, uncited findings, rewrite-as-review |
+| Porting | [Porting to Rust](porting-to-rust.md) | Transliterated foreign idioms, changed behavior, unverifiable parity |
+| Bevy | [Bevy ECS Conventions](bevy-ecs-conventions.md) | Wrong "fixes" to system signatures, first-frame panics that compile clean |
 
 ## Scope
 
@@ -198,6 +209,7 @@ testing, security, and deployment. It does **not** cover:
 - `internal-docs/adr/adr-20260128001-rust-package-boilerplate-requirements.md` — boilerplate (756 lines)
 - `internal-docs/adr/adr-20260607001-cli-tool-standards.md` — boilerplate (v5.0.0, 2026-07-29; 437 lines)
 - [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html) — ingested 2026-10-21 (codebase-tagged `[chrome]`/`[Fuchsia]` rules excluded)
+- [BeautifulRust](https://github.com/morganlinton/BeautifulRust) — ingested 2026-10-27 (agent skills + tested `[lints]` config synthesizing the Google guide, Rust API Guidelines, Effective Rust, Rust Design Patterns, and Microsoft's Pragmatic Rust Guidelines; eval/benchmark harness content excluded)
 
 ## Related Knowledge Bundles
 

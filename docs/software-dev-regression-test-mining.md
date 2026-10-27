@@ -29,4 +29,4 @@ Mine git history for bug-fix commits and generate the regression tests they are 
 
 - **Full skill**: [`skills/software-dev/regression-test-mining/SKILL.md`](skills/software-dev/regression-test-mining/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-27T07:04:36Z
+- **Generated**: 2026-10-27T22:07:53Z

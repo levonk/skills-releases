@@ -6,12 +6,15 @@ tags: [rust, tracing, logging, structured-logs, env-filter, tracing-subscriber]
 date:
   created: "2026-08-05"
   knowledge-basis: "2026-08-05"
-  last-used: "2026-08-05"
+  last-used: "2026-10-27"
 
 sources:
   - id: project-lint-audit
     resource: "project-lint/Cargo.toml"
     title: "project-lint"
+  - id: beautifulrust
+    resource: "https://github.com/morganlinton/BeautifulRust"
+    title: "BeautifulRust"
 ---
 
 # Structured Logging with Tracing
@@ -58,6 +61,14 @@ fn check_file(&self, path: &std::path::Path) {
 
 Never embed the path in the message. The subscriber formats fields consistently
 across stdout, JSON, and TOON outputs.
+
+Events are structured messages with templates, named
+`<component>.<operation>.<state>` with OpenTelemetry-style attribute names —
+do not pre-format values with `format!` before logging (the template carries
+them), and keep telemetry out of hot inner loops. Libraries log through
+`tracing`/`log`, never `println!`/`eprintln!` (clippy `print_stdout`/
+`print_stderr`); only a CLI's own stdout output is exempt. Redact PII in
+fields.
 
 ### Subscriber Configuration
 
