@@ -39,4 +39,4 @@ File a well-formed GitHub issue against a third-party/upstream repository OR you
 
 - **Full skill**: [`skills/software-dev/github-issue/SKILL.md`](skills/software-dev/github-issue/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-10-27T22:07:53Z
+- **Generated**: 2026-11-13T20:20:19Z
