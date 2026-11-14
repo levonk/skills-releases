@@ -6,7 +6,7 @@ tags: [rust, quality-gates, pre-commit, ci-cd, cross-platform, testing, cargo-ou
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-08-20"
+  last-used: "2026-11-14"
 
 sources:
   - id: levonk-base-boilerplate
@@ -15,6 +15,9 @@ sources:
   - id: levonk-base-boilerplate-cargo-audit-wiring
     resource: "internal-docs/feature/todo/cargo-audit-wiring/feat-202608201814-cargo-audit-wiring.md"
     title: "levonk-base-boilerplate"
+  - id: makepad-relax
+    resource: "https://github.com/makepad/relax"
+    title: "Relax — Rust JIT (makepad)"
 ---
 
 # Quality Gates
@@ -54,6 +57,16 @@ validate:
 The outdated check is non-blocking (`--exit-code 0` with `|| log_warn`) so
 drift reports never abort validate — they warn and continue. The blocking
 version is the weekly CI cron job.
+
+### Dev-Loop Feedback (not a gate)
+
+During development, `relax test --live` re-runs only the tests a save touched
+and `relax check` re-checks in the background as you edit — see
+[Relax JIT Dev Loop](relax-jit-dev-loop.md). They are feedback tools only:
+Relax is an experimental JIT with no rustc guarantee, so the cargo pipeline
+above remains the gate. `relax check` is also not yet faster than
+`cargo check` on large packages — run it where hot patching pays off, not
+as a gate substitute.
 
 ### CI/CD Requirements
 
@@ -110,4 +123,5 @@ A Rust package is considered complete when:
 
 - [Rustfmt and Clippy](rustfmt-clippy-config.md) — Formatting and linting config
 - [Testing Strategy](testing-strategy.md) — Test types that gates enforce
+- [Relax JIT Dev Loop](relax-jit-dev-loop.md) — `relax check`/`relax test` dev-loop feedback, not a gate
 - [Security and Auditing](security-auditing.md) — cargo audit + cargo outdated in CI

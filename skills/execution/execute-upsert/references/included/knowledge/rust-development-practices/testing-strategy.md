@@ -6,7 +6,7 @@ tags: [rust, testing, unit-tests, integration-tests, doc-tests, benchmarks, prop
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-10-27"
+  last-used: "2026-11-14"
 
 sources:
   - id: levonk-base-boilerplate
@@ -18,6 +18,9 @@ sources:
   - id: beautifulrust
     resource: "https://github.com/morganlinton/BeautifulRust"
     title: "BeautifulRust"
+  - id: makepad-relax
+    resource: "https://github.com/makepad/relax"
+    title: "Relax — Rust JIT (makepad)"
 ---
 
 # Testing Strategy
@@ -65,6 +68,15 @@ data inspection), never a `Default` that performs I/O.
   snapshots — see [Macro Guidelines](macro-guidelines.md)
 - **Bevy systems** — headless `App` tests plus a whole-plugin smoke test;
   see [Bevy ECS Conventions](bevy-ecs-conventions.md)
+
+### Dev-Loop Test Runs
+
+`relax test --live <package>` keeps tests warm during development and re-runs
+only the tests that entered the functions a save changed — see
+[Relax JIT Dev Loop](relax-jit-dev-loop.md). It complements, never replaces,
+`cargo test`/`cargo nextest`: Relax is an experimental JIT, its results carry
+no rustc guarantee, and it produces no `.rlib`/`.rmeta`. The full cargo test
+suite still gates every merge.
 
 ### Required Test Dependencies
 
@@ -114,5 +126,7 @@ pub fn setup_test_logger() {
   assertions
 - [Bevy ECS Conventions](bevy-ecs-conventions.md) — headless `App` system
   tests
+- [Relax JIT Dev Loop](relax-jit-dev-loop.md) — `relax test --live`
+  tests-on-save during development
 - [Porting to Rust](porting-to-rust.md) — characterization tests pin the
   port's behavior

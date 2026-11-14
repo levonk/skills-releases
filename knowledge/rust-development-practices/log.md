@@ -1,5 +1,37 @@
 # Directory Update Log
 
+## 2026-11-14
+
+* **Ingest**: Ingested [Relax](https://github.com/makepad/relax) — Makepad's
+  live compiler and JIT runtime for Rust (`relax run`/`test --live`/`check`/
+  `inspect <pid>`), an AI-generated rustc/LLVM/linker replacement for the dev
+  edit-run loop: functions compile on first call, hot functions tier up to
+  O3, and saved function-body edits patch into the running process with
+  state kept. Boundaries recorded: experimental and unaffiliated with the
+  Rust project; no inherited safety guarantees; dev-loop only —
+  `cargo build --release` remains the release path and the cargo pipeline
+  remains the CI gate; `relax check` is not yet faster than `cargo check`;
+  struct-layout/import/trait/impl/macro edits need `session relaunch`;
+  `relax test` emits no rustc-format `.rlib`/`.rmeta`; tested on Linux
+  x86-64 and macOS arm64 (Windows untested); build the `relax` binary from a
+  kept source checkout — no crates.io release. One new concept page:
+  - [relax-jit-dev-loop.md](relax-jit-dev-loop.md) — commands table,
+    boundaries vs rustc, install from source, when to reach for it
+* **Update**: [testing-strategy.md](testing-strategy.md) — "Dev-Loop Test
+  Runs" section: `relax test --live` re-runs only affected tests on save;
+  cargo test/nextest still gate merges.
+* **Update**: [quality-gates.md](quality-gates.md) — "Dev-Loop Feedback (not
+  a gate)" section: `relax check`/`relax test --live` during development;
+  cargo pipeline remains the gate.
+* **Update**: [cargo-configuration.md](cargo-configuration.md),
+  [file-watcher-patterns.md](file-watcher-patterns.md) — Related Concepts
+  cross-links to the new page.
+* **Update**: [index.md](index.md), [overview.md](overview.md) — new entry,
+  table row, and source entry.
+* **Update**: `src/current/includes/tech-stack-table.md.tmpl` — new `rust`
+  row naming Relax the preferred dev edit-run loop tool (experimental;
+  cargo+rustc canonical for releases and CI gates).
+
 ## 2026-10-27
 
 * **Ingest**: Ingested [BeautifulRust](https://github.com/morganlinton/BeautifulRust)

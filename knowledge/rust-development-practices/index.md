@@ -47,3 +47,4 @@ captures specific requirements and patterns sourced from real boilerplate ADRs.
 * [Rust Code Review](rust-code-review.md) - Review methodology: scope, tools first, priority-ordered findings, must/should/consider report format
 * [Porting to Rust](porting-to-rust.md) - Port behavior not structure, tests first, per-language mapping tables, PORTING.md deliverable
 * [Bevy ECS Conventions](bevy-ecs-conventions.md) - Bevy-specific exceptions and compile-clean ECS bugs (query conflicts, deferred Commands, system ordering)
+* [Relax JIT Dev Loop](relax-jit-dev-loop.md) - relax run/test --live/check, hot-patched edits with state kept, dev-loop only — rustc still builds releases and gates CI

@@ -6,12 +6,15 @@ tags: [rust, notify, file-watcher, debouncing, async, tokio, cross-platform]
 date:
   created: "2026-08-05"
   knowledge-basis: "2026-08-05"
-  last-used: "2026-08-05"
+  last-used: "2026-11-14"
 
 sources:
   - id: project-lint-audit
     resource: "project-lint/Cargo.toml"
     title: "project-lint"
+  - id: makepad-relax
+    resource: "https://github.com/makepad/relax"
+    title: "Relax — Rust JIT (makepad)"
 ---
 
 # File Watcher Patterns
@@ -97,3 +100,4 @@ std::thread::spawn(move || {
 - [Async Patterns](async-patterns.md) — tokio mpsc bridge
 - [Structured Logging with Tracing](structured-logging-tracing.md) — logging watcher events
 - [Cross-Platform Path Handling](cross-platform-path-handling.md) — path normalization on events
+- [Relax JIT Dev Loop](relax-jit-dev-loop.md) — save-triggered hot patching applies the watch model end-to-end

@@ -1,12 +1,12 @@
 ---
 type: Synthesis
 title: Rust Development Practices Overview
-description: Synthesis of Rust development practices — project structure, Cargo config, formatting/linting, testing, error handling, async, serialization, CLI standards, container support, security, quality gates, plus API design, type/trait design, naming, documentation, stability attributes, implementation idioms, unsafe, macros, ownership, builders, visibility, concurrency, performance, review, porting, and Bevy ECS.
+description: Synthesis of Rust development practices — project structure, Cargo config, formatting/linting, testing, error handling, async, serialization, CLI standards, container support, security, quality gates, plus API design, type/trait design, naming, documentation, stability attributes, implementation idioms, unsafe, macros, ownership, builders, visibility, concurrency, performance, review, porting, Bevy ECS, and the Relax JIT dev loop.
 tags: [rust, development, cargo, cli, overview, synthesis]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-10-27"
+  last-used: "2026-11-14"
 
 sources:
   - id: levonk-base-boilerplate
@@ -21,6 +21,9 @@ sources:
   - id: beautifulrust
     resource: "https://github.com/morganlinton/BeautifulRust"
     title: "BeautifulRust"
+  - id: makepad-relax
+    resource: "https://github.com/makepad/relax"
+    title: "Relax — Rust JIT (makepad)"
 ---
 
 ---
@@ -196,6 +199,7 @@ project-structure → cargo-config → formatting → testing → error-handling
 | Review | [Rust Code Review](rust-code-review.md) | Style-nit noise hiding soundness holes, uncited findings, rewrite-as-review |
 | Porting | [Porting to Rust](porting-to-rust.md) | Transliterated foreign idioms, changed behavior, unverifiable parity |
 | Bevy | [Bevy ECS Conventions](bevy-ecs-conventions.md) | Wrong "fixes" to system signatures, first-frame panics that compile clean |
+| Dev loop | [Relax JIT Dev Loop](relax-jit-dev-loop.md) | Multi-minute edit-verify cycles, lost process state, rebuilt test binaries — dev-loop only, rustc still builds releases |
 
 ## Scope
 
@@ -215,6 +219,7 @@ testing, security, and deployment. It does **not** cover:
 - `internal-docs/adr/adr-20260607001-cli-tool-standards.md` — boilerplate (v5.0.0, 2026-07-29; 437 lines)
 - [Google Rust Style Guide](https://google.github.io/styleguide/rustguide.html) — ingested 2026-10-21 (codebase-tagged `[chrome]`/`[Fuchsia]` rules excluded)
 - [BeautifulRust](https://github.com/morganlinton/BeautifulRust) — ingested 2026-10-27 (agent skills + tested `[lints]` config synthesizing the Google guide, Rust API Guidelines, Effective Rust, Rust Design Patterns, and Microsoft's Pragmatic Rust Guidelines; eval/benchmark harness content excluded)
+- [Relax](https://github.com/makepad/relax) — ingested 2026-11-14 (live compiler + JIT runtime for the Rust dev loop: `relax run`/`test --live`/`check`/`inspect`, hot patching with state kept; experimental — dev-loop only, `cargo build --release` stays the release path)
 
 ## Related Knowledge Bundles
 

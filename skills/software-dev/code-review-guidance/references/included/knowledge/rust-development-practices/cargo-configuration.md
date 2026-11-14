@@ -6,7 +6,7 @@ tags: [rust, cargo, cargo-toml, dependencies, features, workspace]
 date:
   created: "2026-07-18"
   knowledge-basis: "2026-07-17"
-  last-used: "2026-10-27"
+  last-used: "2026-11-14"
 
 sources:
   - id: levonk-base-boilerplate
@@ -15,6 +15,9 @@ sources:
   - id: beautifulrust
     resource: "https://github.com/morganlinton/BeautifulRust"
     title: "BeautifulRust"
+  - id: makepad-relax
+    resource: "https://github.com/makepad/relax"
+    title: "Relax — Rust JIT (makepad)"
 ---
 
 # Cargo Configuration
@@ -105,6 +108,9 @@ crate attributes; see
 ## Related Concepts
 
 - [Project Structure](project-structure.md) — Directory layout for the package
+- [Relax JIT Dev Loop](relax-jit-dev-loop.md) — Relax reads the same
+  Cargo.toml graph and `~/.cargo` registry for the dev loop; releases stay on
+  rustc
 - [Security and Auditing](security-auditing.md) — cargo audit for dependencies
 - [Visibility and API Evolution](visibility-and-api-evolution.md) — semver
   and MSRV commitments behind the manifest
