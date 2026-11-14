@@ -5,8 +5,8 @@ description: Synthesis of STE100-inspired Simplified Technical English practices
 tags: [technical-writing, ste100, simplified-technical-english, documentation, overview, synthesis]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-09-08"
-  last-used: "2026-09-08"
+  knowledge-basis: "2026-11-13"
+  last-used: "2026-11-13"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
@@ -20,6 +20,10 @@ sources:
   - id: writethat-blog
     resource: "https://writethatblog.substack.com/"
     title: "Write That Blog — newsletter with writing tips from expert bloggers"
+  - id: ste80-humanizer
+    resource: "https://github.com/Dodaios/ste80-humanizer"
+    title: "STE80 Humanizer — two-pass de-AI rewrite method, 80%-of-STE100 calibration, tell severity triage, fidelity rules (MIT)"
+    author: "Dodaios"
   - id: ste100-include
     resource: "../../includes/ste100-simplified-technical-english.md.tmpl"
     title: "Build-time include (gist) inlined into skills and bundles"
@@ -101,7 +105,12 @@ and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
 vulnerability, grandiose stakes inflation, fractal summaries, signposted
 conclusions, and more. For the full catalog and self-check, see the
 [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
-concept page in the `simplified-technical-english` knowledge bundle.
+concept page in the `simplified-technical-english` knowledge bundle. When
+rewriting existing AI-sounding text, apply the two-pass method (remove the
+tells, then rebuild structure at ~80% of ASD-STE100 while keeping every
+fact) in the
+[STE80 Rewrite Method](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ste80-rewrite-method.md)
+concept page.
 
 #### What Counts as Technical English
 
@@ -185,11 +194,12 @@ the bundle is the canonical source.
 | [Procedures and Lists](procedures-and-lists.md) | Front-loading important information, procedure structure (intro sentence, single-step, sub-step numbering), list formatting, transitions. |
 | [Word Choice and Consistency](word-choice.md) | Slang/jargon/idioms, contractions, abbreviations, e.g./i.e., acronym nuances, US/UK English, gender-neutral pronouns, tested examples. |
 
-### AI Writing Tells
+### AI Writing Tells and Rewrites
 
 | Concept | Purpose |
 |---------|---------|
-| [AI Writing Tells](ai-writing-tells.md) | A catalog of AI-specific writing patterns to avoid (negative parallelism, "delve", "tapestry", anaphora abuse, tricolon abuse, em dashes, fractal summaries, signposted conclusions). Distinct from general STE100 clarity rules. Cross-references the Founder Content System's banned-pattern list as the social-media-specific application. |
+| [AI Writing Tells](ai-writing-tells.md) | A catalog of AI-specific writing patterns to avoid (negative parallelism, "delve", "tapestry", anaphora abuse, tricolon abuse, em dashes, chatbot residue, fractal summaries, signposted conclusions), with severity triage (act-on-one-sighting vs weak-alone). Distinct from general STE100 clarity rules. Cross-references the Founder Content System's banned-pattern list as the social-media-specific application. |
+| [STE80 Rewrite Method](ste80-rewrite-method.md) | The two-pass protocol for rewriting AI-sounding text — Pass 1 removes the tells, Pass 2 rebuilds structure at ~80% of ASD-STE100. Modes (light/standard/strict), the 80% calibration table, fact-inventory workflow, fidelity rules, when-not-to-act, plain-word swaps, heuristic linting. |
 
 ### Engineering Blog Writing
 

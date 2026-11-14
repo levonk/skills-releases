@@ -34,4 +34,4 @@ Execute the final purchase of a product or hiring of a service after research is
 
 - **Full skill**: [`skills/commerce/acquisition/SKILL.md`](skills/commerce/acquisition/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-13T20:20:19Z
+- **Generated**: 2026-11-14T19:00:07Z

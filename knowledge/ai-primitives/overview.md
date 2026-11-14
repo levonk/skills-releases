@@ -95,7 +95,12 @@ and "landscape", anaphora abuse, tricolon abuse, "Here's the kicker", false
 vulnerability, grandiose stakes inflation, fractal summaries, signposted
 conclusions, and more. For the full catalog and self-check, see the
 [AI Writing Tells](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ai-writing-tells.md)
-concept page in the `simplified-technical-english` knowledge bundle.
+concept page in the `simplified-technical-english` knowledge bundle. When
+rewriting existing AI-sounding text, apply the two-pass method (remove the
+tells, then rebuild structure at ~80% of ASD-STE100 while keeping every
+fact) in the
+[STE80 Rewrite Method](https://github.com/levonk/skills-releases/blob/main/knowledge/simplified-technical-english/ste80-rewrite-method.md)
+concept page.
 
 #### What Counts as Technical English
 

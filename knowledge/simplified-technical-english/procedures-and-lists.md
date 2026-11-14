@@ -1,12 +1,12 @@
 ---
 type: Practice
 title: Procedures, Lists, and Transitions
-description: Normative rules for procedural instructions and lists in technical documentation — front-load important information, write introductory sentences, format single-step and multi-step procedures, choose bullet vs numbered lists, structure list items, and use transitions to connect ideas. Applies to all technical prose output.
-tags: [technical-writing, ste100, simplified-technical-english, documentation, procedures, lists, transitions, instructions]
+description: Normative rules for procedural instructions and lists in technical documentation — front-load important information, write introductory sentences, format single-step and multi-step procedures, place warnings and cautions before the step they protect, choose bullet vs numbered lists, structure list items, and use transitions to connect ideas. Applies to all technical prose output.
+tags: [technical-writing, ste100, simplified-technical-english, documentation, procedures, lists, transitions, instructions, warnings, cautions, safety]
 date:
   created: "2026-08-26"
-  knowledge-basis: "2026-08-26"
-  last-used: "2026-08-26"
+  knowledge-basis: "2026-11-13"
+  last-used: "2026-11-13"
 sources:
   - id: proxmox-twsg
     resource: "https://pve.proxmox.com/wiki/Technical_Writing_Style_Guide"
@@ -14,6 +14,10 @@ sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
     title: "ASD-STE100 Simplified Technical English specification"
+  - id: ste80-humanizer
+    resource: "https://github.com/Dodaios/ste80-humanizer"
+    title: "STE80 Humanizer — safety-instruction pattern (WARNING/CAUTION/NOTE) paraphrased from ASD-STE100 Issue 9 (MIT)"
+    author: "Dodaios"
 ---
 
 # Procedures, Lists, and Transitions
@@ -116,6 +120,26 @@ front-loading).
 **Use:**
 > To start a new document, click File > New > Document.
 
+### Warnings and Cautions Come Before the Step
+
+A warning or caution must appear before the step it protects — never after
+it and never inside it. The reader must see the risk before the action.
+Choose the signal word by the risk level:
+
+- **WARNING** — risk of injury or death.
+- **CAUTION** — risk of damage to equipment, data, money, or property.
+- **NOTE** — information only, never an instruction. Notes sit before or
+  after the steps, not inside them.
+
+Start the warning with a short command or condition, then state the risk.
+
+**Example:**
+> **CAUTION:** Make a backup of the database before you run the migration.
+> The migration deletes the users table.
+
+A warning that follows its step reaches the reader too late. A warning
+embedded inside a step hides the risk in the procedure's grammar.
+
 ## Lists
 
 Lists make prose concise. Use them to pull items out of a paragraph for
@@ -202,6 +226,9 @@ Before publishing, check procedures and lists:
       items?
 - [ ] Is the style consistent within each list (all sentences or all fragments)?
 - [ ] Do term-and-definition list items bold the term?
+- [ ] Does every warning or caution come before the step it protects, with
+      the correct signal word (WARNING for people, CAUTION for
+      equipment/data/money)?
 - [ ] Are transitions used to clarify relationships between ideas (not
       redundantly inside numbered steps)?
 
@@ -212,4 +239,5 @@ Before publishing, check procedures and lists:
 - Punctuation: [Punctuation](punctuation.md)
 - Capitalization and articles: [Capitalization and Articles](capitalization.md)
 - Word choice and consistency: [Word Choice and Consistency](word-choice.md)
+- Rewrite method for existing text: [STE80 Rewrite Method](ste80-rewrite-method.md)
 - Bundle index: [index.md](index.md)

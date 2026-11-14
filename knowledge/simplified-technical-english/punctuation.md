@@ -5,8 +5,8 @@ description: Normative punctuation rules for technical documentation — Oxford 
 tags: [technical-writing, ste100, simplified-technical-english, documentation, punctuation, commas, hyphens, em-dashes]
 date:
   created: "2026-08-26"
-  knowledge-basis: "2026-08-26"
-  last-used: "2026-08-26"
+  knowledge-basis: "2026-11-13"
+  last-used: "2026-11-13"
 sources:
   - id: proxmox-twsg
     resource: "https://pve.proxmox.com/wiki/Technical_Writing_Style_Guide"
@@ -14,6 +14,10 @@ sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
     title: "ASD-STE100 Simplified Technical English specification"
+  - id: ste80-humanizer
+    resource: "https://github.com/Dodaios/ste80-humanizer"
+    title: "STE80 Humanizer — strict-STE no-semicolon stance (MIT)"
+    author: "Dodaios"
 ---
 
 # Punctuation for Technical Prose
@@ -107,6 +111,14 @@ share one subject). Use no punctuation.
 
 **No semicolon:**
 > The program evaluates the system and then copies the files to the target.
+
+### Strict-STE Mode: No Semicolons
+
+Strict ASD-STE100 style avoids semicolons entirely — write two sentences or
+use a list. The rule above permits semicolons between independent clauses in
+general technical prose. Apply the stricter stance when deliberately
+producing STE-style text; see
+[STE80 Rewrite Method](ste80-rewrite-method.md) for the mode distinction.
 
 ## Hyphens
 

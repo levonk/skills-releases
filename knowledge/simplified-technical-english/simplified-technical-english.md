@@ -5,8 +5,8 @@ description: STE100-inspired guidelines for technical prose output — active vo
 tags: [technical-writing, ste100, simplified-technical-english, documentation, active-voice, imperative-mood]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-08-27"
-  last-used: "2026-08-27"
+  knowledge-basis: "2026-11-13"
+  last-used: "2026-11-13"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
@@ -122,6 +122,19 @@ pages cover these topics:
 - [Word Choice and Consistency](word-choice.md) — slang/jargon/idioms,
   contractions, abbreviations, e.g./i.e., acronym nuances, gender-neutral
   pronouns, tested examples
+
+## Beyond Clarity: AI Tells and the Rewrite Method
+
+Clarity rules alone do not make prose sound human — a sentence can be active,
+short, and one-topic and still read as AI output. Two companion pages cover
+de-AI-ing prose:
+
+- [AI Writing Tells](ai-writing-tells.md) — the catalog of AI-specific
+  patterns to avoid, with severity triage (act-on-one-sighting tells vs
+  weak-alone tells that only matter in clusters)
+- [STE80 Rewrite Method](ste80-rewrite-method.md) — the two-pass protocol
+  for rewriting existing text: remove the tells, then rebuild structure at
+  ~80% of ASD-STE100, keeping every fact at its original strength
 
 ## Beyond Mechanics: Engineering Blog Writing
 

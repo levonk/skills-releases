@@ -5,8 +5,8 @@ description: Full writing rules (10 rules), approved-words guidance, 3 before/af
 tags: [technical-writing, ste100, simplified-technical-english, documentation, writing-rules, self-check, examples]
 date:
   created: "2026-07-26"
-  knowledge-basis: "2026-08-27"
-  last-used: "2026-08-27"
+  knowledge-basis: "2026-11-13"
+  last-used: "2026-11-13"
 sources:
   - id: asd-ste100
     resource: "https://www.asd-ste100.org/"
@@ -20,6 +20,10 @@ sources:
   - id: core-guidelines
     resource: "simplified-technical-english.md"
     title: "Simplified Technical English core guidelines (sibling concept page)"
+  - id: ste80-humanizer
+    resource: "https://github.com/Dodaios/ste80-humanizer"
+    title: "STE80 Humanizer — STE word-count conventions and 80%-vs-strict calibration (MIT)"
+    author: "Dodaios"
 ---
 
 # STE100-Inspired Simplified Technical English — Detailed Guide
@@ -76,6 +80,11 @@ word-choice guidance.
 
 Procedural sentences: maximum 20 words.
 Descriptive sentences: maximum 25 words.
+
+For the word count: a number with its unit, a code identifier, a quoted
+string, a title, a proper noun, a hyphenated word, and parenthesized text
+each count as one word. A colon at the end of a list introduction ends the
+sentence.
 
 **Violation (28 words):**
 > When the build completes, the resulting image is pushed to the registry by
@@ -300,6 +309,11 @@ precisely. Relax them when:
 - **Code comments** follow the code's conventions, not these guidelines. Code
   comments are read alongside the code, not as standalone documentation.
 
+For a systematic "80 percent" relaxation model — which rules may flex and
+which never do, when rewriting existing prose or writing outside formal
+documentation — see the calibration table in
+[STE80 Rewrite Method](ste80-rewrite-method.md).
+
 ## Cross-References
 
 - Core guidelines: [Simplified Technical English](simplified-technical-english.md) (sibling concept page in this bundle)
@@ -307,6 +321,7 @@ precisely. Relax them when:
 - Capitalization and articles: [Capitalization and Articles](capitalization.md) — title-style vs sentence-style, a/an by vowel sound
 - Procedures and lists: [Procedures and Lists](procedures-and-lists.md) — front-loading, procedure structure, list formatting, transitions
 - Word choice and consistency: [Word Choice and Consistency](word-choice.md) — slang/jargon, contractions, abbreviations, e.g./i.e., gender-neutral pronouns, tested examples
+- Rewrite method for existing text: [STE80 Rewrite Method](ste80-rewrite-method.md) — two-pass de-AI-ing protocol, 80%-vs-strict calibration, fidelity rules, additional structure rules (condition-first, simple tenses, noun stacks, paragraph discipline), plain-word swaps, heuristic linting
 - Engineering blog fundamentals: [Engineering Blog Fundamentals](engineering-blog-fundamentals.md) — why write, topic selection, characteristics of compelling posts
 - Blog writing process: [Blog Writing Process](blog-writing-process.md) — capture, draft, optimize, feedback, ship
 - Engineering blog patterns: [Engineering Blog Patterns](engineering-blog-patterns.md) — the seven canonical patterns with dos, don'ts, and examples

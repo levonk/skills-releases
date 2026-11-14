@@ -1,5 +1,82 @@
 # Directory Update Log
 
+## 2026-11-13
+
+* **Ingest**: Added the STE80 Humanizer
+  (<https://github.com/Dodaios/ste80-humanizer>, MIT) as a source. The
+  project operationalizes Andrej Karpathy's "80% of the way to ASD-STE100"
+  suggestion (<https://x.com/karpathy/status/2105819303471976479>) as a
+  two-pass rewrite: Pass 1 removes the 26 AI tells from the
+  blader/humanizer catalog (<https://github.com/blader/humanizer>, MIT),
+  itself derived from Wikipedia's "Signs of AI writing"
+  (<https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing>); Pass 2
+  rebuilds sentence structure with STE discipline relaxed to ~80%. Per the
+  Normative Stance rule, all content was written as normative practices
+  with the sources in `sources:` frontmatter only.
+* **Creation**: Authored [ste80-rewrite-method.md](ste80-rewrite-method.md)
+  — the two-pass de-AI rewrite method. Covers the rationale for two passes
+  (de-telling alone leaves structural AI habits; STE alone leaves chatbot
+  habits), severity triage (act-on-one-sighting vs weak-alone tells vs
+  deliberate craft), light/standard/strict modes with output shapes, the
+  80%-vs-strict calibration table, the fact-inventory rewrite workflow,
+  fidelity rules (keep every fact at its strength, keep identifiers exact,
+  add nothing, flag contradictions, never touch code/URLs), the
+  when-not-to-act list (quotes, letters, pre-late-2022 text, fiction and
+  brand voice, legal text, code, other languages, writer's sample
+  overrides), Pass 2 structure rules beyond the detailed guide
+  (condition-first, warnings-first, simple tenses, verbs-not-nouns, -ing
+  chains, honest modals, noun stacks, paragraph discipline, information
+  ordering, simple connectors, STE word-count conventions, strict-mode
+  extras), a grouped plain-word substitution table, and heuristic linting
+  guidance (what a regex linter can and cannot measure — it flags places
+  to look, not an AI detector or compliance check).
+* **Update**: Expanded [ai-writing-tells.md](ai-writing-tells.md) with the
+  delta tells and the severity model from the new source. New tells:
+  arguing with no one, fake-depth sayings, sales language, stacked
+  qualifiers *(weak alone)*, hyphenated pairs after the noun *(weak
+  alone)*, decorative headings, one-line closers, writing about the
+  document instead of its subject, re-explaining what the reader knows,
+  chatbot residue, knowledge-limit disclaimers and guesses, and heading
+  repeated in the first sentence (new "Chatbot Residue and Draft
+  Leftovers" section). Extended existing entries: negative parallelism
+  (contrast split across two sentences, clipped negative tail), staged
+  run-ups (folded into "Let's Break This Down"), vague attributions
+  (named-outlet "featured in" lists), grandiose stakes (stock send-off
+  phrases and boilerplate sections), short punchy fragments (ALL-CAPS and
+  period-separated emphasis). Added the three-tier Severity Triage section
+  and marked weak-alone entries. Added the new tells to the Quick
+  Self-Check.
+* **Update**: Added "Warnings and Cautions Come Before the Step" to
+  [procedures-and-lists.md](procedures-and-lists.md) — the WARNING
+  (injury/death) / CAUTION (equipment, data, money) / NOTE (information
+  only) signal-word pattern with placement before the step it protects.
+  Added the check to the Quick Self-Check.
+* **Update**: Folded the STE word-count conventions into
+  [detailed-guide.md](detailed-guide.md) Rule 2 (numbers with units,
+  identifiers, quoted strings, proper nouns, hyphenated words, and
+  parenthesized text each count as one word; a colon at the end of a list
+  introduction ends the sentence) and added a pointer to the 80%
+  calibration in "When to Relax the Rules".
+* **Update**: Added a "Strict-STE Mode: No Semicolons" note to
+  [punctuation.md](punctuation.md) — reconciles the bundle's
+  semicolons-between-independent-clauses rule with strict STE's
+  no-semicolon stance (apply the stricter stance only when deliberately
+  writing STE-style text). Applied the same reconciliation for
+  contractions in both directions: a "Strict-STE mode" note in
+  [word-choice.md](word-choice.md) and a matching note under the
+  calibration table in
+  [ste80-rewrite-method.md](ste80-rewrite-method.md).
+* **Update**: Added a plain-word swaps pointer to
+  [word-choice.md](word-choice.md) cross-references and an "AI Tells and
+  the Rewrite Method" section to
+  [simplified-technical-english.md](simplified-technical-english.md).
+* **Update**: Added a rewrite-method pointer to the build-time include
+  [ste100-simplified-technical-english.md.tmpl](https://github.com/levonk/skills-releases/blob/main/includes/ste100-simplified-technical-english.md.tmpl).
+  Renamed the "AI Writing Tells" section to "AI Writing Tells and
+  Rewrites" in [index.md](index.md) and
+  [overview.md](overview.md). Bumped `date.knowledge-basis` and
+  `date.last-used` to 2026-11-13 on all touched pages.
+
 ## 2026-09-08
 
 * **Creation**: Authored

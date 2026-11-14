@@ -28,9 +28,10 @@ full depth.
 * [Procedures and Lists](procedures-and-lists.md) - Front-loading important information, procedure structure (intro sentence, single-step, sub-step numbering), list formatting, transitions
 * [Word Choice and Consistency](word-choice.md) - Slang/jargon/idioms, contractions, abbreviations, e.g./i.e., acronym nuances, US/UK English, gender-neutral pronouns, tested examples
 
-### AI Writing Tells
+### AI Writing Tells and Rewrites
 
-* [AI Writing Tells](ai-writing-tells.md) - A catalog of AI-specific writing patterns to avoid (negative parallelism, "delve", "tapestry", anaphora abuse, tricolon abuse, em dashes, fractal summaries, signposted conclusions). Distinct from general STE100 clarity rules: a sentence can be clear and active but still read as AI slop. Cross-references the Founder Content System's banned-pattern list as the social-media-specific application.
+* [AI Writing Tells](ai-writing-tells.md) - A catalog of AI-specific writing patterns to avoid (negative parallelism, "delve", "tapestry", anaphora abuse, tricolon abuse, em dashes, fractal summaries, signposted conclusions, chatbot residue), with severity triage (act-on-one-sighting vs weak-alone). Distinct from general STE100 clarity rules: a sentence can be clear and active but still read as AI slop. Cross-references the Founder Content System's banned-pattern list as the social-media-specific application.
+* [STE80 Rewrite Method](ste80-rewrite-method.md) - The two-pass protocol for rewriting AI-sounding text: Pass 1 removes the tells, Pass 2 rebuilds structure at ~80% of ASD-STE100. Covers light/standard/strict modes, the 80% calibration, the fact-inventory workflow, fidelity rules, when not to rewrite, plain-word swaps, and heuristic linting.
 
 ### Engineering Blog Writing
 

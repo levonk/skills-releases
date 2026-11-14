@@ -5,8 +5,8 @@ description: Normative word-choice rules for technical documentation — avoid s
 tags: [technical-writing, ste100, simplified-technical-english, documentation, word-choice, contractions, abbreviations, acronyms, gender-neutral, examples]
 date:
   created: "2026-08-26"
-  knowledge-basis: "2026-08-26"
-  last-used: "2026-08-26"
+  knowledge-basis: "2026-11-13"
+  last-used: "2026-11-13"
 sources:
   - id: proxmox-twsg
     resource: "https://pve.proxmox.com/wiki/Technical_Writing_Style_Guide"
@@ -54,6 +54,10 @@ noun creates ambiguity and sounds unprofessional.
 
 **Use:**
 > Docker is the leading container platform.
+
+**Strict-STE mode:** strict ASD-STE100 style forbids contractions entirely.
+Apply the stricter stance when deliberately producing STE-style text; see
+[STE80 Rewrite Method](ste80-rewrite-method.md) for the mode distinction.
 
 ## Abbreviations
 
@@ -201,4 +205,5 @@ Before publishing, check word choice:
 - Punctuation: [Punctuation](punctuation.md)
 - Capitalization and articles: [Capitalization and Articles](capitalization.md)
 - Procedures, lists, and transitions: [Procedures and Lists](procedures-and-lists.md)
+- Plain-word substitution table and phrasal-verb swaps: [STE80 Rewrite Method](ste80-rewrite-method.md)
 - Bundle index: [index.md](index.md)
