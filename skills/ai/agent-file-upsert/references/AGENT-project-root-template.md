@@ -36,6 +36,7 @@ Canonical practice bundles from [levonk/skills-releases](https://github.com/levo
 | [python-services-practices](.agents/knowledge/bundles/python-services-practices/) | Python detected |
 | [java-best-practices](.agents/knowledge/bundles/java-best-practices/) | Java detected |
 | [frontend-stack-practices](.agents/knowledge/bundles/frontend-stack-practices/) | Frontend web detected |
+| [modern-web-platform-practices](.agents/knowledge/bundles/modern-web-platform-practices/) | Frontend web detected |
 | [nix-build-practices](.agents/knowledge/bundles/nix-build-practices/) | Nix-heavy build detected |
 | [container-best-practices](.agents/knowledge/bundles/container-best-practices/) | Docker / Kubernetes detected |
 | [data-engineering-best-practices](.agents/knowledge/bundles/data-engineering-best-practices/) | Data pipelines detected |

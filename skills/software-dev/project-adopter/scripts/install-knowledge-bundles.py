@@ -628,6 +628,7 @@ STACK_MATCHED = {
     "python-services-practices": "Python",
     "java-best-practices": "Java",
     "frontend-stack-practices": "Frontend web",
+    "modern-web-platform-practices": "Frontend web",
     "nix-build-practices": "Nix-heavy",
     "container-best-practices": "Docker/K8s",
     "data-engineering-best-practices": "Data pipelines",

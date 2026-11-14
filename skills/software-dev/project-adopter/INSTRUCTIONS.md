@@ -1886,7 +1886,7 @@ Knowledge bundles from `levonk/skills-releases` are copied into `.agents/knowled
 | Tier | Bundles | When |
 |------|---------|------|
 | Universal | `software-architecture-essentials`, `dev-environment-practices`, `devsecops-codeguard`, `cicd-testing-practices`, `build-system-essentials` | Installed by default (no `--bundles` flag) |
-| Stack-matched | `typescript-monorepo-best-practices` (TypeScript/Node.js), `rust-development-practices` (Rust), `python-services-practices` (Python), `java-best-practices` (Java), `frontend-stack-practices` (Frontend web), `nix-build-practices` (Nix-heavy), `container-best-practices` (Docker/K8s), `data-engineering-best-practices` (Data pipelines) | Added via `--bundles` based on project-detection output |
+| Stack-matched | `typescript-monorepo-best-practices` (TypeScript/Node.js), `rust-development-practices` (Rust), `python-services-practices` (Python), `java-best-practices` (Java), `frontend-stack-practices` (Frontend web), `modern-web-platform-practices` (Frontend web), `nix-build-practices` (Nix-heavy), `container-best-practices` (Docker/K8s), `data-engineering-best-practices` (Data pipelines) | Added via `--bundles` based on project-detection output |
 | Domain-specific | `api-auth-payment-practices`, `infrastructure-networking-practices`, `cloud-provider-essentials`, `web-resource-catalog`, `upstream-contribution-practices`, `ai-primitives` | NOT installed by default — URL-referenced in AGENTS.md by agent-file-upsert (bundled skill) so agents fetch them on demand only when the task touches that domain |
 
 ### Example Commands

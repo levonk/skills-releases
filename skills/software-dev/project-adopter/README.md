@@ -96,7 +96,7 @@ uv run --script scripts/install-knowledge-bundles.py . --private --bundles secre
 | Tier | Bundles | When |
 |------|---------|------|
 | Universal | `software-architecture-essentials`, `dev-environment-practices`, `devsecops-codeguard`, `cicd-testing-practices`, `build-system-essentials` | Installed by default |
-| Stack-matched | `typescript-monorepo-best-practices`, `rust-development-practices`, `python-services-practices`, `java-best-practices`, `frontend-stack-practices`, `nix-build-practices`, `container-best-practices`, `data-engineering-best-practices` | Added via `--bundles` based on detection |
+| Stack-matched | `typescript-monorepo-best-practices`, `rust-development-practices`, `python-services-practices`, `java-best-practices`, `frontend-stack-practices`, `modern-web-platform-practices`, `nix-build-practices`, `container-best-practices`, `data-engineering-best-practices` | Added via `--bundles` based on detection |
 | Domain-specific | `api-auth-payment-practices`, `infrastructure-networking-practices`, `cloud-provider-essentials`, `web-resource-catalog`, `upstream-contribution-practices`, `ai-primitives` | NOT installed — URL-referenced in AGENTS.md by agent-file-upsert (bundled skill) for on-demand fetch |
 
 ## Per-Language Configuration Scripts
