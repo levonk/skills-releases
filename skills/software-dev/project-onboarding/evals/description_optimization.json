@@ -1,0 +1,62 @@
+{
+  "skill_name": "project-onboarding",
+  "should_trigger": [
+    {
+      "query": "We just adopted this repo and switched to claude-opus-4.5 — onboard the project",
+      "expected": true,
+      "rationale": "Direct new-project + new-model trigger"
+    },
+    {
+      "query": "New project day — run the onboarding. We're on gemini-3-pro now.",
+      "expected": true,
+      "rationale": "Explicit onboarding request with a model selection"
+    },
+    {
+      "query": "Read this entire project and find everything that's broken, inconsistent, inefficient, or no longer needed — fix what you're sure about and list the rest",
+      "expected": true,
+      "rationale": "The doctor-phase request verbatim"
+    },
+    {
+      "query": "We switched models — update this repo's AI setup for gpt-5.2",
+      "expected": true,
+      "rationale": "New-model trigger: model-card review + prompt/config fixups"
+    },
+    {
+      "query": "Onboard this project — fix the readme, agents.md, build config, and audit the rest",
+      "expected": true,
+      "rationale": "Fixup orchestration + audit request"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "query": "Review this pull request for me",
+      "expected": false,
+      "rationale": "PR review — code-review-guidance owns this"
+    },
+    {
+      "query": "What's the repository health score?",
+      "expected": false,
+      "rationale": "Standalone health scoring — repository-health-review owns this"
+    },
+    {
+      "query": "Adopt this project and standardize it on our best practices",
+      "expected": false,
+      "rationale": "Opinionated overwrite adoption — project-adopter owns this"
+    },
+    {
+      "query": "Migrate my prompts from Claude to GPT",
+      "expected": false,
+      "rationale": "Prompt migration — ai-model-migration workflow owns this"
+    },
+    {
+      "query": "Create a new skill for processing invoices",
+      "expected": false,
+      "rationale": "Skill creation — ai-upsert owns this"
+    },
+    {
+      "query": "Fix the typo on line 42 of the README",
+      "expected": false,
+      "rationale": "Single-file edit — just edit it; orchestration is waste"
+    }
+  ]
+}

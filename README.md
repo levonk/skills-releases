@@ -4,7 +4,7 @@
 # Skills Catalog — current
 
 > Auto-generated from SKILL.md frontmatter.
-> Commit: `e4dd24b9918f646f8e86056aeef5377009d1bb72` · Branch: `main` · Generated: 2026-11-14T23:17:09Z
+> Commit: `4e9ca8ba2e3311044f257e130ccb7bacc5df6b08` · Branch: `main` · Generated: 2026-11-16T20:36:48Z
 
 ## Overview
 
@@ -96,6 +96,7 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | Skill | Description | Details |
 |-------|-------------|---------|
 | agent-file-upsert | Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Conte... | [Synopsis](software-dev-agent-file-upsert.md) |
+| agent-file-upsert | Generate or update hierarchical AGENTS.md documentation for AI agents working in codebases. Conte... | [Synopsis](software-dev-agent-file-upsert.md) |
 | ai-development-loop | Systematic development workflow for AI agents with ticket management, reflection, and continuous ... | [Synopsis](software-dev-ai-development-loop.md) |
 | cicd-upsert | Create, audit, and improve CI/CD pipelines with incremental builds, pre-built CI images, security... | [Synopsis](software-dev-cicd-upsert.md) |
 | cli-tool-upsert | Create, update, and optimize CLI programs and scripts for AI agent consumption. Two tiers: embedd... | [Synopsis](software-dev-cli-tool-upsert.md) |
@@ -119,6 +120,9 @@ Each skill is a self-contained AI guidance module with a `SKILL.md` entry point.
 | project-comparison | Compare multiple software projects to determine whether they belong to the same category, map wha... | [Synopsis](software-dev-project-comparison.md) |
 | project-configuration | Configure existing projects with compatible preferences without overwriting established workflows... | [Synopsis](software-dev-project-configuration.md) |
 | project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
+| project-detection | Comprehensive detection of project types, build systems, package managers, and CI/CD platforms. U... | [Synopsis](software-dev-project-detection.md) |
+| project-onboarding | Orchestrate full onboarding for a new project or a newly selected AI model: runs sibling skills t... | [Synopsis](software-dev-project-onboarding.md) |
+| readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](software-dev-readme-upsert.md) |
 | readme-upsert | Generate a project's README.md from scratch (greenfield) or update an existing one (brownfield). ... | [Synopsis](software-dev-readme-upsert.md) |
 | refactor-planning | Plan and execute systematic evolutionary refactors based on Michael Feathers' 'Working Effectivel... | [Synopsis](software-dev-refactor-planning.md) |
 | regression-test-mining | Mine git history for bug-fix commits and generate the regression tests they are missing. Scans `g... | [Synopsis](software-dev-regression-test-mining.md) |

@@ -1,0 +1,50 @@
+{
+  "skill_name": "project-onboarding",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We just adopted this repo and switched the team to claude-opus-4.5. Onboard the project — fix up the readme, agents.md, build config, whatever's stale — then read the whole thing and tell me what's broken or no longer needed.",
+      "expected_output": "Runs project-detection, produces a model prompting brief via the model-card-review workflow (or fallback), delegates AGENTS.md to agent-file-upsert and README to readme-upsert, runs the doctor sweep, and emits a change report with letter+number IDs the user can select from",
+      "files": [],
+      "assertions": [
+        "produces or consumes a model prompting brief before the audit",
+        "delegates AGENTS.md to agent-file-upsert rather than hand-writing it",
+        "delegates README.md to readme-upsert rather than hand-writing it",
+        "emits a report with lettered clusters and numbered changes (e.g. D1, B2)",
+        "only auto-fixes certain items; lists proposed/optional for review"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "New project day — run the onboarding. We're on gemini-3-pro now.",
+      "expected_output": "Scopes the run (new project + new model), runs the model-card-review workflow for gemini-3-pro, delegates the fixup skills, sweeps the project, and renders findings via onboarding-report.py",
+      "files": [],
+      "assertions": [
+        "runs model-card-review or the references/model-card-brief.md fallback",
+        "uses scripts/onboarding-report.py render for the report",
+        "presents changes with IDs and asks the user to select before applying proposed/optional changes"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "apply D1 and all of B, skip S2",
+      "expected_output": "Parses the selection via onboarding-report.py select (apply D1 + all proposed B changes, skip S2), applies the approved changes, commits per git-repository-management conventions",
+      "files": [],
+      "assertions": [
+        "uses onboarding-report.py select rather than re-interpreting the reply ad hoc",
+        "does not apply unmentioned proposed/optional changes",
+        "mentions git-repository-management conventions for the commit"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "review this pull request for me",
+      "expected_output": "Does NOT trigger project-onboarding — routes to code-review-guidance instead",
+      "files": [],
+      "assertions": [
+        "declines or routes to code-review-guidance",
+        "does not run the doctor sweep or fixup stages"
+      ]
+    }
+  ]
+}

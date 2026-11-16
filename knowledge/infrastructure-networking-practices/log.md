@@ -11,6 +11,10 @@
   known-incomplete probing. Reference implementation:
   `roles/rustdesk-client/tasks/darwin.yml` in infrahub.
 
+## 2026-11-15
+
+* **Creation**: Authored [tailscale-reauth-identity-loss.md](tailscale-reauth-identity-loss.md) — interactive tailscaled re-auth registers a new user-owned node (loses tags → ACL drops all TCP while `tailscale ping` still succeeds). Source: Postiz deployment incident 2026-11-15 (dtop202311 unreachable tailnet-side; Windows firewall exonerated).
+
 ## 2026-07-26
 * **Migration**: Migrated `## Citations` body sections to `sources` frontmatter with stable `id` attributes per OKF v0.2 §13.1.
 * **Migration**: Migrated bundle from OKF v0.1 to OKF v0.2 — bumped `okf_version` in index.md. No `# Citations` sections or `timestamp` fields to migrate.

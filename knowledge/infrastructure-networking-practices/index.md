@@ -17,3 +17,4 @@ specific architectural decisions sourced from real infrahub ADRs.
 * [infrastructure-variable-consolidation](infrastructure-variable-consolidation.md) - Centralized infrastructure topology variables with infra_ naming convention
 * [backup-connectivity-pattern](backup-connectivity-pattern.md) - SSH, mosh, and Tailscale as backup connectivity alongside primary VPN
 * [need-gated-handoff](need-gated-handoff.md) - Probe managed-host state per install requirement; automate satisfiable needs, open only the settings panes still missing a grant
+* [tailscale-reauth-identity-loss](tailscale-reauth-identity-loss.md) - Interactive re-auth creates a new user-owned node that loses tags/ACL grants; diagnose via tailscale status, not firewalls

@@ -727,22 +727,21 @@ main() {
 	else
 		echo "REMOTE_STATUS:AHEAD"
 
-		# Step 4a: Try rebase with auto-resolution (-X=auto).
-		# Use -X=auto (single arg with =) instead of -X auto (two args) because
-		# rtk and devbox run can join separate argv elements into one token,
-		# producing -Xauto which git rejects. Same class of bug as the -m
-		# newline issue solved by commit_with_message() using -F.
+		# Step 4a: Try rebase. A plain rebase stops on real conflicts; we then
+		# fall back to merge below. Do NOT pass -X=auto — `auto` is not a valid
+		# strategy option for either command (it was silently dying on the
+		# merge fallback; observed 2026-11-14 resolving infrahub master).
 		echo "REBASING:"
-		if git_cmd rebase -X=auto "${remote}/${branch}" 2>&1; then
+		if git_cmd rebase "${remote}/${branch}" 2>&1; then
 			echo "REBASE_SUCCESS"
 		else
 			# Rebase had conflicts — abort and try merge fallback
 			echo "REBASE_CONFLICTS_DETECTED"
 			git_cmd rebase --abort 2>/dev/null || true
 
-			# Step 4b: Try merge with auto-resolution (-X=auto — single arg, see above)
+			# Step 4b: Try merge fallback (plain merge — no -X, see above)
 			echo "MERGE_FALLBACK:"
-			if git_cmd merge -X=auto "${remote}/${branch}" 2>&1; then
+			if git_cmd merge "${remote}/${branch}" 2>&1; then
 				echo "MERGE_SUCCESS"
 			else
 				# Merge has conflicts — leave them in place for AI resolution
