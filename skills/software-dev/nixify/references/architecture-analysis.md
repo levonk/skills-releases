@@ -717,6 +717,73 @@ Nix-Rust packaging gaps from the project source:
 
 ---
 
+## Runtime dlopen'd and GUI Library Dependencies
+
+`detect-runtime-deps.sh` catches runtime *services* (databases, queues). It
+does NOT catch GUI/display libraries that the packaged binary links or
+`dlopen()`s at runtime — wgpu/Vulkan, xkbcommon, wayland, X11, GTK/WebKit,
+SDL, etc. These need wiring in **four** places, not one — the terminal
+project (PR #41, Greptile P1) shipped `package.nix` correctly but `nix
+develop` / `devbox shell` still could not launch the GUI on NixOS:
+
+1. **`package.nix` `buildInputs`/`nativeBuildInputs`** — link-time and
+   pkg-config discovery (the normal flow).
+2. **`package.nix` `postFixup`/`postInstall` rpath or `makeWrapper`** —
+   libraries opened via `dlopen()` are NOT `DT_NEEDED` entries, so the
+   automatic rpath does not cover them. Extend the ELF rpath
+   (`patchelf --set-rpath` on Linux) or wrap with `makeWrapper --set` so
+   the installed binary finds them on non-NixOS Linux too.
+3. **`devShells.default` runtime path** — `mkShell`'s `packages`/
+   `buildInputs` only set *build* flags (`NIX_CFLAGS_COMPILE`,
+   `NIX_LDFLAGS`, `PKG_CONFIG_PATH`). A `cargo run` binary still cannot
+   `dlopen()` those libs at runtime — `LD_LIBRARY_PATH` is empty on
+   NixOS. Mirror the Linux libs and export their lib dir:
+
+   ```nix
+   let
+     linuxLibs = [ pkgs.libxkbcommon pkgs.wayland /* ... */ ];
+   in
+   pkgs.mkShell {
+     packages = [ pkgs.rustc pkgs.cargo /* ... */ ]
+       ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux linuxLibs;
+     shellHook = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+       export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath linuxLibs}:$LD_LIBRARY_PATH"
+     '';
+   }
+   ```
+
+   Keep the list lazy (define it in the per-system `let`, reference it only
+   inside `optionals isLinux`) so darwin eval never forces nixpkgs attrs
+   that don't exist on darwin.
+4. **`devbox.json`** — same gap. Devbox installs packages into a nix
+   profile whose `lib/` dir is not on the linker search path. Add the libs
+   as **map-form packages restricted to Linux** (unrestricted entries for
+   Linux-only nixpkgs attrs like `wayland`/`libGL` break `devbox install`
+   on macOS), and export the profile lib dir in `init_hook`:
+
+   ```json
+   "packages": {
+     "libxkbcommon": { "version": "latest",
+       "platforms": ["x86_64-linux", "aarch64-linux"] }
+   },
+   "shell": { "init_hook": [
+     "if [ \"$(uname -s)\" = \"Linux\" ]; then export LD_LIBRARY_PATH=\"$PWD/.devbox/nix/profile/default/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}\"; fi"
+   ]}
+   ```
+
+   Platform-restricted packages are omitted from `devbox.lock` when the
+   lock is generated on a non-matching platform; the first `devbox install`
+   on Linux resolves and records them — expected, not lockfile corruption.
+
+**Detection:** scan for GUI frameworks — `eframe`/`winit`/`wgpu`,
+`gtk`/`webkit2gtk`/`libsoup`, `sdl2`, `glfw`, `tao`/`wry`, `tkinter`,
+`PyGObject`/`gi`. To enumerate the exact system libs, check the project's
+**own CI runtime install list** (apt/dnf/apk packages installed before
+running the app) — it is the most reliable signal for what the binary
+dlopens at runtime, and mirrors cleanly onto nixpkgs attr names.
+
+---
+
 ## Build-Time Network Fetches
 
 **CRITICAL**: Nix builds run in a sandbox with **no network access**. Any

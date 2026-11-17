@@ -296,6 +296,54 @@ Keep the guard only on steps that exec the packaged binary.
 
 ---
 
+## Smoke Flags Intercepted by makeWrapper
+
+The `nix run .#default -- --version` step assumes `--version` reaches the
+real binary. nixify's own usage-text `makeWrapper` pattern breaks that
+assumption: when the wrapper's `--run` script handles `--version`/`--help`
+and `exit 0`s, the step passes **without ever exec'ing the packaged
+binary** — missing rpath entries, unpatched `dlopen()` libraries, and
+broken display setup all go uncaught (terminal PR #41, Greptile P1/P2).
+
+**When the wrapper short-circuits `--version`/`--help`:** keep the cheap
+flag step (it still validates the wrapper), and add a real launch smoke on
+non-PR events:
+
+- **CLI app**: invoke the binary in a way that reaches `main` — a
+  `--smoke`/timeout env var if the app has one, or launch and kill after a
+  few seconds asserting it did not exit immediately with a loader error.
+- **GUI app on Linux**: run under `xvfb-run` with the project's
+  offline/sample-data mode if it has one, and assert on a log marker, not
+  just the exit code:
+
+  ```yaml
+  - name: Packaged GUI smoke test (Xvfb)
+    if: github.event_name != 'pull_request' && runner.os == 'Linux'
+    env:
+      <SMOKE_PROVIDER>: sample        # e.g. TR_PROVIDER=sample
+      <SMOKE_SECS>: "6"               # e.g. TR_SMOKE_SECS=6
+      <DATA_DIR>: ${{ runner.temp }}/<project>-nix
+    run: |
+      sudo apt-get update && sudo apt-get install -y xvfb <runtime-libs>
+      nix build .#default --print-build-logs
+      xvfb-run -a ./result/bin/<pname> > smoke-nix.log 2>&1
+      status=$?
+      cat smoke-nix.log
+      grep -q "smoke:" smoke-nix.log
+      exit $status
+  ```
+
+  Install the same runtime apt packages the project's own Linux CI uses —
+  the nix binary carries its nixpkgs libs via rpath, but runner-side pieces
+  (Xvfb, mesa Vulkan drivers for lavapipe software rendering) still come
+  from apt.
+
+Same `pull_request` guard as `nix run` — the launched binary is
+PR-controlled code. Metadata-only assertions (the section above) stay
+unguarded; anything that execs the artifact does not.
+
+---
+
 ## Self-Pruning on Runner Decommission
 
 When GitHub Actions decommissions the Intel macOS runner (`macos-26-intel`, estimated ~Nov 2028 per

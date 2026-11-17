@@ -30,4 +30,4 @@ Create, update, and maintain a durable requirements ledger that tracks the evolv
 
 - **Full skill**: [`skills/execution/requirements-upsert/SKILL.md`](skills/execution/requirements-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-17T18:45:29Z
+- **Generated**: 2026-11-17T19:05:23Z

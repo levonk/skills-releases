@@ -1968,11 +1968,14 @@ require the agent to check something the scripts cannot verify.
 - [ ] **[manual]** `devbox.lock` is committed (NOT gitignored) — it pins exact nixpkgs revisions
 - [ ] **[manual]** `act` is in the `packages` array (required for Step 16b CI validation)
 - [ ] **[manual]** Runtime service packages from Step 12b are in the `packages` array
+- [ ] **[manual]** GUI/native apps with dlopen'd runtime libs (wgpu, GTK, SDL, etc.): the same libs are in `packages` as map-form entries with `platforms` restricted to Linux, and `shell.init_hook` exports `$PWD/.devbox/nix/profile/default/lib` on `LD_LIBRARY_PATH` for Linux (Step 12 → `references/architecture-analysis.md` — Runtime dlopen'd and GUI Library Dependencies)
 
 ### CI and Hash Automation
 
 - [ ] **[manual]** `.github/workflows/nix.yml` exists and uses the correct `trigger` from Step 7 (`release_workflow_job`, `scheduled_lag_check`, or `release_published`)
 - [ ] **[manual]** For artifacts without a CLI version flag (GUI apps, `.app` bundles, JARs, APKs): `nix.yml` asserts the packaged artifact's embedded version metadata equals the flake `version` (Step 16 — `references/advanced/github-actions-nix.md` — Version Verification for Artifacts Without a CLI Flag)
+- [ ] **[manual]** When `makeWrapper` short-circuits `--version`/`--help` (usage-text wrappers): `nix.yml` adds a real launch smoke on non-PR events — `xvfb-run` + sample/offline mode for GUI apps on Linux — since the flag step never execs the packaged binary (Step 16 — `references/advanced/github-actions-nix.md` — Smoke Flags Intercepted by makeWrapper)
+- [ ] **[manual]** GUI/native apps with dlopen'd runtime libs: `devShells.default` exports `LD_LIBRARY_PATH` (Linux `shellHook` + `makeLibraryPath`) mirroring the package's runtime libs, so `cargo run`/`nix develop` can launch the app on NixOS (Step 12 → `references/architecture-analysis.md` — Runtime dlopen'd and GUI Library Dependencies)
 - [ ] **[manual]** For prebuilt tarballs: the hash automation workflow exists and `ASSET_MAP` covers all platforms with release assets
 - [ ] **[manual]** For `npm_registry_tarball`: the hash automation workflow uses the npm Registry Tarball Variant — it lag-checks `npm view` (not GitHub releases), regenerates `package-lock.json`, recomputes `npmDepsHash`, and commits the lockfile in the bump PR
 - [ ] **[script]** `test-with-act.sh` passes in `--both` mode (ubuntu via act AND darwin via direct nix) — unless the project is platform-specific (Step 4a)
