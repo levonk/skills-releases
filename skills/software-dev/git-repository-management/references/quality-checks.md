@@ -36,7 +36,7 @@ Quality checks are included in `git-collect.sh` - no separate handoff needed:
 - **Private information**: Checks for accidental data exposure
 - **Safe execution**: All operations are non-destructive until explicit commit
 - **Rollback capability**: Maintains ability to undo changes if needed
-- **No AI attribution**: Commits must never contain AI signatures or co-author trailers (see No AI Signatures rule above)
+- **No AI attribution**: Commits must never contain AI signatures or co-author trailers, except attribution the target repo explicitly requires (see No AI Signatures rule above)
 - **Automatic tagging**: Pre and post tags provide audit trail for every skill run (see Automatic Run Tagging rule above)
 - **RTK proxy**: Use rtk for token-optimized command output when available (see Use RTK When Available rule above)
 - **Devbox wrapping**: Use devbox run for reproducible environment execution when available (see Use Devbox When Available rule above)
