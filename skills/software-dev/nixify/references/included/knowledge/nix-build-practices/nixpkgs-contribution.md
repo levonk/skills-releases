@@ -123,5 +123,8 @@ scopes (`haskellPackages`, `python3Packages`) stay in their scope's directory.
   serves as the reference for the nixpkgs `package.nix`
 - [Package Verification](package-verification.md) — Verify the package name
   and version in nixpkgs before contributing
+- [nixpkgs Dedup Pre-flight](nixpkgs-dedup-preflight.md) — Search the target
+  repo for existing/bot-maintained PRs before opening any nixpkgs
+  contribution (init, bump, or fix)
 - [Reproducible Builds](reproducible-builds.md) — The nixpkgs `package.nix`
   must produce reproducible builds via `fetchFromGitHub` hash pinning

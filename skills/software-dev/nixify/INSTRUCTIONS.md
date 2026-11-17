@@ -1729,6 +1729,15 @@ output is authoritative, not gut feel.
 
     **When the user opts out**: If the user explicitly says "don't submit to nixpkgs" or "skip the nixpkgs PR", skip this step silently. The in-repo flake is still a valid deliverable on its own.
 
+    **nixpkgs fix/update pre-flight (applies to ANY nixpkgs contribution — init OR fix/update)**: Step 28b covers init of a NEW package and its dedup search only covers the project's own repo. When the task is instead a **fix or version bump to an EXISTING nixpkgs package** — e.g. the user asks to fix a nixpkgs build failure or bump a packaged version — the failure mode is different: `NixOS/nixpkgs` is bot-heavy (r-ryantm/nix-update opens update PRs for most packages continuously) and the needed fix may already ship in a newer upstream release, making a plain version bump — not a patch — the correct contribution. **BEFORE writing any patch or package.nix change**, follow `references/nixpkgs-fix-pr.md`:
+    1. **Classify the contribution** — init / version_bump / fix / meta. The class changes what "duplicate" means.
+    2. **Run `scripts/search-nixpkgs-prs.sh <package> --version <target>`** — searches the TARGET repo (`NixOS/nixpkgs` by default) for existing PRs/issues, flags bot-maintained update PRs, and emits a `recommendation`. **Present any matches to the user before proceeding.**
+    3. **Check whether a newer upstream release already ships the fix** — check upstream tags/releases and changelogs before writing a patch; a version bump may be the correct contribution.
+    4. **Check bot coverage** — an open r-ryantm/nix-update PR covering the same version means comment/coordinate, not a duplicate PR; a merged one means do not open anything.
+    5. **Decide** — `coordinate*` → comment on the existing PR; `skip_already_landed` → stop; `investigate_merged`/`proceed_closed_only` → read the history first; `proceed` → continue.
+
+    All `nixpkgs-requirements.md` rules apply to fix/update PRs too (Assisted-by trailer, maintainer-list.nix entry, nixfmt, `<pkg>: <old> -> <new>` / `<pkg>: fix <what>` titles, same worktree convention). Incident reference: NixOS/nixpkgs#576090 was closed as a duplicate of r-ryantm's #545258 (open since 2026-07-24) — the exact failure this pre-flight prevents.
+
 28c. **Respond to maintainer review feedback (simplification)**: When a maintainer reviews the opened PR and requests simplification — typically citing "overbuilt", "too complex", "maintenance liability", or asking to remove prebuilt outputs / hash automation / extra outputs — follow this pattern:
 
     1. **Read the review carefully and identify each specific request.** Common simplification requests:

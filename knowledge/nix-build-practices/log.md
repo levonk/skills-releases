@@ -1,5 +1,25 @@
 # Directory Update Log
 
+## 2026-11-17
+
+* **Add**: New concept page for the nixpkgs dedup pre-flight, prompted by
+  NixOS/nixpkgs#576090 (packer 1.15.4 -> 1.16.1) being closed as a duplicate
+  of r-ryantm's bot PR #545258.
+  - [nixpkgs-dedup-preflight.md](nixpkgs-dedup-preflight.md) — Before ANY
+    nixpkgs contribution (init, version bump, or fix), search the TARGET
+    repo for existing work, check whether a newer upstream release already
+    ships the fix, and check bot-maintained update PRs. Nixpkgs is
+    bot-heavy; a hand-written duplicate is the most likely failure mode.
+* **Update**: Added the concept to [index.md](index.md), the overview
+  synthesis table, and [nixpkgs-contribution.md](nixpkgs-contribution.md)
+  Related Concepts. Bumped `date.knowledge-basis` and `date.last-used` to
+  2026-11-17. Added nixos/nixpkgs#576090 and the nixify
+  `search-nixpkgs-prs.sh` script to overview sources.
+* **Coupling**: The nixify skill gained `scripts/search-nixpkgs-prs.sh`
+  (mechanical target-repo dedup search) and
+  `references/nixpkgs-fix-pr.md` (fix/update contribution procedure),
+  wired into INSTRUCTIONS.md at the Step 28b nixpkgs block — v2.29.0.
+
 ## 2026-08-09
 
 * **Add**: New concept page for nixpkgs upstream contribution practice.

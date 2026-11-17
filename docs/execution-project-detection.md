@@ -38,4 +38,4 @@ Comprehensive detection of project types, build systems, package managers, and C
 
 - **Full skill**: [`skills/execution/project-detection/SKILL.md`](skills/execution/project-detection/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-17T15:38:51Z
+- **Generated**: 2026-11-17T17:57:04Z

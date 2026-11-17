@@ -20,3 +20,4 @@ the nixify skill, and project conventions.
 * [inherent-platform-scope](inherent-platform-scope.md) - Detect platform-specific software by design; narrow the flake's target systems to only the platforms the software actually supports
 * [partial-platform-coverage](partial-platform-coverage.md) - When a project ships prebuilt binaries for some but not all target systems, use a hybrid fallback flake (#default = prebuilt where available, source where not)
 * [nixpkgs-contribution](nixpkgs-contribution.md) - When a project is not yet in nixpkgs, contribute it upstream using the pkgs/by-name convention so all Nix users can install it
+* [nixpkgs-dedup-preflight](nixpkgs-dedup-preflight.md) - Before ANY nixpkgs contribution (init, bump, or fix), search the target repo for existing work and bot-maintained update PRs; check whether a newer upstream release already ships the fix

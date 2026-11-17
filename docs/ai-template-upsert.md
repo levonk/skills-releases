@@ -30,4 +30,4 @@ Create new reusable templates, modify and improve existing templates, and audit 
 
 - **Full skill**: [`skills/ai/template-upsert/SKILL.md`](skills/ai/template-upsert/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-17T15:38:51Z
+- **Generated**: 2026-11-17T17:57:04Z

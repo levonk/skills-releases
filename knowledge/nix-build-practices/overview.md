@@ -5,8 +5,8 @@ description: Synthesis of Nix build practices — flake structure, devbox as Nix
 tags: [nix, flakes, devbox, reproducible, builds, overview, synthesis, platform-scope, partial-coverage, nixpkgs-contribution]
 date:
   created: "2026-07-18"
-  knowledge-basis: "2026-08-09"
-  last-used: "2026-08-09"
+  knowledge-basis: "2026-11-17"
+  last-used: "2026-11-17"
 sources:
   - id: adr-20251219001-nix-direnv-dev-environment
     resource: internal-docs/adr/adr-20251219001-nix-direnv-dev-environment.md
@@ -26,6 +26,12 @@ sources:
   - id: nixify-skill-v2.19.0
     resource: ../../skills/software-dev/nixify/SKILL.md.tmpl
     title: "nixify skill v2.19.0 — nixpkgs superset check and upstream contribution"
+  - id: nixos-nixpkgs-576090
+    resource: https://github.com/NixOS/nixpkgs/pull/576090
+    title: "NixOS/nixpkgs#576090 — packer bump closed as duplicate of bot PR #545258"
+  - id: nixify-search-nixpkgs-prs-sh
+    resource: ../../skills/software-dev/nixify/scripts/search-nixpkgs-prs.sh
+    title: "nixify search-nixpkgs-prs.sh — target-repo dedup pre-flight"
 ---
 
 ---
@@ -182,6 +188,7 @@ Platform strategy (orthogonal, consulted at structure + verification):
 | Strategy | Scope | [Inherent Platform Scope](inherent-platform-scope.md) | Broken builds on unsupported platforms, unnecessary cross-compilation |
 | Strategy | Coverage | [Partial Platform Coverage](partial-platform-coverage.md) | "Package not available" on platforms the project could build from source |
 | Pipeline | Distribution | [nixpkgs Contribution](nixpkgs-contribution.md) | Project invisible to Nix users who search nixpkgs first |
+| Pipeline | Distribution | [nixpkgs Dedup Pre-flight](nixpkgs-dedup-preflight.md) | Duplicate nixpkgs PRs — bot-maintained update PRs (r-ryantm/nix-update) already cover most version bumps |
 
 ### How the Layers Interact
 

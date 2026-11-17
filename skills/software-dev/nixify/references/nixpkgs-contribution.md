@@ -25,6 +25,12 @@ The nixpkgs contribution is prepared at Step 28b, **after** the in-repo flake
 has been validated and the main PR (Step 27) has been created. The nixpkgs PR
 references the working in-repo flake as evidence the package builds and runs.
 
+> **Scope**: this page covers `init` of a NEW package only. For fix/version-bump
+> contributions to an EXISTING nixpkgs package, see
+> [`nixpkgs-fix-pr.md`](nixpkgs-fix-pr.md) — it adds the mandatory target-repo
+> dedup pre-flight (`scripts/search-nixpkgs-prs.sh`) that prevents duplicate
+> PRs in bot-heavy repos like NixOS/nixpkgs.
+
 ## Key Departure from Project-Owner PRs
 
 The nixpkgs PR body does **NOT** explain Nix concepts. The audience is nixpkgs
