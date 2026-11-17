@@ -64,6 +64,9 @@ vocabulary than you would. For Nix-related work, search for: `flake`,
 
 ## Related
 
+* [Search the Target Repo](search-target-repo.md) — the target-repo half of
+  the dedup check: own-repo search cannot see bot-maintained or prior
+  upstream PRs
 * [Contribution Eligibility](contribution-eligibility.md) — searching is
   part of the pre-flight check before starting work
 * [Human Review Gate](human-review-gate.md) — present search results to

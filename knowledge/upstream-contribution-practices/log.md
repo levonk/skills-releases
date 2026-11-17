@@ -6,10 +6,26 @@ tags: [log, history]
 date:
   created: "2026-07-14"
   knowledge-basis: "2026-07-14"
-  last-used: "2026-10-13"
+  last-used: "2026-11-17"
 ---
 
 # Bundle Update Log
+
+## 2026-11-17
+* **Add**: New concept page for the target-repo dedup check, prompted by
+  NixOS/nixpkgs#576090 (packer 1.15.4 -> 1.16.1) being closed as a duplicate
+  of r-ryantm's bot PR #545258 — a failure `search-before-opening.md` could
+  not catch because it only covers the project's own repo.
+  - [search-target-repo.md](search-target-repo.md) — Before contributing to
+    a repo you don't own, search the TARGET repo for existing work,
+    including bot-authored/bot-labeled PRs; check whether a newer upstream
+    release already ships the fix; coordinate on open matches, stop on
+    merged ones. Generalizes beyond nixpkgs to any bot-heavy upstream.
+* **Update**: Added the concept to [index.md](index.md) and the overview
+  synthesis table (Pre-flight phase). Cross-linked from
+  [search-before-opening.md](search-before-opening.md) Related. Bumped
+  `date.knowledge-basis` and `date.last-used` to 2026-11-17 on the overview;
+  added nixos/nixpkgs#576090 to overview sources.
 
 ## 2026-10-13
 * **Update**: Expanded `sync-before-push.md` with a "Push with an Explicit Refspec" section — bare `git push <remote> <branch>` lets `push.default=tracking` resolve the destination from the branch's tracking config, which pushed a feature branch onto a fork's `main` in the wild (observed 2026-10-13). Documents explicit `refs/heads/<branch>:refs/heads/<branch>` refspecs, `--no-track` branch creation, `-u` only alongside an explicit refspec, and `git push --dry-run` destination verification.

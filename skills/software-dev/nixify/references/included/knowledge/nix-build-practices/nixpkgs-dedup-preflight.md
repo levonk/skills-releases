@@ -81,5 +81,7 @@ time pressure, which is exactly how #576090 happened.
 
 - [nixpkgs Contribution](nixpkgs-contribution.md) — the init-side
   packaging workflow this pre-flight precedes
+- [Search the Target Repo](../upstream-contribution-practices/search-target-repo.md)
+  — the generalized upstream-contribution version of this practice
 - [Package Verification](package-verification.md) — verify the package
   name/version in nixpkgs before contributing

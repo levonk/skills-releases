@@ -5,8 +5,8 @@ description: Synthesis of fork-PR best practices extracted from real upstream co
 tags: [upstream-contribution, fork, pull-request, github, overview, synthesis]
 date:
   created: "2026-07-14"
-  knowledge-basis: "2026-07-14"
-  last-used: "2026-07-14"
+  knowledge-basis: "2026-11-17"
+  last-used: "2026-11-17"
 sources:
   - id: nixify-skill
     resource: https://github.com/levonk/skills-src/tree/main/src/current/skills/software-dev/nixify
@@ -14,6 +14,9 @@ sources:
   - id: yusukebe-ax-pr-27
     resource: https://github.com/yusukebe/ax/pull/27
     title: "yusukebe/ax PR #27"
+  - id: nixos-nixpkgs-576090
+    resource: https://github.com/NixOS/nixpkgs/pull/576090
+    title: "NixOS/nixpkgs#576090 — packer bump closed as duplicate of bot PR #545258"
 ---
 
 ---
@@ -156,6 +159,7 @@ Each phase has practices that prevent specific failure modes:
 |-------|----------|----------|
 | Pre-flight | [Contribution Eligibility](contribution-eligibility.md) | Wasted work on projects that reject external PRs or have risky CLAs |
 | Pre-flight | [Search Before Opening](search-before-opening.md) | Duplicate issues/PRs, re-litigating settled rejections |
+| Pre-flight | [Search the Target Repo](search-target-repo.md) | Duplicate upstream PRs — bot-maintained update PRs (nix-update, dependabot, renovate) already cover mechanical changes |
 | Pre-flight | [Forge Template Discovery](forge-template-discovery.md) | Drafting for the wrong forge or missing a `blank_issues_enabled: false` constraint |
 | Pre-flight | [Follow Project Conventions](follow-project-conventions.md) | Review feedback asking to match changelog/template/doc style |
 | Branch creation | [Feature Branch Only](feature-branch-only.md) | Cannot create PR, polluted default branch, broken sync |

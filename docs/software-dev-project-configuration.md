@@ -36,4 +36,4 @@ Configure existing projects with compatible preferences without overwriting esta
 
 - **Full skill**: [`skills/software-dev/project-configuration/SKILL.md`](skills/software-dev/project-configuration/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-17T17:57:04Z
+- **Generated**: 2026-11-17T18:45:29Z

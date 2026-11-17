@@ -14,6 +14,7 @@ PRs and the practice that prevents it.
 * [Overview](overview.md) - Synthesis of the full practice set and how the pieces fit together
 * [Contribution Eligibility](contribution-eligibility.md) - Verify the project accepts contributions, read CONTRIBUTING.md, check CLA/DCO risk before starting
 * [Search Before Opening](search-before-opening.md) - Search existing issues/PRs before opening new ones; don't duplicate work
+* [Search the Target Repo](search-target-repo.md) - Own-repo search is not enough — search the TARGET repo for existing work, including bot-authored/bot-labeled PRs, before contributing upstream
 * [Forge Template Discovery](forge-template-discovery.md) - Discover the correct issue/PR templates and contribution directories for GitHub, GitLab, Forgejo, Gitea, and Bitbucket
 * [Feature Branch Only](feature-branch-only.md) - Always develop on a feature branch, never commit to main/master
 * [Test Baseline](test-baseline.md) - Run the project's tests before starting; document pre-existing failures; don't fix unrelated bugs
