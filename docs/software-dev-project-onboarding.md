@@ -60,4 +60,4 @@ Orchestrate full onboarding for a new project or a newly selected AI model: runs
 
 - **Full skill**: [`skills/software-dev/project-onboarding/SKILL.md`](skills/software-dev/project-onboarding/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-17T19:05:23Z
+- **Generated**: 2026-11-21T04:07:51Z

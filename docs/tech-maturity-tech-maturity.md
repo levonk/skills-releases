@@ -33,4 +33,4 @@ Quantify, audit, and visualize a project's technical maturity. Supports both int
 
 - **Full skill**: [`skills/tech-maturity/tech-maturity/SKILL.md`](skills/tech-maturity/tech-maturity/SKILL.md)
 - **Install**: `pnpm dlx skills add levonk/skills-releases`
-- **Generated**: 2026-11-17T19:05:23Z
+- **Generated**: 2026-11-21T04:07:51Z
